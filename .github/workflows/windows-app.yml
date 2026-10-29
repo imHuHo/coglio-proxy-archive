@@ -1,0 +1,32 @@
+name: Windows app
+
+# Costruisce la cartella portatile per Windows (Coglio Proxy Archive.exe) con l'icona dell'app.
+# Avvio: scheda Actions > "Windows app" > Run workflow. Il file si scarica da "Artifacts".
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Strumenti di impacchettamento
+        shell: pwsh
+        run: |
+          mkdir pk
+          cd pk
+          npm init -y
+          npm install @electron/packager@20 png-to-ico@2.1.8
+          node -e "require('png-to-ico')('../web/icons/icon-256.png').then(b => require('fs').writeFileSync('icon.ico', b))"
+      - name: Impacchetta l'app
+        shell: pwsh
+        working-directory: pk
+        run: |
+          npx electron-packager ../electron "Coglio Proxy Archive" --platform=win32 --arch=x64 --electron-version=33.4.11 --out=../out --overwrite --icon=icon.ico
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Coglio-Proxy-Archive-Windows
+          path: out/

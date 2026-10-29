@@ -1,0 +1,135 @@
+const C = require('../web/core.js');
+const fs = require('fs');
+const assert = require('assert');
+const rd = f => fs.readFileSync(__dirname + '/fixtures/' + f, 'utf8');
+let n = 0; const ok = (c, m) => { assert(c, m); n++; };
+
+// 1. parser sulle liste vere
+const o = C.parseList(rd('kaalia_old.txt')), nw = C.parseList(rd('kaalia_new.txt'));
+ok(o.total === 100 && nw.total === 100, 'totali 100/100: ' + o.total + '/' + nw.total);
+ok(o.hints[0] === 'Kaalia of the Vast', 'hint commander (blocco finale): ' + o.hints);
+ok(o.cards.find(c => c.name === 'Mountain').qty === 8, 'qty 8 Mountain');
+
+// 2. formati Moxfield/Archidekt
+const m = C.parseList(rd('moxfield.txt'));
+const by = n => m.cards.find(c => C.keyOf(c.name) === C.keyOf(n));
+ok(m.hints[0].startsWith('Atraxa'), 'hint da sezione Commander');
+ok(by('Sol Ring').set === 'C21' && by('Sol Ring').cn === '263', 'set+numero');
+ok(by('Lightning Greaves').set === 'CMM' && by('Lightning Greaves').cn === '400', 'parentesi quadre + foil');
+ok(by('Fire').name === 'Fire // Ice' && by('Fire').set === 'MMA', 'carta doppia');
+ok(by('Arcane Signet').qty === 2 && by('Arcane Signet').set === 'ELD', 'tag ^..^ ignorati');
+ok(by('Seance Board') && by('Island').qty === 3, 'accenti e basic');
+ok(m.excluded === 2 && !by('Counterspell') && !by('Mystic Snake'), 'sideboard escluso');
+ok(m.total === 1 + 1 + 1 + 1 + 2 + 1 + 3, 'totale main: ' + m.total);
+ok(C.keyOf('Fire // Ice') === C.keyOf('fire'), 'chiave faccia anteriore');
+
+// 3. archivio
+const mk = (id, name, kind, active, cards, extra) => Object.assign({ id, name, kind, active, commander: null, cards, upgrades: [], createdAt: 0, updatedAt: 0 }, extra || {});
+const kaalia = mk('k', 'Kaalia', 'deck', true, o.cards, { commander: 'Kaalia of the Vast' });
+const other = mk('x', 'Altro', 'deck', false, [{ name: 'Sol Ring', qty: 1, set: 'C21', cn: '1' }, { name: "Serra's Emissary", qty: 1, set: '', cn: '' }]);
+const binder = mk('b', 'Raccolta', 'binder', false, [{ name: 'Blood Crypt', qty: 1, set: '', cn: '' }, { name: 'Badlands', qty: 1, set: '', cn: '' }]);
+let A = C.buildArchive([kaalia, other, binder]);
+const sol = A.map['sol ring'];
+ok(sol.owned === 2 && sol.occupied === 1 && sol.free === 1 && sol.status === 'part', 'Sol Ring parziale');
+ok(sol.rows.length === 2 && sol.sets.join() === 'C21', 'righe e collezioni');
+ok(A.map['serra\'s emissary'].status === 'free', 'carta di mazzo non attivo = libera');
+ok(A.map['blood crypt'].status === 'free', 'raccolta = libera');
+ok(A.map['mountain'].occupied === 8, 'basic occupate');
+other.active = true; A = C.buildArchive([kaalia, other, binder]);
+ok(A.map['sol ring'].status === 'busy' && A.map['sol ring'].free === 0, 'Sol Ring tutte occupate');
+other.active = false;
+
+// 4. upgrade
+const up = { id: 'u', name: 'Nuovo', cards: nw.cards, commander: 'Kaalia of the Vast', createdAt: 0 };
+kaalia.upgrades = [up];
+const D = C.diffUpgrade(kaalia, up, [kaalia, other, binder], { basicsUnlimited: true });
+ok(D.outQty === 73 && D.inQty === 73, 'cambi 73/73 (con basic): ' + D.outQty + '/' + D.inQty);
+const find = n => D.inn.find(x => x.name === n);
+ok(find("Serra's Emissary").covered === 1 && find("Serra's Emissary").sources[0].deckName === 'Altro', 'carta libera in altro mazzo');
+ok(find('Blood Crypt').covered === 1 && find('Blood Crypt').sources[0].kind === 'binder', 'carta nella raccolta');
+ok(find('Baneslayer Angel').missing === 1, 'carta da procurare');
+ok(D.inn.every(x => !x.basic), 'nessuna basic tra le entrate');
+ok(D.covered === 3 && D.missing === 70, 'coperte/mancanti: ' + D.covered + '/' + D.missing);
+other.active = true;
+const D2 = C.diffUpgrade(kaalia, up, [kaalia, other, binder], {});
+ok(D2.inn.find(x => x.name === "Serra's Emissary").missing === 1 && D2.inn.find(x => x.name === "Serra's Emissary").busyIn[0].deckName === 'Altro', 'carta occupata altrove');
+// basic illimitate
+const up2 = { id: 'u2', name: 'Più terre', cards: kaalia.cards.map(c => c.name === 'Swamp' ? { ...c, qty: 10 } : c), commander: null, createdAt: 0 };
+const D3 = C.diffUpgrade(kaalia, up2, [kaalia], { basicsUnlimited: true });
+ok(D3.inQty === 2 && D3.missing === 0 && D3.inn[0].basic, 'terre base illimitate');
+const D4 = C.diffUpgrade(kaalia, up2, [kaalia], { basicsUnlimited: false });
+ok(D4.missing === 2, 'terre base contate');
+
+// 5. applica upgrade
+other.active = false;
+C.applyUpgrade(kaalia, up);
+ok(kaalia.cards.length === nw.cards.length && kaalia.upgrades.length === 0, 'applicato');
+ok(C.diffUpgrade(kaalia, up, [kaalia], {}).outQty === 0, 'diff vuoto dopo applicazione');
+ok(C.exportText(kaalia).split('\n').length === nw.cards.length, 'export testo');
+// 6. sanitize
+ok(C.sanitizeDeck({ name: 'x', cards: [{ name: ' A ', qty: '3' }, { name: '' }] }).cards[0].qty === 3, 'sanitize');
+
+// 7. upgrade applicato: le carte si spostano (escono -> sciolte, entrano <- sciolte / mazzi non attivi)
+{
+  const o2 = C.parseList(rd('kaalia_old.txt')), n2 = C.parseList(rd('kaalia_new.txt'));
+  const kk = mk('k2', 'Kaalia', 'deck', true, o2.cards, { commander: 'Kaalia of the Vast' });
+  const upg = { id: 'u', name: 'N', cards: n2.cards, commander: null, createdAt: 0 };
+  kk.upgrades = [upg];
+  const sciolte = mk('b2', 'Sciolte', 'binder', false, [{ name: 'Blood Crypt', qty: 1, set: '', cn: '' }, { name: 'Mountain', qty: 1, set: '', cn: '' }]);
+  const altro = mk('x2', 'Altro', 'deck', false, [{ name: "Serra's Emissary", qty: 1, set: '', cn: '' }]);
+  const decks = [kk, sciolte, altro];
+  const snap = JSON.stringify(decks);
+  const prev = C.applyUpgradeMoves(C.clone(decks), 'k2', 'u', { basicsUnlimited: true });
+  ok(JSON.stringify(decks) === snap, 'anteprima su copia non modifica i dati');
+  ok(prev.toLoose.reduce((t, x) => t + x.qty, 0) === 73, 'anteprima: 73 carte vanno nelle sciolte');
+  const rep = C.applyUpgradeMoves(decks, 'k2', 'u', { basicsUnlimited: true });
+  const q = (d, name) => (d.cards.find(c => C.keyOf(c.name) === C.keyOf(name)) || { qty: 0 }).qty;
+  ok(rep.toLoose.reduce((t, x) => t + x.qty, 0) === 73 && !rep.createdBinder, 'resoconto: 73 nelle sciolte');
+  ok(q(sciolte, 'Akroma, Angel of Fury') === 1 && q(sciolte, 'Mortify') === 1, 'carte tolte ora sciolte');
+  ok(q(sciolte, 'Mountain') === 3 && q(sciolte, 'Swamp') === 2 && q(sciolte, 'Plains') === 2, 'anche le terre base tolte diventano sciolte');
+  ok(q(sciolte, 'Blood Crypt') === 0 && rep.fromLoose.some(x => x.name === 'Blood Crypt'), 'Blood Crypt passa dalle sciolte al mazzo');
+  ok(altro.cards.length === 0 && rep.fromDecks[0].deckName === 'Altro', "Serra's Emissary preso dal mazzo non attivo");
+  ok(sum(kk.cards) === 100 && kk.upgrades.length === 0 && q(kk, 'Baneslayer Angel') === 1, 'mazzo aggiornato');
+  const A2 = C.buildArchive(decks);
+  ok(A2.map['akroma, angel of fury'].status === 'free' && A2.map['baneslayer angel'].status === 'busy', 'archivio coerente dopo upgrade');
+  ok(A2.map["serra's emissary"].owned === 1, 'nessun doppione: Serra\'s Emissary resta 1 copia');
+  // nessuna lista sciolte: viene creata
+  const k3 = mk('k3', 'K', 'deck', true, o2.cards); k3.upgrades = [{ id: 'u3', name: 'N', cards: n2.cards, commander: null, createdAt: 0 }];
+  const d3 = [k3]; const r3 = C.applyUpgradeMoves(d3, 'k3', 'u3', {});
+  ok(r3.createdBinder && d3.length === 2 && d3[1].kind === 'binder' && d3[1].name === 'Carte sciolte' && sum(d3[1].cards) === 73, 'lista Carte sciolte creata');
+}
+function sum(cards) { return cards.reduce((t, c) => t + c.qty, 0); }
+
+// 8. carte già stampate quando importi un nuovo mazzo
+{
+  const p = C.parseList('1 Akroma, Angel of Fury\n2 Swamp\n1 Brand New Card\n1 Altra Carta');
+  const sc = mk('b', 'Sciolte', 'binder', false, [{ name: 'Akroma, Angel of Fury', qty: 1, set: '', cn: '' }, { name: 'Swamp', qty: 2, set: '', cn: '' }]);
+  const off = mk('i', 'Smontato', 'deck', false, [{ name: 'Brand New Card', qty: 1, set: '', cn: '' }]);
+  const at = mk('a', 'Montato', 'deck', true, [{ name: 'Altra Carta', qty: 1, set: '', cn: '' }]);
+  const r = C.findReusable(p.cards, [sc, off, at], { basicsUnlimited: true });
+  ok(r.length === 2 && r[0].name === 'Akroma, Angel of Fury' && r[0].looseCovered === 1, 'sciolte riconosciute');
+  ok(r[1].name === 'Brand New Card' && r[1].loose === 0 && r[1].inactive[0].deckName === 'Smontato', 'libera in mazzo non attivo; carta in mazzo attivo ignorata');
+  const r2 = C.findReusable(p.cards, [sc, off, at], { basicsUnlimited: false });
+  ok(r2.some(x => x.name === 'Swamp' && x.looseCovered === 2), 'terre base contate se non illimitate');
+}
+
+// 9. dati per le anteprime: stampa di riferimento, set nel diff, impostazione
+{
+  const d1 = mk('d1', 'Uno', 'deck', true, [{ name: 'Sol Ring', qty: 1, set: 'C21', cn: '263' }, { name: 'Mountain', qty: 1, set: '', cn: '' }]);
+  const d2 = mk('d2', 'Due', 'deck', false, [{ name: 'Mountain', qty: 1, set: 'M21', cn: '270' }]);
+  const A = C.buildArchive([d1, d2]);
+  ok(A.map['sol ring'].pset === 'C21' && A.map['sol ring'].pcn === '263', 'archivio: stampa di riferimento');
+  ok(A.map['mountain'].pset === 'M21' && A.map['mountain'].pcn === '270', 'archivio: prima stampa con collezione');
+  const up = { id: 'u', name: 'U', cards: [{ name: 'Sol Ring', qty: 1, set: 'C21', cn: '263' }, { name: 'Arcane Signet', qty: 1, set: 'ELD', cn: '331' }], commander: null, createdAt: 0 };
+  d1.upgrades = [up];
+  const df = C.diffUpgrade(d1, up, [d1, d2], {});
+  ok(df.inn[0].name === 'Arcane Signet' && df.inn[0].set === 'ELD' && df.inn[0].cn === '331', 'diff: set e numero delle carte che entrano');
+  ok(df.out[0].name === 'Mountain', 'diff: carta che esce');
+  const off1 = mk('o1', 'Vecchio', 'deck', false, [{ name: 'Sol Ring', qty: 1, set: 'LEA', cn: '1' }]);
+  const on1 = mk('o2', 'Attuale', 'deck', true, [{ name: 'Sol Ring', qty: 1, set: 'MIC', cn: '162' }]);
+  const A3 = C.buildArchive([off1, on1]);
+  ok(A3.map['sol ring'].pset === 'MIC' && A3.map['sol ring'].pcn === '162', 'archivio: preferisce la stampa del mazzo attivo');
+  ok(C.sanitizeSettings({}).images === true && C.sanitizeSettings({ images: false }).images === false, 'impostazione immagini');
+}
+
+console.log('OK, ' + n + ' controlli passati');

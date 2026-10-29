@@ -1,0 +1,1731 @@
+<title>Coglio Proxy Archive</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap">
+<style>
+/* Coglio Proxy Archive
+ * Layout: barra laterale su PC, barra a schede in basso su telefono; al centro la vista.
+ * Colori: inchiostro blu + accento indaco; verde/ambra/rosso solo per lo stato delle copie. */
+:root {
+  --bg: #eceef5;
+  --surface: #ffffff;
+  --surface2: #f5f6fb;
+  --fg: #14172b;
+  --muted: #586079;
+  --line: #d8dbe8;
+  --accent: #3347d6;
+  --accent-fg: #ffffff;
+  --accent-soft: #e3e6fb;
+  --stamp: #e4572e;
+  --free: #0f7a55;   --free-bg: #daf2e8;
+  --busy: #bd2a40;   --busy-bg: #fbe2e6;
+  --part: #8f5b00;   --part-bg: #faedcf;
+  --display: "Syne", "Segoe UI", system-ui, sans-serif;
+  --body: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --r: 12px;
+  --gx: max(16px, env(safe-area-inset-left, 0px));
+  --gx2: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1020; --surface: #171a2e; --surface2: #1e2238; --fg: #eceefb; --muted: #9ba1bd; --line: #2b3050;
+    --accent: #93a1ff; --accent-fg: #0e1020; --accent-soft: #252b57;
+    --free: #62dcab; --free-bg: #123a2c; --busy: #ff8fa1; --busy-bg: #3e1822; --part: #f3c55e; --part-bg: #3a2e10;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1020; --surface: #171a2e; --surface2: #1e2238; --fg: #eceefb; --muted: #9ba1bd; --line: #2b3050;
+  --accent: #93a1ff; --accent-fg: #0e1020; --accent-soft: #252b57;
+  --free: #62dcab; --free-bg: #123a2c; --busy: #ff8fa1; --busy-bg: #3e1822; --part: #f3c55e; --part-bg: #3a2e10;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 15px/1.5 var(--body);
+  -webkit-tap-highlight-color: transparent;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 40; background: var(--bg);
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+h1, h2, h3 { margin: 0; }
+a { color: var(--accent); }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Struttura ---------- */
+.shell { display: block; min-height: 100vh; }
+.side { display: none; }
+.main { padding: 8px var(--gx2) 112px var(--gx); max-width: 880px; margin: 0 auto; width: 100%; min-width: 0; }
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding: 6px var(--gx2) calc(6px + env(safe-area-inset-bottom, 0px)) var(--gx);
+}
+.nav {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  border: 0; background: none; padding: 6px 2px; border-radius: 10px;
+  color: var(--muted); font-size: 11px; font-weight: 600; min-width: 0;
+}
+.nav svg { width: 22px; height: 22px; }
+.nav[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+
+@media (min-width: 860px) {
+  .shell { display: grid; grid-template-columns: 236px minmax(0, 1fr); }
+  .side {
+    display: flex; flex-direction: column; gap: 6px; position: sticky; top: 0; height: 100vh; align-self: start;
+    background: var(--surface); border-right: 1px solid var(--line); padding: 22px 14px 22px var(--gx);
+  }
+  .side .nav { flex-direction: row; gap: 12px; padding: 10px 12px; font-size: 14px; justify-content: flex-start; }
+  .side .nav svg { width: 20px; height: 20px; }
+  .tabs { display: none; }
+  .main { padding-bottom: 64px; padding-top: 18px; }
+}
+
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 6px 18px; text-decoration: none; color: var(--fg); }
+.brand svg { flex: none; }
+.brand b { display: block; font: 800 20px/1 var(--display); letter-spacing: -0.01em; }
+.brand small { display: block; font: 500 10.5px/1.3 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+.mobile-brand { display: flex; align-items: center; gap: 10px; padding: 14px 0 4px; }
+.mobile-brand b { font: 800 19px/1 var(--display); }
+.mobile-brand small { font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); display: block; margin-top: 2px; }
+@media (min-width: 860px) { .mobile-brand { display: none; } }
+
+/* ---------- Intestazioni ---------- */
+.vh { padding: 14px 0 10px; display: flex; flex-direction: column; gap: 4px; }
+.vh h1 { font: 800 28px/1.1 var(--display); letter-spacing: -0.01em; text-wrap: balance; }
+.sub { margin: 0; color: var(--muted); font-size: 14px; }
+.sub b { color: var(--fg); font-weight: 700; font-variant-numeric: tabular-nums; }
+.back { align-self: flex-start; border: 0; background: none; color: var(--accent); padding: 4px 0; font-weight: 600; }
+
+/* ---------- Controlli ---------- */
+.sticky {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bg);
+  padding: 8px 0 10px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 9px;
+}
+.search { position: relative; }
+.search svg { position: absolute; left: 13px; top: 50%; translate: 0 -50%; color: var(--muted); pointer-events: none; }
+.input, .select, .textarea {
+  width: 100%; min-height: 46px; padding: 10px 14px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--line); font-size: 16px;
+}
+.search .input { padding-left: 42px; font-weight: 600; }
+.input::placeholder, .textarea::placeholder { color: var(--muted); font-weight: 400; }
+.textarea { font: 13px/1.5 var(--mono); min-height: 220px; resize: vertical; }
+.select { padding-right: 10px; }
+.row-sel { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; align-items: end; }
+.lbl { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; min-width: 0; }
+.lbl .select, .lbl .input { text-transform: none; letter-spacing: 0; color: var(--fg); font-weight: 500; }
+.chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.chip {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px;
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+.chip i { font: 500 11.5px var(--mono); font-style: normal; color: var(--muted); margin-left: 6px; }
+.chip[aria-pressed="true"] { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+.chip[aria-pressed="true"] i { color: inherit; opacity: .7; }
+.check { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 16px;
+  border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-weight: 700; font-size: 14px;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.btn.danger { color: var(--busy); border-color: var(--busy); }
+.btn.danger.armed { background: var(--busy); color: var(--surface); }
+.btn.small { min-height: 36px; padding: 4px 12px; font-size: 13px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.switch { position: relative; display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 14px; cursor: pointer; }
+.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.switch .tr { width: 46px; height: 26px; border-radius: 999px; background: var(--line); position: relative; flex: none; transition: background .15s; }
+.switch .tr::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px #0004; transition: transform .15s; }
+.switch input:checked + .tr { background: var(--free); }
+.switch input:checked + .tr::after { transform: translateX(20px); }
+.switch input:focus-visible + .tr { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Liste ---------- */
+.count { margin: 12px 0 8px; color: var(--muted); font-size: 13px; }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); border-left-width: 5px; overflow: hidden; }
+.item.s-free { border-left-color: var(--free); }
+.item.s-part { border-left-color: var(--part); }
+.item.s-busy { border-left-color: var(--busy); }
+.item-main {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center;
+  width: 100%; border: 0; background: none; text-align: left; padding: 11px 14px;
+}
+.nm { font-weight: 700; font-size: 15.5px; overflow-wrap: anywhere; }
+.tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 3px; }
+.tag { font: 500 11px var(--mono); background: var(--surface2); border: 1px solid var(--line); color: var(--muted); padding: 1px 6px; border-radius: 5px; }
+.tag.cmd { background: var(--accent-soft); border-color: transparent; color: var(--accent); font-weight: 700; }
+.cnt { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cnt b { font: 800 20px var(--display); }
+.cnt small { display: block; font-size: 11px; color: var(--muted); font-weight: 600; }
+.s-free .cnt b { color: var(--free); } .s-part .cnt b { color: var(--part); } .s-busy .cnt b { color: var(--busy); }
+.meter { grid-column: 1 / -1; display: flex; gap: 3px; height: 7px; margin-top: 4px; }
+.meter i { flex: 1; border-radius: 3px; background: var(--free); min-width: 0; }
+.meter i.u { background: var(--busy); }
+.meter.bar i { border-radius: 0; }
+.detail { border-top: 1px dashed var(--line); background: var(--surface2); padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 8px; }
+.detail h3 { font: 700 12px var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.where { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.where li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.link { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 700; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
+.pill { font: 700 11px var(--body); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.use { background: var(--busy-bg); color: var(--busy); }
+.pill.free { background: var(--free-bg); color: var(--free); }
+.pill.part { background: var(--part-bg); color: var(--part); }
+.pill.info { background: var(--accent-soft); color: var(--accent); }
+.qty { font: 600 13px var(--mono); }
+.more { margin: 14px 0 0; }
+
+/* Mazzi */
+.deckcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 10px; }
+.deckcard .top { display: flex; gap: 10px; justify-content: space-between; align-items: flex-start; }
+.deckcard h2 { font: 700 18px/1.2 var(--display); overflow-wrap: anywhere; }
+.deckcard .meta { color: var(--muted); font-size: 13px; }
+.deckcard .foot { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; }
+.deckcard.is-on { border-color: var(--free); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 12px; margin-bottom: 14px; }
+.subtabs { display: flex; gap: 6px; margin: 4px 0 12px; }
+.subtabs .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.crow { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; padding: 9px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.crow .qty { min-width: 2.2em; color: var(--muted); }
+.crow .nm { font-size: 15px; }
+.crow .other { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 5px; padding-left: 2.9em; }
+
+/* Upgrade */
+.sum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sum div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.sum b { display: block; font: 800 24px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.sum span { font-size: 12px; color: var(--muted); font-weight: 600; }
+.sum .g b { color: var(--free); } .sum .r b { color: var(--busy); }
+.cols { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@media (min-width: 700px) { .cols { grid-template-columns: 1fr 1fr; align-items: start; } }
+.col h2 { font: 700 15px var(--display); margin: 0 0 8px; display: flex; gap: 8px; align-items: center; }
+.col h2 .qty { color: var(--muted); }
+.col.out h2 { color: var(--busy); } .col.in h2 { color: var(--free); }
+.up-row { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.up-row .nm { font-size: 14.5px; flex: 1 1 140px; }
+.up-row .sm { flex-basis: 100%; font-size: 12.5px; color: var(--muted); }
+
+/* Import */
+.seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg button { border: 0; background: none; padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 14px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+.hint { color: var(--muted); font-size: 13px; margin: 0; }
+.err { color: var(--busy); font-weight: 600; margin: 0; }
+.warn { background: var(--part-bg); color: var(--part); border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 600; }
+.pick { max-height: 340px; overflow: auto; display: flex; flex-direction: column; gap: 6px; padding: 2px; }
+.opt { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.opt input { width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+.opt .nm { font-size: 15px; flex: 1; }
+
+/* Varie */
+.how { margin-top: 22px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; }
+.how summary { cursor: pointer; font-weight: 700; }
+.how p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+.how b { color: var(--fg); }
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r); padding: 28px 18px; text-align: center; display: grid; gap: 12px; justify-items: center; }
+.empty h2 { font: 800 22px var(--display); }
+.empty p { margin: 0; color: var(--muted); max-width: 46ch; }
+.steps { text-align: left; color: var(--muted); font-size: 14px; max-width: 46ch; margin: 0; padding-left: 20px; }
+.steps b { color: var(--fg); }
+.sect { margin: 22px 0 8px; font: 700 13px var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.mono { font-family: var(--mono); font-size: 12.5px; }
+.out-ta { min-height: 120px; }
+
+#toast {
+  position: fixed; z-index: 50; left: 50%; translate: -50% 0; width: min(520px, calc(100% - 32px));
+  bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  background: var(--fg); color: var(--bg); border-radius: 12px; padding: 12px 14px;
+  display: flex; align-items: center; justify-content: space-between; gap: 14px; font-weight: 600; font-size: 14px;
+  box-shadow: 0 8px 28px #0005;
+}
+#toast button { border: 0; background: none; color: var(--accent); font-weight: 800; padding: 4px 6px; }
+:root:not([data-theme="light"]) #toast button { color: var(--accent-fg); text-decoration: underline; }
+@media (min-width: 860px) { #toast { bottom: 24px; } }
+@media (max-width: 480px) {
+  .vh h1 { font-size: 25px; }
+  .sum b { font-size: 20px; }
+  .item-main { padding: 10px 12px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Upgrade: riepilogo degli spostamenti e avviso carte già stampate */
+.sm { color: var(--muted); font-size: 12.5px; }
+.plan { background: var(--surface2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.plan h3 { font: 700 12px var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 6px; }
+.plan ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+.reuse { background: var(--part-bg); border: 1px solid var(--part); border-radius: 10px; padding: 12px 14px; color: var(--fg); }
+.reuse p { margin: 0 0 8px; }
+.reuse b { color: var(--part); font: 800 15px var(--display); letter-spacing: .02em; }
+.reuse ul { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 4px; max-height: 260px; overflow: auto; }
+.reuse li .qty { color: var(--part); font-weight: 700; margin-right: 4px; }
+.reuse.alt { background: var(--surface2); border-color: var(--line); }
+.reuse.alt summary { cursor: pointer; font-weight: 700; }
+.reuse.alt ul { margin-top: 8px; }
+
+/* Anteprime delle carte */
+.ttl { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.ttx { display: block; min-width: 0; }
+.th {
+  flex: none; width: 36px; height: 50px; border-radius: 4px; overflow: hidden; position: relative;
+  background: var(--surface2); border: 1px solid var(--line); align-self: center;
+}
+.th:not(.on):not(.nf) { background: linear-gradient(100deg, var(--surface2) 30%, var(--line) 50%, var(--surface2) 70%) 0 0 / 220% 100%; animation: thsk 1.4s linear infinite; }
+.th.nf { opacity: .45; border-style: dashed; }
+.th img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.th.on { cursor: zoom-in; }
+@keyframes thsk { to { background-position: -220% 0; } }
+@media (prefers-reduced-motion: reduce) { .th:not(.on):not(.nf) { animation: none; } }
+.crow:has(.th), .up-row:has(.th) { align-items: center; }
+.crow:has(.th) .other { padding-left: calc(46px + 2.9em); }
+.up-row .th { width: 30px; height: 42px; }
+.lb {
+  position: fixed; inset: 0; z-index: 60; background: rgba(8, 10, 22, .78); display: grid; place-items: center;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.lb-box { display: grid; gap: 10px; justify-items: center; width: min(360px, 100%); }
+.lb-box img { width: 100%; max-height: calc(100vh - 120px); object-fit: contain; border-radius: 4.5% / 3.2%; box-shadow: 0 18px 50px #000a; background: var(--surface2); aspect-ratio: 488 / 680; }
+.lb-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; width: 100%; }
+.lb-name { flex: 1 1 100%; text-align: center; color: #fff; font-weight: 700; font-size: 14px; overflow-wrap: anywhere; }
+#hv { position: fixed; z-index: 55; width: 252px; pointer-events: none; }
+#hv img { display: block; width: 100%; border-radius: 4.5% / 3.2%; box-shadow: 0 14px 40px #000a; background: var(--surface2); aspect-ratio: 488 / 680; }
+
+.where li .th { width: 30px; height: 42px; }
+.lb-box.wide { width: min(560px, 100%); }
+.lb-box.wide .lb-name { flex-basis: 100%; }
+.pr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; width: 100%; max-height: min(64vh, 560px); overflow: auto; padding: 2px; }
+.pr { border: 2px solid transparent; background: none; padding: 3px; border-radius: 8px; display: grid; gap: 4px; color: #fff; text-align: center; }
+.pr img { width: 100%; border-radius: 5px; background: var(--surface2); aspect-ratio: 146 / 204; object-fit: cover; }
+.pr span { font: 500 10.5px var(--mono); }
+.pr:hover, .pr:focus-visible { border-color: #fff8; }
+.pr.cur { border-color: var(--accent); background: #ffffff1a; }
+.lb-wait { grid-column: 1 / -1; color: #fff; text-align: center; margin: 12px 0; }
+
+.th.fb { border-color: var(--part); }
+.th.fb::after { content: "!"; position: absolute; right: 0; bottom: 0; background: var(--part); color: var(--surface); font: 800 10px/1 var(--mono); padding: 2px 4px; border-top-left-radius: 4px; }
+.lb-warn { margin: 0; background: var(--part-bg); color: var(--part); border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 600; text-align: center; }
+
+</style>
+<div id="app"></div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<script>
+/* Coglio Proxy Archive - logica pura (nessun accesso al DOM).
+ * Usata dall'app e dai test Node. */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.Core = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var BASIC_NAMES = [
+    'plains', 'island', 'swamp', 'mountain', 'forest', 'wastes',
+    'snow-covered plains', 'snow-covered island', 'snow-covered swamp',
+    'snow-covered mountain', 'snow-covered forest'
+  ];
+  var IGNORED_TAGS = /^(foil|etched|promo|prerelease|extended|showcase|borderless)$/i;
+
+  function strip(s) { return String(s).normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+  /* Chiave canonica di una carta: minuscolo, senza accenti, solo la faccia anteriore. */
+  function keyOf(name) {
+    return strip(name).toLowerCase().replace(/[’‘`´]/g, "'")
+      .split(/\s*\/\/\s*/)[0].replace(/\s+/g, ' ').trim();
+  }
+  /* Normalizzazione per la ricerca: solo lettere, cifre e spazi. */
+  function searchNorm(s) {
+    return strip(s).toLowerCase().replace(/[^a-z0-9 ]+/g, '').replace(/\s+/g, ' ').trim();
+  }
+  function isBasic(name) { return BASIC_NAMES.indexOf(keyOf(name)) >= 0; }
+  function uid(prefix) {
+    return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  /* ---------- Parser delle liste txt ---------- */
+  var SECTION_RE = /^(commanders?|deck|mainboard|main|sideboard|side|maybeboard|maybe|companion|considering)\s*:?\s*$/i;
+
+  function parseList(text) {
+    var lines = String(text || '').replace(/\r/g, '').split('\n');
+    var raw = [], warnings = [], excluded = 0;
+    var section = 'main', block = 0, blockHasCards = false;
+
+    lines.forEach(function (line0) {
+      var line = line0.trim();
+      if (!line) { if (blockHasCards) { block++; blockHasCards = false; } return; }
+      if (/^(\/\/|#)/.test(line)) return;
+
+      var sh = line.match(SECTION_RE);
+      if (sh) {
+        var s = sh[1].toLowerCase();
+        section = /^commander/.test(s) ? 'commander' : /^(side|maybe|considering|companion)/.test(s) ? 'side' : 'main';
+        if (blockHasCards) { block++; blockHasCards = false; }
+        return;
+      }
+
+      var sec = section, body = line;
+      var sb = body.match(/^SB:\s*(.*)$/i);
+      if (sb) { sec = 'side'; body = sb[1]; }
+
+      var qty = 1, rest = body;
+      var m = body.match(/^(\d+)\s*[xX]?\s+(.+)$/);
+      if (m) { qty = parseInt(m[1], 10); rest = m[2]; }
+      else if (!/^[A-Za-zÀ-ɏ"']/.test(body)) { warnings.push(line0); return; }
+
+      rest = rest.replace(/\s+\*[A-Za-z]+\*/g, '').replace(/\s*\^[^^]*\^/g, '').trim();
+      var name = rest, set = '', cn = '';
+      var sm = rest.match(/^(.*?)\s+[(\[]([A-Za-z0-9]{2,6})[)\]](?:\s+([A-Za-z0-9★†\-]+))?(?:\s+.*)?$/);
+      if (sm) {
+        name = sm[1].trim();
+        if (IGNORED_TAGS.test(sm[2])) { set = ''; cn = ''; }
+        else { set = sm[2].toUpperCase(); cn = sm[3] || ''; }
+      } else {
+        name = rest.replace(/\s*\[[^\]]*\]\s*$/, '').trim();
+      }
+      if (!name || !(qty > 0)) { warnings.push(line0); return; }
+      if (sec === 'side') { excluded += qty; return; }
+      raw.push({ name: name, qty: qty, set: set, cn: cn, commander: sec === 'commander', block: block });
+      blockHasCards = true;
+    });
+
+    var map = {}, cards = [];
+    raw.forEach(function (r) {
+      var k = keyOf(r.name) + '|' + r.set + '|' + r.cn;
+      if (map[k]) map[k].qty += r.qty;
+      else { map[k] = { name: r.name, qty: r.qty, set: r.set, cn: r.cn }; cards.push(map[k]); }
+    });
+
+    var hints = [];
+    function addHint(n) {
+      if (!hints.some(function (h) { return keyOf(h) === keyOf(n); })) hints.push(n);
+    }
+    raw.filter(function (r) { return r.commander; }).forEach(function (r) { addHint(r.name); });
+    if (!hints.length) {
+      var blocks = [];
+      raw.forEach(function (r) { (blocks[r.block] = blocks[r.block] || []).push(r); });
+      blocks = blocks.filter(Boolean);
+      if (blocks.length >= 2) {
+        var last = blocks[blocks.length - 1], first = blocks[0];
+        if (last.length === 1 && last[0].qty === 1) addHint(last[0].name);
+        if (first.length === 1 && first[0].qty === 1) addHint(first[0].name);
+      }
+    }
+    var total = cards.reduce(function (a, c) { return a + c.qty; }, 0);
+    return { cards: cards, hints: hints, warnings: warnings, excluded: excluded, total: total, unique: cards.length };
+  }
+
+  /* ---------- Archivio ---------- */
+  function inUse(deck) { return deck.kind === 'deck' && !!deck.active; }
+
+  function buildArchive(decks) {
+    var map = {}, list = [];
+    decks.forEach(function (d) {
+      d.cards.forEach(function (c) {
+        var k = keyOf(c.name), e = map[k];
+        if (!e) {
+          e = map[k] = { key: k, name: c.name, basic: isBasic(c.name), owned: 0, occupied: 0, rows: [], sets: [] };
+          list.push(e);
+        }
+        var used = inUse(d);
+        e.owned += c.qty;
+        if (used) e.occupied += c.qty;
+        var set = c.set || '', cn = c.cn || '';
+        if (set && e.sets.indexOf(set) < 0) e.sets.push(set);
+        var ex = null;
+        for (var i = 0; i < e.rows.length; i++) {
+          var r = e.rows[i];
+          if (r.deckId === d.id && r.set === set && r.cn === cn) { ex = r; break; }
+        }
+        if (ex) ex.qty += c.qty;
+        else e.rows.push({ deckId: d.id, deckName: d.name, kind: d.kind, active: used, qty: c.qty, set: set, cn: cn });
+      });
+    });
+    var stats = { unique: list.length, owned: 0, occupied: 0, free: 0, activeDecks: 0, decks: 0, busy: 0, part: 0, avail: 0 };
+    list.forEach(function (e) {
+      /* stampa mostrata nell'archivio: quella dei mazzi attivi, poi quella con più copie */
+      var pr = e.rows.filter(function (r) { return r.set; }).sort(function (a, b) { return (b.active - a.active) || (b.qty - a.qty); })[0];
+      e.pset = pr ? pr.set : ''; e.pcn = pr ? pr.cn : '';
+      e.free = e.owned - e.occupied;
+      e.status = e.occupied === 0 ? 'free' : (e.free === 0 ? 'busy' : 'part');
+      e.sets.sort();
+      stats.owned += e.owned; stats.occupied += e.occupied; stats.free += e.free;
+      if (e.free === 0) stats.busy++; else stats.avail++;
+      if (e.status === 'part') stats.part++;
+    });
+    decks.forEach(function (d) {
+      if (d.kind === 'deck') { stats.decks++; if (d.active) stats.activeDecks++; }
+    });
+    list.sort(function (a, b) { return a.name.localeCompare(b.name, 'en'); });
+    return { list: list, map: map, stats: stats };
+  }
+
+  /* ---------- Upgrade ---------- */
+  function qtyMap(cards) {
+    var m = {}, order = [];
+    cards.forEach(function (c) {
+      var k = keyOf(c.name);
+      if (m[k]) m[k].qty += c.qty;
+      else { m[k] = { key: k, name: c.name, qty: c.qty, set: c.set || '', cn: c.cn || '' }; order.push(k); }
+    });
+    return { m: m, order: order };
+  }
+
+  function diffUpgrade(deck, upgrade, decks, settings) {
+    var base = qtyMap(deck.cards), up = qtyMap(upgrade.cards);
+    var out = [], inn = [];
+    base.order.forEach(function (k) {
+      var b = base.m[k], u = up.m[k], d = b.qty - (u ? u.qty : 0);
+      if (d > 0) out.push({ key: k, name: b.name, qty: d, set: b.set, cn: b.cn });
+    });
+    up.order.forEach(function (k) {
+      var u = up.m[k], b = base.m[k], d = u.qty - (b ? b.qty : 0);
+      if (d > 0) inn.push({ key: k, name: u.name, qty: d, set: u.set, cn: u.cn });
+    });
+    var unlimited = !settings || settings.basicsUnlimited !== false;
+    var others = decks.filter(function (x) { return x.id !== deck.id; });
+    inn.forEach(function (it) {
+      var basic = isBasic(it.name) && unlimited;
+      var avail = 0, sources = [], busyIn = [];
+      others.forEach(function (d) {
+        var q = 0;
+        d.cards.forEach(function (c) { if (keyOf(c.name) === it.key) q += c.qty; });
+        if (!q) return;
+        if (inUse(d)) busyIn.push({ deckId: d.id, deckName: d.name, qty: q });
+        else { avail += q; sources.push({ deckId: d.id, deckName: d.name, qty: q, kind: d.kind }); }
+      });
+      it.basic = basic;
+      it.covered = basic ? it.qty : Math.min(it.qty, avail);
+      it.missing = it.qty - it.covered;
+      it.sources = sources;
+      it.busyIn = busyIn;
+    });
+    var sum = function (a, f) { return a.reduce(function (t, x) { return t + f(x); }, 0); };
+    return {
+      out: out, inn: inn,
+      outQty: sum(out, function (x) { return x.qty; }),
+      inQty: sum(inn, function (x) { return x.qty; }),
+      covered: sum(inn, function (x) { return x.covered; }),
+      missing: sum(inn, function (x) { return x.missing; }),
+      commanderChange: !!(upgrade.commander && upgrade.commander !== deck.commander)
+    };
+  }
+
+  function applyUpgrade(deck, upgrade) {
+    deck.cards = JSON.parse(JSON.stringify(upgrade.cards));
+    if (upgrade.commander) deck.commander = upgrade.commander;
+    deck.upgrades = deck.upgrades.filter(function (u) { return u.id !== upgrade.id; });
+    deck.updatedAt = Date.now();
+    return deck;
+  }
+
+  function exportText(deck) {
+    return deck.cards.slice().sort(function (a, b) { return a.name.localeCompare(b.name, 'en'); })
+      .map(function (c) {
+        return c.qty + ' ' + c.name + (c.set ? ' (' + c.set + ')' + (c.cn ? ' ' + c.cn : '') : '');
+      }).join('\n');
+  }
+
+  function diffText(deck, upgrade, diff) {
+    var l = ['Upgrade "' + upgrade.name + '" per ' + deck.name, '', 'ESCE (' + diff.outQty + '):'];
+    diff.out.forEach(function (x) { l.push(x.qty + ' ' + x.name); });
+    l.push('', 'ENTRA (' + diff.inQty + '):');
+    diff.inn.forEach(function (x) {
+      l.push(x.qty + ' ' + x.name + (x.missing ? '  [da procurare: ' + x.missing + ']' : '  [in archivio]'));
+    });
+    return l.join('\n');
+  }
+
+
+  /* ---------- Upgrade applicato: le carte si spostano davvero ---------- */
+  function cloneJ(o) { return JSON.parse(JSON.stringify(o)); }
+
+  function removeCopies(deck, key, qty) {
+    var left = qty;
+    deck.cards.forEach(function (c) {
+      if (left > 0 && keyOf(c.name) === key) { var t = Math.min(c.qty, left); c.qty -= t; left -= t; }
+    });
+    deck.cards = deck.cards.filter(function (c) { return c.qty > 0; });
+    return qty - left;
+  }
+  function addCopies(deck, card, qty) {
+    var k = keyOf(card.name), set = card.set || '', cn = card.cn || '';
+    for (var i = 0; i < deck.cards.length; i++) {
+      var c = deck.cards[i];
+      if (keyOf(c.name) === k && c.set === set && c.cn === cn) { c.qty += qty; return; }
+    }
+    deck.cards.push({ name: card.name, qty: qty, set: set, cn: cn });
+  }
+
+  /* Applica l'upgrade a `decks` (modificandolo):
+   *  - le carte che escono dal mazzo finiscono nelle carte sciolte (si crea la lista se manca);
+   *  - le carte che entrano vengono tolte prima dalle sciolte, poi dai mazzi non attivi;
+   *  - la lista del mazzo diventa quella dell'upgrade.
+   * Per l'anteprima si chiama su una copia. Restituisce il resoconto degli spostamenti. */
+  function applyUpgradeMoves(decks, deckId, upgradeId, settings) {
+    var deck = decks.filter(function (d) { return d.id === deckId; })[0];
+    var up = deck.upgrades.filter(function (u) { return u.id === upgradeId; })[0];
+    var diff = diffUpgrade(deck, up, decks, settings);
+    var rep = { toLoose: [], fromLoose: [], fromDecks: [], createdBinder: false, binderName: '', diff: diff };
+    var now = Date.now();
+
+    diff.inn.forEach(function (it) {
+      var need = it.qty;
+      decks.filter(function (d) { return d.kind === 'binder'; }).forEach(function (b) {
+        if (need <= 0) return;
+        var t = removeCopies(b, it.key, need);
+        if (t) { need -= t; b.updatedAt = now; rep.fromLoose.push({ name: it.name, qty: t, deckId: b.id, deckName: b.name }); }
+      });
+      decks.filter(function (d) { return d.kind === 'deck' && !d.active && d.id !== deck.id; }).forEach(function (d) {
+        if (need <= 0) return;
+        var t = removeCopies(d, it.key, need);
+        if (t) { need -= t; d.updatedAt = now; rep.fromDecks.push({ name: it.name, qty: t, deckId: d.id, deckName: d.name }); }
+      });
+    });
+
+    var binder = decks.filter(function (d) { return d.kind === 'binder'; })[0] || null;
+    if (diff.out.length) {
+      if (!binder) {
+        binder = { id: uid('d'), name: 'Carte sciolte', kind: 'binder', active: false, commander: null, cards: [], upgrades: [], createdAt: now, updatedAt: now };
+        decks.push(binder); rep.createdBinder = true;
+      }
+      diff.out.forEach(function (x) {
+        var src = deck.cards.filter(function (c) { return keyOf(c.name) === x.key; })[0] || { name: x.name };
+        addCopies(binder, src, x.qty);
+        rep.toLoose.push({ name: x.name, qty: x.qty });
+      });
+      binder.updatedAt = now;
+    }
+    if (binder) rep.binderName = binder.name;
+
+    deck.cards = cloneJ(up.cards);
+    if (up.commander) deck.commander = up.commander;
+    deck.upgrades = deck.upgrades.filter(function (u) { return u.id !== upgradeId; });
+    deck.updatedAt = now;
+    return rep;
+  }
+
+  /* Carte di una lista da stampare che hai già: sciolte (stampate e libere) o libere in mazzi non attivi. */
+  function findReusable(cards, decks, settings) {
+    var unlimited = !settings || settings.basicsUnlimited !== false;
+    var need = qtyMap(cards), out = [];
+    need.order.forEach(function (k) {
+      var it = need.m[k];
+      if (unlimited && isBasic(it.name)) return;
+      var loose = 0, inactive = [];
+      decks.forEach(function (d) {
+        var q = 0;
+        d.cards.forEach(function (c) { if (keyOf(c.name) === k) q += c.qty; });
+        if (!q) return;
+        if (d.kind === 'binder') loose += q;
+        else if (!d.active) inactive.push({ deckId: d.id, deckName: d.name, qty: q });
+      });
+      if (loose || inactive.length) {
+        out.push({ key: k, name: it.name, need: it.qty, loose: loose, looseCovered: Math.min(it.qty, loose), inactive: inactive });
+      }
+    });
+    return out;
+  }
+
+  /* ---------- Stato ---------- */
+  function sanitizeCards(arr) {
+    return (Array.isArray(arr) ? arr : []).map(function (c) {
+      return {
+        name: String(c && c.name || '').trim(), qty: Math.max(1, parseInt(c && c.qty, 10) || 1),
+        set: String(c && c.set || ''), cn: String(c && c.cn || '')
+      };
+    }).filter(function (c) { return c.name; });
+  }
+  function sanitizeDeck(d) {
+    return {
+      id: String(d.id || uid('d')), name: String(d.name || 'Mazzo'),
+      kind: d.kind === 'binder' ? 'binder' : 'deck',
+      active: d.kind === 'binder' ? false : !!d.active,
+      commander: d.commander ? String(d.commander) : null,
+      cards: sanitizeCards(d.cards),
+      upgrades: (Array.isArray(d.upgrades) ? d.upgrades : []).map(function (u) {
+        return {
+          id: String(u.id || uid('u')), name: String(u.name || 'Upgrade'),
+          cards: sanitizeCards(u.cards), commander: u.commander ? String(u.commander) : null,
+          createdAt: u.createdAt || Date.now()
+        };
+      }),
+      createdAt: d.createdAt || Date.now(), updatedAt: d.updatedAt || Date.now()
+    };
+  }
+  function sanitizeSettings(s) {
+    s = s || {};
+    return { theme: ['light', 'dark'].indexOf(s.theme) >= 0 ? s.theme : 'auto', basicsUnlimited: s.basicsUnlimited !== false, images: s.images !== false };
+  }
+
+  return {
+    keyOf: keyOf, searchNorm: searchNorm, isBasic: isBasic, uid: uid,
+    parseList: parseList, buildArchive: buildArchive, diffUpgrade: diffUpgrade,
+    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, clone: cloneJ, exportText: exportText, diffText: diffText,
+    sanitizeDeck: sanitizeDeck, sanitizeSettings: sanitizeSettings, inUse: inUse
+  };
+});
+
+</script>
+<script>
+/* Coglio Proxy Archive - interfaccia e salvataggio */
+(function () {
+  'use strict';
+  var C = window.Core;
+  var APP = document.getElementById('app');
+  var TOAST = document.getElementById('toast');
+
+  /* ---------- Utilità ---------- */
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  var plural = function (n, one, many) { return n + ' ' + (n === 1 ? one : many); };
+  var clone = function (o) { return JSON.parse(JSON.stringify(o)); };
+  var $ = function (s) { return document.querySelector(s); };
+  var sum = function (cards) { return cards.reduce(function (t, c) { return t + c.qty; }, 0); };
+  var byName = function (a, b) { return a.name.localeCompare(b.name, 'en'); };
+
+  var IC = {
+    archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"/></svg>',
+    decks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="13" height="17" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h9"/></svg>',
+    import: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
+    data: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>',
+    search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
+  };
+  var LOGO = '<svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true">' +
+    '<rect x="5" y="7" width="19" height="26" rx="3.5" transform="rotate(-14 14 20)" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.6"/>' +
+    '<rect x="9" y="5" width="19" height="26" rx="3.5" style="fill:var(--surface);stroke:var(--accent);stroke-width:1.6"/>' +
+    '<rect x="13" y="7" width="19" height="26" rx="3.5" transform="rotate(12 22 20)" style="fill:var(--accent)"/>' +
+    '<circle cx="29" cy="29" r="8" style="fill:var(--stamp)"/>' +
+    '<path d="M25.4 29.2l2.6 2.6 4.6-5.2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  /* ---------- Stato ---------- */
+  var state = { decks: [], settings: C.sanitizeSettings() };
+  var ui = {
+    view: 'archive', deckId: null, upId: null, deckTab: 'cards', deckQ: '',
+    q: '', st: 'all', fdeck: '', fset: '', sort: 'name', nobasic: false, open: {}, limit: 150,
+    upQ: '', upSt: 'all', draft: null, confirm: null, backupOut: '', restoreText: '', dataMsg: ''
+  };
+  var archCache = null;
+  function getArchive() { return archCache || (archCache = C.buildArchive(state.decks)); }
+  function getDeck(id) { return state.decks.filter(function (d) { return d.id === (id || ui.deckId); })[0] || null; }
+
+  /* ---------- Salvataggio ---------- */
+  var store = null;
+  var dirty = {}, gone = {}, settingsDirty = false, flushing = false, timer = null;
+
+  function idbOpen() {
+    return new Promise(function (res, rej) {
+      if (!window.indexedDB) return rej(new Error('no idb'));
+      var r = indexedDB.open('coglio-proxy-archive', 1);
+      r.onupgradeneeded = function () {
+        r.result.createObjectStore('decks', { keyPath: 'id' });
+        r.result.createObjectStore('meta');
+      };
+      r.onsuccess = function () { res(r.result); };
+      r.onerror = function () { rej(r.error); };
+      r.onblocked = function () { rej(new Error('blocked')); };
+    });
+  }
+  function tx(db, name, mode, fn) {
+    return new Promise(function (res, rej) {
+      var t = db.transaction(name, mode), r = fn(t.objectStore(name));
+      t.oncomplete = function () { res(r && r.result); };
+      t.onerror = t.onabort = function () { rej(t.error); };
+    });
+  }
+  function makeIdbStore() {
+    return idbOpen().then(function (db) {
+      return {
+        kind: 'idb',
+        load: function () {
+          return tx(db, 'decks', 'readonly', function (s) { return s.getAll(); }).then(function (decks) {
+            return tx(db, 'meta', 'readonly', function (s) { return s.get('settings'); })
+              .then(function (settings) { return { decks: decks || [], settings: settings || null }; });
+          });
+        },
+        saveDeck: function (d) { return tx(db, 'decks', 'readwrite', function (s) { return s.put(clone(d)); }); },
+        deleteDeck: function (id) { return tx(db, 'decks', 'readwrite', function (s) { return s.delete(id); }); },
+        saveSettings: function (s) { return tx(db, 'meta', 'readwrite', function (m) { return m.put(clone(s), 'settings'); }); }
+      };
+    });
+  }
+  function makeLocalStore() {
+    var K = 'cpa:state:v1';
+    var read = function () {
+      try { return JSON.parse(localStorage.getItem(K)) || { decks: [], settings: null }; }
+      catch (e) { return { decks: [], settings: null }; }
+    };
+    var write = function (o) { localStorage.setItem(K, JSON.stringify(o)); };
+    localStorage.setItem(K + ':probe', '1'); localStorage.removeItem(K + ':probe');
+    return {
+      kind: 'local',
+      load: function () { return Promise.resolve(read()); },
+      saveDeck: function (d) {
+        var o = read(); o.decks = o.decks.filter(function (x) { return x.id !== d.id; }); o.decks.push(clone(d));
+        write(o); return Promise.resolve();
+      },
+      deleteDeck: function (id) {
+        var o = read(); o.decks = o.decks.filter(function (x) { return x.id !== id; }); write(o); return Promise.resolve();
+      },
+      saveSettings: function (s) { var o = read(); o.settings = s; write(o); return Promise.resolve(); }
+    };
+  }
+  function makeMemoryStore() {
+    return { kind: 'memory', load: function () { return Promise.resolve({ decks: [], settings: null }); },
+      saveDeck: function () { return Promise.resolve(); }, deleteDeck: function () { return Promise.resolve(); },
+      saveSettings: function () { return Promise.resolve(); } };
+  }
+  /* Quando la pagina gira dentro Claude, i dati stanno nel tuo spazio privato (sincronizzati fra i tuoi dispositivi). */
+  function makeClaudeStore() {
+    if (!window.claude || typeof window.claude.use !== 'function') return Promise.resolve(null);
+    return Promise.all([window.claude.use('db'), window.claude.use('user')]).then(function (r) {
+      var db = r[0], user = r[1];
+      if (!db || !user) return null;
+      return user.id().then(function (id) {
+        if (!id) return null;
+        var base = db.doc('data/users/' + id + '/profile'), col = base.collection('decks');
+        return {
+          kind: 'claude',
+          load: function () {
+            return col.get().then(function (snap) {
+              return base.get().then(function (s) {
+                return {
+                  decks: snap.docs.map(function (d) { return clone(d.data()); }),
+                  settings: s.exists && s.data() ? clone(s.data().settings || null) : null
+                };
+              });
+            });
+          },
+          saveDeck: function (d) { return col.doc(d.id).set(clone(d)); },
+          deleteDeck: function (id2) { return col.doc(id2).delete(); },
+          saveSettings: function (s) { return base.set({ settings: clone(s) }); }
+        };
+      });
+    }).catch(function () { return null; });
+  }
+  function initStore() {
+    return makeClaudeStore().then(function (s) {
+      if (s) return s;
+      return makeIdbStore().catch(function () {
+        try { return makeLocalStore(); } catch (e) { return makeMemoryStore(); }
+      });
+    });
+  }
+
+  function schedule() { clearTimeout(timer); timer = setTimeout(flush, 350); }
+  function touch(id) { archCache = null; delete gone[id]; dirty[id] = true; schedule(); }
+  function touchSettings() { archCache = null; settingsDirty = true; schedule(); }
+  function removed(id) { archCache = null; delete dirty[id]; gone[id] = true; schedule(); }
+  function persistAll(prevIds) {
+    archCache = null;
+    var now = {}; state.decks.forEach(function (d) { now[d.id] = true; });
+    prevIds.forEach(function (id) { if (!now[id]) { gone[id] = true; delete dirty[id]; } });
+    state.decks.forEach(function (d) { delete gone[d.id]; dirty[d.id] = true; });
+    settingsDirty = true; schedule();
+  }
+  function flush() {
+    if (flushing) { schedule(); return Promise.resolve(); }
+    flushing = true;
+    var chain = Promise.resolve();
+    Object.keys(gone).forEach(function (id) {
+      chain = chain.then(function () { delete gone[id]; return store.deleteDeck(id); });
+    });
+    Object.keys(dirty).forEach(function (id) {
+      chain = chain.then(function () {
+        delete dirty[id]; var d = getDeck(id);
+        return d ? store.saveDeck(d) : null;
+      });
+    });
+    chain = chain.then(function () {
+      if (settingsDirty) { settingsDirty = false; return store.saveSettings(state.settings); }
+    });
+    return chain.catch(function () {
+      state.decks.forEach(function (d) { dirty[d.id] = true; }); settingsDirty = true;
+      toast('Salvataggio non riuscito. Esporta un backup dalla scheda Dati per non perdere nulla.', null, true);
+    }).then(function () { flushing = false; });
+  }
+
+  /* ---------- Avvisi e annulla ---------- */
+  var toastTimer;
+  function toast(msg, undo, sticky) {
+    TOAST.innerHTML = '<span>' + esc(msg) + '</span>' + (undo ? '<button data-a="undo">Annulla</button>' : '');
+    TOAST._undo = undo || null; TOAST.hidden = false;
+    clearTimeout(toastTimer);
+    if (!sticky) toastTimer = setTimeout(function () { TOAST.hidden = true; }, 8000);
+  }
+  function mutate(msg, fn) {
+    var prev = JSON.stringify(state), prevIds = state.decks.map(function (d) { return d.id; });
+    fn();
+    persistAll(prevIds);
+    toast(typeof msg === 'function' ? msg() : msg, function () {
+      var cur = state.decks.map(function (d) { return d.id; });
+      state = JSON.parse(prev); applyTheme(); persistAll(cur); ui.confirm = null; render();
+    });
+  }
+  function confirmThen(key, fn) {
+    if (ui.confirm === key) { ui.confirm = null; fn(); } else { ui.confirm = key; render(); }
+  }
+  var armed = function (key) { return ui.confirm === key; };
+
+  function copyText(text) {
+    var fallback = function () {
+      try {
+        var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); var ok = document.execCommand('copy'); ta.remove(); return ok;
+      } catch (e) { return false; }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallback(); });
+    }
+    return Promise.resolve(fallback());
+  }
+  /* Dentro Claude il download passa dalla capability "downloads"; altrove è un normale download del browser. */
+  function download(name, text, type) {
+    var viaAnchor = function () {
+      try {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([text], { type: type || 'text/plain' }));
+        a.download = name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+        return true;
+      } catch (e) { return false; }
+    };
+    if (window.claude && typeof window.claude.use === 'function') {
+      return window.claude.use('downloads').then(function (dl) {
+        if (!dl) return viaAnchor();
+        return dl.save({ filename: name, data: text }).then(function () { return true; }, function (err) {
+          return err && err.code === 'declined' ? 'declined' : false;
+        });
+      }, function () { return viaAnchor(); });
+    }
+    return Promise.resolve(viaAnchor());
+  }
+  function applyTheme() {
+    var t = state.settings.theme, r = document.documentElement;
+    if (t === 'light' || t === 'dark') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme');
+  }
+
+  /* ---------- Immagini delle carte (Scryfall) ---------- */
+  /* Dato nome e collezione, l'immagine si ricava da api.scryfall.com. Le richieste partono a lotti (fino a 75
+     carte) solo per le righe che si vedono, con una pausa fra una chiamata e l'altra come chiede Scryfall.
+     L'indirizzo trovato resta salvato sul dispositivo, quindi ogni carta si cerca una volta sola. */
+  var IMG = (function () {
+    var API = 'https://api.scryfall.com', HOST = 'https://cards.scryfall.io/', LS = 'cpa:img:v1';
+    var cache = null, queue = {}, drainT = null, running = false, saveT = null;
+    var coolUntil = 0, noCollection = false, gate = Promise.resolve(), io = null, lb = null, hv = null;
+    var NEG_MS = 7 * 864e5;
+
+    function gap() { return window.CPA_API_GAP != null ? window.CPA_API_GAP : 110; }
+    function pause() { return new Promise(function (r) { setTimeout(r, gap()); }); }
+    function enabled() {
+      return state.settings.images !== false && !!store && store.kind !== 'claude' && typeof fetch === 'function';
+    }
+    function load() {
+      if (cache) return cache;
+      cache = {};
+      try { cache = JSON.parse(localStorage.getItem(LS)) || {}; } catch (e) { cache = {}; }
+      return cache;
+    }
+    function persist() {
+      clearTimeout(saveT);
+      saveT = setTimeout(function () { try { localStorage.setItem(LS, JSON.stringify(cache)); } catch (e) { /* spazio finito: pazienza */ } }, 1000);
+    }
+    function key(name, set, cn) {
+      set = String(set || '').toLowerCase();
+      return C.keyOf(name) + '|' + set + '|' + (set ? String(cn || '').toLowerCase() : '');
+    }
+    function get(k) {
+      var h = load()[k];
+      if (h && h.x && Date.now() - h.x > NEG_MS) { delete cache[k]; return null; }
+      return h || null;
+    }
+    function count() { return Object.keys(load()).filter(function (k) { return cache[k].u; }).length; }
+    function clear() { cache = {}; queue = {}; try { localStorage.removeItem(LS); } catch (e) { /* ignorato */ } }
+    function tail(u) { return u && u.indexOf(HOST + 'small/') === 0 ? u.slice((HOST + 'small/').length) : (u || 0); }
+    function url(t, ver) {
+      if (!t) return '';
+      return t.indexOf('http') === 0 ? t.replace('/small/', '/' + ver + '/') : HOST + ver + '/' + t;
+    }
+
+    /* ----- parlare con Scryfall ----- */
+    function gated(fn) { var p = gate.then(fn); gate = p.then(pause, pause); return p; }
+    function check(r) {
+      if (r.status === 429) coolUntil = Date.now() + 60000;
+      if (r.status === 404) return null;
+      if (!r.ok) { var e = new Error('http ' + r.status); e.status = r.status; throw e; }
+      return r.json();
+    }
+    function post(ids) {
+      return gated(function () {
+        return fetch(API + '/cards/collection', { method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify({ identifiers: ids }) });
+      }).then(check);
+    }
+    function getJson(path) {
+      return gated(function () { return fetch(API + path, { headers: { 'Accept': 'application/json' } }); }).then(check);
+    }
+    function nameIs(card, name) {
+      var k = C.keyOf(name);
+      if (C.keyOf(card.name || '') === k) return true;
+      return (card.card_faces || []).some(function (f) { return C.keyOf(f.name || '') === k; });
+    }
+    function matches(card, r) {
+      if (r.set && r.cn) return card.set === r.set.toLowerCase() && String(card.collector_number).toLowerCase() === String(r.cn).toLowerCase() && nameIs(card, r.name);
+      if (r.set) return card.set === r.set.toLowerCase() && nameIs(card, r.name);
+      return nameIs(card, r.name);
+    }
+    function ident(r) {
+      if (r.set && r.cn) return { set: r.set.toLowerCase(), collector_number: r.cn };
+      if (r.set) return { name: r.name, set: r.set.toLowerCase() };
+      return { name: r.name };
+    }
+    function collect(recs, found) {
+      return post(recs.map(ident)).then(function (res) {
+        ((res && res.data) || []).forEach(function (card) {
+          recs.forEach(function (r) { if (!found[r.k] && matches(card, r)) found[r.k] = card; });
+        });
+      });
+    }
+    /* Una carta per volta, dal tentativo più preciso al più largo. */
+    function single(r) {
+      var enc = encodeURIComponent, seq = [];
+      if (r.set && r.cn) seq.push('/cards/' + enc(r.set.toLowerCase()) + '/' + enc(r.cn));
+      if (r.set) seq.push('/cards/named?exact=' + enc(r.name) + '&set=' + enc(r.set.toLowerCase()));
+      seq.push('/cards/named?exact=' + enc(r.name));
+      seq.push('/cards/named?fuzzy=' + enc(r.name));
+      return seq.reduce(function (p, path, i) {
+        return p.then(function (card) {
+          if (card) return card;
+          return getJson(path).then(function (c) { return c && (i === seq.length - 1 || nameIs(c, r.name)) ? c : null; });
+        });
+      }, Promise.resolve(null));
+    }
+    function singles(recs, found) {
+      return recs.reduce(function (p, r) {
+        return p.then(function () { return single(r).then(function (c) { if (c) found[r.k] = c; }); });
+      }, Promise.resolve());
+    }
+    function faces(card) {
+      var u = card.image_uris, f = card.card_faces || [], front = u ? u.small : (f[0] && f[0].image_uris && f[0].image_uris.small);
+      var back = !u && f[1] && f[1].image_uris ? f[1].image_uris.small : '';
+      return front ? { u: tail(front), b: tail(back) } : null;
+    }
+    /* Dal tentativo più preciso al più largo: collezione+numero, collezione, solo nome. */
+    function variants(r) {
+      var v = [];
+      if (r.set && r.cn) v.push({ k: r.k, name: r.name, set: r.set, cn: r.cn });
+      if (r.set) v.push({ k: r.k, name: r.name, set: r.set, cn: '' });
+      v.push({ k: r.k, name: r.name, set: '', cn: '' });
+      return v;
+    }
+    function stages(recs, found, i) {
+      if (i > 2) return Promise.resolve();
+      var vs = recs.filter(function (r) { return !found[r.k]; }).map(function (r) { return variants(r)[i]; }).filter(Boolean);
+      var next = function () { return stages(recs, found, i + 1); };
+      return (vs.length ? collect(vs, found) : Promise.resolve()).then(next);
+    }
+    function resolveBatch(keys) {
+      var recs = keys.map(function (k) { return queue[k]; }), found = {};
+      var p;
+      if (noCollection) p = singles(recs, found);
+      else {
+        p = stages(recs, found, 0).catch(function (err) {
+          if (err && err.status) throw err;           /* risposta del server: non è un problema di rete o di CORS */
+          noCollection = true; return singles(recs.filter(function (r) { return !found[r.k]; }), found);
+        });
+      }
+      return p.then(function () {
+        var rest = recs.filter(function (r) { return !found[r.k]; }).slice(0, 25);
+        return singles(rest, found);
+      }).then(function () {
+        recs.forEach(function (r) {
+          var card = found[r.k], f = card && faces(card);
+          if (!f) cache[r.k] = { x: Date.now() };
+          else {
+            cache[r.k] = { u: f.u, b: f.b, t: Date.now() };
+            /* se la stampa chiesta non esiste su Scryfall si ricorda quale viene mostrata al suo posto */
+            if (r.set && (card.set !== r.set.toLowerCase() || (r.cn && String(card.collector_number).toLowerCase() !== String(r.cn).toLowerCase()))) {
+              cache[r.k].m = card.set + ' ' + card.collector_number;
+            }
+          }
+          delete queue[r.k];
+        });
+        persist();
+      });
+    }
+
+    /* ----- coda e aggiornamento dello schermo ----- */
+    function liveKeys() {
+      var live = {};
+      [].forEach.call(document.querySelectorAll('.th[data-thk]'), function (el) { live[el.getAttribute('data-thk')] = 1; });
+      return live;
+    }
+    function fill(el) {
+      var h = get(el.getAttribute('data-thk'));
+      if (!h) return;
+      if (h.u) {
+        el.classList.remove('nf'); el.classList.add('on');
+        if (h.m) el.classList.add('fb');
+        if (!el.querySelector('img')) {
+          var im = document.createElement('img');
+          im.alt = ''; im.decoding = 'async'; im.src = url(h.u, 'small'); el.appendChild(im);
+        }
+      } else el.classList.add('nf');
+    }
+    function paint() { [].forEach.call(document.querySelectorAll('.th[data-thk]'), fill); }
+    function drain() {
+      drainT = null;
+      if (running || !enabled()) return;
+      var wait = coolUntil - Date.now();
+      if (wait > 0) { drainT = setTimeout(drain, wait + 50); return; }
+      var live = liveKeys(), batch = [];
+      Object.keys(queue).forEach(function (k) {
+        if (!live[k]) delete queue[k]; else if (get(k)) delete queue[k]; else if (batch.length < 75) batch.push(k);
+      });
+      if (!batch.length) return;
+      running = true;
+      resolveBatch(batch).catch(function () {
+        noCollection = false; coolUntil = Date.now() + 20000;
+      }).then(function () {
+        running = false; paint();
+        if (Object.keys(queue).length) drainT = setTimeout(drain, 0);
+      });
+    }
+    function request(el) {
+      var k = el.getAttribute('data-thk');
+      if (get(k)) { fill(el); return; }
+      if (!queue[k]) queue[k] = { k: k, name: el.getAttribute('data-thn'), set: el.getAttribute('data-ths') || '', cn: el.getAttribute('data-thc') || '' };
+      if (!drainT && !running) drainT = setTimeout(drain, window.CPA_IMG_DELAY != null ? window.CPA_IMG_DELAY : 250);
+    }
+    function hydrate() {
+      if (!enabled()) return;
+      var els = document.querySelectorAll('.th:not(.on):not(.nf)');
+      if (!els.length) return;
+      if (typeof IntersectionObserver === 'function') {
+        if (!io) io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) { if (en.isIntersecting) { io.unobserve(en.target); request(en.target); } });
+        }, { rootMargin: '300px 0px' });
+        [].forEach.call(els, function (el) { io.observe(el); });
+      } else [].slice.call(els, 0, 80).forEach(request);
+    }
+    function thumb(name, set, cn, deckId) {
+      if (!enabled()) return '';
+      var k = key(name, set, cn), h = get(k);
+      var im = h && h.u ? '<img src="' + esc(url(h.u, 'small')) + '" alt="" decoding="async">' : '';
+      return '<span class="th' + (h && h.u ? ' on' : h && h.x ? ' nf' : '') + (h && h.m ? ' fb' : '') + '" aria-hidden="true" data-thk="' + esc(k) + '" data-thn="' + esc(name) + '" data-ths="' + esc(set || '') + '" data-thc="' + esc(cn || '') + '"' + (deckId ? ' data-thd="' + esc(deckId) + '"' : '') + '>' + im + '</span>';
+    }
+
+    /* ----- anteprima grande ----- */
+    function closeLb() { if (lb) { lb.remove(); lb = null; } }
+    function showLb(el, side) {
+      var h = get(el.getAttribute('data-thk')); if (!h || !h.u) return;
+      closeLb();
+      var name = el.getAttribute('data-thn'), set = el.getAttribute('data-ths'), cn = el.getAttribute('data-thc');
+      var t = side && h.b ? h.b : h.u;
+      lb = document.createElement('div'); lb.id = 'lb'; lb.className = 'lb'; lb.setAttribute('data-a', 'lb-close');
+      lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', 'Anteprima di ' + name);
+      lb._el = el; lb._side = side ? 1 : 0;
+      lb.innerHTML = '<div class="lb-box" data-a="lb-keep"><img src="' + esc(url(t, 'normal')) + '" alt="' + esc(name) + '">' +
+        '<div class="lb-bar"><span class="lb-name">' + esc(name) + (set ? ' · ' + esc(set.toUpperCase()) + (cn ? ' ' + esc(cn) : '') : ' · stampa predefinita') + '</span>' +
+        (el.getAttribute('data-thd') ? '<button class="btn small" data-a="lb-prints">Cambia stampa</button>' : '') +
+        (h.b ? '<button class="btn small" data-a="lb-flip">Gira</button>' : '') + '<button class="btn small" data-a="lb-close" id="lbx">Chiudi</button></div></div>';
+      if (h.m && set) {
+        var w = document.createElement('p'); w.className = 'lb-warn';
+        w.textContent = 'La stampa ' + set.toUpperCase() + (cn ? ' ' + cn : '') + ' non risulta su Scryfall: vedi ' + h.m.toUpperCase() + '. Usa «Cambia stampa» per scegliere quella giusta.';
+        lb.firstChild.insertBefore(w, lb.firstChild.querySelector('.lb-bar'));
+      }
+      document.body.appendChild(lb);
+      var x = lb.querySelector('#lbx'); if (x) x.focus();
+    }
+    function printsLb() {
+      if (!lb || !lb._el) return;
+      var el = lb._el, name = el.getAttribute('data-thn'), set0 = (el.getAttribute('data-ths') || '').toLowerCase(), cn0 = (el.getAttribute('data-thc') || '').toLowerCase();
+      lb.innerHTML = '<div class="lb-box wide" data-a="lb-keep"><div class="lb-bar"><span class="lb-name">Scegli la stampa che hai: ' + esc(name) + '</span>' +
+        '<button class="btn small" data-a="lb-back">Indietro</button><button class="btn small" data-a="lb-close" id="lbx">Chiudi</button></div>' +
+        '<div class="pr-grid" id="prgrid"><p class="lb-wait">Cerco le stampe su Scryfall…</p></div></div>';
+      var q = '!"' + String(name).replace(/"/g, '') + '"';
+      var mine = lb;
+      getJson('/cards/search?q=' + encodeURIComponent(q) + '&unique=prints&order=released&dir=desc').then(function (res) {
+        if (lb !== mine) return;
+        var list = ((res && res.data) || []).filter(function (c) { return !c.digital && nameIs(c, name); });
+        var grid = lb.querySelector('#prgrid');
+        if (!list.length) { grid.innerHTML = '<p class="lb-wait">Nessuna stampa trovata.</p>'; return; }
+        grid.innerHTML = list.map(function (c) {
+          var f = faces(c); if (!f) return '';
+          cache[key(name, c.set, c.collector_number)] = { u: f.u, b: f.b, t: Date.now() };
+          var cur = c.set === set0 && String(c.collector_number).toLowerCase() === cn0;
+          return '<button class="pr' + (cur ? ' cur' : '') + '" data-a="lb-pick" data-s="' + esc(c.set) + '" data-n="' + esc(c.collector_number) + '" title="' + esc(c.set_name || '') + '">' +
+            '<img src="' + esc(url(f.u, 'small')) + '" alt="' + esc(c.set_name || c.set) + '" loading="lazy"><span>' + esc(c.set.toUpperCase()) + ' ' + esc(c.collector_number) + ' · ' + esc((c.released_at || '').slice(0, 4)) + '</span></button>';
+        }).join('');
+        persist();
+      }).catch(function () {
+        if (lb !== mine) return;
+        lb.querySelector('#prgrid').innerHTML = '<p class="lb-wait">Non riesco a contattare Scryfall. Riprova tra poco.</p>';
+      });
+    }
+    function backLb() { if (lb && lb._el) showLb(lb._el, false); }
+    function pickLb(set, cn) {
+      if (!lb || !lb._el) return;
+      var el = lb._el, deckId = el.getAttribute('data-thd'), nm = el.getAttribute('data-thn');
+      var s0 = el.getAttribute('data-ths') || '', c0 = el.getAttribute('data-thc') || '';
+      var label = nm + ' ' + set.toUpperCase() + ' ' + cn;
+      closeLb();
+      mutate('Stampa scelta: ' + label, function () {
+        var d = getDeck(deckId); if (!d) return;
+        var card = d.cards.filter(function (c) { return C.keyOf(c.name) === C.keyOf(nm) && (c.set || '') === s0 && (c.cn || '') === c0; })[0];
+        if (card) { card.set = set.toUpperCase(); card.cn = String(cn); d.updatedAt = Date.now(); }
+      });
+      render();
+    }
+    function flipLb() { if (lb && lb._el) showLb(lb._el, !lb._side); }
+    function hover(on, el, ev) {
+      if (!window.matchMedia || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+      if (!on || !el) { if (hv) hv.hidden = true; return; }
+      var h = get(el.getAttribute('data-thk')); if (!h || !h.u) return;
+      if (!hv) { hv = document.createElement('div'); hv.id = 'hv'; hv.innerHTML = '<img alt="">'; document.body.appendChild(hv); }
+      var im = hv.firstChild, src = url(h.u, 'normal');
+      if (im.getAttribute('src') !== src) im.setAttribute('src', src);
+      hv.hidden = false;
+      var w = 252, hgt = 352, x = ev.clientX + 18, y = ev.clientY - hgt / 2;
+      if (x + w > window.innerWidth - 8) x = ev.clientX - w - 18;
+      y = Math.max(8, Math.min(y, window.innerHeight - hgt - 8));
+      hv.style.left = Math.max(8, x) + 'px'; hv.style.top = y + 'px';
+    }
+
+    return { enabled: enabled, thumb: thumb, hydrate: hydrate, get: get, key: key, count: count, clear: clear,
+      open: function (el) { showLb(el, false); }, flip: flipLb, prints: printsLb, back: backLb, pick: pickLb, close: closeLb, hover: hover, isOpen: function () { return !!lb; } };
+  })();
+
+  /* ---------- Struttura generale ---------- */
+  var NAV = [['archive', 'Archivio'], ['decks', 'Mazzi'], ['import', 'Importa'], ['data', 'Dati']];
+  function navBtn(v, label) {
+    var cur = ui.view === v || (v === 'decks' && (ui.view === 'deck' || ui.view === 'upgrade'));
+    return '<button class="nav" data-a="nav" data-v="' + v + '"' + (cur ? ' aria-current="page"' : '') + '>' + IC[v] + '<span>' + label + '</span></button>';
+  }
+  function render() {
+    var navHtml = NAV.map(function (n) { return navBtn(n[0], n[1]); }).join('');
+    APP.innerHTML =
+      '<div class="shell"><aside class="side"><div class="brand">' + LOGO + '<span><b>Coglio</b><small>Proxy Archive</small></span></div>' + navHtml + '</aside>' +
+      '<main class="main"><div class="mobile-brand">' + LOGO + '<span><b>Coglio</b><small>Proxy Archive</small></span></div>' + viewHtml() + '</main></div>' +
+      '<nav class="tabs" aria-label="Sezioni">' + navHtml + '</nav>';
+    if (ui.view === 'archive' && state.decks.length) updateArchiveList();
+    if (ui.view === 'deck') updateDeckList();
+    if (ui.view === 'upgrade') updateUpgradeCols();
+  }
+  function viewHtml() {
+    switch (ui.view) {
+      case 'decks': return decksView();
+      case 'deck': return deckView();
+      case 'upgrade': return upgradeView();
+      case 'import': return importView();
+      case 'data': return dataView();
+      default: return archiveView();
+    }
+  }
+  function go(v) {
+    ui.view = v; ui.confirm = null;
+    if (v === 'import' && !(ui.draft && ui.draft.step === 1 && ui.draft.mode !== 'upgrade')) ui.draft = newDraft('deck');
+    window.scrollTo(0, 0); render();
+  }
+  function welcome() {
+    return '<div class="empty"><h2>Archivio vuoto</h2><p>Importa le liste dei tuoi mazzi e l\'archivio ti dirà quali carte hai, quante sono libere e dove sono impegnate.</p>' +
+      '<ol class="steps"><li><b>Importa</b> una lista .txt (quantità, nome, e se vuoi collezione).</li><li><b>Scegli il commander</b> dalla lista.</li><li><b>Attiva</b> i mazzi che hai montati: le loro carte risulteranno in uso.</li></ol>' +
+      '<button class="btn primary" data-a="nav" data-v="import">Importa il primo mazzo</button></div>';
+  }
+
+  /* ---------- Archivio ---------- */
+  function archiveFiltered(A) {
+    var q = C.searchNorm(ui.q);
+    var l = A.list.filter(function (e) {
+      if (q && C.searchNorm(e.name).indexOf(q) < 0) return false;
+      if (ui.st === 'avail' && !(e.free > 0)) return false;
+      if (ui.st === 'busy' && e.free !== 0) return false;
+      if (ui.st === 'part' && e.status !== 'part') return false;
+      if (ui.fdeck && !e.rows.some(function (r) { return r.deckId === ui.fdeck; })) return false;
+      if (ui.fset && e.sets.indexOf(ui.fset) < 0) return false;
+      if (ui.nobasic && e.basic) return false;
+      return true;
+    });
+    if (ui.sort === 'owned') l.sort(function (a, b) { return b.owned - a.owned || byName(a, b); });
+    if (ui.sort === 'free') l.sort(function (a, b) { return b.free - a.free || byName(a, b); });
+    return l;
+  }
+  function meter(e) {
+    var label = e.occupied + ' in uso, ' + e.free + ' libere';
+    if (e.owned <= 12) {
+      var s = ''; for (var i = 0; i < e.owned; i++) s += '<i' + (i < e.occupied ? ' class="u"' : '') + '></i>';
+      return '<span class="meter" role="img" aria-label="' + label + '">' + s + '</span>';
+    }
+    return '<span class="meter bar" role="img" aria-label="' + label + '">' +
+      (e.occupied ? '<i class="u" style="flex:' + e.occupied + '"></i>' : '') + (e.free ? '<i style="flex:' + e.free + '"></i>' : '') + '</span>';
+  }
+  function itemHtml(e) {
+    var open = !!ui.open[e.key];
+    var isCmd = state.decks.some(function (d) { return d.commander && C.keyOf(d.commander) === e.key; });
+    var tags = (isCmd ? '<span class="tag cmd">commander</span>' : '') + (e.basic ? '<span class="tag">terra base</span>' : '') +
+      e.sets.map(function (s) { return '<span class="tag">' + esc(s) + '</span>'; }).join('');
+    return '<li class="item s-' + e.status + '"><button class="item-main" data-a="toggle-card" data-k="' + esc(e.key) + '" aria-expanded="' + open + '">' +
+      '<span class="ttl">' + IMG.thumb(e.name, e.pset, e.pcn) + '<span class="ttx"><span class="nm">' + esc(e.name) + '</span>' + (tags ? '<span class="tags">' + tags + '</span>' : '') + '</span></span>' +
+      '<span class="cnt"><b>' + e.free + '</b><small>libere su ' + e.owned + '</small></span>' + meter(e) + '</button>' +
+      (open ? cardDetail(e) : '') + '</li>';
+  }
+  function cardDetail(e) {
+    var rows = e.rows.slice().sort(function (a, b) { return (b.active - a.active) || a.deckName.localeCompare(b.deckName); });
+    return '<div class="detail"><h3>Dove sono le copie</h3><ul class="where">' + rows.map(function (r) {
+      var pill = r.kind === 'binder' ? '<span class="pill free">Sciolta · libera</span>'
+        : r.active ? '<span class="pill use">In uso · mazzo attivo</span>' : '<span class="pill free">Libera · mazzo non attivo</span>';
+      return '<li>' + IMG.thumb(e.name, r.set, r.cn, r.deckId) + '<span class="qty">' + r.qty + '×</span><button class="link" data-a="open-deck" data-id="' + esc(r.deckId) + '">' + esc(r.deckName) + '</button>' + pill +
+        (r.set ? '<span class="tag">' + esc(r.set) + (r.cn ? ' ' + esc(r.cn) : '') + '</span>' : '') + '</li>';
+    }).join('') + '</ul><p class="hint">' + plural(e.occupied, 'copia in uso', 'copie in uso') + ' · ' + plural(e.free, 'libera', 'libere') + '</p></div>';
+  }
+  function archiveView() {
+    if (!state.decks.length) return '<header class="vh"><h1>Archivio</h1></header>' + welcome();
+    var A = getArchive(), s = A.stats;
+    var sets = {}; A.list.forEach(function (e) { e.sets.forEach(function (x) { sets[x] = 1; }); });
+    var chip = function (v, label, n) { return '<button class="chip" data-a="st" data-v="' + v + '" aria-pressed="' + (ui.st === v) + '">' + label + '<i>' + n + '</i></button>'; };
+    var opt = function (v, label, cur) { return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>'; };
+    return '<header class="vh"><h1>Archivio</h1><p class="sub"><b>' + s.unique + '</b> carte diverse · <b>' + s.owned + '</b> copie · <b>' + s.occupied + '</b> in uso · <b>' + s.free + '</b> libere · <b>' + s.activeDecks + '</b> su ' + s.decks + ' mazzi attivi</p></header>' +
+      '<div class="sticky"><div class="search">' + IC.search + '<input class="input" id="q" data-c="q" type="search" inputmode="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Cerca una carta nel tuo archivio" aria-label="Cerca una carta" value="' + esc(ui.q) + '"></div>' +
+      '<div class="chips" role="group" aria-label="Disponibilità">' + chip('all', 'Tutte', s.unique) + chip('avail', 'Con copie libere', s.avail) + chip('busy', 'Tutte occupate', s.busy) + chip('part', 'Parziali', s.part) + '</div>' +
+      '<div class="row-sel"><label class="lbl">Mazzo<select class="select" data-c="fdeck">' + opt('', 'Tutti i mazzi', ui.fdeck) + state.decks.map(function (d) { return opt(d.id, d.name, ui.fdeck); }).join('') + '</select></label>' +
+      '<label class="lbl">Collezione<select class="select" data-c="fset">' + opt('', 'Tutte', ui.fset) + Object.keys(sets).sort().map(function (x) { return opt(x, x, ui.fset); }).join('') + '</select></label>' +
+      '<label class="lbl">Ordina<select class="select" data-c="sort">' + opt('name', 'Nome', ui.sort) + opt('owned', 'Più copie', ui.sort) + opt('free', 'Più libere', ui.sort) + '</select></label></div>' +
+      '<label class="check"><input type="checkbox" data-c="nobasic"' + (ui.nobasic ? ' checked' : '') + '> Nascondi terre base</label></div>' +
+      '<p class="count" id="acount" aria-live="polite"></p><ul class="list" id="alist"></ul><div class="more" id="amore"></div>' +
+      '<details class="how"><summary>Come conto le carte</summary><p><b>Possedute</b>: tutte le copie presenti nelle liste che hai inserito (mazzi e carte sciolte). <b>In uso</b>: le copie nei mazzi segnati come attivi. <b>Libere</b>: possedute meno in uso, cioè le carte dei mazzi smontati e delle carte sciolte. Se la stessa carta compare in due mazzi, sono due copie. Le terre base possono essere considerate sempre disponibili nelle impostazioni.</p></details>';
+  }
+  function updateArchiveList() {
+    var list = $('#alist'); if (!list) return;
+    var A = getArchive(), f = archiveFiltered(A), shown = f.slice(0, ui.limit);
+    $('#acount').textContent = f.length === A.list.length ? plural(f.length, 'carta', 'carte') : plural(f.length, 'carta trovata', 'carte trovate') + ' su ' + A.list.length;
+    list.innerHTML = shown.length ? shown.map(itemHtml).join('') :
+      '<li class="empty"><p>Nessuna carta corrisponde ai filtri. Se non è in nessuna lista che hai importato, non è nel tuo archivio.</p></li>';
+    $('#amore').innerHTML = f.length > shown.length ? '<button class="btn" data-a="more">Mostra altre ' + Math.min(150, f.length - shown.length) + '</button>' : '';
+    IMG.hydrate();
+  }
+
+  /* ---------- Mazzi ---------- */
+  function switchHtml(d) {
+    return '<label class="switch"><input type="checkbox" data-c="active" data-id="' + esc(d.id) + '"' + (d.active ? ' checked' : '') + '><span class="tr"></span><span>' + (d.active ? 'Attivo' : 'Non attivo') + '</span></label>';
+  }
+  function deckCard(d) {
+    var on = d.kind === 'deck' && d.active;
+    var meta = d.kind === 'deck' ? (d.commander ? 'Commander: ' + esc(d.commander) : 'Nessun commander scelto') : 'Carte sciolte, sempre disponibili';
+    return '<article class="deckcard' + (on ? ' is-on' : '') + '"><div class="top"><div><h2>' + esc(d.name) + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + '</div></div>' +
+      (d.kind === 'deck' ? switchHtml(d) : '') + '</div><div class="foot"><span>' +
+      (d.upgrades.length ? '<span class="pill info">' + plural(d.upgrades.length, 'upgrade', 'upgrade') + '</span>' : '<span class="hint">Nessun upgrade</span>') +
+      '</span><button class="btn small" data-a="open-deck" data-id="' + esc(d.id) + '">Apri</button></div></article>';
+  }
+  function decksView() {
+    var ds = state.decks.filter(function (d) { return d.kind === 'deck'; }), bs = state.decks.filter(function (d) { return d.kind === 'binder'; });
+    if (!state.decks.length) return '<header class="vh"><h1>Mazzi</h1></header>' + welcome();
+    var act = ds.filter(function (d) { return d.active; }).length;
+    return '<header class="vh"><h1>Mazzi</h1><p class="sub"><b>' + act + '</b> attivi su <b>' + ds.length + '</b>. Un mazzo attivo è montato: le sue carte risultano in uso nell\'archivio.</p></header>' +
+      '<div class="btns" style="margin-bottom:12px"><button class="btn primary" data-a="nav" data-v="import">Importa un mazzo</button></div>' +
+      '<div class="list">' + ds.map(deckCard).join('') + '</div>' +
+      (bs.length ? '<h2 class="sect">Carte sciolte</h2><div class="list">' + bs.map(deckCard).join('') + '</div>' : '');
+  }
+  function deckView() {
+    var d = getDeck(); if (!d) { ui.view = 'decks'; return decksView(); }
+    var armedDel = armed('del-deck:' + d.id);
+    var cmdOpts = '<option value="">Nessuno</option>' + d.cards.slice().sort(byName).map(function (c) {
+      return '<option value="' + esc(c.name) + '"' + (c.name === d.commander ? ' selected' : '') + '>' + esc(c.name) + '</option>';
+    }).join('');
+    var tabs = '<div class="subtabs"><button class="chip" data-a="deck-tab" data-v="cards" aria-pressed="' + (ui.deckTab === 'cards') + '">Carte (' + sum(d.cards) + ')</button>' +
+      (d.kind === 'deck' ? '<button class="chip" data-a="deck-tab" data-v="ups" aria-pressed="' + (ui.deckTab === 'ups') + '">Upgrade (' + d.upgrades.length + ')</button>' : '') + '</div>';
+    var body;
+    if (ui.deckTab === 'ups' && d.kind === 'deck') {
+      body = '<div class="btns" style="margin-bottom:12px"><button class="btn primary" data-a="new-up">Nuovo upgrade</button></div>' +
+        (d.upgrades.length ? '<div class="list">' + d.upgrades.map(function (u) { return upgradeCard(d, u); }).join('') + '</div>' :
+          '<div class="empty"><p>Incolla la lista aggiornata di questo mazzo: vedrai cosa esce, cosa entra e quali carte hai già nell\'archivio, così non ristampi doppioni.</p></div>');
+    } else {
+      body = '<div class="search" style="margin-bottom:10px">' + IC.search + '<input class="input" data-c="deckq" type="search" placeholder="Cerca nelle carte del mazzo" autocomplete="off" aria-label="Cerca nel mazzo" value="' + esc(ui.deckQ) + '"></div><div class="list" id="dlist"></div>';
+    }
+    return '<header class="vh"><button class="back" data-a="nav" data-v="decks">← Mazzi</button><h1>' + esc(d.name) + '</h1></header>' +
+      '<section class="panel"><label class="lbl">Nome<input class="input" data-c="deck-name" value="' + esc(d.name) + '"></label>' +
+      (d.kind === 'deck' ? '<label class="lbl">Commander<select class="select" data-c="deck-cmd">' + cmdOpts + '</select></label><div>' + switchHtml(d) +
+        '<p class="hint" style="margin-top:6px">' + (d.active ? 'Le carte di questo mazzo risultano in uso.' : 'Mazzo smontato: le sue carte risultano libere.') + '</p></div>' : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
+      '<div class="btns"><button class="btn small" data-a="copy-deck">Copia lista .txt</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina') + '</button></div></section>' + tabs + body;
+  }
+  function updateDeckList() {
+    var el = $('#dlist'); var d = getDeck(); if (!el || !d) return;
+    var A = getArchive(), q = C.searchNorm(ui.deckQ);
+    var cards = d.cards.slice().sort(byName).filter(function (c) { return !q || C.searchNorm(c.name).indexOf(q) >= 0; });
+    el.innerHTML = cards.map(function (c) {
+      var e = A.map[C.keyOf(c.name)], others = e ? e.rows.filter(function (r) { return r.deckId !== d.id; }) : [];
+      var isCmd = d.commander && C.keyOf(d.commander) === C.keyOf(c.name);
+      return '<div class="crow">' + IMG.thumb(c.name, c.set, c.cn, d.id) + '<span class="qty">' + c.qty + '×</span><span class="nm">' + esc(c.name) + '</span>' +
+        (isCmd ? '<span class="tag cmd">commander</span>' : '') + (c.set ? '<span class="tag">' + esc(c.set) + (c.cn ? ' ' + esc(c.cn) : '') + '</span>' : '') +
+        (others.length ? '<span class="other">' + others.map(function (r) {
+          return '<span class="pill ' + (r.active ? 'use' : 'free') + '">anche in ' + esc(r.deckName) + ' ×' + r.qty + (r.active ? ' · in uso' : ' · libera') + '</span>';
+        }).join('') + '</span>' : '') + '</div>';
+    }).join('') || '<p class="hint">Nessuna carta trovata.</p>';
+    IMG.hydrate();
+  }
+
+  /* ---------- Upgrade ---------- */
+  function upgradeCard(d, u) {
+    var df = C.diffUpgrade(d, u, state.decks, state.settings);
+    return '<article class="deckcard"><div class="top"><div><h2>' + esc(u.name) + '</h2><div class="meta">' + plural(df.inQty, 'carta cambia', 'carte cambiano') + ' · ' + df.covered + ' già in archivio · ' + df.missing + ' da procurare</div></div></div>' +
+      '<div class="foot"><span></span><button class="btn small" data-a="open-up" data-id="' + esc(u.id) + '">Apri</button></div></article>';
+  }
+  function planHtml(plan) {
+    var n = function (a) { return a.reduce(function (t, x) { return t + x.qty; }, 0); };
+    var toL = n(plan.toLoose), fromL = n(plan.fromLoose), fromD = n(plan.fromDecks), li = [];
+    if (toL) li.push('<li><b>' + plural(toL, 'carta esce', 'carte escono') + '</b> dal mazzo e finisc' + (toL === 1 ? 'e' : 'ono') + ' nelle carte sciolte' + (plan.createdBinder ? ' (creo la lista «' + esc(plan.binderName) + '»)' : '') + '.</li>');
+    if (fromL) li.push('<li><b>' + plural(fromL, 'carta entra', 'carte entrano') + '</b> dalle carte sciolte: ' + (fromL === 1 ? 'smette' : 'smettono') + ' di essere sciolt' + (fromL === 1 ? 'a' : 'e') + '.</li>');
+    if (fromD) {
+      var by = {}; plan.fromDecks.forEach(function (x) { by[x.deckName] = (by[x.deckName] || 0) + x.qty; });
+      li.push('<li><b>' + plural(fromD, 'carta viene presa', 'carte vengono prese') + '</b> da mazzi non attivi: ' + Object.keys(by).map(function (k) { return esc(k) + ' (' + by[k] + ')'; }).join(', ') + '.</li>');
+    }
+    return '<div class="plan"><h3>Quando applichi</h3><ul>' + (li.join('') || '<li>Nessuno spostamento.</li>') + '</ul></div>';
+  }
+  function upChip(v, label, n) {
+    return '<button class="chip" data-a="up-st" data-v="' + v + '" aria-pressed="' + (ui.upSt === v) + '">' + label + '<i>' + n + '</i></button>';
+  }
+  function upgradeView() {
+    var d = getDeck(), u = d && d.upgrades.filter(function (x) { return x.id === ui.upId; })[0];
+    if (!d || !u) { ui.view = d ? 'deck' : 'decks'; return d ? deckView() : decksView(); }
+    var df = C.diffUpgrade(d, u, state.decks, state.settings);
+    var plan = C.applyUpgradeMoves(clone(state.decks), d.id, u.id, state.settings);
+    var aApply = armed('apply-up:' + u.id), aDel = armed('del-up:' + u.id);
+    var have = df.inn.filter(function (x) { return !x.missing; }).length, need = df.inn.length - have;
+    return '<header class="vh"><button class="back" data-a="back-deck">← ' + esc(d.name) + '</button><h1>' + esc(u.name) + '</h1></header>' +
+      '<section class="panel"><label class="lbl">Nome upgrade<input class="input" data-c="up-name" value="' + esc(u.name) + '"></label>' +
+      '<div class="sum"><div><b>' + df.inQty + '</b><span>carte cambiano</span></div><div class="g"><b>' + df.covered + '</b><span>già nel tuo archivio</span></div><div class="r"><b>' + df.missing + '</b><span>da procurare</span></div></div>' +
+      (df.commanderChange ? '<p class="warn">Il commander dell\'upgrade è diverso da quello del mazzo.</p>' : '') +
+      (df.outQty !== df.inQty ? '<p class="warn">Il nuovo mazzo ha ' + sum(u.cards) + ' carte contro le ' + sum(d.cards) + ' attuali.</p>' : '') +
+      planHtml(plan) +
+      '<div class="btns"><button class="btn primary" data-a="apply-up" data-cf="1" data-id="' + esc(u.id) + '">' + (aApply ? 'Conferma: applica al mazzo' : 'Applica al mazzo') + '</button>' +
+      '<button class="btn small" data-a="copy-up" data-id="' + esc(u.id) + '">Copia lista cambi</button>' +
+      '<button class="btn small danger' + (aDel ? ' armed' : '') + '" data-a="del-up" data-cf="1" data-id="' + esc(u.id) + '">' + (aDel ? 'Conferma eliminazione' : 'Elimina upgrade') + '</button></div>' +
+      '<p class="hint">Applica quando hai fatto lo scambio fisico: le carte tolte passano alle sciolte e la lista del mazzo diventa quella dell\'upgrade.</p></section>' +
+      '<div class="sticky"><div class="search">' + IC.search + '<input class="input" data-c="upq" type="search" inputmode="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Cerca una carta tra quelle che cambiano" aria-label="Cerca nell\'upgrade" value="' + esc(ui.upQ) + '"></div>' +
+      '<div class="chips" role="group" aria-label="Carte che entrano">' + upChip('all', 'Tutte', df.inn.length) + upChip('have', 'Già in archivio', have) + upChip('need', 'Da procurare', need) + '</div>' +
+      '<p class="hint">I filtri riguardano le carte che entrano.</p></div><div class="cols" id="upcols"></div>';
+  }
+  function upOutRow(x) {
+    return '<div class="up-row">' + IMG.thumb(x.name, x.set, x.cn) + '<span class="nm">' + esc(x.name) + '</span><span class="qty">' + x.qty + '×</span><span class="sm">Finisce nelle carte sciolte.</span></div>';
+  }
+  function upInRow(x) {
+    var st;
+    if (x.basic) st = '<span class="pill info">terra base</span><span class="sm">Considerata sempre disponibile.</span>';
+    else if (!x.missing) st = '<span class="pill free">Hai già ' + (x.qty > 1 ? 'tutte' : 'questa carta') + '</span><span class="sm">Libera in: ' + x.sources.map(function (s) { return esc(s.deckName) + (s.kind === 'binder' ? ' (sciolte)' : ''); }).join(', ') + '</span>';
+    else {
+      st = '<span class="pill use">Da procurare' + (x.qty > 1 ? ' ×' + x.missing : '') + '</span>';
+      var note = [];
+      if (x.covered) note.push('ne hai ' + x.covered + ' libere in ' + x.sources.map(function (s) { return esc(s.deckName); }).join(', '));
+      if (x.busyIn.length) note.push('in uso in ' + x.busyIn.map(function (s) { return esc(s.deckName); }).join(', '));
+      if (note.length) st += '<span class="sm">' + note.join(' · ') + '</span>';
+    }
+    return '<div class="up-row">' + IMG.thumb(x.name, x.set, x.cn) + '<span class="nm">' + esc(x.name) + '</span><span class="qty">' + x.qty + '×</span>' + st + '</div>';
+  }
+  function updateUpgradeCols() {
+    var el = $('#upcols'); if (!el) return;
+    var d = getDeck(), u = d && d.upgrades.filter(function (x) { return x.id === ui.upId; })[0]; if (!u) return;
+    var df = C.diffUpgrade(d, u, state.decks, state.settings), q = C.searchNorm(ui.upQ);
+    var match = function (x) { return !q || C.searchNorm(x.name).indexOf(q) >= 0; };
+    var outs = df.out.filter(match).sort(byName);
+    var inns = df.inn.filter(match).filter(function (x) { return ui.upSt === 'have' ? !x.missing : ui.upSt === 'need' ? x.missing > 0 : true; }).sort(byName);
+    var qsum = function (a) { return a.reduce(function (t, x) { return t + x.qty; }, 0); };
+    var none = function (all, whenEmpty) { return '<p class="hint">' + (all ? 'Nessuna corrispondenza.' : whenEmpty) + '</p>'; };
+    el.innerHTML = '<section class="col out"><h2>Esce dal mazzo <span class="qty">' + qsum(outs) + '</span></h2><div class="list">' + (outs.map(upOutRow).join('') || none(df.out.length, 'Nessuna carta esce.')) + '</div></section>' +
+      '<section class="col in"><h2>Entra nel mazzo <span class="qty">' + qsum(inns) + '</span></h2><div class="list">' + (inns.map(upInRow).join('') || none(df.inn.length, 'Nessuna carta entra.')) + '</div></section>';
+    IMG.hydrate();
+  }
+
+  /* ---------- Importazione ---------- */
+  function newDraft(mode, deckId) {
+    return { mode: mode, deckId: deckId || null, step: 1, name: '', text: '', parsed: null, commander: null, cq: '', active: true, error: '' };
+  }
+  function importView() {
+    var d = ui.draft || (ui.draft = newDraft('deck'));
+    if (d.step === 2) return importStep2(d);
+    var isUp = d.mode === 'upgrade', target = isUp ? getDeck(d.deckId) : null;
+    var title = isUp ? 'Nuovo upgrade' : 'Importa';
+    var seg = isUp ? '' : '<div class="seg" role="group" aria-label="Tipo"><button data-a="draft-mode" data-v="deck" aria-pressed="' + (d.mode === 'deck') + '">Mazzo Commander</button><button data-a="draft-mode" data-v="binder" aria-pressed="' + (d.mode === 'binder') + '">Carte sciolte</button></div>';
+    var help = isUp ? 'Incolla la lista completa aggiornata di «' + esc(target ? target.name : '') + '». Vedrai la differenza con il mazzo attuale.' :
+      d.mode === 'binder' ? 'Carte che non sono in nessun mazzo (classificatore, avanzi, carte tolte da un mazzo). Risultano sempre libere e ti avviso quando un nuovo mazzo le contiene.' :
+        'Una carta per riga, come «1 Sol Ring» oppure «1 Sol Ring (C21) 263» per indicare anche la collezione.';
+    return '<header class="vh">' + (isUp ? '<button class="back" data-a="back-deck">← ' + esc(target ? target.name : 'Mazzo') + '</button>' : '') + '<h1>' + title + '</h1><p class="sub">' + help + '</p></header>' +
+      '<section class="panel">' + seg +
+      '<label class="lbl">' + (isUp ? 'Nome upgrade' : 'Nome') + '<input class="input" data-c="draft-name" placeholder="' + (isUp ? 'es. Upgrade autunno' : d.mode === 'binder' ? 'es. Carte sciolte' : 'es. Kaalia') + '" value="' + esc(d.name) + '"></label>' +
+      '<label class="lbl">Lista .txt<textarea class="textarea" data-c="draft-text" spellcheck="false" placeholder="1 Sol Ring\n1 Command Tower\n8 Mountain\n...">' + esc(d.text) + '</textarea></label>' +
+      '<label class="lbl">Oppure scegli un file<input class="input" type="file" data-c="draft-file" accept=".txt,text/plain"></label>' +
+      (d.error ? '<p class="err" role="alert">' + esc(d.error) + '</p>' : '') +
+      '<div class="btns"><button class="btn primary" data-a="draft-next">' + (d.mode === 'deck' ? 'Avanti: scegli il commander' : isUp ? 'Crea upgrade' : 'Importa carte') + '</button></div></section>';
+  }
+  function cmdListHtml(d) {
+    var q = C.searchNorm(d.cq), hints = d.parsed.hints.map(C.keyOf);
+    var cards = d.parsed.cards.slice().sort(function (a, b) {
+      var ha = hints.indexOf(C.keyOf(a.name)) >= 0 ? 0 : 1, hb = hints.indexOf(C.keyOf(b.name)) >= 0 ? 0 : 1;
+      return ha - hb || byName(a, b);
+    }).filter(function (c) { return !q || C.searchNorm(c.name).indexOf(q) >= 0; });
+    var row = function (val, label, checked, tag) {
+      return '<label class="opt"><input type="radio" name="cmd" data-c="cmd" value="' + esc(val) + '"' + (checked ? ' checked' : '') + '><span class="nm">' + esc(label) + '</span>' + (tag ? '<span class="pill info">' + tag + '</span>' : '') + '</label>';
+    };
+    return (q ? '' : row('', 'Nessun commander', !d.commander)) + cards.map(function (c) {
+      return row(c.name, c.name, d.commander === c.name, hints.indexOf(C.keyOf(c.name)) >= 0 ? 'suggerito' : '');
+    }).join('');
+  }
+  function reuseBanner(cards) {
+    var r = C.findReusable(cards, state.decks, state.settings);
+    var loose = r.filter(function (x) { return x.loose > 0; });
+    var inact = r.filter(function (x) { return x.inactive.length > 0; });
+    var h = '';
+    if (loose.length) {
+      h += '<div class="reuse"><p><b>CODIGHEL!</b> Queste carte le hai già stampate, verifica prima di stampare nuovamente:</p><ul>' + loose.map(function (x) {
+        return '<li><span class="qty">' + x.looseCovered + '×</span> ' + esc(x.name) + (x.loose < x.need ? '<span class="sm"> (ne servono ' + x.need + ', ne hai ' + x.loose + ' sciolte)</span>' : '') + '</li>';
+      }).join('') + '</ul></div>';
+    }
+    if (inact.length) {
+      h += '<details class="reuse alt"><summary>' + plural(inact.length, 'carta', 'carte') + ' libere anche in mazzi non attivi</summary><ul>' + inact.map(function (x) {
+        return '<li>' + esc(x.name) + '<span class="sm"> in ' + x.inactive.map(function (i) { return esc(i.deckName); }).join(', ') + '</span></li>';
+      }).join('') + '</ul></details>';
+    }
+    return h;
+  }
+  function importStep2(d) {
+    var p = d.parsed;
+    return '<header class="vh"><button class="back" data-a="draft-back">← Lista</button><h1>Scegli il commander</h1><p class="sub"><b>' + p.total + '</b> carte (' + p.unique + ' diverse)' + (p.excluded ? ' · ' + p.excluded + ' escluse (sideboard)' : '') + '</p></header>' +
+      '<section class="panel">' +
+      (p.total !== 100 ? '<p class="warn">La lista ha ' + p.total + ' carte: un mazzo Commander di solito ne ha 100. Puoi importarla lo stesso.</p>' : '') +
+      (p.warnings.length ? '<p class="warn">' + plural(p.warnings.length, 'riga non letta', 'righe non lette') + ': ' + esc(p.warnings.slice(0, 3).join(' | ')) + (p.warnings.length > 3 ? '…' : '') + '</p>' : '') +
+      reuseBanner(p.cards) +
+      '<div class="search">' + IC.search + '<input class="input" data-c="cmd-q" type="search" placeholder="Cerca il commander nella lista" autocomplete="off" aria-label="Cerca il commander" value="' + esc(d.cq) + '"></div>' +
+      '<div class="pick" id="cmdlist" role="radiogroup" aria-label="Commander">' + cmdListHtml(d) + '</div>' +
+      '<label class="switch"><input type="checkbox" data-c="draft-active"' + (d.active ? ' checked' : '') + '><span class="tr"></span><span>Mazzo attivo (montato adesso)</span></label>' +
+      '<div class="btns"><button class="btn primary" data-a="draft-create">Crea mazzo</button></div></section>';
+  }
+  function draftNext() {
+    var d = ui.draft, p = C.parseList(d.text);
+    if (!p.cards.length) { d.error = 'Non ho trovato nessuna carta. Incolla una lista con righe tipo «1 Sol Ring».'; render(); return; }
+    d.error = ''; d.parsed = p;
+    if (d.mode === 'deck') { d.commander = p.hints[0] || null; d.step = 2; d.cq = ''; window.scrollTo(0, 0); render(); }
+    else draftCreate();
+  }
+  function draftCreate() {
+    var d = ui.draft, p = d.parsed, now = Date.now();
+    if (d.mode === 'upgrade') {
+      var deck = getDeck(d.deckId); if (!deck) return;
+      var up = { id: C.uid('u'), name: d.name.trim() || 'Upgrade ' + (deck.upgrades.length + 1), cards: p.cards, commander: null, createdAt: now };
+      deck.upgrades.push(up); deck.updatedAt = now; touch(deck.id);
+      ui.view = 'upgrade'; ui.deckId = deck.id; ui.upId = up.id; ui.upQ = ''; ui.upSt = 'all'; ui.draft = null;
+      toast('Upgrade creato: ' + plural(sum(p.cards), 'carta', 'carte')); window.scrollTo(0, 0); render(); return;
+    }
+    var kind = d.mode === 'binder' ? 'binder' : 'deck';
+    var nd = {
+      id: C.uid('d'), name: d.name.trim() || (kind === 'binder' ? 'Carte sciolte' : d.commander || 'Nuovo mazzo'), kind: kind,
+      active: kind === 'deck' && d.active, commander: kind === 'deck' ? (d.commander || null) : null,
+      cards: p.cards, upgrades: [], createdAt: now, updatedAt: now
+    };
+    state.decks.push(nd); touch(nd.id);
+    if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch (e) { /* ignorato */ } }
+    ui.view = kind === 'deck' ? 'deck' : 'archive'; ui.deckId = nd.id; ui.deckTab = 'cards'; ui.deckQ = ''; ui.draft = null;
+    toast((kind === 'deck' ? 'Mazzo creato' : 'Carte aggiunte') + ': ' + plural(sum(p.cards), 'carta', 'carte')); window.scrollTo(0, 0); render();
+  }
+
+  /* ---------- Dati ---------- */
+  function exportJson() { return JSON.stringify({ app: 'coglio-proxy-archive', version: 1, exportedAt: new Date().toISOString(), decks: state.decks, settings: state.settings }, null, 1); }
+  function storageLabel() {
+    return { claude: 'Salvati nel tuo spazio privato di Claude, sincronizzati sui tuoi dispositivi.', idb: 'Salvati su questo dispositivo (archivio del browser). Fai backup ogni tanto.', local: 'Salvati su questo dispositivo (archivio del browser). Fai backup ogni tanto.', memory: 'Salvataggio non disponibile: i dati si perdono alla chiusura. Esporta un backup.' }[store ? store.kind : 'memory'];
+  }
+  function imagesHint() {
+    if (store && store.kind === 'claude') return 'Dentro la pagina di Claude le immagini esterne sono bloccate. Appaiono nell\'app per Windows, nell\'APK e nella versione web installata.';
+    if (state.settings.images === false) return 'Immagini spente: nelle liste vedi solo i nomi.';
+    return 'Le miniature arrivano da Scryfall, servono internet la prima volta e restano ricordate sul dispositivo' + (IMG.count() ? ' (' + plural(IMG.count(), 'carta', 'carte') + (IMG.count() === 1 ? ' già salvata)' : ' già salvate)') + '.' : '.') + ' Tocca una miniatura per ingrandirla.';
+  }
+  function dataView() {
+    var armedReset = armed('reset');
+    return '<header class="vh"><h1>Dati</h1><p class="sub">' + esc(storageLabel()) + '</p></header>' +
+      '<section class="panel"><h2 class="sect" style="margin:0">Impostazioni</h2>' +
+      '<label class="lbl">Tema<select class="select" data-c="theme"><option value="auto"' + (state.settings.theme === 'auto' ? ' selected' : '') + '>Automatico</option><option value="light"' + (state.settings.theme === 'light' ? ' selected' : '') + '>Chiaro</option><option value="dark"' + (state.settings.theme === 'dark' ? ' selected' : '') + '>Scuro</option></select></label>' +
+      '<label class="switch"><input type="checkbox" data-c="basics"' + (state.settings.basicsUnlimited ? ' checked' : '') + '><span class="tr"></span><span>Terre base sempre disponibili negli upgrade</span></label>' +
+      '<label class="switch"><input type="checkbox" data-c="images"' + (state.settings.images !== false ? ' checked' : '') + '><span class="tr"></span><span>Mostra le immagini delle carte</span></label>' +
+      '<p class="hint">' + imagesHint() + '</p>' +
+      (IMG.enabled() && IMG.count() ? '<div class="btns"><button class="btn small" data-a="img-clear">Cancella le immagini salvate</button></div>' : '') + '</section>' +
+      '<section class="panel"><h2 class="sect" style="margin:0">Backup</h2><p class="hint">Un file JSON con tutti i mazzi, gli upgrade e le impostazioni.</p>' +
+      '<div class="btns"><button class="btn" data-a="dl-json">Scarica backup</button><button class="btn" data-a="copy-json">Copia backup</button></div>' +
+      (ui.backupOut ? '<textarea class="textarea out-ta mono" readonly aria-label="Backup">' + esc(ui.backupOut) + '</textarea>' : '') +
+      '<label class="lbl">Ripristina da backup<textarea class="textarea out-ta mono" data-c="restore-text" placeholder="Incolla qui il JSON del backup">' + esc(ui.restoreText) + '</textarea></label>' +
+      '<label class="lbl">Oppure scegli il file<input class="input" type="file" data-c="restore-file" accept=".json,application/json"></label>' +
+      (ui.dataMsg ? '<p class="' + (ui.dataMsg.indexOf('Errore') === 0 ? 'err' : 'hint') + '" role="status">' + esc(ui.dataMsg) + '</p>' : '') +
+      '<div class="btns"><button class="btn" data-a="restore-json">Ripristina (sostituisce tutto)</button></div></section>' +
+      '<section class="panel"><h2 class="sect" style="margin:0">Zona rischiosa</h2><div class="btns"><button class="btn danger' + (armedReset ? ' armed' : '') + '" data-a="reset-all" data-cf="1">' + (armedReset ? 'Conferma: cancella tutto' : 'Cancella tutti i dati') + '</button></div></section>' +
+      '<p class="hint" style="margin-top:18px">Coglio Proxy Archive · le carte vengono riconosciute per nome: collezione e numero servono solo a ritrovare la stampa. Immagini e dati delle carte: Scryfall. Le carte Magic sono © Wizards of the Coast.</p>';
+  }
+  function readFile(file, cb) {
+    var r = new FileReader(); r.onload = function () { cb(String(r.result || '')); };
+    r.onerror = function () { toast('Non riesco a leggere il file.'); }; r.readAsText(file);
+  }
+
+  /* ---------- Eventi ---------- */
+  document.addEventListener('click', function (e) {
+    var th = e.target.closest('.th.on');
+    if (th) { IMG.open(th); return; }
+    var el = e.target.closest('[data-a]'); if (!el) return;
+    var a = el.dataset.a, id = el.dataset.id;
+    if (!el.dataset.cf) ui.confirm = null;
+    var deck;
+    switch (a) {
+      case 'nav': go(el.dataset.v); break;
+      case 'undo': if (TOAST._undo) { TOAST._undo(); TOAST.hidden = true; } break;
+      case 'st': ui.st = el.dataset.v; ui.limit = 150; render(); break;
+      case 'more': ui.limit += 150; updateArchiveList(); break;
+      case 'toggle-card': ui.open[el.dataset.k] = !ui.open[el.dataset.k]; updateArchiveList(); break;
+      case 'open-deck': ui.view = 'deck'; ui.deckId = id; ui.deckTab = 'cards'; ui.deckQ = ''; window.scrollTo(0, 0); render(); break;
+      case 'deck-tab': ui.deckTab = el.dataset.v; render(); break;
+      case 'back-deck': ui.view = 'deck'; ui.deckTab = 'ups'; window.scrollTo(0, 0); render(); break;
+      case 'del-deck':
+        confirmThen('del-deck:' + id, function () {
+          var d = getDeck(id); mutate('Mazzo eliminato: ' + (d ? d.name : ''), function () { state.decks = state.decks.filter(function (x) { return x.id !== id; }); });
+          ui.view = 'decks'; render();
+        }); break;
+      case 'copy-deck': deck = getDeck(); if (deck) copyText(C.exportText(deck)).then(function (ok) { toast(ok ? 'Lista copiata negli appunti.' : 'Copia non riuscita.'); }); break;
+      case 'new-up': ui.draft = newDraft('upgrade', ui.deckId); ui.view = 'import'; window.scrollTo(0, 0); render(); break;
+      case 'up-st': ui.upSt = el.dataset.v; render(); break;
+      case 'open-up': ui.upId = id; ui.upQ = ''; ui.upSt = 'all'; ui.view = 'upgrade'; window.scrollTo(0, 0); render(); break;
+      case 'apply-up':
+        confirmThen('apply-up:' + id, function () {
+          var rep;
+          mutate(function () {
+            var n = rep ? rep.toLoose.reduce(function (t, x) { return t + x.qty; }, 0) : 0;
+            return 'Upgrade applicato: ' + plural(n, 'carta tolta è finita', 'carte tolte sono finite') + ' nelle sciolte.';
+          }, function () { rep = C.applyUpgradeMoves(state.decks, ui.deckId, id, state.settings); });
+          ui.view = 'deck'; ui.deckTab = 'cards'; window.scrollTo(0, 0); render();
+        }); break;
+      case 'del-up':
+        confirmThen('del-up:' + id, function () {
+          mutate('Upgrade eliminato.', function () { var d = getDeck(); d.upgrades = d.upgrades.filter(function (x) { return x.id !== id; }); });
+          ui.view = 'deck'; ui.deckTab = 'ups'; render();
+        }); break;
+      case 'copy-up':
+        deck = getDeck();
+        var up = deck && deck.upgrades.filter(function (x) { return x.id === id; })[0];
+        if (up) copyText(C.diffText(deck, up, C.diffUpgrade(deck, up, state.decks, state.settings))).then(function (ok) { toast(ok ? 'Lista dei cambi copiata.' : 'Copia non riuscita.'); });
+        break;
+      case 'draft-mode': ui.draft.mode = el.dataset.v; render(); break;
+      case 'draft-next': draftNext(); break;
+      case 'draft-back': ui.draft.step = 1; render(); break;
+      case 'draft-create': draftCreate(); break;
+      case 'dl-json':
+        ui.backupOut = '';
+        download('coglio-proxy-archive-backup.json', exportJson(), 'application/json').then(function (r) {
+          if (r === 'declined') return;
+          toast(r ? 'Backup pronto.' : 'Download non disponibile qui: usa «Copia backup».');
+        }); break;
+      case 'copy-json':
+        copyText(exportJson()).then(function (ok) {
+          if (ok) toast('Backup copiato negli appunti.'); else { ui.backupOut = exportJson(); toast('Copia automatica non riuscita: seleziona il testo qui sotto.'); render(); }
+        }); break;
+      case 'restore-json': restore(ui.restoreText); break;
+      case 'lb-close': IMG.close(); break;
+      case 'lb-flip': IMG.flip(); break;
+      case 'lb-prints': IMG.prints(); break;
+      case 'lb-back': IMG.back(); break;
+      case 'lb-pick': IMG.pick(el.dataset.s, el.dataset.n); break;
+      case 'lb-keep': break;
+      case 'img-clear': IMG.clear(); toast('Immagini salvate cancellate: le riscarico quando servono.'); render(); break;
+      case 'reset-all':
+        confirmThen('reset', function () { mutate('Tutti i dati cancellati.', function () { state.decks = []; }); render(); }); break;
+    }
+  });
+
+  function restore(text) {
+    var o;
+    try { o = JSON.parse(text); } catch (err) { ui.dataMsg = 'Errore: il testo non è un JSON valido.'; render(); return; }
+    var decks = o && (Array.isArray(o.decks) ? o.decks : o.state && o.state.decks);
+    if (!Array.isArray(decks)) { ui.dataMsg = 'Errore: non sembra un backup di Coglio Proxy Archive.'; render(); return; }
+    mutate('Backup ripristinato: ' + plural(decks.length, 'mazzo', 'mazzi') + '.', function () {
+      state.decks = decks.map(C.sanitizeDeck); state.settings = C.sanitizeSettings(o.settings || (o.state && o.state.settings)); applyTheme();
+    });
+    ui.dataMsg = ''; ui.restoreText = ''; render();
+  }
+
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && IMG.isOpen()) IMG.close(); });
+  document.addEventListener('mousemove', function (ev) {
+    var t = ev.target.closest && ev.target.closest('.th.on');
+    IMG.hover(!!t, t, ev);
+  });
+  window.addEventListener('scroll', function () { IMG.hover(false); }, true);
+
+  document.addEventListener('input', function (e) {
+    var c = e.target.dataset && e.target.dataset.c; if (!c) return;
+    if (c === 'q') { ui.q = e.target.value; ui.limit = 150; updateArchiveList(); }
+    else if (c === 'upq') { ui.upQ = e.target.value; updateUpgradeCols(); }
+    else if (c === 'deckq') { ui.deckQ = e.target.value; updateDeckList(); }
+    else if (c === 'draft-text') ui.draft.text = e.target.value;
+    else if (c === 'draft-name') ui.draft.name = e.target.value;
+    else if (c === 'restore-text') ui.restoreText = e.target.value;
+    else if (c === 'cmd-q') { ui.draft.cq = e.target.value; $('#cmdlist').innerHTML = cmdListHtml(ui.draft); }
+  });
+
+  document.addEventListener('change', function (e) {
+    var t = e.target, c = t.dataset && t.dataset.c; if (!c) return;
+    var d;
+    switch (c) {
+      case 'fdeck': ui.fdeck = t.value; ui.limit = 150; render(); break;
+      case 'fset': ui.fset = t.value; ui.limit = 150; render(); break;
+      case 'sort': ui.sort = t.value; render(); break;
+      case 'nobasic': ui.nobasic = t.checked; ui.limit = 150; render(); break;
+      case 'active':
+        d = getDeck(t.dataset.id);
+        if (d) {
+          d.active = t.checked; d.updatedAt = Date.now(); touch(d.id);
+          toast(t.checked ? d.name + ' attivo: le sue ' + sum(d.cards) + ' carte risultano in uso.' : d.name + ' non attivo: le sue carte tornano libere.');
+          render();
+        } break;
+      case 'deck-name': d = getDeck(); if (d && t.value.trim()) { d.name = t.value.trim(); d.updatedAt = Date.now(); touch(d.id); render(); } break;
+      case 'deck-cmd': d = getDeck(); if (d) { d.commander = t.value || null; d.updatedAt = Date.now(); touch(d.id); render(); } break;
+      case 'up-name':
+        d = getDeck();
+        var u = d && d.upgrades.filter(function (x) { return x.id === ui.upId; })[0];
+        if (u && t.value.trim()) { u.name = t.value.trim(); touch(d.id); render(); } break;
+      case 'cmd': ui.draft.commander = t.value || null; break;
+      case 'draft-active': ui.draft.active = t.checked; break;
+      case 'draft-file':
+        if (t.files && t.files[0]) {
+          var f = t.files[0];
+          readFile(f, function (txt) { ui.draft.text = txt; if (!ui.draft.name) ui.draft.name = f.name.replace(/\.[^.]+$/, ''); render(); });
+        } break;
+      case 'restore-file':
+        if (t.files && t.files[0]) readFile(t.files[0], function (txt) { ui.restoreText = txt; render(); }); break;
+      case 'theme': state.settings.theme = t.value; applyTheme(); touchSettings(); break;
+      case 'basics': state.settings.basicsUnlimited = t.checked; touchSettings(); break;
+      case 'images': state.settings.images = t.checked; touchSettings(); render(); break;
+    }
+  });
+
+  /* ---------- Avvio ---------- */
+  function boot() {
+    APP.innerHTML = '<p class="sub" style="padding:40px 16px">Carico l\'archivio…</p>';
+    initStore().then(function (s) {
+      store = s;
+      return s.load().catch(function () {
+        return makeIdbStore().catch(function () { try { return makeLocalStore(); } catch (e) { return makeMemoryStore(); } })
+          .then(function (s2) { store = s2; return s2.load(); });
+      });
+    }).then(function (data) {
+      state.decks = (data.decks || []).map(C.sanitizeDeck);
+      state.settings = C.sanitizeSettings(data.settings);
+      archCache = null; applyTheme(); render();
+    }).catch(function () { store = makeMemoryStore(); render(); });
+  }
+  boot();
+})();
+
+</script>

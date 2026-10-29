@@ -1,0 +1,33 @@
+{
+  "name": "coglio-proxy-archive",
+  "productName": "Coglio Proxy Archive",
+  "version": "1.0.0",
+  "description": "Archivio delle tue carte Magic e dei tuoi mazzi attivi.",
+  "main": "main.js",
+  "author": "Coglio",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "pack:win": "electron-packager . \"Coglio Proxy Archive\" --platform=win32 --arch=x64 --out=dist --overwrite --ignore=^/node_modules --ignore=^/dist",
+    "dist:win": "electron-builder --win nsis portable --x64"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "it.coglio.proxyarchive",
+    "productName": "Coglio Proxy Archive",
+    "files": [
+      "main.js",
+      "web/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "icon": "web/icons/icon-512.png"
+    }
+  }
+}

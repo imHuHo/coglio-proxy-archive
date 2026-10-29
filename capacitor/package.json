@@ -1,0 +1,16 @@
+{
+  "name": "coglio-proxy-archive-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "sync": "cap sync",
+    "android": "cap add android && cap sync android && cap open android",
+    "ios": "cap add ios && cap sync ios && cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/ios": "^6.1.2"
+  }
+}
