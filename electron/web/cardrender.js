@@ -268,14 +268,25 @@
   }
   function costTokens(cost) { var out = [], re = /\{([^}]{1,6})\}/g, m; while ((m = re.exec(String(cost || '')))) out.push(m[1]); return out; }
 
+  /* colore del testo per zona dalle cornici importate (es. Card Conjurer: titolo bianco su barra scura, regole nere) */
+  function zoneInk(user, zone, fallback) {
+    if (!user || !user.colors) return fallback;
+    var c = user.colors[zone];
+    if (!c) return zone === 'rules' && user.ink === 'light' ? '#f4f1f6' : '#14110f';
+    return c === 'white' ? '#ffffff' : c === 'black' ? '#14110f' : c;
+  }
+  function lightInk(c) { return /^#(f|e|d)/i.test(c) || c === '#ffffff' || c === 'white'; }
+  function shade(ctx, on) { if (on) { ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1.5; } else { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; } }
   function drawTitle(ctx, d, L, pal, over, user) {
-    var r = L.title, ink = over || (user && user.ink === 'light') ? '#ffffff' : pal.ink;
+    var r = L.title, ink = zoneInk(user, 'title', over || (user && user.ink === 'light') ? '#ffffff' : pal.ink);
     var costs = L.noCost ? [] : costTokens(d.cost), sd = 34, cw = costs.length * (sd + 2);
     var maxW = r[2] - 34 - (cw ? cw + 14 : 0);
     var name = String(d.name || ''), size = fitLine(ctx, name, F_TITLE, 700, 36, 17, maxW);
     ctx.font = '700 ' + size + 'px ' + F_TITLE; ctx.fillStyle = ink; ctx.textBaseline = 'middle';
-    if (L.center) { ctx.textAlign = 'center'; ctx.fillText(name, r[0] + r[2] / 2, r[1] + r[3] / 2 + 2); }
+    ctx.save(); shade(ctx, !!user && lightInk(ink));
+    if (L.center || (user && user.center)) { ctx.textAlign = 'center'; ctx.fillText(name, r[0] + r[2] / 2, r[1] + r[3] / 2 + 2); }
     else { ctx.textAlign = 'left'; ctx.fillText(name, r[0] + 20, r[1] + r[3] / 2 + 2); }
+    ctx.restore();
     var x = r[0] + r[2] - 14 - cw + 1;
     costs.forEach(function (c, i) { drawSymbol(ctx, c, x + i * (sd + 2) + sd / 2, r[1] + r[3] / 2, sd); });
   }
@@ -291,17 +302,18 @@
     return keys.map(function (k) { return o[k]; }).filter(Boolean);
   }
   function drawType(ctx, d, L, pal, over, user) {
-    var r = L.type, ink = over || (user && user.ink === 'light') ? '#ffffff' : pal.ink;
+    var r = L.type, ink = zoneInk(user, 'type', over || (user && user.ink === 'light') ? '#ffffff' : pal.ink);
+    if (!r || r[3] < 10) return;
     var gem = L.walker || L.saga || true;
     var sh = user && d.pips ? 38 : 0, maxW = r[2] - 40 - sh - (gem ? 52 : 0);
     var size = fitLine(ctx, String(d.type || ''), F_TITLE, 700, 30, 15, maxW);
     ctx.font = '700 ' + size + 'px ' + F_TITLE; ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(String(d.type || ''), r[0] + 20 + sh, r[1] + r[3] / 2 + 2);
+    ctx.save(); shade(ctx, !!user && lightInk(ink)); ctx.fillText(String(d.type || ''), r[0] + 20 + sh, r[1] + r[3] / 2 + 2); ctx.restore();
     if (gem) setGem(ctx, r[0] + r[2] - 34, r[1] + r[3] / 2, d.rarity, !over);
   }
   function drawRulesBox(ctx, d, L, pal, over, user) {
     var r = L.box, x = r[0], y = r[1], w = r[2], h = r[3];
-    var ink = over || (user && user.ink === 'light') ? '#f4f1f6' : pal.ink;
+    var ink = zoneInk(user, 'rules', over || (user && user.ink === 'light') ? '#f4f1f6' : pal.ink);
     if (!user) {
       ctx.save(); rr(ctx, x, y, w, h, 10);
       if (over) { ctx.fillStyle = 'rgba(14,12,18,0.7)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.stroke(); }
@@ -322,13 +334,15 @@
     var padX = 22, padY = 16, iw = w - padX * 2, ih = h - padY * 2;
     var f = fit(ctx, tokenize(d.rules), String(d.flavor || '').trim() ? tokenize(d.flavor) : null, iw, ih, L.center ? 34 : 33, 15, F_BODY);
     var top = y + padY + Math.max(0, (ih - f.h) / 2);
+    ctx.save(); shade(ctx, !!user && lightInk(ink));
     var align = L.center ? 'center' : 'left', yy = drawLayout(ctx, f.a, x + padX, top, ink, align, iw);
     if (f.b) {
       yy += f.sep * 0.15;
-      ctx.strokeStyle = over ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.5;
+      ctx.strokeStyle = over || lightInk(ink) ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(x + w * 0.3, yy + f.sep * 0.3); ctx.lineTo(x + w * 0.7, yy + f.sep * 0.3); ctx.stroke();
       drawLayout(ctx, f.b, x + padX, yy + f.sep * 0.7, ink, align, iw);
     }
+    ctx.restore();
   }
   function drawPT(ctx, d, L, pal, over, user) {
     if (!L.pt || !String(d.pt || '').trim()) return;
@@ -345,7 +359,7 @@
       if (!(user && user.pt)) { rr(ctx, r[0], r[1], r[2], r[3], 14); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
       ctx.fillStyle = over ? 'rgba(14,12,18,0.85)' : vgrad(ctx, r[1], r[3], mix(pal.bar, '#ffffff', 0.35), mix(pal.bar, pal.a, 0.3)); ctx.fill(); ctx.shadowColor = 'transparent';
       ctx.lineWidth = 3.5; ctx.strokeStyle = over ? 'rgba(255,255,255,0.45)' : pal.edge; ctx.stroke(); }
-      var s2 = fitLine(ctx, txt, F_TITLE, 700, 38, 18, r[2] - 28); ctx.font = '700 ' + s2 + 'px ' + F_TITLE; ctx.fillStyle = over || (user && user.pt && user.ink === 'light') ? '#fff' : (user && user.pt ? (d.darkpt ? '#ffffff' : '#14110f') : pal.ink); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      var s2 = fitLine(ctx, txt, F_TITLE, 700, 38, 18, r[2] - 28); ctx.font = '700 ' + s2 + 'px ' + F_TITLE; ctx.fillStyle = d.darkpt && user ? '#ffffff' : zoneInk(user, 'pt', over || (user && user.pt && user.ink === 'light') ? '#fff' : (user && user.pt ? '#14110f' : pal.ink)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(txt, r[0] + r[2] / 2, r[1] + r[3] / 2 + 2);
     }
     ctx.restore();
@@ -375,28 +389,32 @@
   function drawWalkerBox(ctx, d, L, pal, user) {
     var r = L.box, ab = parseWalker(d.rules), n = Math.max(1, ab.length);
     var x = r[0], y = r[1], w = r[2], h = r[3];
-    ctx.save(); rr(ctx, x, y, w, h, 10); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
-    ctx.fillStyle = vgrad(ctx, y, h, '#2a2530', '#17131c'); ctx.fill(); ctx.shadowColor = 'transparent'; ctx.lineWidth = 3; ctx.strokeStyle = pal.glow; ctx.stroke(); ctx.restore();
+    /* con una cornice importata il riquadro è già nella cornice: niente pannello, costi a sinistra del testo */
+    var ink = user ? zoneInk(user, 'rules', '#14110f') : '#f4f1f6', ix = user ? x - 40 : x + 62, tx = user ? x + 22 : x + 112, tw = user ? w - 44 : w - 150;
+    if (!user) {
+      ctx.save(); rr(ctx, x, y, w, h, 10); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+      ctx.fillStyle = vgrad(ctx, y, h, '#2a2530', '#17131c'); ctx.fill(); ctx.shadowColor = 'transparent'; ctx.lineWidth = 3; ctx.strokeStyle = pal.glow; ctx.stroke(); ctx.restore();
+    }
     var rowH = (h - 12) / n, size = 33;
     for (; size >= 15; size--) {
       var ok = true;
-      for (var i = 0; i < ab.length; i++) { var l = layout(ctx, tokenize(ab[i].text), w - 150, size, F_BODY, false); if (l.h > rowH - 14) { ok = false; break; } }
+      for (var i = 0; i < ab.length; i++) { var l = layout(ctx, tokenize(ab[i].text), tw, size, F_BODY, false); if (l.h > rowH - 14) { ok = false; break; } }
       if (ok) break;
     }
     ab.forEach(function (a, i) {
       var ry = y + 6 + i * rowH;
-      if (i) { ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x + 14, ry); ctx.lineTo(x + w - 14, ry); ctx.stroke(); }
+      if (i) { ctx.strokeStyle = user && !lightInk(ink) ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x + 14, ry); ctx.lineTo(x + w - 14, ry); ctx.stroke(); }
       if (a.cost) {
         var pos = a.cost[0] === '+', neg = a.cost[0] === '−';
-        ctx.save(); ctx.translate(x + 62, ry + rowH / 2); ctx.beginPath();
+        ctx.save(); ctx.translate(ix, ry + rowH / 2); if (user) ctx.scale(0.8, 0.8); ctx.beginPath();
         if (pos) { ctx.moveTo(-34, 14); ctx.lineTo(0, -30); ctx.lineTo(34, 14); ctx.lineTo(24, 24); ctx.lineTo(-24, 24); }
         else if (neg) { ctx.moveTo(-34, -14); ctx.lineTo(0, 30); ctx.lineTo(34, -14); ctx.lineTo(24, -24); ctx.lineTo(-24, -24); }
         else { rr(ctx, -30, -22, 60, 44, 10); }
         ctx.closePath(); ctx.fillStyle = pal.b; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = pal.glow; ctx.stroke();
         ctx.fillStyle = '#fff'; ctx.font = '700 28px ' + F_TITLE; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(a.cost, 0, pos ? 6 : neg ? -6 : 0); ctx.restore();
       }
-      var lay = layout(ctx, tokenize(a.text), w - 150, size, F_BODY, false);
-      drawLayout(ctx, lay, x + 112, ry + (rowH - lay.h) / 2, '#f4f1f6', 'left', w - 150);
+      var lay = layout(ctx, tokenize(a.text), tw, size, F_BODY, false);
+      ctx.save(); shade(ctx, !!user && lightInk(ink)); drawLayout(ctx, lay, tx, ry + (rowH - lay.h) / 2, ink, 'left', tw); ctx.restore();
     });
   }
   function parseSaga(text) {
@@ -433,7 +451,7 @@
   /* ---------- carta intera ---------- */
   function render(ctx, d, assets, opt) {
     assets = assets || {}; opt = opt || {};
-    var L = LAYOUT[d.frame] || LAYOUT.classic, pk = paletteKey(d), pal = PAL[pk], user = assets.frameImg ? { ink: d.ink === 'light' ? 'light' : 'dark', pt: !!assets.ptImg } : null;
+    var L = LAYOUT[d.frame] || LAYOUT.classic, pk = paletteKey(d), pal = PAL[pk], user = assets.frameImg ? { ink: d.ink === 'light' ? 'light' : 'dark', pt: !!assets.ptImg, colors: (assets.frameGeo && assets.frameGeo.colors) || null, center: !!(assets.frameGeo && assets.frameGeo.titleAlign === 'center') } : null;
     /* una cornice importata può portare la propria geometria (zona arte, barre, riquadri): sostituisce quella della cornice disegnata */
     if (user && assets.frameGeo) { var G = assets.frameGeo, L2 = {}; Object.keys(L).forEach(function (k) { L2[k] = L[k]; }); ['art', 'title', 'type', 'box', 'pt', 'info'].forEach(function (k) { if (G[k]) L2[k] = G[k]; }); L = L2; }
     var over = !!L.over && !user, square = opt.square || d.corners === 'square';
@@ -485,7 +503,7 @@
       drawTitle(ctx, d, L, pal, over, user); drawType(ctx, d, L, pal, over, user);
       if (L.walker) drawWalkerBox(ctx, d, L, pal, user);
       else if (L.saga) drawSagaBox(ctx, d, L, pal);
-      else drawRulesBox(ctx, d, L, pal, over, user);
+      else if (L.box && L.box[3] >= 10) drawRulesBox(ctx, d, L, pal, over, user);
       drawPT(ctx, d, L, pal, over, user);
       drawInfo(ctx, d, L, pal, over || !!user || pk === 'B' || pk === 'U' || pk === 'R' || pk === 'G' || pk === 'L');
     }

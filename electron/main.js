@@ -49,6 +49,13 @@ ipcMain.handle('cpa:update', async (event, url) => {
 
 ipcMain.handle('cpa:quit', () => { app.quit(); return true; });
 
+/* Risorse incluse nell'app (risorse.json): la pagina è aperta da file:// e lì fetch() non funziona, quindi le legge Electron.
+   Solo nomi semplici dentro la cartella web. */
+ipcMain.handle('cpa:resource', async (_event, name) => {
+  if (typeof name !== 'string' || !/^[a-z0-9_-]+\.json$/i.test(name)) return null;
+  try { return await require('fs').promises.readFile(path.join(__dirname, 'web', name), 'utf8'); } catch (e) { return null; }
+});
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1100, height: 780, minWidth: 380, minHeight: 560,

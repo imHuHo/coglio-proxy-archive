@@ -6,10 +6,12 @@ const WEB = path.join(__dirname, '..', 'web');
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/json' };
 let n = 0; const ok = (c, m) => { n++; assert.ok(c, m); };
 
+const packFiles = {}; /* catalogo cornici simulato */
 let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipendere dai file veri */
 (async () => {
   const srv = http.createServer((q, r) => {
     let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html';
+    if (p.startsWith('/packs/')) { const b = packFiles[p]; if (!b) { r.writeHead(404); return r.end(); } r.writeHead(200, { 'Content-Type': p.endsWith('.json') ? 'application/json' : 'image/png' }); return r.end(b); }
     if (p === '/risorse.json') { if (bundleBody) { r.writeHead(200, { 'Content-Type': 'application/json' }); return r.end(bundleBody); } r.writeHead(404); return r.end(); }
     const f = path.join(WEB, p);
     if (!f.startsWith(WEB) || !fs.existsSync(f)) { r.writeHead(404); return r.end(); }
@@ -345,6 +347,32 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await page.waitForFunction(() => !/Cubo \(/.test(document.body.innerText));
   ok(await page.evaluate(() => CPADesigner.list().every(d => !d.folder)), 'cartella eliminata: i design restano, senza cartella');
   await page.click('[data-a="dz-f-pick"][data-v="*"]');
+
+  /* catalogo cornici */
+  packFiles['/packs/index.json'] = JSON.stringify({ app: 'coglio-catalog', version: 1, packs: [{ id: 'tst', name: 'Borderless di prova', category: 'Showcase', n: 2, bytes: 1000 }, { id: 'pw', name: 'Altro pacchetto', category: 'Planeswalker', n: 1, bytes: 1000, layout: 'planeswalker' }] });
+  packFiles['/packs/tst/pack.json'] = JSON.stringify({ app: 'coglio-frames', version: 1, groups: [{ id: 'cc-tst', name: 'Borderless di prova' }], frames: ['U', 'C'].map(k => ({ key: k, name: 'Prova ' + k, group: 'cc-tst', ink: 'light', geo: { art: [0, 0, 745, 959], title: [44, 54, 654, 56], type: [44, 589, 654, 56], box: [42, 639, 661, 331], pt: [576, 926, 130, 63], info: [46, 980], colors: { title: 'white', type: 'white', rules: 'white', pt: 'white' } }, png: k + '.webp', pt: null })) });
+  packFiles['/packs/tst/U.webp'] = framePng; packFiles['/packs/tst/C.webp'] = framePng; packFiles['/packs/tst/thumb.webp'] = framePng;
+  await page.click('[data-a="dz-catalog"]');
+  await page.waitForSelector('.dz-catitem');
+  ok(await page.locator('.dz-catitem').count() === 2, 'catalogo caricato');
+  await page.fill('[data-c="dz-catq"]', 'borderless');
+  ok(await page.locator('.dz-catitem:not([hidden])').count() === 1, 'la ricerca filtra il catalogo');
+  await page.click('[data-a="dz-cat-add"][data-id="tst"]');
+  await page.waitForFunction(() => CPADesigner.state.frames.filter(f => f.group === 'cc-tst').length === 2);
+  await page.waitForSelector('[data-a="dz-cat-del"][data-id="tst"]');
+  ok(true, 'pacchetto del catalogo aggiunto');
+  await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item');
+  await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
+  ok((await page.innerHTML('[data-c="dz-frameimg"]')).includes('auto:cc-tst'), 'il pacchetto compare nel menu delle cornici');
+  const bc = await full();
+  await page.selectOption('[data-c="dz-frameimg"]', 'auto:cc-tst'); await page.waitForTimeout(400);
+  ok((await full()) !== bc, 'la cornice del catalogo cambia l\u2019anteprima');
+  ok(await page.evaluate(() => CPADesigner.state.cur.ink) === 'light', 'il colore del testo segue la cornice');
+  await page.click('[data-a="dz-back"]'); await page.click('[data-a="dz-catalog"]'); await page.waitForSelector('[data-a="dz-cat-del"][data-id="tst"]');
+  await page.click('[data-a="dz-cat-del"][data-id="tst"]');
+  await page.waitForFunction(() => CPADesigner.state.frames.every(f => f.group !== 'cc-tst'));
+  ok(await page.evaluate(() => CPADesigner.list().every(d => d.frameImg !== 'auto:cc-tst')), 'pacchetto rimosso, i design tornano alla cornice disegnata');
+  await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item');
 
   /* mobile: sei voci nel menu in basso */
   await page.setViewportSize({ width: 390, height: 800 });

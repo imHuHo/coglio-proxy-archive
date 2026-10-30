@@ -473,6 +473,8 @@ body.bd-lock { overflow: hidden; }
 .dz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
 .dz-item { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; color: var(--fg); text-align: left; font: inherit; }
 .dz-thb { padding: 0; border: 0; background: none; cursor: pointer; display: block; border-radius: 10px; }
+.dz-catth { width: 100%; height: auto; aspect-ratio: 745 / 1040; display: block; border-radius: 8px; background: #1b1a22; object-fit: cover; }
+.dz-catitem .dz-thb { cursor: default; }
 .dz-th { width: 100%; height: auto; aspect-ratio: 745 / 1040; border-radius: 8px; background: var(--bg); display: block; }
 .dz-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .dz-meta b { overflow-wrap: anywhere; font-size: 14px; }
@@ -512,8 +514,9 @@ window.CPA_VERSION = '3.1.0';
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
-  { v: '3.1.0', date: '30 ottobre 2026', title: 'Più cornici ed extra', items: [
+  { v: '3.1.0', date: '30 ottobre 2026', title: 'Catalogo cornici, cartelle e altro', items: [
     { t: 'Nuove cornici', d: 'Nyx (Theros), Terre M15, Neve (Kaldheim), Devoid (Zendikar) e Miracle: le trovi nel menu «Cornice importata», con scelta automatica sui colori.' },
+    { t: 'Catalogo cornici', d: 'Nel Designer c\'è «Catalogo cornici»: 174 pacchetti con 1273 cornici estratte da Card Conjurer (borderless con testo trasparente, extended art, full art, Universes Beyond, showcase, promo, token, planeswalker, saghe, bifronte…). Le aggiungi con un tocco e si scaricano da internet solo quelle che scegli; poi le trovi nel menu «Cornice importata».' },
     { t: 'Scegli la stampa', d: 'Quando parti da una carta esistente, un menu ti fa scegliere la stampa (il set): cambia arte, collezione, numero, rarità, artista e testo di colore, e il testo della carta resta quello che hai scritto.' },
     { t: 'Cartelle nel Designer', d: 'Raggruppi i tuoi design in cartelle (per mazzo, per cube, per uso…): le crei, rinomini ed elimini dalla lista, e sposti ogni carta dal suo menu «Cartella». Eliminando una cartella i design restano, senza cartella.' },
     { t: 'Elimina dalla lista', d: 'Ogni design ha il pulsante «Elimina» direttamente nella lista, con una conferma, senza dover entrare nella modifica.' },
@@ -4346,14 +4349,25 @@ window.CPA_CHANGELOG = [
   }
   function costTokens(cost) { var out = [], re = /\{([^}]{1,6})\}/g, m; while ((m = re.exec(String(cost || '')))) out.push(m[1]); return out; }
 
+  /* colore del testo per zona dalle cornici importate (es. Card Conjurer: titolo bianco su barra scura, regole nere) */
+  function zoneInk(user, zone, fallback) {
+    if (!user || !user.colors) return fallback;
+    var c = user.colors[zone];
+    if (!c) return zone === 'rules' && user.ink === 'light' ? '#f4f1f6' : '#14110f';
+    return c === 'white' ? '#ffffff' : c === 'black' ? '#14110f' : c;
+  }
+  function lightInk(c) { return /^#(f|e|d)/i.test(c) || c === '#ffffff' || c === 'white'; }
+  function shade(ctx, on) { if (on) { ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1.5; } else { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; } }
   function drawTitle(ctx, d, L, pal, over, user) {
-    var r = L.title, ink = over || (user && user.ink === 'light') ? '#ffffff' : pal.ink;
+    var r = L.title, ink = zoneInk(user, 'title', over || (user && user.ink === 'light') ? '#ffffff' : pal.ink);
     var costs = L.noCost ? [] : costTokens(d.cost), sd = 34, cw = costs.length * (sd + 2);
     var maxW = r[2] - 34 - (cw ? cw + 14 : 0);
     var name = String(d.name || ''), size = fitLine(ctx, name, F_TITLE, 700, 36, 17, maxW);
     ctx.font = '700 ' + size + 'px ' + F_TITLE; ctx.fillStyle = ink; ctx.textBaseline = 'middle';
-    if (L.center) { ctx.textAlign = 'center'; ctx.fillText(name, r[0] + r[2] / 2, r[1] + r[3] / 2 + 2); }
+    ctx.save(); shade(ctx, !!user && lightInk(ink));
+    if (L.center || (user && user.center)) { ctx.textAlign = 'center'; ctx.fillText(name, r[0] + r[2] / 2, r[1] + r[3] / 2 + 2); }
     else { ctx.textAlign = 'left'; ctx.fillText(name, r[0] + 20, r[1] + r[3] / 2 + 2); }
+    ctx.restore();
     var x = r[0] + r[2] - 14 - cw + 1;
     costs.forEach(function (c, i) { drawSymbol(ctx, c, x + i * (sd + 2) + sd / 2, r[1] + r[3] / 2, sd); });
   }
@@ -4369,17 +4383,18 @@ window.CPA_CHANGELOG = [
     return keys.map(function (k) { return o[k]; }).filter(Boolean);
   }
   function drawType(ctx, d, L, pal, over, user) {
-    var r = L.type, ink = over || (user && user.ink === 'light') ? '#ffffff' : pal.ink;
+    var r = L.type, ink = zoneInk(user, 'type', over || (user && user.ink === 'light') ? '#ffffff' : pal.ink);
+    if (!r || r[3] < 10) return;
     var gem = L.walker || L.saga || true;
     var sh = user && d.pips ? 38 : 0, maxW = r[2] - 40 - sh - (gem ? 52 : 0);
     var size = fitLine(ctx, String(d.type || ''), F_TITLE, 700, 30, 15, maxW);
     ctx.font = '700 ' + size + 'px ' + F_TITLE; ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(String(d.type || ''), r[0] + 20 + sh, r[1] + r[3] / 2 + 2);
+    ctx.save(); shade(ctx, !!user && lightInk(ink)); ctx.fillText(String(d.type || ''), r[0] + 20 + sh, r[1] + r[3] / 2 + 2); ctx.restore();
     if (gem) setGem(ctx, r[0] + r[2] - 34, r[1] + r[3] / 2, d.rarity, !over);
   }
   function drawRulesBox(ctx, d, L, pal, over, user) {
     var r = L.box, x = r[0], y = r[1], w = r[2], h = r[3];
-    var ink = over || (user && user.ink === 'light') ? '#f4f1f6' : pal.ink;
+    var ink = zoneInk(user, 'rules', over || (user && user.ink === 'light') ? '#f4f1f6' : pal.ink);
     if (!user) {
       ctx.save(); rr(ctx, x, y, w, h, 10);
       if (over) { ctx.fillStyle = 'rgba(14,12,18,0.7)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.stroke(); }
@@ -4400,13 +4415,15 @@ window.CPA_CHANGELOG = [
     var padX = 22, padY = 16, iw = w - padX * 2, ih = h - padY * 2;
     var f = fit(ctx, tokenize(d.rules), String(d.flavor || '').trim() ? tokenize(d.flavor) : null, iw, ih, L.center ? 34 : 33, 15, F_BODY);
     var top = y + padY + Math.max(0, (ih - f.h) / 2);
+    ctx.save(); shade(ctx, !!user && lightInk(ink));
     var align = L.center ? 'center' : 'left', yy = drawLayout(ctx, f.a, x + padX, top, ink, align, iw);
     if (f.b) {
       yy += f.sep * 0.15;
-      ctx.strokeStyle = over ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.5;
+      ctx.strokeStyle = over || lightInk(ink) ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(x + w * 0.3, yy + f.sep * 0.3); ctx.lineTo(x + w * 0.7, yy + f.sep * 0.3); ctx.stroke();
       drawLayout(ctx, f.b, x + padX, yy + f.sep * 0.7, ink, align, iw);
     }
+    ctx.restore();
   }
   function drawPT(ctx, d, L, pal, over, user) {
     if (!L.pt || !String(d.pt || '').trim()) return;
@@ -4423,7 +4440,7 @@ window.CPA_CHANGELOG = [
       if (!(user && user.pt)) { rr(ctx, r[0], r[1], r[2], r[3], 14); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
       ctx.fillStyle = over ? 'rgba(14,12,18,0.85)' : vgrad(ctx, r[1], r[3], mix(pal.bar, '#ffffff', 0.35), mix(pal.bar, pal.a, 0.3)); ctx.fill(); ctx.shadowColor = 'transparent';
       ctx.lineWidth = 3.5; ctx.strokeStyle = over ? 'rgba(255,255,255,0.45)' : pal.edge; ctx.stroke(); }
-      var s2 = fitLine(ctx, txt, F_TITLE, 700, 38, 18, r[2] - 28); ctx.font = '700 ' + s2 + 'px ' + F_TITLE; ctx.fillStyle = over || (user && user.pt && user.ink === 'light') ? '#fff' : (user && user.pt ? (d.darkpt ? '#ffffff' : '#14110f') : pal.ink); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      var s2 = fitLine(ctx, txt, F_TITLE, 700, 38, 18, r[2] - 28); ctx.font = '700 ' + s2 + 'px ' + F_TITLE; ctx.fillStyle = d.darkpt && user ? '#ffffff' : zoneInk(user, 'pt', over || (user && user.pt && user.ink === 'light') ? '#fff' : (user && user.pt ? '#14110f' : pal.ink)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(txt, r[0] + r[2] / 2, r[1] + r[3] / 2 + 2);
     }
     ctx.restore();
@@ -4453,28 +4470,32 @@ window.CPA_CHANGELOG = [
   function drawWalkerBox(ctx, d, L, pal, user) {
     var r = L.box, ab = parseWalker(d.rules), n = Math.max(1, ab.length);
     var x = r[0], y = r[1], w = r[2], h = r[3];
-    ctx.save(); rr(ctx, x, y, w, h, 10); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
-    ctx.fillStyle = vgrad(ctx, y, h, '#2a2530', '#17131c'); ctx.fill(); ctx.shadowColor = 'transparent'; ctx.lineWidth = 3; ctx.strokeStyle = pal.glow; ctx.stroke(); ctx.restore();
+    /* con una cornice importata il riquadro è già nella cornice: niente pannello, costi a sinistra del testo */
+    var ink = user ? zoneInk(user, 'rules', '#14110f') : '#f4f1f6', ix = user ? x - 40 : x + 62, tx = user ? x + 22 : x + 112, tw = user ? w - 44 : w - 150;
+    if (!user) {
+      ctx.save(); rr(ctx, x, y, w, h, 10); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+      ctx.fillStyle = vgrad(ctx, y, h, '#2a2530', '#17131c'); ctx.fill(); ctx.shadowColor = 'transparent'; ctx.lineWidth = 3; ctx.strokeStyle = pal.glow; ctx.stroke(); ctx.restore();
+    }
     var rowH = (h - 12) / n, size = 33;
     for (; size >= 15; size--) {
       var ok = true;
-      for (var i = 0; i < ab.length; i++) { var l = layout(ctx, tokenize(ab[i].text), w - 150, size, F_BODY, false); if (l.h > rowH - 14) { ok = false; break; } }
+      for (var i = 0; i < ab.length; i++) { var l = layout(ctx, tokenize(ab[i].text), tw, size, F_BODY, false); if (l.h > rowH - 14) { ok = false; break; } }
       if (ok) break;
     }
     ab.forEach(function (a, i) {
       var ry = y + 6 + i * rowH;
-      if (i) { ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x + 14, ry); ctx.lineTo(x + w - 14, ry); ctx.stroke(); }
+      if (i) { ctx.strokeStyle = user && !lightInk(ink) ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x + 14, ry); ctx.lineTo(x + w - 14, ry); ctx.stroke(); }
       if (a.cost) {
         var pos = a.cost[0] === '+', neg = a.cost[0] === '−';
-        ctx.save(); ctx.translate(x + 62, ry + rowH / 2); ctx.beginPath();
+        ctx.save(); ctx.translate(ix, ry + rowH / 2); if (user) ctx.scale(0.8, 0.8); ctx.beginPath();
         if (pos) { ctx.moveTo(-34, 14); ctx.lineTo(0, -30); ctx.lineTo(34, 14); ctx.lineTo(24, 24); ctx.lineTo(-24, 24); }
         else if (neg) { ctx.moveTo(-34, -14); ctx.lineTo(0, 30); ctx.lineTo(34, -14); ctx.lineTo(24, -24); ctx.lineTo(-24, -24); }
         else { rr(ctx, -30, -22, 60, 44, 10); }
         ctx.closePath(); ctx.fillStyle = pal.b; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = pal.glow; ctx.stroke();
         ctx.fillStyle = '#fff'; ctx.font = '700 28px ' + F_TITLE; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(a.cost, 0, pos ? 6 : neg ? -6 : 0); ctx.restore();
       }
-      var lay = layout(ctx, tokenize(a.text), w - 150, size, F_BODY, false);
-      drawLayout(ctx, lay, x + 112, ry + (rowH - lay.h) / 2, '#f4f1f6', 'left', w - 150);
+      var lay = layout(ctx, tokenize(a.text), tw, size, F_BODY, false);
+      ctx.save(); shade(ctx, !!user && lightInk(ink)); drawLayout(ctx, lay, tx, ry + (rowH - lay.h) / 2, ink, 'left', tw); ctx.restore();
     });
   }
   function parseSaga(text) {
@@ -4511,7 +4532,7 @@ window.CPA_CHANGELOG = [
   /* ---------- carta intera ---------- */
   function render(ctx, d, assets, opt) {
     assets = assets || {}; opt = opt || {};
-    var L = LAYOUT[d.frame] || LAYOUT.classic, pk = paletteKey(d), pal = PAL[pk], user = assets.frameImg ? { ink: d.ink === 'light' ? 'light' : 'dark', pt: !!assets.ptImg } : null;
+    var L = LAYOUT[d.frame] || LAYOUT.classic, pk = paletteKey(d), pal = PAL[pk], user = assets.frameImg ? { ink: d.ink === 'light' ? 'light' : 'dark', pt: !!assets.ptImg, colors: (assets.frameGeo && assets.frameGeo.colors) || null, center: !!(assets.frameGeo && assets.frameGeo.titleAlign === 'center') } : null;
     /* una cornice importata può portare la propria geometria (zona arte, barre, riquadri): sostituisce quella della cornice disegnata */
     if (user && assets.frameGeo) { var G = assets.frameGeo, L2 = {}; Object.keys(L).forEach(function (k) { L2[k] = L[k]; }); ['art', 'title', 'type', 'box', 'pt', 'info'].forEach(function (k) { if (G[k]) L2[k] = G[k]; }); L = L2; }
     var over = !!L.over && !user, square = opt.square || d.corners === 'square';
@@ -4563,7 +4584,7 @@ window.CPA_CHANGELOG = [
       drawTitle(ctx, d, L, pal, over, user); drawType(ctx, d, L, pal, over, user);
       if (L.walker) drawWalkerBox(ctx, d, L, pal, user);
       else if (L.saga) drawSagaBox(ctx, d, L, pal);
-      else drawRulesBox(ctx, d, L, pal, over, user);
+      else if (L.box && L.box[3] >= 10) drawRulesBox(ctx, d, L, pal, over, user);
       drawPT(ctx, d, L, pal, over, user);
       drawInfo(ctx, d, L, pal, over || !!user || pk === 'B' || pk === 'U' || pk === 'R' || pk === 'G' || pk === 'L');
     }
@@ -4655,6 +4676,7 @@ window.CPA_CHANGELOG = [
   var BUNDLE_VER = 'mse-3';
   function bundleBlob() {
     if (typeof window.CPA_BUNDLE === 'string') return Promise.resolve(new Blob([window.CPA_BUNDLE], { type: 'application/json' }));
+    if (window.cpaNet && window.cpaNet.resource) return window.cpaNet.resource('risorse.json').then(function (t) { return t ? new Blob([t], { type: 'application/json' }) : null; }).catch(function () { return null; });
     if (typeof fetch !== 'function') return Promise.resolve(null);
     return fetch('risorse.json').then(function (r) { return r.ok ? r.blob() : null; }).catch(function () { return null; });
   }
@@ -4854,8 +4876,15 @@ window.CPA_CHANGELOG = [
       r.onerror = function () { res(null); };
       r.onload = function () {
         var data; try { data = JSON.parse(String(r.result)); } catch (e) { data = null; }
+        importData(data, silent, file.name).then(res);
+      };
+      r.readAsText(file);
+    });
+  }
+  function importData(data, silent, fname) {
+    return new Promise(function (res) {
         if (data && data.app === 'coglio-frames' && !Array.isArray(data.frames)) data.frames = [];
-        if (!data || data.app !== 'coglio-frames') { if (!silent) H.toast('«' + file.name + '»: non è un pacchetto di cornici di Coglio.'); return res(null); }
+        if (!data || data.app !== 'coglio-frames') { if (!silent) H.toast('«' + fname + '»: non è un pacchetto di cornici di Coglio.'); return res(null); }
         var names = {}; (data.groups || []).forEach(function (g) { names[g.id] = g.name; });
         var chain = Promise.resolve(), n = 0, first = '';
         data.frames.forEach(function (f) {
@@ -4913,11 +4942,81 @@ window.CPA_CHANGELOG = [
           if (!silent) H.toast(parts.length ? 'Importati: ' + parts.join(', ') + '.' : 'Il pacchetto non contiene niente di utilizzabile.');
           res(n ? first : (nsym || nfont || nwm || nov ? '*' : null));
         }, function () { if (!silent) H.toast('Non riesco a salvare le risorse su questo dispositivo.'); res(null); });
-      };
-      r.readAsText(file);
     });
   }
 
+  /* ---------- catalogo cornici: pacchetti estratti da Card Conjurer, scaricati da GitHub Pages solo quando servono ---------- */
+  var PAGES = 'https://imhuho.github.io/coglio-proxy-archive/';
+  var cat = { list: null, base: '', busy: false, msg: '', c: '', q: '', inst: {} };
+  function wfetch(u) { return (window.CapacitorWebFetch || window.fetch).call(window, u); } /* su Android il fetch nativo non gestisce bene i file binari */
+  function fetchFrom(path) {
+    var bases = /^https?:$/.test(location.protocol) ? ['', PAGES] : [PAGES], i = 0;
+    function next() {
+      if (i >= bases.length) return Promise.reject(new Error('net'));
+      var b = bases[i++];
+      return wfetch(b + path).then(function (r) { if (!r.ok) throw new Error('http'); return { r: r, base: b }; }).catch(next);
+    }
+    return next();
+  }
+  function loadCatalog() {
+    if (cat.busy || cat.list) return;
+    cat.busy = true; cat.msg = '';
+    fetchFrom('packs/index.json').then(function (x) { return x.r.json().then(function (j) { cat.list = Array.isArray(j && j.packs) ? j.packs : []; cat.base = x.base; }); })
+      .catch(function () { cat.msg = 'Non riesco a scaricare il catalogo: serve internet (lo scarica dalla versione web su GitHub Pages).'; })
+      .then(function () { cat.busy = false; if (dz.view === 'catalog') H.render(); });
+  }
+  function installed(id) { return dz.frames.some(function (f) { return f.group === 'cc-' + id; }); }
+  function installPack(e) {
+    if (!e || cat.inst[e.id]) return;
+    var base = cat.base + 'packs/' + e.id + '/', pk = null, done = 0, total = 0;
+    cat.inst[e.id] = '\u2026'; H.render();
+    wfetch(base + 'pack.json').then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); }).then(function (j) {
+      pk = j; var jobs = [];
+      (pk.frames || []).forEach(function (f) { ['png', 'pt'].forEach(function (k) { if (f[k] && typeof f[k] === 'string' && !/^data:/.test(f[k])) jobs.push([f, k]); }); });
+      total = jobs.length;
+      var chain = Promise.resolve();
+      jobs.forEach(function (jb) {
+        chain = chain.then(function () {
+          return wfetch(base + jb[0][jb[1]]).then(function (r) { if (!r.ok) throw new Error('http'); return r.blob(); }).then(function (b) {
+            jb[0][jb[1]] = b; done++; cat.inst[e.id] = done + '/' + total;
+            var el = document.querySelector('[data-a="dz-cat-add"][data-id="' + e.id + '"]'); if (el) el.textContent = 'Scarico ' + done + '/' + total + '\u2026';
+          });
+        });
+      });
+      return chain;
+    }).then(function () { return importData(pk, true, e.name); }).then(function (g) {
+      delete cat.inst[e.id]; dz.frameImgs = {};
+      H.toast(g ? 'Aggiunto «' + e.name + '»: lo trovi nel menu «Cornice importata».' : 'Il pacchetto «' + e.name + '» non contiene cornici utilizzabili.'); H.render();
+    }).catch(function () { delete cat.inst[e.id]; H.toast('Non riesco a scaricare «' + e.name + '»: controlla la connessione e riprova.'); H.render(); });
+  }
+  function dropGroup(g) {
+    var gone = dz.frames.filter(function (f) { return f.group === g; }).map(function (f) { return f.id; });
+    dz.designs.forEach(function (x) { if (x.frameImg === 'auto:' + g || gone.indexOf(x.frameImg) >= 0) { x.frameImg = ''; DB.put('designs', clone(x)); } });
+    dz.frames = dz.frames.filter(function (f) { return gone.indexOf(f.id) < 0; });
+    gone.forEach(function (id) { delete dz.frameImgs[id]; DB.del('frames', id); });
+  }
+  function catalogHtml() {
+    var h = '<header class="vh"><button class="back" data-a="dz-back">\u2190 I miei design</button><h1>Catalogo cornici</h1><p class="sub">Cornici estratte da Card Conjurer: aggiungi quelle che ti servono e le trovi nel menu \u00abCornice importata\u00bb dell\u2019editor, con scelta automatica sui colori.</p></header>';
+    if (!H.available()) return h + '<div class="empty"><p>Il catalogo si scarica da internet: qui dentro non \u00e8 disponibile. Usa l\u2019app per Windows, l\u2019APK o la versione web.</p></div>';
+    loadCatalog();
+    if (!cat.list) return h + '<p class="hint" role="status">' + esc(cat.msg || 'Carico il catalogo\u2026') + '</p>' + (cat.msg ? '<div class="btns"><button class="btn" data-a="dz-cat-retry">Riprova</button></div>' : '');
+    var cats = []; cat.list.forEach(function (e) { if (cats.indexOf(e.category) < 0) cats.push(e.category); });
+    var nInst = cat.list.filter(function (e) { return installed(e.id); }).length;
+    h += '<section class="panel"><div class="chips" aria-label="Categorie">' + chip('dz-cat-c', 'c', '', 'Tutte (' + cat.list.length + ')', !cat.c) +
+      (nInst ? chip('dz-cat-c', 'c', '*', 'Aggiunte (' + nInst + ')', cat.c === '*') : '') +
+      cats.map(function (c) { return chip('dz-cat-c', 'c', c, esc(c) + ' (' + cat.list.filter(function (e) { return e.category === c; }).length + ')', cat.c === c); }).join('') + '</div>' +
+      '<input class="input" data-c="dz-catq" placeholder="Cerca (es. borderless, extended, universes beyond)" value="' + esc(cat.q) + '" autocomplete="off"></section>';
+    var q = cat.q.toLowerCase();
+    var shown = cat.list.filter(function (e) { return (!cat.c || (cat.c === '*' ? installed(e.id) : e.category === cat.c)); });
+    h += '<div class="dz-grid">' + shown.map(function (e) {
+      var inst = installed(e.id), busy = cat.inst[e.id], s = (e.name + ' ' + e.category + ' ' + e.id).toLowerCase();
+      return '<article class="dz-item dz-catitem" data-s="' + esc(s) + '"' + (q && s.indexOf(q) < 0 ? ' hidden' : '') + '><div class="dz-thb"><img class="dz-catth" loading="lazy" alt="" src="' + esc(cat.base + 'packs/' + e.id + '/thumb.webp') + '"></div>' +
+        '<div class="dz-meta"><b>' + esc(e.name) + '</b><span>' + esc(e.category) + ' \u00b7 ' + e.n + (e.n === 1 ? ' cornice' : ' cornici') + ' \u00b7 ' + (Math.max(0.1, (e.bytes || 0) / 1048576)).toFixed(1) + ' MB</span>' + (e.layout ? '<span class="pill info">' + (e.layout === 'planeswalker' ? 'planeswalker' : 'saga') + '</span>' : '') + '</div>' +
+        '<div class="btns">' + (inst ? '<span class="pill ok">Aggiunta</span><button class="btn small danger" data-a="dz-cat-del" data-id="' + esc(e.id) + '">Rimuovi</button>' :
+          '<button class="btn small primary" data-a="dz-cat-add" data-id="' + esc(e.id) + '"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Scarico ' + busy + '\u2026' : 'Aggiungi') + '</button>') + '</div></article>';
+    }).join('') + '</div>';
+    return h;
+  }
   function printLabel(c) { return String(c.set_name || c.set || '').replace(/</g, '') + ' (' + String(c.set || '').toUpperCase() + ') \u00b7 #' + (c.collector_number || '?') + (c.released_at ? ' \u00b7 ' + String(c.released_at).slice(0, 4) : ''); }
   function printsHtml(d, net) {
     var P = dz.prints;
@@ -4933,7 +5032,7 @@ window.CPA_CHANGELOG = [
   function listHtml() {
     var h = '<header class="vh"><h1>Designer</h1><p class="sub">Crea proxy personalizzate: carte tue, token, alter di carte esistenti. Poi le leghi a un mazzo e le stampi nel PDF.</p></header>';
     if (!DB.persistent() && dz.loaded) h += '<p class="warn">Qui dentro i design non si salvano sul dispositivo: restano finché la pagina è aperta. Usa l’app per Windows, l’APK o la versione web.</p>';
-    h += '<section class="panel"><div class="btns"><button class="btn primary" data-a="dz-new" data-k="card">Nuova carta</button></div>' +
+    h += '<section class="panel"><div class="btns"><button class="btn primary" data-a="dz-new" data-k="card">Nuova carta</button><button class="btn" data-a="dz-catalog">Catalogo cornici</button></div>' +
       '<div class="btns"><label class="btn small filebtn">Importa design<input type="file" accept=".json,application/json" data-c="dz-import" hidden></label>' +
       (dz.designs.length ? '<button class="btn small" data-a="dz-export-all">Esporta tutti</button>' : '') + '</div>' +
       (dz.msg ? '<p class="hint" role="status">' + esc(dz.msg) + '</p>' : '') + '</section>';
@@ -5054,7 +5153,7 @@ window.CPA_CHANGELOG = [
 
   function html() {
     if (!dz.loaded) load().then(function () { if (H.ui.view === 'designer') H.render(); });
-    var body = dz.view === 'edit' && dz.cur ? editHtml() : listHtml();
+    var body = dz.view === 'edit' && dz.cur ? editHtml() : dz.view === 'catalog' ? catalogHtml() : listHtml();
     return body + (dz.picker ? pickerHtml() : '');
   }
   function pickerHtml() {
@@ -5176,6 +5275,7 @@ window.CPA_CHANGELOG = [
   /* ---------- esporta / importa ---------- */
   function blobToDataUrl(b) { return new Promise(function (res) { var r = new FileReader(); r.onload = function () { res(String(r.result)); }; r.onerror = function () { res(''); }; r.readAsDataURL(b); }); }
   function dataUrlToBlob(u) {
+    if (u && typeof Blob !== 'undefined' && u instanceof Blob) return u;
     var m = /^data:([^;,]+);base64,(.*)$/.exec(u || ''); if (!m) return null;
     var bin = atob(m[2]), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
     return new Blob([a], { type: m[1] });
@@ -5218,6 +5318,11 @@ window.CPA_CHANGELOG = [
     var d = dz.cur, id = el.getAttribute('data-id'), k = el.getAttribute('data-k'), v = el.getAttribute('data-v');
     switch (a) {
       case 'dz-new': create(k); break;
+      case 'dz-catalog': dz.view = 'catalog'; dz.cur = null; window.scrollTo(0, 0); H.render(); break;
+      case 'dz-cat-retry': cat.msg = ''; cat.list = null; H.render(); break;
+      case 'dz-cat-c': cat.c = String(v == null ? '' : v); H.render(); break;
+      case 'dz-cat-add': installPack((cat.list || []).filter(function (e) { return e.id === id; })[0]); break;
+      case 'dz-cat-del': dropGroup('cc-' + id); H.toast('Pacchetto rimosso.'); H.render(); break;
       case 'dz-open': var t = byId(id); if (t) editDesign(t); break;
       case 'dz-back': saveNow(); dz.view = 'list'; dz.cur = null; dz.confirm = ''; window.scrollTo(0, 0); H.render(); break;
       case 'dz-dup':
@@ -5310,6 +5415,7 @@ window.CPA_CHANGELOG = [
     else if (c === 'dz-art' && d) { d.art[el.getAttribute('data-k')] = parseFloat(el.value) || 0; schedulePreview(); saveSoon(); }
     else if (c === 'dz-q') dz.search.q = el.value;
     else if (c === 'dz-ftext') dz.fText = el.value;
+    else if (c === 'dz-catq') { cat.q = el.value; var q = cat.q.toLowerCase(); [].forEach.call(document.querySelectorAll('.dz-catitem'), function (it) { it.hidden = !!q && it.getAttribute('data-s').indexOf(q) < 0; }); }
     else if (c === 'dz-bqty' && dz.bind) dz.bind.qty = el.value;
   }
   function change(c, el) {
@@ -5330,7 +5436,16 @@ window.CPA_CHANGELOG = [
       el.value = '';
       p.then(function () { if (last && d) { d.frameImg = last.id; saveNow(); } H.render(); });
     }
-    else if (c === 'dz-frameimg' && d) { d.frameImg = el.value; saveSoon(); H.render(); }
+    else if (c === 'dz-frameimg' && d) {
+      d.frameImg = el.value;
+      var fsel = dz.frames.filter(function (f) { return f.id === fid(d); })[0];
+      if (fsel) {
+        d.ink = fsel.ink === 'light' ? 'light' : 'dark';
+        var lay = fsel.geo && fsel.geo.layout;
+        if (lay && R.LAYOUT[lay]) d.frame = lay; else if (d.frame === 'planeswalker' || d.frame === 'saga') d.frame = 'classic';
+      }
+      saveSoon(); H.render();
+    }
     else if (c === 'dz-import') { if (el.files && el.files[0]) importFile(el.files[0]); }
     else if (c === 'dz-bdeck' && dz.bind) { dz.bind.deckId = el.value; dz.bind.card = ''; H.render(); }
     else if (c === 'dz-bcard' && dz.bind) { dz.bind.card = el.value; H.render(); }

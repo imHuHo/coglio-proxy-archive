@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('cpaNet', {
   bracket: (payload) => ipcRenderer.invoke('cpa:bracket', payload),
   copy: (text) => ipcRenderer.invoke('cpa:copy', text),
   quit: () => ipcRenderer.invoke('cpa:quit'),
+  resource: (name) => ipcRenderer.invoke('cpa:resource', name),
   update: (url) => ipcRenderer.invoke('cpa:update', url),
   onUpdateProgress: (cb) => { ipcRenderer.removeAllListeners('cpa:update-progress'); ipcRenderer.on('cpa:update-progress', (_e, p) => cb(p)); }
 });

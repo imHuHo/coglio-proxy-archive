@@ -73,6 +73,7 @@
   var BUNDLE_VER = 'mse-3';
   function bundleBlob() {
     if (typeof window.CPA_BUNDLE === 'string') return Promise.resolve(new Blob([window.CPA_BUNDLE], { type: 'application/json' }));
+    if (window.cpaNet && window.cpaNet.resource) return window.cpaNet.resource('risorse.json').then(function (t) { return t ? new Blob([t], { type: 'application/json' }) : null; }).catch(function () { return null; });
     if (typeof fetch !== 'function') return Promise.resolve(null);
     return fetch('risorse.json').then(function (r) { return r.ok ? r.blob() : null; }).catch(function () { return null; });
   }
@@ -272,8 +273,15 @@
       r.onerror = function () { res(null); };
       r.onload = function () {
         var data; try { data = JSON.parse(String(r.result)); } catch (e) { data = null; }
+        importData(data, silent, file.name).then(res);
+      };
+      r.readAsText(file);
+    });
+  }
+  function importData(data, silent, fname) {
+    return new Promise(function (res) {
         if (data && data.app === 'coglio-frames' && !Array.isArray(data.frames)) data.frames = [];
-        if (!data || data.app !== 'coglio-frames') { if (!silent) H.toast('«' + file.name + '»: non è un pacchetto di cornici di Coglio.'); return res(null); }
+        if (!data || data.app !== 'coglio-frames') { if (!silent) H.toast('«' + fname + '»: non è un pacchetto di cornici di Coglio.'); return res(null); }
         var names = {}; (data.groups || []).forEach(function (g) { names[g.id] = g.name; });
         var chain = Promise.resolve(), n = 0, first = '';
         data.frames.forEach(function (f) {
@@ -331,11 +339,81 @@
           if (!silent) H.toast(parts.length ? 'Importati: ' + parts.join(', ') + '.' : 'Il pacchetto non contiene niente di utilizzabile.');
           res(n ? first : (nsym || nfont || nwm || nov ? '*' : null));
         }, function () { if (!silent) H.toast('Non riesco a salvare le risorse su questo dispositivo.'); res(null); });
-      };
-      r.readAsText(file);
     });
   }
 
+  /* ---------- catalogo cornici: pacchetti estratti da Card Conjurer, scaricati da GitHub Pages solo quando servono ---------- */
+  var PAGES = 'https://imhuho.github.io/coglio-proxy-archive/';
+  var cat = { list: null, base: '', busy: false, msg: '', c: '', q: '', inst: {} };
+  function wfetch(u) { return (window.CapacitorWebFetch || window.fetch).call(window, u); } /* su Android il fetch nativo non gestisce bene i file binari */
+  function fetchFrom(path) {
+    var bases = /^https?:$/.test(location.protocol) ? ['', PAGES] : [PAGES], i = 0;
+    function next() {
+      if (i >= bases.length) return Promise.reject(new Error('net'));
+      var b = bases[i++];
+      return wfetch(b + path).then(function (r) { if (!r.ok) throw new Error('http'); return { r: r, base: b }; }).catch(next);
+    }
+    return next();
+  }
+  function loadCatalog() {
+    if (cat.busy || cat.list) return;
+    cat.busy = true; cat.msg = '';
+    fetchFrom('packs/index.json').then(function (x) { return x.r.json().then(function (j) { cat.list = Array.isArray(j && j.packs) ? j.packs : []; cat.base = x.base; }); })
+      .catch(function () { cat.msg = 'Non riesco a scaricare il catalogo: serve internet (lo scarica dalla versione web su GitHub Pages).'; })
+      .then(function () { cat.busy = false; if (dz.view === 'catalog') H.render(); });
+  }
+  function installed(id) { return dz.frames.some(function (f) { return f.group === 'cc-' + id; }); }
+  function installPack(e) {
+    if (!e || cat.inst[e.id]) return;
+    var base = cat.base + 'packs/' + e.id + '/', pk = null, done = 0, total = 0;
+    cat.inst[e.id] = '\u2026'; H.render();
+    wfetch(base + 'pack.json').then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); }).then(function (j) {
+      pk = j; var jobs = [];
+      (pk.frames || []).forEach(function (f) { ['png', 'pt'].forEach(function (k) { if (f[k] && typeof f[k] === 'string' && !/^data:/.test(f[k])) jobs.push([f, k]); }); });
+      total = jobs.length;
+      var chain = Promise.resolve();
+      jobs.forEach(function (jb) {
+        chain = chain.then(function () {
+          return wfetch(base + jb[0][jb[1]]).then(function (r) { if (!r.ok) throw new Error('http'); return r.blob(); }).then(function (b) {
+            jb[0][jb[1]] = b; done++; cat.inst[e.id] = done + '/' + total;
+            var el = document.querySelector('[data-a="dz-cat-add"][data-id="' + e.id + '"]'); if (el) el.textContent = 'Scarico ' + done + '/' + total + '\u2026';
+          });
+        });
+      });
+      return chain;
+    }).then(function () { return importData(pk, true, e.name); }).then(function (g) {
+      delete cat.inst[e.id]; dz.frameImgs = {};
+      H.toast(g ? 'Aggiunto «' + e.name + '»: lo trovi nel menu «Cornice importata».' : 'Il pacchetto «' + e.name + '» non contiene cornici utilizzabili.'); H.render();
+    }).catch(function () { delete cat.inst[e.id]; H.toast('Non riesco a scaricare «' + e.name + '»: controlla la connessione e riprova.'); H.render(); });
+  }
+  function dropGroup(g) {
+    var gone = dz.frames.filter(function (f) { return f.group === g; }).map(function (f) { return f.id; });
+    dz.designs.forEach(function (x) { if (x.frameImg === 'auto:' + g || gone.indexOf(x.frameImg) >= 0) { x.frameImg = ''; DB.put('designs', clone(x)); } });
+    dz.frames = dz.frames.filter(function (f) { return gone.indexOf(f.id) < 0; });
+    gone.forEach(function (id) { delete dz.frameImgs[id]; DB.del('frames', id); });
+  }
+  function catalogHtml() {
+    var h = '<header class="vh"><button class="back" data-a="dz-back">\u2190 I miei design</button><h1>Catalogo cornici</h1><p class="sub">Cornici estratte da Card Conjurer: aggiungi quelle che ti servono e le trovi nel menu \u00abCornice importata\u00bb dell\u2019editor, con scelta automatica sui colori.</p></header>';
+    if (!H.available()) return h + '<div class="empty"><p>Il catalogo si scarica da internet: qui dentro non \u00e8 disponibile. Usa l\u2019app per Windows, l\u2019APK o la versione web.</p></div>';
+    loadCatalog();
+    if (!cat.list) return h + '<p class="hint" role="status">' + esc(cat.msg || 'Carico il catalogo\u2026') + '</p>' + (cat.msg ? '<div class="btns"><button class="btn" data-a="dz-cat-retry">Riprova</button></div>' : '');
+    var cats = []; cat.list.forEach(function (e) { if (cats.indexOf(e.category) < 0) cats.push(e.category); });
+    var nInst = cat.list.filter(function (e) { return installed(e.id); }).length;
+    h += '<section class="panel"><div class="chips" aria-label="Categorie">' + chip('dz-cat-c', 'c', '', 'Tutte (' + cat.list.length + ')', !cat.c) +
+      (nInst ? chip('dz-cat-c', 'c', '*', 'Aggiunte (' + nInst + ')', cat.c === '*') : '') +
+      cats.map(function (c) { return chip('dz-cat-c', 'c', c, esc(c) + ' (' + cat.list.filter(function (e) { return e.category === c; }).length + ')', cat.c === c); }).join('') + '</div>' +
+      '<input class="input" data-c="dz-catq" placeholder="Cerca (es. borderless, extended, universes beyond)" value="' + esc(cat.q) + '" autocomplete="off"></section>';
+    var q = cat.q.toLowerCase();
+    var shown = cat.list.filter(function (e) { return (!cat.c || (cat.c === '*' ? installed(e.id) : e.category === cat.c)); });
+    h += '<div class="dz-grid">' + shown.map(function (e) {
+      var inst = installed(e.id), busy = cat.inst[e.id], s = (e.name + ' ' + e.category + ' ' + e.id).toLowerCase();
+      return '<article class="dz-item dz-catitem" data-s="' + esc(s) + '"' + (q && s.indexOf(q) < 0 ? ' hidden' : '') + '><div class="dz-thb"><img class="dz-catth" loading="lazy" alt="" src="' + esc(cat.base + 'packs/' + e.id + '/thumb.webp') + '"></div>' +
+        '<div class="dz-meta"><b>' + esc(e.name) + '</b><span>' + esc(e.category) + ' \u00b7 ' + e.n + (e.n === 1 ? ' cornice' : ' cornici') + ' \u00b7 ' + (Math.max(0.1, (e.bytes || 0) / 1048576)).toFixed(1) + ' MB</span>' + (e.layout ? '<span class="pill info">' + (e.layout === 'planeswalker' ? 'planeswalker' : 'saga') + '</span>' : '') + '</div>' +
+        '<div class="btns">' + (inst ? '<span class="pill ok">Aggiunta</span><button class="btn small danger" data-a="dz-cat-del" data-id="' + esc(e.id) + '">Rimuovi</button>' :
+          '<button class="btn small primary" data-a="dz-cat-add" data-id="' + esc(e.id) + '"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Scarico ' + busy + '\u2026' : 'Aggiungi') + '</button>') + '</div></article>';
+    }).join('') + '</div>';
+    return h;
+  }
   function printLabel(c) { return String(c.set_name || c.set || '').replace(/</g, '') + ' (' + String(c.set || '').toUpperCase() + ') \u00b7 #' + (c.collector_number || '?') + (c.released_at ? ' \u00b7 ' + String(c.released_at).slice(0, 4) : ''); }
   function printsHtml(d, net) {
     var P = dz.prints;
@@ -351,7 +429,7 @@
   function listHtml() {
     var h = '<header class="vh"><h1>Designer</h1><p class="sub">Crea proxy personalizzate: carte tue, token, alter di carte esistenti. Poi le leghi a un mazzo e le stampi nel PDF.</p></header>';
     if (!DB.persistent() && dz.loaded) h += '<p class="warn">Qui dentro i design non si salvano sul dispositivo: restano finché la pagina è aperta. Usa l’app per Windows, l’APK o la versione web.</p>';
-    h += '<section class="panel"><div class="btns"><button class="btn primary" data-a="dz-new" data-k="card">Nuova carta</button></div>' +
+    h += '<section class="panel"><div class="btns"><button class="btn primary" data-a="dz-new" data-k="card">Nuova carta</button><button class="btn" data-a="dz-catalog">Catalogo cornici</button></div>' +
       '<div class="btns"><label class="btn small filebtn">Importa design<input type="file" accept=".json,application/json" data-c="dz-import" hidden></label>' +
       (dz.designs.length ? '<button class="btn small" data-a="dz-export-all">Esporta tutti</button>' : '') + '</div>' +
       (dz.msg ? '<p class="hint" role="status">' + esc(dz.msg) + '</p>' : '') + '</section>';
@@ -472,7 +550,7 @@
 
   function html() {
     if (!dz.loaded) load().then(function () { if (H.ui.view === 'designer') H.render(); });
-    var body = dz.view === 'edit' && dz.cur ? editHtml() : listHtml();
+    var body = dz.view === 'edit' && dz.cur ? editHtml() : dz.view === 'catalog' ? catalogHtml() : listHtml();
     return body + (dz.picker ? pickerHtml() : '');
   }
   function pickerHtml() {
@@ -594,6 +672,7 @@
   /* ---------- esporta / importa ---------- */
   function blobToDataUrl(b) { return new Promise(function (res) { var r = new FileReader(); r.onload = function () { res(String(r.result)); }; r.onerror = function () { res(''); }; r.readAsDataURL(b); }); }
   function dataUrlToBlob(u) {
+    if (u && typeof Blob !== 'undefined' && u instanceof Blob) return u;
     var m = /^data:([^;,]+);base64,(.*)$/.exec(u || ''); if (!m) return null;
     var bin = atob(m[2]), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
     return new Blob([a], { type: m[1] });
@@ -636,6 +715,11 @@
     var d = dz.cur, id = el.getAttribute('data-id'), k = el.getAttribute('data-k'), v = el.getAttribute('data-v');
     switch (a) {
       case 'dz-new': create(k); break;
+      case 'dz-catalog': dz.view = 'catalog'; dz.cur = null; window.scrollTo(0, 0); H.render(); break;
+      case 'dz-cat-retry': cat.msg = ''; cat.list = null; H.render(); break;
+      case 'dz-cat-c': cat.c = String(v == null ? '' : v); H.render(); break;
+      case 'dz-cat-add': installPack((cat.list || []).filter(function (e) { return e.id === id; })[0]); break;
+      case 'dz-cat-del': dropGroup('cc-' + id); H.toast('Pacchetto rimosso.'); H.render(); break;
       case 'dz-open': var t = byId(id); if (t) editDesign(t); break;
       case 'dz-back': saveNow(); dz.view = 'list'; dz.cur = null; dz.confirm = ''; window.scrollTo(0, 0); H.render(); break;
       case 'dz-dup':
@@ -728,6 +812,7 @@
     else if (c === 'dz-art' && d) { d.art[el.getAttribute('data-k')] = parseFloat(el.value) || 0; schedulePreview(); saveSoon(); }
     else if (c === 'dz-q') dz.search.q = el.value;
     else if (c === 'dz-ftext') dz.fText = el.value;
+    else if (c === 'dz-catq') { cat.q = el.value; var q = cat.q.toLowerCase(); [].forEach.call(document.querySelectorAll('.dz-catitem'), function (it) { it.hidden = !!q && it.getAttribute('data-s').indexOf(q) < 0; }); }
     else if (c === 'dz-bqty' && dz.bind) dz.bind.qty = el.value;
   }
   function change(c, el) {
@@ -748,7 +833,16 @@
       el.value = '';
       p.then(function () { if (last && d) { d.frameImg = last.id; saveNow(); } H.render(); });
     }
-    else if (c === 'dz-frameimg' && d) { d.frameImg = el.value; saveSoon(); H.render(); }
+    else if (c === 'dz-frameimg' && d) {
+      d.frameImg = el.value;
+      var fsel = dz.frames.filter(function (f) { return f.id === fid(d); })[0];
+      if (fsel) {
+        d.ink = fsel.ink === 'light' ? 'light' : 'dark';
+        var lay = fsel.geo && fsel.geo.layout;
+        if (lay && R.LAYOUT[lay]) d.frame = lay; else if (d.frame === 'planeswalker' || d.frame === 'saga') d.frame = 'classic';
+      }
+      saveSoon(); H.render();
+    }
     else if (c === 'dz-import') { if (el.files && el.files[0]) importFile(el.files[0]); }
     else if (c === 'dz-bdeck' && dz.bind) { dz.bind.deckId = el.value; dz.bind.card = ''; H.render(); }
     else if (c === 'dz-bcard' && dz.bind) { dz.bind.card = el.value; H.render(); }

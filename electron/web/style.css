@@ -469,6 +469,8 @@ body.bd-lock { overflow: hidden; }
 .dz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
 .dz-item { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; color: var(--fg); text-align: left; font: inherit; }
 .dz-thb { padding: 0; border: 0; background: none; cursor: pointer; display: block; border-radius: 10px; }
+.dz-catth { width: 100%; height: auto; aspect-ratio: 745 / 1040; display: block; border-radius: 8px; background: #1b1a22; object-fit: cover; }
+.dz-catitem .dz-thb { cursor: default; }
 .dz-th { width: 100%; height: auto; aspect-ratio: 745 / 1040; border-radius: 8px; background: var(--bg); display: block; }
 .dz-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .dz-meta b { overflow-wrap: anywhere; font-size: 14px; }

@@ -59,5 +59,5 @@ open(os.path.join(root, 'dist', 'coglio-proxy-archive.html'), 'w', encoding='utf
 for dest in ('electron/web', 'capacitor/www'):
     d = os.path.join(root, dest)
     shutil.rmtree(d, ignore_errors=True)
-    shutil.copytree(web, d)
+    shutil.copytree(web, d, ignore=shutil.ignore_patterns('packs'))  # il catalogo cornici si scarica da GitHub Pages
 print('build ok:', len(single), 'byte nella pagina unica')
