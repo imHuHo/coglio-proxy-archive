@@ -5,6 +5,11 @@ name: Windows app
 # oppure si pubblica un tag di versione (es. v1.1.0): lo zip finisce nella pagina Releases, scaricabile da tutti.
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Versione da pubblicare nelle Releases (es. v1.1.0). Vuoto = solo Artifacts.'
+        required: false
+        default: ''
   push:
     tags: ['v*']
 
@@ -37,12 +42,13 @@ jobs:
           name: Coglio-Proxy-Archive-Windows
           path: out/
       - name: Crea lo zip
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: ${{ inputs.tag != '' || startsWith(github.ref, 'refs/tags/v') }}
         shell: pwsh
         run: Compress-Archive -Path "out/Coglio Proxy Archive-win32-x64" -DestinationPath Coglio-Proxy-Archive-Windows.zip
       - name: Pubblica nella Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: ${{ inputs.tag != '' || startsWith(github.ref, 'refs/tags/v') }}
         uses: softprops/action-gh-release@v2
         with:
           files: Coglio-Proxy-Archive-Windows.zip
+          tag_name: ${{ inputs.tag || github.ref_name }}
           generate_release_notes: true
