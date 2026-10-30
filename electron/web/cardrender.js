@@ -295,7 +295,7 @@
       drawLayout(ctx, f.b, x + padX, yy + f.sep * 0.7, ink, align, iw);
     }
   }
-  function drawPT(ctx, d, L, pal, over) {
+  function drawPT(ctx, d, L, pal, over, user) {
     if (!L.pt || !String(d.pt || '').trim()) return;
     var r = L.pt, txt = String(d.pt).trim();
     ctx.save();
@@ -307,10 +307,10 @@
       var s = fitLine(ctx, txt, F_TITLE, 700, 44, 22, 84); ctx.font = '700 ' + s + 'px ' + F_TITLE; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(txt, cx, cy - 4);
     } else {
-      rr(ctx, r[0], r[1], r[2], r[3], 14); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+      if (!(user && user.pt)) { rr(ctx, r[0], r[1], r[2], r[3], 14); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
       ctx.fillStyle = over ? 'rgba(14,12,18,0.85)' : vgrad(ctx, r[1], r[3], mix(pal.bar, '#ffffff', 0.35), mix(pal.bar, pal.a, 0.3)); ctx.fill(); ctx.shadowColor = 'transparent';
-      ctx.lineWidth = 3.5; ctx.strokeStyle = over ? 'rgba(255,255,255,0.45)' : pal.edge; ctx.stroke();
-      var s2 = fitLine(ctx, txt, F_TITLE, 700, 38, 18, r[2] - 28); ctx.font = '700 ' + s2 + 'px ' + F_TITLE; ctx.fillStyle = over ? '#fff' : pal.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3.5; ctx.strokeStyle = over ? 'rgba(255,255,255,0.45)' : pal.edge; ctx.stroke(); }
+      var s2 = fitLine(ctx, txt, F_TITLE, 700, 38, 18, r[2] - 28); ctx.font = '700 ' + s2 + 'px ' + F_TITLE; ctx.fillStyle = over || (user && user.pt && user.ink === 'light') ? '#fff' : (user && user.pt ? '#14110f' : pal.ink); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(txt, r[0] + r[2] / 2, r[1] + r[3] / 2 + 2);
     }
     ctx.restore();
@@ -398,7 +398,9 @@
   /* ---------- carta intera ---------- */
   function render(ctx, d, assets, opt) {
     assets = assets || {}; opt = opt || {};
-    var L = LAYOUT[d.frame] || LAYOUT.classic, pk = paletteKey(d), pal = PAL[pk], user = assets.frameImg ? { ink: d.ink === 'light' ? 'light' : 'dark' } : null;
+    var L = LAYOUT[d.frame] || LAYOUT.classic, pk = paletteKey(d), pal = PAL[pk], user = assets.frameImg ? { ink: d.ink === 'light' ? 'light' : 'dark', pt: !!assets.ptImg } : null;
+    /* una cornice importata può portare la propria geometria (zona arte, barre, riquadri): sostituisce quella della cornice disegnata */
+    if (user && assets.frameGeo) { var G = assets.frameGeo, L2 = {}; Object.keys(L).forEach(function (k) { L2[k] = L[k]; }); ['art', 'title', 'type', 'box', 'pt', 'info'].forEach(function (k) { if (G[k]) L2[k] = G[k]; }); L = L2; }
     var over = !!L.over && !user, square = opt.square || d.corners === 'square';
     var BORDER = { black: '#0d0b0e', white: '#f2eee6', silver: '#b9bdc4', gold: '#c9a640' }[d.border] || '#0d0b0e';
     ctx.save();
@@ -410,9 +412,12 @@
     if (user) {
       /* cornice importata dall'utente: arte sotto, cornice sopra, testi sopra tutto */
       ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
-      var ar = LAYOUT.classic.art; if (d.frame === 'fullart' || d.frame === 'borderless') ar = [0, 0, W, H];
+      var ar = (assets.frameGeo && assets.frameGeo.art) || LAYOUT.classic.art; if (d.frame === 'fullart' || d.frame === 'borderless') ar = [0, 0, W, H];
       if (hasArt) drawArtImage(ctx, assets.art, ar, d.art); else { ctx.fillStyle = '#26222c'; ctx.fillRect(0, 0, W, H); }
-      ctx.drawImage(assets.frameImg, 0, 0, W, H); ctx.restore();
+      ctx.drawImage(assets.frameImg, 0, 0, W, H);
+      if (assets.frameGeo && assets.frameGeo.panel && !L.walker && !L.saga) { var bx = L.box; ctx.fillStyle = assets.frameGeo.panel; ctx.fillRect(bx[0] + 4, bx[1] + 4, bx[2] - 8, bx[3] - 8); }
+      if (assets.ptImg && L.pt && String(d.pt || '').trim() && !L.walker) ctx.drawImage(assets.ptImg, 0, 0, W, H);
+      ctx.restore();
     } else if (over) {
       /* arte a tutta carta */
       var ar2 = L.art;
@@ -443,7 +448,7 @@
       if (L.walker) drawWalkerBox(ctx, d, L, pal, user);
       else if (L.saga) drawSagaBox(ctx, d, L, pal);
       else drawRulesBox(ctx, d, L, pal, over, user);
-      drawPT(ctx, d, L, pal, over);
+      drawPT(ctx, d, L, pal, over, user);
       drawInfo(ctx, d, L, pal, over || !!user || pk === 'B' || pk === 'U' || pk === 'R' || pk === 'G' || pk === 'L');
     }
     ctx.restore();

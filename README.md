@@ -26,7 +26,7 @@ e l'app ti dice quali carte hai, quante sono libere e in quale mazzo sono impegn
   con le carte della lista che hai già tra le sciolte (e, a parte, quelle libere in mazzi non attivi).
 - **Designer (3.0)**: crea proxy personalizzate (carte tue, token, cornici speciali, alter di carte Scryfall) con anteprima in tempo reale.
   Cornici, simboli e grafica sono **disegnati da zero nel codice** (nessuna immagine o font di Wizards inclusi); puoi importare **le tue cornici PNG**,
-  che restano solo nel dispositivo. Un design si aggiunge a un mazzo come carta nuova o sostituisce una carta esistente (nel PDF si stampa il design).
+  che restano solo nel dispositivo (anche come pacchetto `.json` con più cornici, una per colore, e geometria dei testi: `{app:'coglio-frames', groups, frames:[{key,name,group,ink,geo,png,pt}]}`; con «automatica» la cornice segue i colori). Un design si aggiunge a un mazzo come carta nuova o sostituisce una carta esistente (nel PDF si stampa il design).
   Design e arte stanno in un database a parte (IndexedDB `coglio-designer`) e si esportano in `.json` con l'arte incorporata. Il motore è `web/cardrender.js`, l'interfaccia `web/designer.js`.
 - **Immagini delle carte**: ogni carta ha la sua miniatura (presa da [Scryfall](https://scryfall.com) in base a nome e collezione, con il numero
   quando c'è). Tocca la miniatura per ingrandirla (le carte a due facce hanno *Gira*), sul PC basta passarci sopra con il mouse.

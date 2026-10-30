@@ -169,8 +169,30 @@ let n = 0; const ok = (c, m) => { n++; assert.ok(c, m); };
   const afterF = await px(); ok(afterF.s !== beforeF.s, 'cornice importata applicata');
   ok(await page.locator('[data-c="dz-frameimg"]').inputValue() !== '', 'cornice selezionata');
 
-  /* vista mazzo: etichette Design */
+  /* pacchetto di cornici: scelta automatica dai colori */
+  const pack = { app: 'coglio-frames', version: 1, groups: [{ id: 'tst', name: 'Prova' }], frames: ['U', 'C'].map((k, i) => ({ key: k, name: 'Prova ' + k, group: 'tst', ink: 'dark', geo: { art: [56, 116, 631, 463], title: [45, 52, 654, 59], type: [45, 583, 654, 58], box: [55, 646, 634, 313], pt: [568, 920, 140, 81], info: [46, 984], panel: 'rgba(255,255,255,0.9)' },
+    png: 'data:image/png;base64,' + [framePng, framePng][i].toString('base64'), pt: 'data:image/png;base64,' + framePng.toString('base64') })) };
+  fs.writeFileSync('/tmp/claude-0/dz/pack-test.json', JSON.stringify(pack));
+  await page.click('[data-a="dz-back"]'); await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
+  await page.setInputFiles('[data-c="dz-framefile"]', '/tmp/claude-0/dz/pack-test.json');
+  await page.waitForFunction(() => /Importate 2 cornici/.test(document.body.innerText));
+  ok(await page.inputValue('[data-c="dz-frameimg"]') === 'auto:tst', 'dopo il pacchetto la cornice è «automatica»');
+  ok(/Prova — automatica/.test(await page.innerHTML('[data-c="dz-frameimg"]')), 'opzione automatica nel menu');
+  await page.waitForTimeout(300);
+  const autoA = await px();
+  await page.evaluate(() => { const d = CPADesigner.state.cur; d.colors = 'R'; });
+  await page.evaluate(() => CPADesigner.state.cur.colors = '');
+  await page.waitForTimeout(100);
+  ok(await page.evaluate(() => CPADesigner.state.frames.filter(f => f.group === 'tst').length) === 2, 'due cornici del pacchetto salvate');
+  await page.setInputFiles('[data-c="dz-framefile"]', { name: 'x.json', mimeType: 'application/json', buffer: Buffer.from('{"app":"altro"}') });
+  await page.waitForFunction(() => /non è un pacchetto di cornici/.test(document.body.innerText));
+  ok(true, 'pacchetto non valido rifiutato');
+  await page.click('[data-a="dz-frame-del"]');
+  await page.waitForFunction(() => CPADesigner.state.frames.every(f => f.group !== 'tst'));
+  ok(await page.inputValue('[data-c="dz-frameimg"]') === '', 'pacchetto eliminato, torna la cornice disegnata');
   await page.click('[data-a="dz-back"]');
+
+  /* vista mazzo: etichette Design */
   await nav('decks');
   await page.click('[data-a="open-deck"]');
   await page.waitForSelector('#dlist .crow');

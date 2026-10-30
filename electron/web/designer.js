@@ -93,9 +93,20 @@
     if (!artCache[id]) artCache[id] = DB.get('art', id).then(function (b) { return b ? blobImage(b).then(function (r) { return r.img; }) : null; }).catch(function () { return null; });
     return artCache[id];
   }
-  function frameImage(id) {
+  /* d.frameImg può essere l'id di una cornice, oppure «auto:<pacchetto>»: sceglie la cornice del pacchetto in base ai colori della carta */
+  function fid(d) {
+    var v = d && d.frameImg; if (!v) return '';
+    var m = /^auto:(.+)$/.exec(v); if (!m) return v;
+    var pk = R.paletteKey(d), list = dz.frames.filter(function (f) { return f.group === m[1]; });
+    var f = list.filter(function (x) { return x.key === pk; })[0] || list.filter(function (x) { return x.key === 'C'; })[0] || list[0];
+    return f ? f.id : '';
+  }
+  function frameAssets(id) {
     if (!id) return Promise.resolve(null);
-    if (!dz.frameImgs[id]) dz.frameImgs[id] = DB.get('frames', id).then(function (f) { return f && f.blob ? blobImage(f.blob).then(function (r) { return r.img; }) : null; }).catch(function () { return null; });
+    if (!dz.frameImgs[id]) dz.frameImgs[id] = DB.get('frames', id).then(function (f) {
+      if (!f || !f.blob) return null;
+      return Promise.all([blobImage(f.blob), f.ptBlob ? blobImage(f.ptBlob) : null]).then(function (r) { return { frameImg: r[0].img, ptImg: r[1] ? r[1].img : null, frameGeo: f.geo || null }; });
+    }).catch(function () { return null; });
     return dz.frameImgs[id];
   }
   /* ridimensiona (lato lungo max) e converte in JPEG: l'arte occupa meno spazio e il PDF resta leggero */
@@ -131,12 +142,12 @@
     }
     return fontsP;
   }
-  function drawInto(ctx, d, art, frameImg, opt) { R.render(ctx, d, { art: art, frameImg: frameImg }, opt); }
+  function drawInto(ctx, d, art, fa, opt) { R.render(ctx, d, { art: art, frameImg: fa ? fa.frameImg : null, ptImg: fa ? fa.ptImg : null, frameGeo: fa ? fa.frameGeo : null }, opt); }
   function renderBlob(designId, opt) {
     opt = opt || {};
     return load().then(function () {
       var d = byId(designId); if (!d) throw new Error('design non trovato');
-      return Promise.all([artImage(d.art.id), frameImage(d.frameImg), fonts()]).then(function (a) {
+      return Promise.all([artImage(d.art.id), frameAssets(fid(d)), fonts()]).then(function (a) {
         var c = document.createElement('canvas'), sc = opt.scale || 1; c.width = Math.round(W * sc); c.height = Math.round(HH * sc);
         var ctx = c.getContext('2d'); if (sc !== 1) ctx.scale(sc, sc);
         drawInto(ctx, d, a[0], a[1], { square: !!opt.square });
@@ -148,13 +159,13 @@
     var cv = document.getElementById('dz-cv'), d = dz.cur;
     if (!cv || !d) return;
     var ctx = cv.getContext('2d');
-    try { drawInto(ctx, d, dz.artImg, dz.frameImgNow || null, {}); } catch (e) { /* ignorato */ }
+    frameAssets(fid(d)).then(function (fa) { if (dz.cur !== d) return; try { drawInto(cv.getContext('2d'), d, dz.artImg, fa, {}); } catch (e) { /* ignorato */ } });
   }
   function schedulePreview() { if (drawTimer) return; drawTimer = setTimeout(function () { drawTimer = null; drawPreview(); }, 24); }
   function drawThumbs() {
     [].slice.call(document.querySelectorAll('canvas.dz-th')).forEach(function (cv) {
       var d = byId(cv.getAttribute('data-id')); if (!d) return;
-      Promise.all([artImage(d.art.id), frameImage(d.frameImg), fonts()]).then(function (a) {
+      Promise.all([artImage(d.art.id), frameAssets(fid(d)), fonts()]).then(function (a) {
         if (!cv.isConnected) return;
         var ctx = cv.getContext('2d'); ctx.save(); ctx.scale(cv.width / W, cv.height / HH);
         try { drawInto(ctx, d, a[0], a[1], {}); } catch (e) { /* ignorato */ }
@@ -166,8 +177,8 @@
   /* ---------- schermata ---------- */
   function open() { H.ui.view = 'designer'; dz.view = 'list'; dz.cur = null; dz.picker = null; window.scrollTo(0, 0); load().then(function () { H.render(); }); H.render(); }
   function editDesign(d) {
-    dz.cur = d; dz.view = 'edit'; dz.artImg = null; dz.frameImgNow = null; dz.confirm = ''; dz.search = { q: d.alterOf || '', busy: false, msg: '' };
-    Promise.all([artImage(d.art.id), frameImage(d.frameImg)]).then(function (a) { if (dz.cur === d) { dz.artImg = a[0]; dz.frameImgNow = a[1]; schedulePreview(); } });
+    dz.cur = d; dz.view = 'edit'; dz.artImg = null; dz.confirm = ''; dz.search = { q: d.alterOf || '', busy: false, msg: '' };
+    artImage(d.art.id).then(function (a) { if (dz.cur === d) { dz.artImg = a; schedulePreview(); } });
     window.scrollTo(0, 0); H.render();
   }
   function create(kind) {
@@ -183,6 +194,39 @@
   function inp(k, v, ph, type) { return '<input class="input" data-c="dz-f" data-k="' + k + '" value="' + esc(v) + '" placeholder="' + esc(ph || '') + '" autocomplete="off"' + (type ? ' type="' + type + '"' : '') + '>'; }
   function sel(k, v, opts) { return '<select class="select" data-c="dz-f" data-k="' + k + '">' + opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(v) === String(o[0]) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>'; }
   function rng(k, v, min, max, step) { return '<input class="dz-range" type="range" data-c="dz-art" data-k="' + k + '" min="' + min + '" max="' + max + '" step="' + step + '" value="' + v + '">'; }
+
+  function frameOptions(d) {
+    var groups = {}, h = '';
+    dz.frames.forEach(function (f) { if (f.group) groups[f.group] = f.groupName || f.group; });
+    Object.keys(groups).forEach(function (g) { h += '<option value="auto:' + esc(g) + '"' + (d.frameImg === 'auto:' + g ? ' selected' : '') + '>' + esc(groups[g]) + ' \u2014 automatica (segue i colori)</option>'; });
+    return h + dz.frames.map(function (f) { return '<option value="' + esc(f.id) + '"' + (d.frameImg === f.id ? ' selected' : '') + '>' + esc(f.name) + '</option>'; }).join('');
+  }
+  /* pacchetto di cornici (.json): { app: 'coglio-frames', groups: [{id,name}], frames: [{key,name,group,ink,geo,png,pt}] } */
+  function importPack(file) {
+    return new Promise(function (res) {
+      var r = new FileReader();
+      r.onerror = function () { res(null); };
+      r.onload = function () {
+        var data; try { data = JSON.parse(String(r.result)); } catch (e) { data = null; }
+        if (!data || data.app !== 'coglio-frames' || !Array.isArray(data.frames)) { H.toast('«' + file.name + '»: non è un pacchetto di cornici di Coglio.'); return res(null); }
+        var names = {}; (data.groups || []).forEach(function (g) { names[g.id] = g.name; });
+        var chain = Promise.resolve(), n = 0, first = '';
+        data.frames.forEach(function (f) {
+          var blob = dataUrlToBlob(f.png); if (!blob) return;
+          chain = chain.then(function () {
+            var grp = String(f.group || 'pack'), key = String(f.key || '');
+            var old = dz.frames.filter(function (x) { return x.group === grp && x.key === key; })[0];
+            var rec = { id: old ? old.id : uid('f'), name: String(f.name || 'Cornice'), group: grp, groupName: names[grp] || grp, key: key, ink: f.ink === 'light' ? 'light' : 'dark', geo: f.geo || null, blob: blob, ptBlob: dataUrlToBlob(f.pt) || null, createdAt: Date.now() };
+            if (old) { dz.frames = dz.frames.filter(function (x) { return x !== old; }); delete dz.frameImgs[old.id]; }
+            dz.frames.push(rec); n++; if (!first) first = grp;
+            return DB.put('frames', rec);
+          });
+        });
+        chain.then(function () { H.toast(n ? 'Importate ' + n + (n === 1 ? ' cornice.' : ' cornici.') : 'Il pacchetto non contiene cornici utilizzabili.'); res(n ? first : null); }, function () { H.toast('Non riesco a salvare le cornici su questo dispositivo.'); res(null); });
+      };
+      r.readAsText(file);
+    });
+  }
 
   function listHtml() {
     var net = H.available();
@@ -227,11 +271,11 @@
       '<div class="chips" aria-label="Colore">' + chip('dz-set', 'palette', 'auto', 'Auto (dai colori)', d.palette === 'auto') + R.PAL_ORDER.map(function (k) { return chip('dz-set', 'palette', k, R.PAL[k].name, d.palette === k); }).join('') + '</div>' +
       '<div class="dz-row">' + lbl('Bordo', sel('border', d.border, [['black', 'Nero'], ['white', 'Bianco'], ['silver', 'Argento'], ['gold', 'Oro']])) +
       lbl('Angoli', sel('corners', d.corners, [['round', 'Arrotondati'], ['square', 'Quadrati']])) + '</div>' +
-      '<div class="dz-row">' + lbl('Cornice importata', '<select class="select" data-c="dz-frameimg"><option value="">Nessuna (uso la cornice disegnata)</option>' + dz.frames.map(function (f) { return '<option value="' + esc(f.id) + '"' + (d.frameImg === f.id ? ' selected' : '') + '>' + esc(f.name) + '</option>'; }).join('') + '</select>') +
+      '<div class="dz-row">' + lbl('Cornice importata', '<select class="select" data-c="dz-frameimg"><option value="">Nessuna (uso la cornice disegnata)</option>' + frameOptions(d) + '</select>') +
       (d.frameImg ? lbl('Colore del testo', sel('ink', d.ink, [['dark', 'Scuro'], ['light', 'Chiaro']])) : '') + '</div>' +
-      '<div class="btns"><label class="btn small filebtn">Importa cornice PNG<input type="file" accept="image/png,image/webp" data-c="dz-framefile" multiple hidden></label>' +
-      (d.frameImg ? '<button class="btn small danger" data-a="dz-frame-del">Elimina questa cornice</button>' : '') + '</div>' +
-      '<p class="hint">Le cornici importate sono PNG tuoi (con la zona dell’arte trasparente, formato carta): restano solo su questo dispositivo.</p></section>';
+      '<div class="btns"><label class="btn small filebtn">Importa cornici (PNG o pacchetto)<input type="file" accept="image/png,image/webp,.json,application/json" data-c="dz-framefile" multiple hidden></label>' +
+      (d.frameImg ? '<button class="btn small danger" data-a="dz-frame-del">' + (/^auto:/.test(d.frameImg) ? 'Elimina il pacchetto di cornici' : 'Elimina questa cornice') + '</button>' : '') + '</div>' +
+      '<p class="hint">Le cornici importate (PNG tuoi con la zona dell’arte trasparente, oppure un pacchetto .json) restano solo su questo dispositivo. Con «automatica» la cornice segue i colori della carta.</p></section>';
     /* testo */
     var cm = R.paletteKey(d);
     h += '<section class="panel"><h2 class="sect" style="margin:0">Testo</h2>' +
@@ -399,7 +443,8 @@
       items.forEach(function (it) {
         chain = chain.then(function () {
           var d = norm(it.design || {}); var wasThere = byId(d.id); if (wasThere) d.id = uid('z');
-          d.frameImg = ''; d.createdAt = Date.now(); d.updatedAt = Date.now();
+          if (!/^auto:/.test(d.frameImg)) d.frameImg = '';
+          d.createdAt = Date.now(); d.updatedAt = Date.now();
           var b = dataUrlToBlob(it.art), aid = '';
           var p = Promise.resolve();
           if (b) { aid = uid('a'); p = DB.put('art', b, aid); }
@@ -441,7 +486,14 @@
         if (!d) break;
         if (dz.confirm === 'del') { dropDesign(d.id); dz.cur = null; dz.view = 'list'; dz.confirm = ''; window.scrollTo(0, 0); H.render(); } else { dz.confirm = 'del'; H.render(); }
         break;
-      case 'dz-frame-del': if (d && d.frameImg) { var fid = d.frameImg; dz.designs.forEach(function (x) { if (x.frameImg === fid) x.frameImg = ''; }); dz.frames = dz.frames.filter(function (f) { return f.id !== fid; }); delete dz.frameImgs[fid]; DB.del('frames', fid); dz.frameImgNow = null; saveNow(); H.render(); } break;
+      case 'dz-frame-del':
+        if (d && d.frameImg) {
+          var cur = d.frameImg, auto = /^auto:(.+)$/.exec(cur), gone = auto ? dz.frames.filter(function (f) { return f.group === auto[1]; }).map(function (f) { return f.id; }) : [cur];
+          dz.designs.forEach(function (x) { if (x.frameImg === cur || gone.indexOf(x.frameImg) >= 0) { x.frameImg = ''; if (x !== d) DB.put('designs', clone(x)); } });
+          dz.frames = dz.frames.filter(function (f) { return gone.indexOf(f.id) < 0; });
+          gone.forEach(function (g) { delete dz.frameImgs[g]; DB.del('frames', g); });
+          saveNow(); H.render();
+        } break;
       case 'dz-export-one': if (d) { saveNow(); exportDesigns([d], fname(d, '.coglio-design.json')); } break;
       case 'dz-export-all': exportDesigns(dz.designs, 'coglio-design.json'); break;
       case 'dz-bind': openPicker(el.getAttribute('data-deck'), el.getAttribute('data-name')); break;
@@ -480,14 +532,16 @@
     else if (c === 'dz-framefile') {
       var files = [].slice.call(el.files || []), last = null, p = Promise.resolve();
       files.forEach(function (f) {
+        if (/\.json$/i.test(f.name) || f.type === 'application/json') { p = p.then(function () { return importPack(f).then(function (g) { if (g) last = { id: 'auto:' + g }; }); }); return; }
         p = p.then(function () {
           return blobImage(f).then(function (r) { URL.revokeObjectURL(r.url); var fr = { id: uid('f'), name: f.name.replace(/\.[^.]+$/, ''), blob: f, ink: 'dark', createdAt: Date.now() }; dz.frames.push(fr); last = fr; return DB.put('frames', fr); },
             function () { H.toast('«' + f.name + '»: non è un’immagine leggibile.'); });
         });
       });
-      p.then(function () { if (last && d) { d.frameImg = last.id; dz.frameImgNow = null; frameImage(last.id).then(function (im) { dz.frameImgNow = im; schedulePreview(); }); saveNow(); } H.render(); });
+      el.value = '';
+      p.then(function () { if (last && d) { d.frameImg = last.id; saveNow(); } H.render(); });
     }
-    else if (c === 'dz-frameimg' && d) { d.frameImg = el.value; dz.frameImgNow = null; frameImage(el.value).then(function (im) { dz.frameImgNow = im; schedulePreview(); }); saveSoon(); H.render(); }
+    else if (c === 'dz-frameimg' && d) { d.frameImg = el.value; saveSoon(); H.render(); }
     else if (c === 'dz-import') { if (el.files && el.files[0]) importFile(el.files[0]); }
     else if (c === 'dz-bdeck' && dz.bind) { dz.bind.deckId = el.value; dz.bind.card = ''; H.render(); }
     else if (c === 'dz-bcard' && dz.bind) { dz.bind.card = el.value; H.render(); }
