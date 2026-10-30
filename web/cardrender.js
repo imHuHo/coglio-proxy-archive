@@ -64,7 +64,7 @@
     return {
       id: '', kind: kind || 'card', name: token ? 'Token' : 'Nuova carta', cost: token ? '' : '{1}{U}', type: token ? 'Token Creature — Spirit' : 'Creature — Wizard',
       rules: token ? 'Flying' : 'Flying\n{T}: Draw a card, then discard a card.', flavor: '', pt: token ? '1/1' : '2/3', rarity: 'common', set: 'CST', num: '001', artist: '',
-      watermark: '', crown: '', cmix: '', mix: '', inner: '', holo: '', darkpt: '', pips: '', list: '', frame: DEFAULT_KINDS[kind] || 'classic', colors: token ? 'U' : 'U', palette: 'auto', border: 'black', corners: 'round', alterOf: '',
+      watermark: '', setImg: '', setTint: '', crown: '', cmix: '', mix: '', inner: '', holo: '', darkpt: '', pips: '', list: '', frame: DEFAULT_KINDS[kind] || 'classic', colors: token ? 'U' : 'U', palette: 'auto', border: 'black', corners: 'round', alterOf: '',
       art: { id: '', x: 0, y: 0, s: 1 }, frameImg: '', ink: 'dark', createdAt: 0, updatedAt: 0
     };
   }
@@ -269,6 +269,20 @@
     ctx.fillStyle = c[0]; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = light ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.7)'; ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-9, 0); ctx.lineTo(0, -8); ctx.lineTo(9, 0); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.stroke(); ctx.restore();
   }
+  /* simbolo del set caricato dall'utente, al posto della gemma: stessa posizione, proporzioni mantenute, tinta di rarità a richiesta */
+  var SYMIMG = null;
+  function drawCustomSym(ctx, img, cx, cy, d) {
+    var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height; if (!iw || !ih) return false;
+    var k = Math.min(52 / iw, 42 / ih), w = Math.max(1, Math.round(iw * k)), h = Math.max(1, Math.round(ih * k)), src = img;
+    if (d.setTint === 'rarity') {
+      var t = document.createElement('canvas'); t.width = w; t.height = h; var x = t.getContext('2d'), c = RARITY[d.rarity] || RARITY.common;
+      x.drawImage(img, 0, 0, w, h); x.globalCompositeOperation = 'source-in';
+      var g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, c[0]); g.addColorStop(1, c[1]); x.fillStyle = g; x.fillRect(0, 0, w, h); src = t;
+    }
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
+    ctx.drawImage(src, Math.round(cx - w / 2), Math.round(cy - h / 2), w, h); ctx.restore();
+    return true;
+  }
   function fitLine(ctx, text, face, weight, maxSize, minSize, maxW) {
     for (var s = maxSize; s >= minSize; s--) { ctx.font = weight + ' ' + s + 'px ' + face; if (ctx.measureText(text).width <= maxW) return s; }
     return minSize;
@@ -329,7 +343,7 @@
     var size = fitLine(ctx, String(d.type || ''), F_TITLE, 700, 30, 15, maxW);
     ctx.font = '700 ' + size + 'px ' + F_TITLE; ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.save(); shade(ctx, !!user && lightInk(ink)); ctx.fillText(String(d.type || ''), r[0] + 20 + sh, r[1] + r[3] / 2 + 2); ctx.restore();
-    if (gem) setGem(ctx, r[0] + r[2] - 34, r[1] + r[3] / 2, d.rarity, !over);
+    if (gem && !(SYMIMG && drawCustomSym(ctx, SYMIMG, r[0] + r[2] - 34, r[1] + r[3] / 2, d))) setGem(ctx, r[0] + r[2] - 34, r[1] + r[3] / 2, d.rarity, !over);
   }
   function drawRulesBox(ctx, d, L, pal, over, user) {
     var r = L.box, x = r[0], y = r[1], w = r[2], h = r[3];
@@ -517,7 +531,7 @@
 
   /* ---------- carta intera ---------- */
   function render(ctx, d, assets, opt) {
-    assets = assets || {}; opt = opt || {};
+    assets = assets || {}; opt = opt || {}; SYMIMG = assets.setImg || null;
     var L = LAYOUT[d.frame] || LAYOUT.classic, pk = paletteKey(d), pal = PAL[pk], user = assets.frameImg ? { ink: d.ink === 'light' ? 'light' : 'dark', pt: !!assets.ptImg, colors: (assets.frameGeo && assets.frameGeo.colors) || null, center: !!(assets.frameGeo && assets.frameGeo.titleAlign === 'center'), walker: (assets.frameGeo && assets.frameGeo.walker) || null } : null;
     /* una cornice importata può portare la propria geometria (zona arte, barre, riquadri): sostituisce quella della cornice disegnata */
     if (user && assets.frameGeo) { var G = assets.frameGeo, L2 = {}; Object.keys(L).forEach(function (k) { L2[k] = L[k]; }); ['art', 'title', 'type', 'box', 'pt', 'info'].forEach(function (k) { if (G[k]) L2[k] = G[k]; }); L = L2; }

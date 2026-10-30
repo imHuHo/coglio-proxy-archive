@@ -21,6 +21,11 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true });
   const page = await ctx.newPage();
+  /* le sezioni dell'editor sono a schede: prima di agire su un campo nascosto si apre la sua scheda */
+  const ensureTab = sel => page.evaluate(q => { const el = document.querySelector(q), tp = el && el.closest('.dz-tp'); if (tp && tp.hidden) document.querySelector('.dz-tab[data-v="' + tp.dataset.tab + '"]').click(); }, sel).catch(() => {});
+  for (const fn of ['click', 'fill', 'selectOption']) { const o = page[fn].bind(page); page[fn] = async (sel, ...a) => { if (typeof sel === 'string') await ensureTab(sel); return o(sel, ...a); }; }
+  const ows = page.waitForSelector.bind(page);
+  page.waitForSelector = async (sel, opts) => { if (typeof sel === 'string' && !(opts && opts.state)) { await ows(sel, { state: 'attached' }).catch(() => {}); await ensureTab(sel); } return ows(sel, opts); };
   const errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|net::ERR/.test(m.text())) errors.push(m.text()); });
 
   /* immagini finte generate dal browser stesso */
@@ -118,10 +123,10 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
 
   /* colori e cornice */
   await page.click('[data-a="dz-col"][data-v="U"]');
-  await page.click('[data-a="dz-set"][data-k="frame"][data-v="fullart"]');
+  await page.selectOption('[data-c="dz-f"][data-k="frame"]', 'fullart');
   await page.waitForTimeout(100);
   const fa = await px(); ok(fa.s !== filled.s, 'cornice full art diversa');
-  await page.click('[data-a="dz-set"][data-k="frame"][data-v="classic"]');
+  await page.selectOption('[data-c="dz-f"][data-k="frame"]', 'classic');
 
   /* arte */
   await page.setInputFiles('[data-c="dz-artfile"]', { name: 'arte.png', mimeType: 'image/png', buffer: artPng });
@@ -178,14 +183,15 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await page.waitForSelector('[data-c="dz-art"][data-k="s"]');
   ok(await page.locator('[data-c="dz-art"][data-k="s"]').count() === 1, 'arte importata da Scryfall');
   /* scelta della stampa */
+  await page.waitForSelector('[data-a="dz-prints-toggle"]', { state: 'attached' }); await page.waitForSelector('.bd-mbox button[data-a="dz-dlg-no"]');
+  ok(await page.locator('[data-a="dz-dlg-yes"]').count() === 1, 'cornice mancante: dialogo di download');
+  await page.click('.bd-mbox button[data-a="dz-dlg-no"]');
+  ok(await page.locator('[data-a="dz-dlg-yes"]').count() === 0, 'il dialogo si chiude tenendo la cornice attuale');
+  await page.click('[data-a="dz-prints-toggle"]');
   await page.waitForSelector('[data-a="dz-print-pick"]');
   ok(await page.locator('[data-a="dz-print-pick"]').count() === 2, 'due stampe disponibili');
   ok(await page.locator('[data-a="dz-print-pick"] img').count() === 2, 'le stampe sono mostrate come immagini');
   ok(await page.getAttribute('[data-a="dz-print-pick"][data-id="0"]', 'aria-pressed') === 'true', 'la stampa importata \u00e8 quella evidenziata');
-  /* senza il pacchetto M15 la cornice esatta manca: il designer lo dice e chiede */
-  ok(await page.locator('[data-a="dz-dlg-yes"]').count() === 1, 'cornice mancante: dialogo di download');
-  await page.click('.bd-mbox button[data-a="dz-dlg-no"]');
-  ok(await page.locator('[data-a="dz-dlg-yes"]').count() === 0, 'il dialogo si chiude tenendo la cornice attuale');
   await page.click('[data-a="dz-print-pick"][data-id="1"]');
   await page.waitForFunction(() => /Stampa scelta: Altra Edizione/.test(document.body.innerText));
   ok(await page.evaluate(() => { const d = CPADesigner.state.cur; return d.set === 'XYZ' && d.num === '99' && d.rarity === 'rare' && d.artist === 'Altro Artista' && d.flavor === 'Altro testo.'; }), 'la stampa cambia collezione, numero, rarit\u00e0, artista e testo di colore');
@@ -260,7 +266,7 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await page.setInputFiles('[data-c="dz-framefile"]', { name: 'cornice-extra.png', mimeType: 'image/png', buffer: framePng });
   await page.waitForFunction(() => /cornice-extra/.test(document.body.innerHTML)); await page.waitForTimeout(300);
   ok(await page.evaluate(() => CPACard.hasOverlays()), 'extra delle cornici importati');
-  ok(/extra della cornice/i.test(await text()), 'sezione extra nell\u2019editor');
+  ok(/extra della cornice/i.test(await page.evaluate(() => document.body.textContent)), 'sezione extra nell\u2019editor');
   const b4 = await full();
   await page.selectOption('[data-k="crown"]', 'legend'); await page.waitForTimeout(400);
   const b5 = await full(); ok(b5 !== b4, 'la corona cambia l\u2019anteprima');
@@ -434,14 +440,14 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
 
   /* carta bifronte: retro importato da Scryfall, tasto Trasforma, retro nell'esportazione */
   await page.click('[data-a="dz-new"][data-k="card"]'); await page.waitForSelector('[data-c="dz-q"]');
-  ok(/aggiungi il retro/.test(await page.locator('[data-a="dz-flip"]').innerText()), 'prima di importare il tasto propone di aggiungere il retro');
+  ok(/aggiungi il retro/i.test(await page.locator('[data-a="dz-flip"]').innerText()), 'prima di importare il tasto propone di aggiungere il retro');
   await page.fill('[data-c="dz-q"]', 'delver'); await page.click('[data-a="dz-alter"]');
   await page.waitForFunction(() => /Importata: Delver/.test(document.body.innerText) && CPADesigner.state.root.back && CPADesigner.state.root.back.art.id);
   ok(await page.evaluate(() => { const b = CPADesigner.state.root.back; return b.name === 'Insectile Aberration' && b.pt === '3/2' && b.rules === 'Flying' && b.artist === 'Back Artist'; }), 'il retro prende la seconda faccia di Scryfall');
   const dlgBtn = await page.locator('.bd-mbox button[data-a="dz-dlg-no"]').count(); if (dlgBtn) await page.click('.bd-mbox button[data-a="dz-dlg-no"]');
-  ok(/mostra il retro/.test(await page.locator('[data-a="dz-flip"]').innerText()), 'tasto Trasforma: mostra il retro');
+  ok(/mostra il retro/i.test(await page.locator('[data-a="dz-flip"]').innerText()), 'tasto Trasforma: mostra il retro');
   await page.click('[data-a="dz-flip"]');
-  ok(await page.inputValue('[data-c="dz-f"][data-k="name"]') === 'Insectile Aberration' && /mostra il fronte/.test(await page.locator('[data-a="dz-flip"]').innerText()), 'Trasforma mostra e modifica il retro');
+  ok(await page.inputValue('[data-c="dz-f"][data-k="name"]') === 'Insectile Aberration' && /mostra il fronte/i.test(await page.locator('[data-a="dz-flip"]').innerText()), 'Trasforma mostra e modifica il retro');
   ok(await page.locator('[data-a="dz-alter"]').count() === 0 && await page.locator('[data-a="dz-add"]').count() === 0, 'sul retro niente importazione e niente mazzo');
   await page.fill('[data-c="dz-f"][data-k="name"]', 'Retro modificato'); await page.waitForTimeout(450);
   await page.click('[data-a="dz-flip"]');
@@ -452,6 +458,21 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   ok(await page.evaluate(() => { const b = CPADesigner.state.root.back; return !!b && b.name === 'Retro modificato' && !!b.art.id; }), 'duplicare porta con sé anche il retro e la sua arte');
   await page.click('[data-a="dz-back-del"]');
   ok(await page.evaluate(() => !CPADesigner.state.root.back), 'tolto il retro');
+  /* simbolo del set personalizzato */
+  const setSymPng = Buffer.from(await mkImg('image/png', 120, 90, 'x.clearRect(0,0,w,h);x.fillStyle="#d22";x.beginPath();x.moveTo(60,5);x.lineTo(115,85);x.lineTo(5,85);x.closePath();x.fill();'), 'base64');
+  const rb = () => page.evaluate(async () => { const b = await CPADesigner.renderBlob(CPADesigner.state.root.id, { type: 'image/png' }); return await new Promise(r => { const f = new FileReader(); f.onload = () => r(String(f.result).length + ':' + String(f.result).slice(-400)); f.readAsDataURL(b); }); });
+  await page.waitForTimeout(300); const sym0 = await rb();
+  await page.setInputFiles('[data-c="dz-setsym"]', { name: 'logo.png', mimeType: 'image/png', buffer: setSymPng });
+  await page.waitForFunction(() => CPADesigner.state.cur.setImg);
+  const sym1 = await rb(); ok(sym1 !== sym0, 'il simbolo personalizzato sostituisce la gemma');
+  await page.selectOption('[data-c="dz-f"][data-k="setTint"]', 'rarity'); await page.waitForTimeout(100);
+  const sym2 = await rb(); ok(sym2 !== sym1 && await page.evaluate(() => CPADesigner.state.cur.setTint) === 'rarity', 'colore della rarità sul simbolo');
+  const symDup = await page.evaluate(() => CPADesigner.state.root.id);
+  await page.click('[data-a="dz-dup"]'); await page.waitForFunction(id => CPADesigner.state.root.id !== id, symDup);
+  ok(await page.evaluate(async () => { const d = CPADesigner.state.root; return !!d.setImg && d.setTint === 'rarity' && !!(await CPADesigner.renderBlob(d.id, {})); }), 'duplicare porta con sé il simbolo');
+  await page.click('[data-a="dz-setsym-del"]');
+  ok(await page.evaluate(() => CPADesigner.state.cur.setImg) === '', 'si torna alla gemma di rarità');
+
   /* due colori */
   await page.evaluate(() => { const d = CPADesigner.state.cur; d.mix = 'BR'; d.cmix = 'BR'; d.crown = 'legend'; });
   ok(await page.evaluate(() => CPACard.mixOf('BR') === 'BR' && CPACard.mixOf('BB') === null && CPACard.paletteKey({ mix: 'RG', colors: 'W' }) === 'R'), 'la cornice a due colori usa il colore di sinistra come base');
@@ -461,7 +482,7 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await page.selectOption('[data-c="dz-mix"][data-k="mix"][data-side="1"]', ''); ok(await page.evaluate(() => CPADesigner.state.cur.mix) === '', 'togliendo un colore la cornice torna normale');
   /* scelta: nessuna / solo corona / cornice e corona */
   await page.evaluate(() => { const d = CPADesigner.state.cur; d.colors = 'UR'; d.cost = '{R}{U}'; d.mix = ''; d.cmix = ''; d.type = 'Legendary Creature \u2014 Wizard'; });
-  await page.click('[data-a="dz-set"][data-k="palette"][data-v="auto"]');
+  await page.selectOption('[data-c="dz-f"][data-k="palette"]', 'auto');
   ok(await page.locator('[data-a="dz-bi"]').count() === 3, 'carta a due colori: tre scelte');
   await page.click('[data-a="dz-bi"][data-v="crown"]');
   ok(await page.evaluate(() => { const d = CPADesigner.state.cur; return d.cmix === 'RU' && d.mix === '' && d.crown === 'legend'; }), 'solo corona: cornice normale, corona a due colori (ordine del costo)');
