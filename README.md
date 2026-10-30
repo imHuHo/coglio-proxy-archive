@@ -1,5 +1,7 @@
 # Coglio Proxy Archive
 
+**Versione web:** https://imhuho.github.io/coglio-proxy-archive/ (si aggiorna da sola a ogni push su `main`, vedi `.github/workflows/pages.yml`; una tantum: Settings → Pages → Source: *GitHub Actions*). Si installa come app dal browser; i dati stanno nel browser e si spostano con Backup/Ripristino.
+
 **Download:** nella pagina [Releases](https://github.com/imHuHo/coglio-proxy-archive/releases/latest) ci sono lo zip per Windows (estrai tutta la cartella e avvia `Coglio Proxy Archive.exe`) e l'APK per Android.
 Per pubblicare una nuova versione: scheda *Actions* → *Windows app* (e *Android APK*) → *Run workflow* → scrivi il nome della versione, ad esempio `v1.2.0`.
 

@@ -46,6 +46,16 @@ const check = async () => { click($('[data-a="upd-check"]')); await sleep(30); }
   click($('[data-a="upd-go"]'));
   ok(opened.pop() === 'https://github.com/imHuHo/coglio-proxy-archive/releases/tag/v2.1.0', 'apre la pagina della release');
 
+  // versione web: ricarica con cache e service worker azzerati (i dati non si toccano)
+  const deleted = [], unreg = []; let idbTouched = false;
+  w.caches = { keys: async () => ['cpa-v10', 'cpa-v11'], delete: async k => { deleted.push(k); return true; } };
+  Object.defineProperty(w.navigator, 'serviceWorker', { value: { getRegistrations: async () => [{ unregister: async () => { unreg.push(1); return true; } }] }, configurable: true });
+  w.indexedDB = new Proxy({}, { get() { idbTouched = true; return () => {}; } });
+  ok($('[data-a="upd-reload"]'), 'web: pulsante di ricarica');
+  click($('[data-a="upd-reload"]')); await sleep(30);
+  ok(deleted.join() === 'cpa-v10,cpa-v11' && unreg.length === 1, 'web: cache e service worker azzerati');
+  ok(!idbTouched, 'web: i dati (IndexedDB) non vengono toccati');
+
   // Android
   w.Capacitor = { isNativePlatform: () => true }; await check();
   ok($('[data-a="upd-go"]').textContent.includes('APK') && text().includes('3.8 MB'), 'android: pulsante APK con dimensione');

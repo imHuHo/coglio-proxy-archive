@@ -2355,6 +2355,14 @@ window.CPA_VERSION = '2.1.0';
         upd.st = 'opened'; render();
       }
     }
+    /* Versione web: dimentica la copia in cache (service worker) e ricarica. IndexedDB, cioè i dati, non si tocca. */
+    function reload() {
+      var jobs = [];
+      try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); })); } catch (e) { /* ignorato */ }
+      try { if (window.caches && caches.keys) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); })); } catch (e2) { /* ignorato */ }
+      toast('Aggiorno… i tuoi dati restano dove sono.');
+      Promise.all(jobs).then(function () { location.reload(); }, function () { location.reload(); });
+    }
     function paintProgress() {
       var p = upd.prog, el = document.getElementById('upd-prog'), tx = document.getElementById('upd-prog-t');
       if (!el || !p) return;
@@ -2386,13 +2394,14 @@ window.CPA_VERSION = '2.1.0';
         } else if (i.asset) {
           h += '<div class="btns"><button class="btn primary" data-a="upd-go">' + (plat === 'android' ? 'Scarica l\'APK' : 'Scarica e prepara l\'aggiornamento') + '</button></div>';
         } else {
-          h += '<p class="hint">' + (plat === 'web' ? 'La versione web si aggiorna da sola: chiudi e riapri l\'app dopo la pubblicazione. I programmi per Windows e Android si scaricano dalla pagina della versione.' : 'Per questo dispositivo non c\'è un file pronto in questa versione.') + '</p>' + (i.page ? '<div class="btns"><button class="btn" data-a="upd-go">Apri la pagina della versione</button></div>' : '');
+          h += '<p class="hint">' + (plat === 'web' ? 'I programmi per Windows e Android si scaricano dalla pagina della versione.' : 'Per questo dispositivo non c\'è un file pronto in questa versione.') + '</p>' + (i.page ? '<div class="btns"><button class="btn" data-a="upd-go">Apri la pagina della versione</button></div>' : '');
         }
         h += '</div>';
       }
+      if (plat === 'web' && location.protocol.indexOf('http') === 0) h += '<p class="hint">Questa è la versione web: si aggiorna da sola ad ogni pubblicazione, ma la nuova versione si vede alla seconda apertura. Per averla subito:</p><div class="btns"><button class="btn" data-a="upd-reload">Ricarica l\'app con l\'ultima versione</button></div>';
       return h + '</section>';
     }
-    return { check: check, start: start, panel: panel, cmp: cmp, pick: pick, platform: platform };
+    return { check: check, start: start, reload: reload, panel: panel, cmp: cmp, pick: pick, platform: platform };
   })();
   function saveBracket(deck, b) { deck.bracket = b; deck.updatedAt = Date.now(); touch(deck.id); render(); }
 
@@ -3263,6 +3272,7 @@ window.CPA_VERSION = '2.1.0';
       case 'lb-keep': break;
       case 'upd-check': UPD.check(); break;
       case 'upd-go': UPD.start(); break;
+      case 'upd-reload': UPD.reload(); break;
       case 'upd-quit': if (window.cpaNet && window.cpaNet.quit) window.cpaNet.quit(); else toast('Chiudi la finestra per uscire.'); break;
       case 'img-clear': IMG.clear(); toast('Immagini salvate cancellate: le riscarico quando servono.'); render(); break;
       case 'reset-all':
