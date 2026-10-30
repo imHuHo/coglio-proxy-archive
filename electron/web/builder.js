@@ -161,7 +161,7 @@
     var rp = res.report, out = [];
     if (rp.missing.length) out.push({ k: 'err', t: plural(rp.missing.length, 'carta senza immagine', 'carte senza immagine') + ' (nel PDF c’è un riquadro vuoto): ' + rp.missing.join(', ') + '.' });
     if (rp.substituted.length) out.push({ k: 'warn', t: plural(rp.substituted.length, 'stampa non disponibile, ne ho usata un’altra', 'stampe non disponibili, ne ho usate altre') + ': ' + rp.substituted.map(function (s) { return s.name + ' (' + s.asked + ' → ' + s.got + ')'; }).join(', ') + '.' });
-    if (rp.tokens) out.push({ k: 'ok', t: plural(rp.tokens, 'gettone aggiunto', 'gettoni aggiunti') + '.' });
+    if (rp.tokens) out.push({ k: 'ok', t: plural(rp.tokens, 'token aggiunto', 'token aggiunti') + '.' });
     if (rp.failed.length) out.push({ k: 'err', t: plural(rp.failed.length, 'immagine non scaricata', 'immagini non scaricate') + '.' });
     return out.concat(extra || []);
   }
@@ -297,7 +297,7 @@
       '<label class="btn">Aggiungi tue immagini<input type="file" accept="image/*" multiple hidden data-c="bd-addfiles"></label></div>' +
       '<p class="hint">Qui non si salva niente nell’archivio: incolla una lista qualsiasi (anche di altri programmi) e ottieni il PDF.</p></section>';
     var list = '<section class="panel"><div class="bd-head"><h2>Carte <span class="cnt">' + total() + '</span></h2><div class="bd-opts">' +
-      chk('nobasic', 'Escludi le terre base', bd.nobasic, 'bd-top') + chk('tokens', 'Aggiungi i gettoni', bd.tokens, 'bd-top') + '</div></div>' +
+      chk('nobasic', 'Escludi le terre base', bd.nobasic, 'bd-top') + chk('tokens', 'Aggiungi i token', bd.tokens, 'bd-top') + '</div></div>' +
       (bd.source === 'deck' ? '<div class="btns"><label class="btn small">Aggiungi tue immagini<input type="file" accept="image/*" multiple hidden data-c="bd-addfiles"></label></div>' : '') +
       '<div class="bd-list">' + (rows || '<p class="hint">Nessuna carta: incolla una lista e premi «Leggi la lista».</p>') + '</div></section>';
 

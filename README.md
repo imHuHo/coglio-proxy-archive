@@ -52,7 +52,7 @@ e l'app ti dice quali carte hai, quante sono libere e in quale mazzo sono impegn
   e rotazione di 90°; colonne e righe (automatiche o fisse), spazi, margine; **abbondanza** (bleed) con colore automatico (il bordo della carta), nero o bianco;
   angoli arrotondati riempiti di nero/bianco; guide di taglio (segni agli angoli o linee tra le carte, colore, spessore, lunghezza, tratteggio);
   **segni di registrazione** per plotter (Silhouette a 3 angoli o a 4); spostamento della stampante (X/Y, e a parte per il retro); **fronte-retro** (bordo lungo o corto,
-  pagine alternate o prima i fronti poi i retro; le carte doppie hanno il vero retro, le altre niente); gettoni collegati; terre base escluse; scelta di un'altra
+  pagine alternate o prima i fronti poi i retro; le carte doppie hanno il vero retro, le altre niente); token collegati; terre base escluse; scelta di un'altra
   stampa per ogni carta; **immagini proprie** (JPG diretti, PNG/WebP convertiti ad alta qualità) con eventuale abbondanza già presente; intervallo di pagine;
   pagina con la lista; **pagina di prova** con righello e barra da 100 mm; impostazioni con nome salvate sul dispositivo; scarico di tutte le immagini in `.zip`.
   Serve internet (le immagini arrivano da Scryfall) e non funziona dentro Claude.
