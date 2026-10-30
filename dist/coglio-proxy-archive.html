@@ -320,6 +320,11 @@ a { color: var(--accent); }
 .th.fb::after { content: "!"; position: absolute; right: 0; bottom: 0; background: var(--part); color: var(--surface); font: 800 10px/1 var(--mono); padding: 2px 4px; border-top-left-radius: 4px; }
 .lb-warn { margin: 0; background: var(--part-bg); color: var(--part); border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 600; text-align: center; }
 
+.btn.bracket { background: #f6c93a; border-color: #d9a90f; color: #2a2100; }
+.btn.bracket:hover { background: #ffd651; }
+:root:not([data-theme="light"]) .btn.bracket { color: #2a2100; }
+.deckcard .foot .btns { gap: 6px; }
+
 </style>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
@@ -538,6 +543,18 @@ a { color: var(--accent); }
       }).join('\n');
   }
 
+  /* Lista per i checker online: sezione Commander e sezione Deck, solo quantità e nome. */
+  function bracketText(deck) {
+    var cmd = deck.commander ? keyOf(deck.commander) : '', taken = !cmd;
+    var main = [], name = '';
+    deck.cards.slice().sort(function (a, b) { return a.name.localeCompare(b.name, 'en'); }).forEach(function (c) {
+      var q = c.qty;
+      if (!taken && keyOf(c.name) === cmd) { taken = true; name = c.name; q--; }
+      if (q > 0) main.push(q + ' ' + c.name);
+    });
+    return (cmd && name ? 'Commander\n1 ' + name + '\n\nDeck\n' : '') + main.join('\n');
+  }
+
   function diffText(deck, upgrade, diff) {
     var l = ['Upgrade "' + upgrade.name + '" per ' + deck.name, '', 'ESCE (' + diff.outQty + '):'];
     diff.out.forEach(function (x) { l.push(x.qty + ' ' + x.name); });
@@ -673,7 +690,7 @@ a { color: var(--accent); }
   return {
     keyOf: keyOf, searchNorm: searchNorm, isBasic: isBasic, uid: uid,
     parseList: parseList, buildArchive: buildArchive, diffUpgrade: diffUpgrade,
-    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, clone: cloneJ, exportText: exportText, diffText: diffText,
+    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, clone: cloneJ, exportText: exportText, bracketText: bracketText, diffText: diffText,
     sanitizeDeck: sanitizeDeck, sanitizeSettings: sanitizeSettings, inUse: inUse
   };
 });
@@ -914,6 +931,13 @@ a { color: var(--accent); }
       }, function () { return viaAnchor(); });
     }
     return Promise.resolve(viaAnchor());
+  }
+  function openExternal(href) {
+    var w = null;
+    try { w = window.open(href, '_blank', 'noopener'); } catch (e) { w = null; }
+    if (!w) {
+      try { var a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; document.body.appendChild(a); a.click(); a.remove(); } catch (e2) { /* ignorato */ }
+    }
   }
   function applyTheme() {
     var t = state.settings.theme, r = document.documentElement;
@@ -1328,7 +1352,10 @@ a { color: var(--accent); }
     return '<article class="deckcard' + (on ? ' is-on' : '') + '"><div class="top"><div><h2>' + esc(d.name) + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + '</div></div>' +
       (d.kind === 'deck' ? switchHtml(d) : '') + '</div><div class="foot"><span>' +
       (d.upgrades.length ? '<span class="pill info">' + plural(d.upgrades.length, 'upgrade', 'upgrade') + '</span>' : '<span class="hint">Nessun upgrade</span>') +
-      '</span><button class="btn small" data-a="open-deck" data-id="' + esc(d.id) + '">Apri</button></div></article>';
+      '</span><span class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="open-deck" data-id="' + esc(d.id) + '">Apri</button></span></div></article>';
+  }
+  function bracketBtn(d) {
+    return '<button class="btn small bracket" data-a="bracket" data-id="' + esc(d.id) + '" title="Copia la lista e apri commanderbracket.app">Verifica bracket</button>';
   }
   function decksView() {
     var ds = state.decks.filter(function (d) { return d.kind === 'deck'; }), bs = state.decks.filter(function (d) { return d.kind === 'binder'; });
@@ -1359,7 +1386,7 @@ a { color: var(--accent); }
       '<section class="panel"><label class="lbl">Nome<input class="input" data-c="deck-name" value="' + esc(d.name) + '"></label>' +
       (d.kind === 'deck' ? '<label class="lbl">Commander<select class="select" data-c="deck-cmd">' + cmdOpts + '</select></label><div>' + switchHtml(d) +
         '<p class="hint" style="margin-top:6px">' + (d.active ? 'Le carte di questo mazzo risultano in uso.' : 'Mazzo smontato: le sue carte risultano libere.') + '</p></div>' : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
-      '<div class="btns"><button class="btn small" data-a="copy-deck">Copia lista .txt</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina') + '</button></div></section>' + tabs + body;
+      '<div class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="copy-deck">Copia lista .txt</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina') + '</button></div></section>' + tabs + body;
   }
   function updateDeckList() {
     var el = $('#dlist'); var d = getDeck(); if (!el || !d) return;
@@ -1633,6 +1660,16 @@ a { color: var(--accent); }
           if (ok) toast('Backup copiato negli appunti.'); else { ui.backupOut = exportJson(); toast('Copia automatica non riuscita: seleziona il testo qui sotto.'); render(); }
         }); break;
       case 'restore-json': restore(ui.restoreText); break;
+      case 'bracket':
+        deck = getDeck(id);
+        if (deck) {
+          /* l'apertura della pagina deve partire subito dal clic, prima della copia (che è asincrona) */
+          openExternal('https://commanderbracket.app/bracket');
+          copyText(C.bracketText(deck)).then(function (ok) {
+            toast(ok ? 'Lista di «' + deck.name + '» copiata. Nella pagina del bracket incollala e premi «Check my bracket».'
+              : 'Copia automatica non riuscita: usa «Copia lista .txt» nel mazzo e incollala su commanderbracket.app/bracket.', null, true);
+          });
+        } break;
       case 'lb-close': IMG.close(); break;
       case 'lb-flip': IMG.flip(); break;
       case 'lb-prints': IMG.prints(); break;

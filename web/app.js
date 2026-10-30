@@ -233,6 +233,13 @@
     }
     return Promise.resolve(viaAnchor());
   }
+  function openExternal(href) {
+    var w = null;
+    try { w = window.open(href, '_blank', 'noopener'); } catch (e) { w = null; }
+    if (!w) {
+      try { var a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; document.body.appendChild(a); a.click(); a.remove(); } catch (e2) { /* ignorato */ }
+    }
+  }
   function applyTheme() {
     var t = state.settings.theme, r = document.documentElement;
     if (t === 'light' || t === 'dark') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme');
@@ -646,7 +653,10 @@
     return '<article class="deckcard' + (on ? ' is-on' : '') + '"><div class="top"><div><h2>' + esc(d.name) + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + '</div></div>' +
       (d.kind === 'deck' ? switchHtml(d) : '') + '</div><div class="foot"><span>' +
       (d.upgrades.length ? '<span class="pill info">' + plural(d.upgrades.length, 'upgrade', 'upgrade') + '</span>' : '<span class="hint">Nessun upgrade</span>') +
-      '</span><button class="btn small" data-a="open-deck" data-id="' + esc(d.id) + '">Apri</button></div></article>';
+      '</span><span class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="open-deck" data-id="' + esc(d.id) + '">Apri</button></span></div></article>';
+  }
+  function bracketBtn(d) {
+    return '<button class="btn small bracket" data-a="bracket" data-id="' + esc(d.id) + '" title="Copia la lista e apri commanderbracket.app">Verifica bracket</button>';
   }
   function decksView() {
     var ds = state.decks.filter(function (d) { return d.kind === 'deck'; }), bs = state.decks.filter(function (d) { return d.kind === 'binder'; });
@@ -677,7 +687,7 @@
       '<section class="panel"><label class="lbl">Nome<input class="input" data-c="deck-name" value="' + esc(d.name) + '"></label>' +
       (d.kind === 'deck' ? '<label class="lbl">Commander<select class="select" data-c="deck-cmd">' + cmdOpts + '</select></label><div>' + switchHtml(d) +
         '<p class="hint" style="margin-top:6px">' + (d.active ? 'Le carte di questo mazzo risultano in uso.' : 'Mazzo smontato: le sue carte risultano libere.') + '</p></div>' : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
-      '<div class="btns"><button class="btn small" data-a="copy-deck">Copia lista .txt</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina') + '</button></div></section>' + tabs + body;
+      '<div class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="copy-deck">Copia lista .txt</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina') + '</button></div></section>' + tabs + body;
   }
   function updateDeckList() {
     var el = $('#dlist'); var d = getDeck(); if (!el || !d) return;
@@ -951,6 +961,16 @@
           if (ok) toast('Backup copiato negli appunti.'); else { ui.backupOut = exportJson(); toast('Copia automatica non riuscita: seleziona il testo qui sotto.'); render(); }
         }); break;
       case 'restore-json': restore(ui.restoreText); break;
+      case 'bracket':
+        deck = getDeck(id);
+        if (deck) {
+          /* l'apertura della pagina deve partire subito dal clic, prima della copia (che è asincrona) */
+          openExternal('https://commanderbracket.app/bracket');
+          copyText(C.bracketText(deck)).then(function (ok) {
+            toast(ok ? 'Lista di «' + deck.name + '» copiata. Nella pagina del bracket incollala e premi «Check my bracket».'
+              : 'Copia automatica non riuscita: usa «Copia lista .txt» nel mazzo e incollala su commanderbracket.app/bracket.', null, true);
+          });
+        } break;
       case 'lb-close': IMG.close(); break;
       case 'lb-flip': IMG.flip(); break;
       case 'lb-prints': IMG.prints(); break;

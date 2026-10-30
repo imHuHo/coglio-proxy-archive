@@ -132,4 +132,15 @@ function sum(cards) { return cards.reduce((t, c) => t + c.qty, 0); }
   ok(C.sanitizeSettings({}).images === true && C.sanitizeSettings({ images: false }).images === false, 'impostazione immagini');
 }
 
+// 10. lista per il checker del bracket
+{
+  const d = mk('b1', 'Prova', 'deck', true, [{ name: 'Sol Ring', qty: 1, set: 'C21', cn: '263' }, { name: 'Kaalia of the Vast', qty: 1, set: 'SLD', cn: '1563' }, { name: 'Mountain', qty: 3, set: '', cn: '' }]);
+  d.commander = 'Kaalia of the Vast';
+  ok(C.bracketText(d) === 'Commander\n1 Kaalia of the Vast\n\nDeck\n3 Mountain\n1 Sol Ring', 'bracketText: commander a parte, solo quantità e nome');
+  d.commander = null;
+  ok(C.bracketText(d) === '1 Kaalia of the Vast\n3 Mountain\n1 Sol Ring', 'bracketText senza commander: lista semplice');
+  d.commander = 'Mountain';
+  ok(C.bracketText(d).startsWith('Commander\n1 Mountain\n\nDeck\n1 Kaalia') && C.bracketText(d).includes('2 Mountain'), 'bracketText: una sola copia va a commander');
+}
+
 console.log('OK, ' + n + ' controlli passati');

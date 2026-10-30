@@ -9,6 +9,9 @@ const w = dom.window, d = w.document;
 const errors = [];
 w.addEventListener('error', e => errors.push(e.message));
 w.scrollTo = () => {};
+const opened = []; let clip = null;
+w.open = u => { opened.push(u); return {}; };
+Object.defineProperty(w.navigator, 'clipboard', { value: { writeText: async t => { clip = t; } }, configurable: true });
 w.eval(read(W + '/core.js')); w.eval(read(W + '/app.js'));
 
 let n = 0;
@@ -40,6 +43,10 @@ const text = () => d.body.textContent.replace(/\s+/g, ' ');
   clickA('draft-create');
   ok(text().includes('Commander') && $('h1').textContent === 'Kaalia', 'mazzo creato e aperto');
   ok($$('#dlist .crow').length === 91 + 0 || $$('#dlist .crow').length > 60, 'righe carte del mazzo: ' + $$('#dlist .crow').length);
+  clickA('bracket'); await sleep(50);
+  ok(opened[0] === 'https://commanderbracket.app/bracket', 'Verifica bracket apre il checker');
+  ok(clip.startsWith('Commander\n1 Kaalia of the Vast\n\nDeck\n') && clip.split('\n').slice(4).reduce((t, l) => t + parseInt(l, 10), 1) === 100, 'lista copiata: commander + 99 carte');
+  ok(text().includes('Check my bracket'), 'avviso con le istruzioni');
 
   // --- raccolta libera ---
   clickA('nav', '[data-v="import"]');
@@ -76,6 +83,7 @@ const text = () => d.body.textContent.replace(/\s+/g, ' ');
   // --- attiva/disattiva ---
   clickA('nav', '[data-v="decks"]');
   ok($$('.deckcard').length === 2, 'due schede mazzo (mazzo + raccolta)');
+  ok($$('.deckcard .bracket').length === 1, 'tasto Verifica bracket solo sul mazzo, non sulle sciolte');
   change('[data-c="active"]', false);
   ok(text().includes('Non attivo'), 'mazzo disattivato');
   clickA('nav', '[data-v="archive"]'); type('#q', 'mountain');

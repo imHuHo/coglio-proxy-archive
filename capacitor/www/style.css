@@ -315,3 +315,8 @@ a { color: var(--accent); }
 .th.fb { border-color: var(--part); }
 .th.fb::after { content: "!"; position: absolute; right: 0; bottom: 0; background: var(--part); color: var(--surface); font: 800 10px/1 var(--mono); padding: 2px 4px; border-top-left-radius: 4px; }
 .lb-warn { margin: 0; background: var(--part-bg); color: var(--part); border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 600; text-align: center; }
+
+.btn.bracket { background: #f6c93a; border-color: #d9a90f; color: #2a2100; }
+.btn.bracket:hover { background: #ffd651; }
+:root:not([data-theme="light"]) .btn.bracket { color: #2a2100; }
+.deckcard .foot .btns { gap: 6px; }

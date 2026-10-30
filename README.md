@@ -28,6 +28,8 @@ e l'app ti dice quali carte hai, quante sono libere e in quale mazzo sono impegn
   Nell'archivio, dove la stessa carta può stare in più mazzi, la miniatura in cima alla riga è la stampa del mazzo attivo (o quella con più copie): le altre sono nel dettaglio.
   Gli indirizzi trovati restano salvati sul dispositivo, quindi ogni carta si cerca una volta sola. Si spengono dalla scheda *Dati*.
   Funzionano nell'app Windows, nell'APK e nella versione web installata; **non** dentro la pagina di anteprima di Claude, che blocca i siti esterni.
+- **Verifica bracket**: il tasto giallo sui mazzi copia la decklist (commander a parte) e apre [commanderbracket.app](https://commanderbracket.app/bracket);
+  lì la incolli e premi *Check my bracket*. Il calcolo lo fa il loro sito: l'app non ha un'API da chiamare.
 - **Backup** in JSON (scarica, copia, ripristina). Ogni azione distruttiva ha *Annulla*.
 
 ### Come vengono contate le carte

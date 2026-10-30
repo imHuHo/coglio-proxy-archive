@@ -212,6 +212,18 @@
       }).join('\n');
   }
 
+  /* Lista per i checker online: sezione Commander e sezione Deck, solo quantità e nome. */
+  function bracketText(deck) {
+    var cmd = deck.commander ? keyOf(deck.commander) : '', taken = !cmd;
+    var main = [], name = '';
+    deck.cards.slice().sort(function (a, b) { return a.name.localeCompare(b.name, 'en'); }).forEach(function (c) {
+      var q = c.qty;
+      if (!taken && keyOf(c.name) === cmd) { taken = true; name = c.name; q--; }
+      if (q > 0) main.push(q + ' ' + c.name);
+    });
+    return (cmd && name ? 'Commander\n1 ' + name + '\n\nDeck\n' : '') + main.join('\n');
+  }
+
   function diffText(deck, upgrade, diff) {
     var l = ['Upgrade "' + upgrade.name + '" per ' + deck.name, '', 'ESCE (' + diff.outQty + '):'];
     diff.out.forEach(function (x) { l.push(x.qty + ' ' + x.name); });
@@ -347,7 +359,7 @@
   return {
     keyOf: keyOf, searchNorm: searchNorm, isBasic: isBasic, uid: uid,
     parseList: parseList, buildArchive: buildArchive, diffUpgrade: diffUpgrade,
-    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, clone: cloneJ, exportText: exportText, diffText: diffText,
+    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, clone: cloneJ, exportText: exportText, bracketText: bracketText, diffText: diffText,
     sanitizeDeck: sanitizeDeck, sanitizeSettings: sanitizeSettings, inUse: inUse
   };
 });
