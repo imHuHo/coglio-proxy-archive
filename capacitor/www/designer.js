@@ -53,14 +53,14 @@
       dz.designs = (r[0] || []).map(norm).sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
       var all = (r[1] || []).sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
       dz.frames = all.filter(function (f) { return !f.kind || f.kind === 'frame'; });
-      dz.res = all.filter(function (f) { return f.kind === 'font' || f.kind === 'symbols'; });
+      dz.res = all.filter(function (f) { return f.kind === 'font' || f.kind === 'symbols' || f.kind === 'watermarks'; });
       var marker = all.filter(function (f) { return f.id === 'bundle-marker'; })[0];
       return initResources().then(function () { return syncBundle(marker); }).then(function () { dz.loaded = true; dz.loading = null; });
     }, function () { dz.loaded = true; dz.loading = null; });
     return dz.loading;
   }
   /* risorse incluse nell'app (risorse.json: cornici, simboli, font): si caricano una volta per versione, in silenzio */
-  var BUNDLE_VER = 'mse-1';
+  var BUNDLE_VER = 'mse-2';
   function bundleBlob() {
     if (typeof window.CPA_BUNDLE === 'string') return Promise.resolve(new Blob([window.CPA_BUNDLE], { type: 'application/json' }));
     if (typeof fetch !== 'function') return Promise.resolve(null);
@@ -80,20 +80,24 @@
   }
   /* font e simboli di mana importati dall'utente: si registrano nel browser e nel motore di rendering */
   function initResources() {
-    var fonts = {}, syms = {}, jobs = [];
+    var fonts = {}, syms = {}, wms = {}, jobs = [];
     dz.res.forEach(function (rec) {
       if (rec.kind === 'font' && rec.blob && window.FontFace && document.fonts) {
         jobs.push(rec.blob.arrayBuffer().then(function (buf) {
           var ff = new FontFace(rec.family, buf, { style: rec.style === 'italic' ? 'italic' : 'normal', weight: '100 900' });
           return ff.load().then(function () { document.fonts.add(ff); if (rec.role === 'title') fonts.title = true; if (rec.role === 'body' || rec.role === 'bodyItalic') fonts.body = true; });
         }).catch(function () { return null; }));
+      } else if (rec.kind === 'watermarks' && rec.map) {
+        Object.keys(rec.map).forEach(function (k) {
+          jobs.push(blobImage(rec.map[k]).then(function (r) { wms[k] = r.img; }).catch(function () { return null; }));
+        });
       } else if (rec.kind === 'symbols' && rec.map) {
         Object.keys(rec.map).forEach(function (k) {
           jobs.push(blobImage(rec.map[k]).then(function (r) { syms[k] = r.img; }).catch(function () { return null; }));
         });
       }
     });
-    return Promise.all(jobs).then(function () { R.setResources({ fonts: fonts, symbols: syms }); });
+    return Promise.all(jobs).then(function () { R.setResources({ fonts: fonts, symbols: syms, watermarks: wms }); });
   }
   function norm(d) {
     var b = R.defaults(d && d.kind === 'token' ? 'token' : 'card'), o = {};
@@ -106,7 +110,7 @@
     if (['round', 'square'].indexOf(o.corners) < 0) o.corners = 'round';
     if (!R.RARITY[o.rarity]) o.rarity = 'common';
     o.ink = o.ink === 'light' ? 'light' : 'dark';
-    o.frameImg = String(o.frameImg || '');
+    o.frameImg = String(o.frameImg || ''); o.watermark = String(o.watermark || '');
     return o;
   }
   function byId(id) { return dz.designs.filter(function (d) { return d.id === id; })[0] || null; }
@@ -234,6 +238,11 @@
   function sel(k, v, opts) { return '<select class="select" data-c="dz-f" data-k="' + k + '">' + opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(v) === String(o[0]) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>'; }
   function rng(k, v, min, max, step) { return '<input class="dz-range" type="range" data-c="dz-art" data-k="' + k + '" min="' + min + '" max="' + max + '" step="' + step + '" value="' + v + '">'; }
 
+  function wmOptions() {
+    var rec = dz.res.filter(function (x) { return x.kind === 'watermarks'; })[0];
+    if (!rec || !rec.names) return null;
+    return [['', 'Nessuna']].concat(Object.keys(rec.names).map(function (k) { return [k, rec.names[k]]; }));
+  }
   function frameOptions(d) {
     var groups = {}, h = '';
     dz.frames.forEach(function (f) { if (f.group) groups[f.group] = f.groupName || f.group; });
@@ -262,7 +271,16 @@
             return DB.put('frames', rec);
           });
         });
-        var nsym = 0, nfont = 0;
+        var nsym = 0, nfont = 0, nwm = 0;
+        if (Array.isArray(data.watermarks) && data.watermarks.length) {
+          chain = chain.then(function () {
+            var map = {}, nm = {};
+            data.watermarks.forEach(function (w) { var b = dataUrlToBlob(w && w.png); if (b && w.key) { map[String(w.key)] = b; nm[String(w.key)] = String(w.name || w.key); nwm++; } });
+            if (!nwm) return null;
+            var rec = { id: 'res-watermarks', kind: 'watermarks', map: map, names: nm, createdAt: Date.now() };
+            dz.res = dz.res.filter(function (x) { return x.id !== rec.id; }); dz.res.push(rec); return DB.put('frames', rec);
+          });
+        }
         if (data.symbols && typeof data.symbols === 'object') {
           chain = chain.then(function () {
             var map = {}; Object.keys(data.symbols).forEach(function (k) { var b = dataUrlToBlob(data.symbols[k]); if (b) { map[String(k).toUpperCase()] = b; nsym++; } });
@@ -278,13 +296,14 @@
             dz.res = dz.res.filter(function (x) { return x.id !== rec.id; }); dz.res.push(rec); nfont++; return DB.put('frames', rec);
           });
         });
-        chain.then(function () { return nsym || nfont ? initResources() : null; }).then(function () {
+        chain.then(function () { return nsym || nfont || nwm ? initResources() : null; }).then(function () {
           var parts = [];
           if (n) parts.push(n + (n === 1 ? ' cornice' : ' cornici'));
           if (nsym) parts.push(nsym + ' simboli di mana');
-          if (nfont) parts.push(nfont + (nfont === 1 ? ' font' : ' font'));
+          if (nfont) parts.push(nfont + ' font');
+          if (nwm) parts.push(nwm + ' filigrane');
           if (!silent) H.toast(parts.length ? 'Importati: ' + parts.join(', ') + '.' : 'Il pacchetto non contiene niente di utilizzabile.');
-          res(n ? first : (nsym || nfont ? '*' : null));
+          res(n ? first : (nsym || nfont || nwm ? '*' : null));
         }, function () { if (!silent) H.toast('Non riesco a salvare le risorse su questo dispositivo.'); res(null); });
       };
       r.readAsText(file);
@@ -338,7 +357,7 @@
       (d.frameImg ? lbl('Colore del testo', sel('ink', d.ink, [['dark', 'Scuro'], ['light', 'Chiaro']])) : '') + '</div>' +
       '<div class="btns"><label class="btn small filebtn">Importa cornici (PNG o pacchetto)<input type="file" accept="image/png,image/webp,.json,application/json" data-c="dz-framefile" multiple hidden></label>' +
       (d.frameImg ? '<button class="btn small danger" data-a="dz-frame-del">' + (/^auto:/.test(d.frameImg) ? 'Elimina il pacchetto di cornici' : 'Elimina questa cornice') + '</button>' : '') + '</div>' +
-      (dz.res.length ? '<p class="hint">Simboli di mana e font importati: ' + dz.res.map(function (x) { return x.kind === 'symbols' ? 'simboli' : 'font ' + (x.role || ''); }).join(', ') + '. <button class="btn small danger" data-a="dz-res-del">Togli simboli e font</button></p>' : '') + '<p class="hint">Le cornici importate (PNG tuoi con la zona dell’arte trasparente, oppure un pacchetto .json) restano solo su questo dispositivo. Con «automatica» la cornice segue i colori della carta.</p></section>';
+      (dz.res.length ? '<p class="hint">Simboli di mana e font importati: ' + dz.res.map(function (x) { return x.kind === 'symbols' ? 'simboli' : x.kind === 'watermarks' ? 'filigrane' : 'font ' + (x.role || ''); }).join(', ') + '. <button class="btn small danger" data-a="dz-res-del">Togli simboli, font e filigrane</button></p>' : '') + '<p class="hint">Le cornici importate (PNG tuoi con la zona dell’arte trasparente, oppure un pacchetto .json) restano solo su questo dispositivo. Con «automatica» la cornice segue i colori della carta.</p></section>';
     /* testo */
     var cm = R.paletteKey(d);
     h += '<section class="panel"><h2 class="sect" style="margin:0">Testo</h2>' +
@@ -347,6 +366,7 @@
       lbl('Tipo', inp('type', d.type, 'Creature — Wizard')) +
       '<label class="lbl">' + (L && L.walker ? 'Abilità (una per riga: «+1: testo», «−2: testo»)' : L && L.saga ? 'Capitoli (una riga per capitolo: «I — testo»)' : 'Testo delle regole') + '<textarea class="textarea dz-ta" data-c="dz-f" data-k="rules" rows="6">' + esc(d.rules) + '</textarea></label>' +
       '<div class="dz-syms" aria-label="Inserisci simbolo">' + SYMS.map(function (s) { return '<button class="chip small" data-a="dz-sym" data-v="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div>' +
+      (wmOptions() ? lbl('Filigrana nella casella di testo', sel('watermark', d.watermark, wmOptions())) : '') +
       (L && (L.walker || L.saga) ? '' : '<label class="lbl">Testo di colore (corsivo)<textarea class="textarea dz-ta" data-c="dz-f" data-k="flavor" rows="2">' + esc(d.flavor) + '</textarea></label>') +
       '<div class="dz-row">' + (usesPT(d) ? lbl(L.walker ? 'Lealtà' : 'Forza/Costituzione', inp('pt', d.pt, L.walker ? '4' : '2/3')) : '') + lbl('Rarità', sel('rarity', d.rarity, [['common', 'Comune'], ['uncommon', 'Non comune'], ['rare', 'Rara'], ['mythic', 'Mitica']])) + '</div>' +
       '<div class="dz-row">' + lbl('Collezione', inp('set', d.set, 'CST')) + lbl('Numero', inp('num', d.num, '001')) + lbl('Artista', inp('artist', d.artist, 'Nome')) + '</div>' +
@@ -551,7 +571,7 @@
         break;
       case 'dz-res-del':
         dz.res.forEach(function (x) { DB.del('frames', x.id); }); dz.res = [];
-        R.setResources({}); H.toast('Simboli e font importati tolti: tornano quelli disegnati. Riavvia l\u2019app per scaricare i font dalla memoria.'); H.render(); break;
+        R.setResources({}); H.toast('Risorse importate tolte: tornano i simboli e i font disegnati. Riavvia l\u2019app per scaricare i font dalla memoria.'); H.render(); break;
       case 'dz-frame-del':
         if (d && d.frameImg) {
           var cur = d.frameImg, auto = /^auto:(.+)$/.exec(cur), gone = auto ? dz.frames.filter(function (f) { return f.group === auto[1]; }).map(function (f) { return f.id; }) : [cur];

@@ -11,10 +11,10 @@
   var BASE_BODY = "'EB Garamond', 'Palatino Linotype', 'Book Antiqua', Georgia, serif";
   var F_TITLE = BASE_TITLE, F_BODY = BASE_BODY;
   /* risorse importate dall'utente (font e simboli di mana): senza di esse si usano font e simboli disegnati qui */
-  var RES = { symbols: {} };
+  var RES = { symbols: {}, watermarks: {} };
   function setResources(r) {
     r = r || {}; var f = r.fonts || {};
-    RES.symbols = r.symbols || {};
+    RES.symbols = r.symbols || {}; RES.watermarks = r.watermarks || {};
     F_TITLE = f.title ? "'CPA Title', " + BASE_TITLE : BASE_TITLE;
     F_BODY = f.body ? "'CPA Body', " + BASE_BODY : BASE_BODY;
   }
@@ -63,7 +63,7 @@
     return {
       id: '', kind: kind || 'card', name: token ? 'Token' : 'Nuova carta', cost: token ? '' : '{1}{U}', type: token ? 'Token Creature — Spirit' : 'Creature — Wizard',
       rules: token ? 'Flying' : 'Flying\n{T}: Draw a card, then discard a card.', flavor: '', pt: token ? '1/1' : '2/3', rarity: 'common', set: 'CST', num: '001', artist: '',
-      frame: DEFAULT_KINDS[kind] || 'classic', colors: token ? 'U' : 'U', palette: 'auto', border: 'black', corners: 'round', alterOf: '',
+      watermark: '', frame: DEFAULT_KINDS[kind] || 'classic', colors: token ? 'U' : 'U', palette: 'auto', border: 'black', corners: 'round', alterOf: '',
       art: { id: '', x: 0, y: 0, s: 1 }, frameImg: '', ink: 'dark', createdAt: 0, updatedAt: 0
     };
   }
@@ -301,6 +301,13 @@
       }
       ctx.restore();
     }
+    var wm = d.watermark && RES.watermarks[d.watermark];
+    if (wm) {
+      var ws = Math.min(w - 40, h - 30) * 0.86 / Math.max(wm.width, wm.height), ww = wm.width * ws, wh = wm.height * ws;
+      ctx.save(); ctx.globalAlpha = (over || (user && user.ink === 'light')) ? 0.2 : 0.17;
+      if (over || (user && user.ink === 'light')) ctx.filter = 'invert(1)';
+      ctx.drawImage(wm, x + (w - ww) / 2, y + (h - wh) / 2, ww, wh); ctx.restore();
+    }
     var padX = 22, padY = 16, iw = w - padX * 2, ih = h - padY * 2;
     var f = fit(ctx, tokenize(d.rules), String(d.flavor || '').trim() ? tokenize(d.flavor) : null, iw, ih, L.center ? 34 : 33, 15, F_BODY);
     var top = y + padY + Math.max(0, (ih - f.h) / 2);
@@ -474,6 +481,6 @@
   return {
     W: W, H: H, FRAMES: FRAMES, LAYOUT: LAYOUT, PAL: PAL, PAL_ORDER: PAL_ORDER, RARITY: RARITY, defaults: defaults, paletteKey: paletteKey,
     render: render, tokenize: tokenize, costTokens: costTokens, parseWalker: parseWalker, parseSaga: parseSaga, drawSymbol: drawSymbol,
-    F_UI: F_UI, setResources: setResources, hasSymbols: function () { return Object.keys(RES.symbols).length > 0; }
+    F_UI: F_UI, setResources: setResources, hasSymbols: function () { return Object.keys(RES.symbols).length > 0; }, hasWatermarks: function () { return Object.keys(RES.watermarks).length > 0; }
   };
 });

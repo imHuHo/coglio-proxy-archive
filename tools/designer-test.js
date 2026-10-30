@@ -195,7 +195,7 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
 
   /* simboli e font importati (pacchetto solo-risorse) */
   const symPng = 'data:image/png;base64,' + framePng.toString('base64');
-  fs.writeFileSync('/tmp/claude-0/dz/res-test.json', JSON.stringify({ app: 'coglio-frames', version: 1, symbols: { W: symPng, U: symPng, R: symPng, CIRCLE: symPng }, fonts: [{ role: 'title', family: 'CPA Title', style: 'normal', ttf: 'data:font/ttf;base64,AAAA' }] }));
+  fs.writeFileSync('/tmp/claude-0/dz/res-test.json', JSON.stringify({ app: 'coglio-frames', version: 1, symbols: { W: symPng, U: symPng, R: symPng, CIRCLE: symPng }, fonts: [{ role: 'title', family: 'CPA Title', style: 'normal', ttf: 'data:font/ttf;base64,AAAA' }], watermarks: [{ key: 'prova', name: 'Filigrana di prova', png: symPng }] }));
   await page.click('[data-a="dz-back"]'); await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
   const full = () => page.evaluate(() => document.getElementById('dz-cv').toDataURL().length + ':' + document.getElementById('dz-cv').toDataURL().slice(-400));
   const beforeS = await full();
@@ -205,12 +205,19 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   ok(await page.evaluate(() => CPACard.hasSymbols()), 'il motore usa i simboli importati');
   await page.waitForTimeout(300);
   ok((await full()) !== beforeS, 'i simboli cambiano l\u2019anteprima');
+  ok(await page.evaluate(() => CPACard.hasWatermarks()), 'filigrane importate');
+  ok((await page.innerHTML('[data-k="watermark"]')).includes('Filigrana di prova'), 'menu filigrana nell\u2019editor');
+  const beforeW = await full();
+  await page.selectOption('[data-k="watermark"]', 'prova'); await page.waitForTimeout(400);
+  ok((await full()) !== beforeW, 'la filigrana cambia l\u2019anteprima');
+  ok(await page.evaluate(() => CPADesigner.state.cur.watermark) === 'prova', 'filigrana salvata nel design');
+  await page.selectOption('[data-k="watermark"]', ''); await page.waitForTimeout(100);
   await go(); await nav('designer'); await page.waitForSelector('.dz-item');
   ok(await page.evaluate(() => CPADesigner.state.res.length) >= 1 && await page.evaluate(() => CPACard.hasSymbols()), 'simboli ancora attivi dopo il riavvio');
   await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
   await page.click('[data-a="dz-res-del"]');
   await page.waitForFunction(() => CPADesigner.state.res.length === 0);
-  ok(await page.evaluate(() => !CPACard.hasSymbols()), 'simboli e font tolti');
+  ok(await page.evaluate(() => !CPACard.hasSymbols() && !CPACard.hasWatermarks()), 'simboli, font e filigrane tolti');
   await page.click('[data-a="dz-back"]');
 
   /* vista mazzo: etichette Design */
