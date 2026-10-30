@@ -14,11 +14,11 @@ w.URL.createObjectURL = b => { blobs.push(b); return 'blob:test/' + blobs.length
 HTMLAnchorElement = w.HTMLAnchorElement; w.HTMLAnchorElement.prototype.click = function () {};
 
 const mk = (name, set, cn, extra) => Object.assign({ id: set + cn + name, name, set, collector_number: cn, border_color: 'black', layout: 'normal',
-  image_uris: { small: 'https://cards.scryfall.io/small/' + set + cn + '.jpg', large: 'https://cards.scryfall.io/large/' + set + cn + '.jpg' } }, extra || {});
+  image_uris: { small: 'https://cards.scryfall.io/small/' + set + cn + '.jpg', normal: 'https://cards.scryfall.io/normal/' + set + cn + '.jpg', large: 'https://cards.scryfall.io/large/' + set + cn + '.jpg' } }, extra || {});
 const DB = [mk('Sol Ring', 'c21', '263'), mk('Sol Ring', 'cmm', '400'), mk('Sol Ring', 'lea', '270'),
   mk('Delver of Secrets // Insectile Aberration', 'isd', '51', { image_uris: undefined, card_faces: [
-    { name: 'Delver of Secrets', image_uris: { small: 'https://cards.scryfall.io/small/d1.jpg', large: 'https://cards.scryfall.io/large/d1.jpg' } },
-    { name: 'Insectile Aberration', image_uris: { small: 'https://cards.scryfall.io/small/d2.jpg', large: 'https://cards.scryfall.io/large/d2.jpg' } }] })];
+    { name: 'Delver of Secrets', image_uris: { small: 'https://cards.scryfall.io/small/d1.jpg', normal: 'https://cards.scryfall.io/normal/d1.jpg', large: 'https://cards.scryfall.io/large/d1.jpg' } },
+    { name: 'Insectile Aberration', image_uris: { small: 'https://cards.scryfall.io/small/d2.jpg', normal: 'https://cards.scryfall.io/normal/d2.jpg', large: 'https://cards.scryfall.io/large/d2.jpg' } }] })];
 const K = s => s.toLowerCase();
 const has = (c, nm) => K(c.name) === K(nm) || (c.card_faces || []).some(f => K(f.name) === K(nm));
 const find = i => i.collector_number ? DB.find(c => c.set === i.set && c.collector_number === i.collector_number) :
@@ -34,6 +34,9 @@ w.fetch = async (u, init) => {
   if (url.pathname === '/cards/named') { const c = find({ name: url.searchParams.get('exact') || url.searchParams.get('fuzzy') }); return c ? resp(c) : resp({}, 404); }
   return resp({}, 404);
 };
+const cvCalls = [];
+const ctxStub = new Proxy({}, { get: (t, k) => (k in t ? t[k] : (...a) => { cvCalls.push(k); }), set: (t, k, v) => { t[k] = v; return true; } });
+w.HTMLCanvasElement.prototype.getContext = function () { return ctxStub; };
 for (const f of ['core.js', 'pdf.js', 'proxy.js', 'app.js', 'builder.js']) w.eval(read(W + '/' + f));
 
 let n = 0; const ok = (c, m) => { assert(c, m); n++; };
@@ -75,7 +78,14 @@ const blobBytes = b => new Promise(r => { const fr = new w.FileReader(); fr.onlo
   opt('duplex', 'long'); ok($('[data-k="backOffsetX"]') && text().includes('con 1 pagina di retro'), 'retro: campi e conteggio pagine');
   ok($$('.pv-nav button')[1] && !$$('.pv-nav button')[1].disabled, 'navigazione pagine in anteprima');
   clickA('bd-page', '[data-v="1"]'); ok(text().includes('Pagina 2 di 2') && text().includes('retro'), 'pagina retro');
-  opt('duplex', 'none'); opt('bleed', '1,5'); ok($('.pv-cell.bl'), 'abbondanza visibile in anteprima');
+  opt('duplex', 'none');
+  ok($('#bd-canvas') && cvCalls.includes('fillRect'), 'anteprima disegnata su canvas');
+  let r0 = cvCalls.length; opt('bleed', '1,5'); ok(cvCalls.length > r0, 'cambiando le impostazioni l’anteprima si ridisegna');
+  const cvA = $('#bd-canvas'); ok(Math.abs(cvA.width / cvA.height - 210 / 297) < 0.01, 'proporzioni del foglio A4 nel canvas');
+  r0 = cvCalls.length; type('[data-c="bd-opt"][data-k="gapX"]', '2'); await sleep(250); ok(cvCalls.length > r0 && $('[data-k="gapX"]').value === '2', 'anteprima in tempo reale mentre si scrive (senza perdere il campo)'); opt('gapX', '0');
+  opt('corners', 'crop'); ok($('[data-k="corners"]').value === 'crop', 'angoli quadrati selezionabili'); opt('corners', 'keep');
+  ok($('[data-k="header"]').checked === true, 'intestazione attiva di default'); opt('header', false); ok($('[data-k="header"]').checked === false, 'intestazione disattivabile'); opt('header', true);
+  click($('#bd-canvas')); ok($('#bd-pvbox').classList.contains('zoom'), 'tocco sull’anteprima: ingrandisce'); click($('#bd-canvas')); ok(!$('#bd-pvbox').classList.contains('zoom'), 'secondo tocco: riduce');
   opt('bleed', '0'); opt('decklist', true); ok(text().includes('3 pagine'), 'lista carte aggiunge una pagina');
   opt('decklist', false);
 

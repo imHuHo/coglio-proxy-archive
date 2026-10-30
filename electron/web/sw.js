@@ -1,5 +1,5 @@
 /* Service worker: l'app funziona offline dopo il primo caricamento. Cambia CACHE a ogni rilascio. */
-const CACHE = 'cpa-v9';
+const CACHE = 'cpa-v10';
 const ASSETS = ['./', 'index.html', 'style.css', 'core.js', 'pdf.js', 'proxy.js', 'app.js', 'builder.js', 'manifest.webmanifest', 'icon.svg',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', e => {

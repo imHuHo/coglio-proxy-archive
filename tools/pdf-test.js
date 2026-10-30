@@ -105,6 +105,18 @@ plan = P.makePlan({ decklist: true }, [it('A', 1)]);
 ok(plan.pages[plan.pages.length - 1].kind === 'list' && plan.pages[plan.pages.length - 1].lines[0] === '1x A', 'pagina con la lista');
 ok(P.selectPages(P.makePlan({ pageRange: '2' }, [it('A', 18)]), '2').length === 1, 'intervallo di pagine');
 
+// 4b. anteprima: l'interprete esegue le stesse operazioni del PDF
+{
+  const calls = [], ctx = new Proxy({}, { get: (t, k) => (k in t ? t[k] : (...a) => { calls.push(k); }), set: (t, k, v) => { t[k] = v; calls.push('set:' + k); return true; } });
+  const im = { width: 488, height: 680, comps: 3, bytes: new Uint8Array(2), thumb: 'x' };
+  const pl = P.makePlan({ corners: 'white', bleed: 1, guides: 'lines', reg: 'silhouette' }, [{ name: 'A', qty: 5, front: im }, { name: 'B', qty: 2, front: null }]);
+  const po = P.pageOps(pl, pl.pages[0]);
+  const drawn = P.paint(ctx, po, o => (o === im ? {} : null), 400);
+  ok(drawn === 5 && calls.filter(c => c === 'drawImage').length === 5, 'anteprima: una immagine per carta (5)');
+  ok(calls.filter(c => c === 'clip').length >= 5 && calls.includes('stroke') && calls.includes('fill') && calls.includes('fillText'), 'anteprima: clip, tratti, riempimenti e testo (intestazione e riquadri vuoti)');
+  ok(calls.filter(c => c === 'save').length === calls.filter(c => c === 'restore').length, 'anteprima: save/restore bilanciati');
+}
+
 // 5. testo
 ok(P.pdfText('Lim-Dûl (x) \\ ’') === 'Lim-D\\373l \\(x\\) \\\\ \\222', 'WinAnsi, escape di parentesi e backslash');
 ok(P.pdfText('日本') === '??' && P.pdfText('Æther') === '\\306ther', 'caratteri fuori WinAnsi');
@@ -163,8 +175,19 @@ if (haveImgs) {
   ok(buf.indexOf(src) > 0, 'i byte del JPEG sono identici nel PDF (nessuna ricompressione)');
   ok(/\/DCTDecode/.test(buf.toString('latin1')), 'filtro DCTDecode');
   // niente scritte sulle pagine delle carte
-  const txt = Buffer.from(run('plain', { guides: 'none' }, [{ name: 'A', qty: 1, front: imgs.a }]).r.bytes).toString('latin1');
-  ok(!/Tj/.test(txt), 'nessun testo/filigrana sulle pagine delle carte');
+  const txt = Buffer.from(run('plain', { guides: 'none', header: false }, [{ name: 'A', qty: 1, front: imgs.a }]).r.bytes).toString('latin1');
+  ok(!/Tj/.test(txt), 'senza intestazione nessun testo/filigrana sulle pagine delle carte');
+  const withH = P.makePlan({}, [{ name: 'A', qty: 1, front: imgs.a }]);
+  const hOps = P.pageOps(withH, withH.pages[0]).ops;
+  ok(/\(Coglio\) Tj/.test(hOps) && /\(PROXY ARCHIVE\) Tj/.test(hOps), 'intestazione con nome dell\u2019app nel margine in alto');
+  const tight = P.makePlan({ bleed: 3 }, [{ name: 'A', qty: 1, front: imgs.a }]);
+  ok(!/Tj/.test(P.pageOps(tight, tight.pages[0]).ops), 'niente intestazione quando non c\u2019e\u2019 spazio sopra la griglia');
+  ok(!/Tj/.test(P.pageOps(P.makePlan({ header: false }, [{ name: 'A', qty: 1, front: imgs.a }]), withH.pages[0]).ops), 'intestazione disattivabile');
+  const bk = P.makePlan({ duplex: 'long' }, [{ name: 'A', qty: 1, front: imgs.a, back: imgs.b }]);
+  ok(!/Tj/.test(P.pageOps(bk, bk.pages[1]).ops) && /Tj/.test(P.pageOps(bk, bk.pages[0]).ops), 'intestazione solo sul fronte');
+  ok(Math.abs(P.squareInset({ cornerR: 3 }) - 1.14) < 0.01, 'angoli quadrati: ingrandimento per lato');
+  run('crop', { corners: 'crop', guides: 'none', header: false }, [{ name: 'A', qty: 1, front: imgs.a }]);
+  run('keep', { corners: 'keep', guides: 'none', header: false }, [{ name: 'A', qty: 1, front: imgs.a }]);
   ok(/Tj/.test(Buffer.from(run('list', { decklist: true }, [{ name: 'A', qty: 1, front: imgs.a }]).r.bytes).toString('latin1')), 'la lista carte ha il testo');
   // pagina di prova
   const t = P.buildTest({ duplex: 'long', bleed: 1 }); fs.writeFileSync(path.join(tmp, 'test.pdf'), Buffer.from(t.bytes));
@@ -190,6 +213,10 @@ print('red', at(10.5 + 31.5, 16.5 + 20))      # banda rossa
 print('corner', at(10.5 + 0.4, 16.5 + 0.4))   # angolo nero dell'immagine
 print('outside', at(5, 5))                    # fuori dalla griglia = bianco
 print('size', im.size)
+ck = png('crop', 1, 300); kp = png('keep', 1, 300)
+s3 = 300 / 25.4
+for tag, img in (('cropc', ck), ('keepc', kp)):
+    print(tag, img.getpixel((int((10.5 + 0.25) * s3), int((16.5 + 0.25) * s3))))
 # abbondanza + angoli bianchi: l'angolo non e' piu' nero
 im = png('bleed', 1)
 print('bleedfill', im.getpixel((int((10.5 - 0.0) * s) , int(40 * s))))
@@ -202,6 +229,9 @@ print('bleedfill', im.getpixel((int((10.5 - 0.0) * s) , int(40 * s))))
     ok(cr < 40 && cg < 40 && cb < 40, 'angolo nero come da immagine: ' + get('corner'));
     ok(or_ > 250 && og > 250 && ob > 250, 'fuori dalla griglia bianco');
     ok(get('size') === '(827, 1170)', 'pagina A4 a 100 dpi: ' + get('size'));
+    const [kr] = col('keepc'), [qr, qg, qb] = col('cropc');
+    ok(kr < 40, 'senza ritaglio l\u2019angolo e\u2019 nero: ' + get('keepc'));
+    ok(qr > 200 && qg > 200 && qb > 200, 'angoli quadrati: nessun nero all\u2019angolo (' + get('cropc') + ')');
   }
 }
 console.log('pdf-test: ' + n + ' controlli ok  (file in ' + tmp + ')');

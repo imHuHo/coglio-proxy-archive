@@ -40,7 +40,8 @@
     bleed: 0,            // mm di abbondanza attorno alla carta
     imageBleed: 0,       // mm di abbondanza gia' presenti nelle immagini (di norma 0; utile per file propri)
     fill: 'auto',        // colore dell'abbondanza: auto | black | white | #rrggbb
-    corners: 'keep',     // angoli arrotondati: keep (come l'immagine) | black | white
+    corners: 'keep',     // angoli: keep (come l'immagine) | black | white (riempie) | crop (quadrati: ingrandisce ~3% e ritaglia)
+    header: true,        // logo e nome dell'app nel margine in alto del foglio (solo se c'e' spazio)
     fit: 'auto',         // immagini non in proporzione: auto | cover | contain | stretch
     cols: 0, rows: 0,    // 0 = quante ne entrano
     gapX: 0, gapY: 0, margin: 3,
@@ -88,7 +89,8 @@
     o.rotateCards = !!o.rotateCards;
     o.bleed = num(o.bleed, 0, 0, 20); o.imageBleed = num(o.imageBleed, 0, 0, 20);
     o.fill = (o.fill === 'auto') ? 'auto' : color(o.fill, 'auto');
-    o.corners = pick(o.corners, ['keep', 'black', 'white'], 'keep');
+    o.corners = pick(o.corners, ['keep', 'black', 'white', 'crop'], 'keep');
+    o.header = o.header !== false;
     o.fit = pick(o.fit, ['auto', 'cover', 'contain', 'stretch'], 'auto');
     o.cols = Math.floor(num(o.cols, 0, 0, 50)); o.rows = Math.floor(num(o.rows, 0, 0, 50));
     o.gapX = num(o.gapX, 0, 0, 100); o.gapY = num(o.gapY, 0, 0, 100); o.margin = num(o.margin, 3, 0, 100);
@@ -340,8 +342,8 @@
   Canvas.prototype.style = function (hex, widthMm, dash) {
     this.ops.push(strokeOp(hex) + ' ' + n3(pt(widthMm)) + ' w' + (dash ? ' [' + n3(pt(1)) + ' ' + n3(pt(0.8)) + '] 0 d' : ' [] 0 d'));
   };
-  Canvas.prototype.text = function (s, x, y, size, bold, hex) {
-    this.ops.push('BT ' + (hex ? fillOp(hex) + ' ' : '0 g ') + '/' + (bold ? 'F2' : 'F1') + ' ' + n3(size) + ' Tf ' + n3(pt(x)) + ' ' + this.Y(y) + ' Td (' + pdfText(s) + ') Tj ET');
+  Canvas.prototype.text = function (s, x, y, size, bold, hex, tc) {
+    this.ops.push('BT ' + (hex ? fillOp(hex) + ' ' : '0 g ') + (tc ? n3(tc) + ' Tc ' : '') + '/' + (bold ? 'F2' : 'F1') + ' ' + n3(size) + ' Tf ' + n3(pt(x)) + ' ' + this.Y(y) + ' Td (' + pdfText(s) + ') Tj ET');
   };
 
   /* Un angolo "tra il quadrato e l'arco" (mm, coordinate locali con y verso l'alto). */
@@ -360,6 +362,8 @@
     return '#000000';
   }
 
+  function squareInset(o) { return Math.round(o.cornerR * 0.293 * 1.3 * 100) / 100; }
+
   /* Disegna una carta nella sua cella. */
   function drawCard(cv, o, g, s, imgName) {
     var card = s.card, img = card.img, lw = g.cellW, lh = g.cellH, rot = o.rotateCards;
@@ -370,8 +374,12 @@
     var fill = resolveFill(o, img);
     if (o.bleed > 0 || !img) { cv.raw(fillOp(img ? fill : '#f4f4f4')); cv.raw('0 0 ' + n3(pt(lw)) + ' ' + n3(pt(lh)) + ' re f'); }
     cv.raw('0 0 ' + n3(pt(lw)) + ' ' + n3(pt(lh)) + ' re W n');
+    var square = o.corners === 'crop' && img && img.cornerPatch !== false && o.cornerR > 0;
+    if (square) cv.raw(n3(pt(o.bleed)) + ' ' + n3(pt(o.bleed)) + ' ' + n3(pt(o.cardW)) + ' ' + n3(pt(o.cardH)) + ' re W n');
     if (img) {
+      /* angoli quadrati: l'angolo del rettangolo deve cadere dentro l'arco, quindi si ingrandisce l'immagine di d per lato (d = 0,293 R, piu' un po' di margine) */
       var ib = img.bleed != null ? img.bleed : o.imageBleed, bw = o.cardW + 2 * ib, bh = o.cardH + 2 * ib, iw = bw, ih = bh;
+      if (square) { var d = squareInset(o); bw += 2 * d; bh += 2 * d; iw = bw; ih = bh; }
       var ar = img.width / img.height, br = bw / bh, mode = o.fit;
       if (mode === 'auto') mode = Math.abs(ar / br - 1) < 0.01 ? 'stretch' : 'cover';
       if (mode === 'cover') { if (ar > br) iw = bh * ar; else ih = bw / ar; }
@@ -442,6 +450,39 @@
       cv.line(m.x, m.y, m.x + m.sx * m.leg, m.y); cv.line(m.x, m.y, m.x, m.y + m.sy * m.leg);
     });
     cv.raw('Q');
+  }
+
+
+  /* Logo e nome dell'app nel margine in alto (versione vettoriale del logo dell'interfaccia). */
+  function rrect(x, y, w, h, r) {
+    var k = 0.5523 * r, N = n3;
+    return N(x + r) + ' ' + N(y) + ' m ' + N(x + w - r) + ' ' + N(y) + ' l ' +
+      N(x + w - r + k) + ' ' + N(y) + ' ' + N(x + w) + ' ' + N(y + r - k) + ' ' + N(x + w) + ' ' + N(y + r) + ' c ' + N(x + w) + ' ' + N(y + h - r) + ' l ' +
+      N(x + w) + ' ' + N(y + h - r + k) + ' ' + N(x + w - r + k) + ' ' + N(y + h) + ' ' + N(x + w - r) + ' ' + N(y + h) + ' c ' + N(x + r) + ' ' + N(y + h) + ' l ' +
+      N(x + r - k) + ' ' + N(y + h) + ' ' + N(x) + ' ' + N(y + h - r + k) + ' ' + N(x) + ' ' + N(y + h - r) + ' c ' + N(x) + ' ' + N(y + r) + ' l ' +
+      N(x) + ' ' + N(y + r - k) + ' ' + N(x + r - k) + ' ' + N(y) + ' ' + N(x + r) + ' ' + N(y) + ' c h';
+  }
+  function rotAbout(a, cx, cy) {
+    var r = a * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+    return [c, s, -s, c, cx - cx * c + cy * s, cy - cx * s - cy * c].map(n3).join(' ') + ' cm';
+  }
+  function headerRoom(o, g) { return o.header && g.y0 >= 11 && g.x0 >= 0; }
+  function drawHeader(cv, o, g) {
+    if (!headerRoom(o, g)) return;
+    var S = 7, x = g.x0, y = (g.y0 - S) / 2, k = pt(S / 40);
+    var ACC = '#3347d6', c = function (hex) { return fillOp(hex) + ' ' + strokeOp(hex); };
+    cv.raw('q ' + n3(k) + ' 0 0 ' + n3(-k) + ' ' + n3(pt(x)) + ' ' + n3(pt(g.pageH - y)) + ' cm');
+    cv.raw('q ' + rotAbout(-14, 14, 20) + ' ' + fillOp('#e3e6fb') + ' ' + strokeOp(ACC) + ' 1.6 w ' + rrect(5, 7, 19, 26, 3.5) + ' B Q');
+    cv.raw('q ' + fillOp('#ffffff') + ' ' + strokeOp(ACC) + ' 1.6 w ' + rrect(9, 5, 19, 26, 3.5) + ' B Q');
+    cv.raw('q ' + rotAbout(12, 22, 20) + ' ' + fillOp(ACC) + ' ' + rrect(13, 7, 19, 26, 3.5) + ' f Q');
+    var kk = 0.5523 * 8, cx = 29, cy = 29, r = 8;
+    cv.raw('q ' + fillOp('#e4572e') + ' ' + n3(cx + r) + ' ' + n3(cy) + ' m ' + n3(cx + r) + ' ' + n3(cy + kk) + ' ' + n3(cx + kk) + ' ' + n3(cy + r) + ' ' + n3(cx) + ' ' + n3(cy + r) + ' c ' +
+      n3(cx - kk) + ' ' + n3(cy + r) + ' ' + n3(cx - r) + ' ' + n3(cy + kk) + ' ' + n3(cx - r) + ' ' + n3(cy) + ' c ' + n3(cx - r) + ' ' + n3(cy - kk) + ' ' + n3(cx - kk) + ' ' + n3(cy - r) + ' ' + n3(cx) + ' ' + n3(cy - r) + ' c ' +
+      n3(cx + kk) + ' ' + n3(cy - r) + ' ' + n3(cx + r) + ' ' + n3(cy - kk) + ' ' + n3(cx + r) + ' ' + n3(cy) + ' c h f Q');
+    cv.raw('q ' + strokeOp('#ffffff') + ' 2.2 w 1 J 1 j 25.4 29.2 m 28 31.8 l 32.6 26.6 l S Q');
+    cv.raw('Q');
+    cv.text('Coglio', x + S + 2.2, y + 3.3, 12, true, '#14172b');
+    cv.text('PROXY ARCHIVE', x + S + 2.2, y + 6.4, 5.5, false, '#586079', 1);
   }
 
   function drawList(cv, pg, g) {
@@ -530,18 +571,120 @@
     return w.bytes(root, info);
   }
 
+  /* Una pagina del piano -> operazioni di disegno (le stesse del PDF). */
+  function drawPage(cv, plan, pg, imgName) {
+    var o = plan.opts, g = plan.geom;
+    if (pg.kind === 'list') { drawList(cv, pg, g); return; }
+    if (pg.kind === 'front') drawHeader(cv, o, g);
+    drawGuides(cv, o, g, pg.slots);
+    if (pg.kind === 'front') drawReg(cv, o, g);
+    pg.slots.forEach(function (s) {
+      drawCard(cv, o, g, s, imgName);
+      if ((o.corners === 'black' || o.corners === 'white') && s.card.img && s.card.img.cornerPatch !== false && o.cornerR > 0) drawCornerPatches(cv, o, g, s);
+    });
+  }
+  /* Per l'anteprima: stesse operazioni del PDF + elenco delle immagini usate (nome -> oggetto immagine). */
+  function pageOps(plan, pg) {
+    var cv = new Canvas(plan.geom.pageH), imgs = [];
+    drawPage(cv, plan, pg, function (img) {
+      var i = imgs.indexOf(img);
+      if (i < 0) { imgs.push(img); i = imgs.length - 1; }
+      return 'Im' + (i + 1);
+    });
+    return { ops: cv.ops.join('\n'), images: imgs, widthPt: pt(plan.geom.pageW), heightPt: pt(plan.geom.pageH) };
+  }
+
+  /* ---------- anteprima: esegue le operazioni del PDF su un canvas 2D ---------- */
+  function tokenize(s) {
+    var out = [], i = 0, n = s.length, j, c;
+    while (i < n) {
+      c = s.charAt(i);
+      if (c <= ' ') { i++; continue; }
+      if (c === '(') {
+        var depth = 1, str = ''; j = i + 1;
+        while (j < n && depth > 0) {
+          var ch = s.charAt(j);
+          if (ch === '\\') {
+            var nx = s.charAt(j + 1);
+            if (nx >= '0' && nx <= '7') { var oct = nx, k = j + 2; while (k < j + 4 && s.charAt(k) >= '0' && s.charAt(k) <= '7') { oct += s.charAt(k); k++; } str += String.fromCharCode(parseInt(oct, 8)); j = k; continue; }
+            str += nx; j += 2; continue;
+          }
+          if (ch === '(') depth++;
+          else if (ch === ')') { depth--; if (depth === 0) { j++; break; } }
+          str += ch; j++;
+        }
+        out.push({ s: str }); i = j; continue;
+      }
+      if (c === '[' || c === ']') { out.push(c); i++; continue; }
+      j = i; while (j < n && s.charAt(j) > ' ' && '()[]'.indexOf(s.charAt(j)) < 0) j++;
+      out.push(s.slice(i, j)); i = j;
+    }
+    return out;
+  }
+  function css(r, g, b) { return 'rgb(' + Math.round(r * 255) + ',' + Math.round(g * 255) + ',' + Math.round(b * 255) + ')'; }
+  /* ctx: CanvasRenderingContext2D; getImage(oggetto immagine) -> drawable oppure null. Restituisce quante immagini ha disegnato. */
+  function paint(ctx, page, getImage, widthPx) {
+    var k = widthPx / page.widthPt, hPx = page.heightPt * k, drawn = 0, stack = [], toks = tokenize(page.ops), i, ops = [];
+    ctx.save();
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, widthPx, hPx);
+    ctx.setTransform(k, 0, 0, -k, 0, hPx);
+    ctx.lineJoin = 'miter'; ctx.lineCap = 'butt';
+    var tx = 0, ty = 0, font = 'F1', size = 10, tc = 0, clipNext = false, args = [], arr = null;
+    for (i = 0; i < toks.length; i++) {
+      var t = toks[i];
+      if (t === '[') { arr = []; continue; }
+      if (t === ']') { args.push(arr); arr = null; continue; }
+      if (typeof t === 'object') { (arr || args).push(t); continue; }
+      if (/^[-+.0-9]/.test(t)) { (arr || args).push(parseFloat(t)); continue; }
+      if (t.charAt(0) === '/') { args.push(t.slice(1)); continue; }
+      var a = args; args = [];
+      switch (t) {
+        case 'q': ctx.save(); break;
+        case 'Q': ctx.restore(); break;
+        case 'cm': ctx.transform(a[0], a[1], a[2], a[3], a[4], a[5]); break;
+        case 'w': ctx.lineWidth = a[0]; break;
+        case 'J': ctx.lineCap = a[0] === 1 ? 'round' : 'butt'; break;
+        case 'j': ctx.lineJoin = a[0] === 1 ? 'round' : 'miter'; break;
+        case 'd': ctx.setLineDash((a[0] || []).map(Number)); break;
+        case 'RG': ctx.strokeStyle = css(a[0], a[1], a[2]); break;
+        case 'rg': ctx.fillStyle = css(a[0], a[1], a[2]); break;
+        case 'G': ctx.strokeStyle = css(a[0], a[0], a[0]); break;
+        case 'g': ctx.fillStyle = css(a[0], a[0], a[0]); break;
+        case 'm': ctx.beginPath(); ctx.moveTo(a[0], a[1]); break;
+        case 'l': ctx.lineTo(a[0], a[1]); break;
+        case 'c': ctx.bezierCurveTo(a[0], a[1], a[2], a[3], a[4], a[5]); break;
+        case 'h': ctx.closePath(); break;
+        case 're': ctx.beginPath(); ctx.rect(a[0], a[1], a[2], a[3]); break;
+        case 'W': clipNext = true; break;
+        case 'n': if (clipNext) { ctx.clip(); clipNext = false; } ctx.beginPath(); break;
+        case 'f': ctx.fill(); break;
+        case 'S': ctx.stroke(); break;
+        case 'B': ctx.fill(); ctx.stroke(); break;
+        case 'BT': tx = 0; ty = 0; break;
+        case 'ET': break;
+        case 'Tc': tc = a[0]; break;
+        case 'Tf': font = a[0]; size = a[1]; break;
+        case 'Td': tx = a[0]; ty = a[1]; break;
+        case 'Tj':
+          ctx.save(); ctx.translate(tx, ty); ctx.scale(1, -1);
+          ctx.font = (font === 'F2' ? 'bold ' : '') + size + 'px Helvetica, Arial, sans-serif';
+          if ('letterSpacing' in ctx) ctx.letterSpacing = tc + 'px';
+          ctx.fillText(a[0].s, 0, 0); ctx.restore(); break;
+        case 'Do':
+          var im = page.images[parseInt(String(a[0]).slice(2), 10) - 1], dr = im && getImage ? getImage(im) : null;
+          ctx.save(); ctx.transform(1, 0, 0, -1, 0, 1);
+          if (dr) { ctx.drawImage(dr, 0, 0, 1, 1); drawn++; } else { ctx.fillStyle = '#d9dbe3'; ctx.fillRect(0, 0, 1, 1); }
+          ctx.restore(); break;
+      }
+    }
+    ctx.restore();
+    return drawn;
+  }
+
   function build(opts, items) {
     var plan = makePlan(opts, items), o = plan.opts, g = plan.geom;
     var sel = selectPages(plan, o.pageRange);
-    var bytes = renderDoc(plan, sel, function (cv, pg, imgName) {
-      if (pg.kind === 'list') { drawList(cv, pg, g); return; }
-      drawGuides(cv, o, g, pg.slots);
-      if (pg.kind === 'front') drawReg(cv, o, g);
-      pg.slots.forEach(function (s) {
-        drawCard(cv, o, g, s, imgName);
-        if (o.corners !== 'keep' && s.card.img && s.card.img.cornerPatch !== false && o.cornerR > 0) drawCornerPatches(cv, o, g, s);
-      });
-    });
+    var bytes = renderDoc(plan, sel, function (cv, pg, imgName) { drawPage(cv, plan, pg, imgName); });
     return { bytes: bytes, pages: sel.length, totalPages: plan.pages.length, plan: plan };
   }
 
@@ -555,7 +698,7 @@
   }
 
   return {
-    PAPERS: PAPERS, CARD_SIZES: CARD_SIZES, DEFAULTS: DEFAULTS,
+    PAPERS: PAPERS, CARD_SIZES: CARD_SIZES, DEFAULTS: DEFAULTS, pageOps: pageOps, paint: paint, tokenize: tokenize, squareInset: squareInset,
     normalize: normalize, parseRange: parseRange, geometry: geometry, makePlan: makePlan, selectPages: selectPages,
     parseJpeg: parseJpeg, build: build, buildTest: buildTest, textWidth: textWidth, pdfText: pdfText, mirror: mirror, regMarks: regMarks
   };

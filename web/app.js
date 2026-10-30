@@ -654,6 +654,7 @@
     if (ui.view === 'archive' && state.decks.length) updateArchiveList();
     if (ui.view === 'deck') updateDeckList();
     if (ui.view === 'upgrade') updateUpgradeCols();
+    if (ui.view === 'builder' && window.CPABuilder) window.CPABuilder.after();
   }
   function viewHtml() {
     switch (ui.view) {

@@ -50,12 +50,12 @@ e l'app ti dice quali carte hai, quante sono libere e in quale mazzo sono impegn
   «large» (672 × 936 px, ~270 dpi a 63 mm), incorporate nel PDF **senza ricompressione** e **senza filigrana** né ritocchi. Opzioni:
   carta A4 / Letter / A3 / A5 / Legal / Tabloid / personalizzata, verticale o orizzontale; misura carta (Magic 63 × 88, Poker, Bridge, Mini, Tarocchi, personalizzata)
   e rotazione di 90°; colonne e righe (automatiche o fisse), spazi, margine; **abbondanza** (bleed) con colore automatico (il bordo della carta), nero o bianco;
-  angoli arrotondati riempiti di nero/bianco; guide di taglio (segni agli angoli o linee tra le carte, colore, spessore, lunghezza, tratteggio);
+  angoli delle carte arrotondati, riempiti di nero/bianco oppure **quadrati** (l'immagine è ingrandita di ~3% e ritagliata, così non resta nessun angolo nero); logo e nome dell'app nel margine in alto del foglio (se c'è spazio, disattivabile); guide di taglio (segni agli angoli o linee tra le carte, colore, spessore, lunghezza, tratteggio);
   **segni di registrazione** per plotter (Silhouette a 3 angoli o a 4); spostamento della stampante (X/Y, e a parte per il retro); **fronte-retro** (bordo lungo o corto,
   pagine alternate o prima i fronti poi i retro; le carte doppie hanno il vero retro, le altre niente); token collegati; terre base escluse; scelta di un'altra
   stampa per ogni carta; **immagini proprie** (JPG diretti, PNG/WebP convertiti ad alta qualità) con eventuale abbondanza già presente; intervallo di pagine;
   pagina con la lista; **pagina di prova** con righello e barra da 100 mm; impostazioni con nome salvate sul dispositivo; scarico di tutte le immagini in `.zip`.
-  Serve internet (le immagini arrivano da Scryfall) e non funziona dentro Claude.
+  L'**anteprima** della pagina si aggiorna in tempo reale a ogni modifica ed esegue le stesse istruzioni di disegno del PDF (guide, abbondanza, angoli, intestazione; con immagini ridotte). Serve internet (le immagini arrivano da Scryfall) e non funziona dentro Claude.
 - **Backup** in JSON (scarica, copia, ripristina). Ogni azione distruttiva ha *Annulla*.
 
 ### Come vengono contate le carte

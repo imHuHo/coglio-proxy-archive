@@ -208,37 +208,64 @@
   }
 
   /* ---------- anteprima ---------- */
+  /* L'anteprima esegue su un canvas le stesse operazioni di disegno che finiscono nel PDF (guide, abbondanza, angoli, intestazione),
+     quindi mostra quello che uscirà davvero; le immagini sono versioni ridotte, il PDF usa quelle grandi. */
+  var thumbs = {}, pvTimer = null, zoomed = false;
+  function upMm() { return parseFloat(String(bd.upBleed).replace(',', '.')) || 0; }
   function planNow() {
+    var up = upMm();
     var items = bd.entries.filter(inc).map(function (e) {
-      var fs = e.card ? X.faces(e.card, 'small') : [];
-      var front = e.custom ? { thumb: e.thumb || '' } : (e.nf ? null : { thumb: fs[0] ? fs[0].url : '' });
-      var back = e.customBack ? { thumb: e.thumbBack || '' } : (fs[1] ? { thumb: fs[1].url } : null);
+      var fs = e.card ? X.faces(e.card, 'normal') : [], bord = e.card ? X.borderOf(e.card) : '#000000';
+      var front, back = null;
+      if (e.custom) front = { thumb: e.thumb || '', width: e.custom.width, height: e.custom.height, border: e.custom.border, cornerPatch: false, bleed: up };
+      else if (e.nf) front = null;
+      else front = { thumb: fs[0] ? fs[0].url : '', width: 488, height: 680, border: bord };
+      if (e.customBack) back = { thumb: e.thumbBack || '', width: e.customBack.width, height: e.customBack.height, border: e.customBack.border, cornerPatch: false, bleed: up };
+      else if (fs[1]) back = { thumb: fs[1].url, width: 488, height: 680, border: bord };
       return { name: e.name, qty: e.qty, set: e.set, cn: e.cn, front: front, back: back, backName: fs[1] ? fs[1].name : '' };
     });
     return P.makePlan(bd.opts, items);
   }
-  function pct(v, t) { return (Math.round(v / t * 10000) / 100) + '%'; }
-  function previewHtml(plan) {
-    var g = plan.geom, o = plan.opts;
+  function previewInner(plan) {
     if (!plan.pages.length) return '<p class="hint">Aggiungi delle carte per vedere l’anteprima.</p>';
     if (bd.page > plan.pages.length) bd.page = plan.pages.length;
     if (bd.page < 1) bd.page = 1;
-    var pg = plan.pages[bd.page - 1], inner = '';
-    if (pg.kind === 'list') {
-      inner = '<div class="pv-list">' + pg.lines.map(function (l) { return '<div>' + esc(l) + '</div>'; }).join('') + '</div>';
-    } else {
-      pg.slots.forEach(function (s) {
-        var img = s.card.img, th = img && img.thumb, rot = o.rotateCards;
-        var tr = 'left:' + pct(s.tx - s.x, s.w) + ';top:' + pct(s.ty - s.y, s.h) + ';width:' + pct(s.tw, s.w) + ';height:' + pct(s.th, s.h);
-        var face = th ? '<img src="' + esc(th) + '" alt="" loading="lazy">' : '<span class="pv-ph">' + (img ? '' : esc(s.card.name || '')) + '</span>';
-        if (rot) face = '<div class="pv-rot" style="width:' + pct(g.pch, g.pcw) + ';height:' + pct(g.pcw, g.pch) + '">' + face + '</div>';
-        inner += '<div class="pv-cell' + (o.bleed > 0 ? ' bl' : '') + '" style="left:' + pct(s.x, g.pageW) + ';top:' + pct(s.y, g.pageH) + ';width:' + pct(s.w, g.pageW) + ';height:' + pct(s.h, g.pageH) + '"><div class="pv-card' + (img && img.thumb !== undefined ? '' : ' none') + (rot ? ' r' : '') + '" style="' + tr + '">' + face + '</div></div>';
-      });
-    }
+    var pg = plan.pages[bd.page - 1];
     var nav = '<div class="pv-nav"><button class="btn small" data-a="bd-page" data-v="-1"' + (bd.page <= 1 ? ' disabled' : '') + '>←</button><span>Pagina ' + bd.page + ' di ' + plan.pages.length + ' · ' +
       (pg.kind === 'back' ? 'retro' : pg.kind === 'list' ? 'lista carte' : 'fronte') + '</span><button class="btn small" data-a="bd-page" data-v="1"' + (bd.page >= plan.pages.length ? ' disabled' : '') + '>→</button></div>';
-    return nav + '<div class="pv-wrap"><div class="pv" style="aspect-ratio:' + g.pageW + '/' + g.pageH + '">' + inner + '</div></div>';
+    return nav + '<div class="pv-wrap' + (zoomed ? ' zoom' : '') + '" id="bd-pvbox"><canvas class="pv-canvas" id="bd-canvas" data-a="bd-zoom" role="img" aria-label="Anteprima della pagina ' + bd.page + '"></canvas></div>' +
+      '<p class="hint">Anteprima con le impostazioni attuali: si aggiorna da sola. Tocca la pagina per ingrandirla.</p>';
   }
+  function thumbImage(img) {
+    var url = img && img.thumb; if (!url) return null;
+    var t = thumbs[url];
+    if (!t) {
+      var im = new Image(); t = thumbs[url] = { im: im };
+      im.onload = function () { schedulePreview(30); };
+      im.src = url;
+    }
+    return t.im.complete && t.im.naturalWidth ? t.im : null;
+  }
+  function drawPreview() {
+    var cv = document.getElementById('bd-canvas'); if (!cv || H.ui.view !== 'builder') return;
+    var plan = planNow(); if (!plan.pages.length) return;
+    var pg = plan.pages[Math.min(Math.max(bd.page, 1), plan.pages.length) - 1], page = P.pageOps(plan, pg);
+    var box = document.getElementById('bd-pvbox'), avail = box ? box.clientWidth : 0;
+    var cssW = zoomed ? Math.max(avail, 1000) : Math.min(avail || 380, 440);
+    var dpr = Math.min(window.devicePixelRatio || 1, 3), wPx = Math.round(cssW * dpr);
+    cv.width = wPx; cv.height = Math.round(wPx * page.heightPt / page.widthPt);
+    cv.style.width = cssW + 'px'; cv.style.height = Math.round(cssW * page.heightPt / page.widthPt) + 'px';
+    var ctx = cv.getContext('2d'); if (!ctx) return;
+    ctx.imageSmoothingQuality = 'high';
+    P.paint(ctx, page, thumbImage, wPx);
+  }
+  function schedulePreview(ms) { clearTimeout(pvTimer); pvTimer = setTimeout(drawPreview, ms == null ? 120 : ms); }
+  /* Solo il riquadro dell'anteprima (mentre si scrive in un campo non si ridisegna tutta la schermata). */
+  function refreshPreview() {
+    var box = document.getElementById('bd-pv'); if (!box) return;
+    box.innerHTML = previewInner(planNow()); drawPreview();
+  }
+  function after() { init(); drawPreview(); }
 
   /* ---------- campi del modulo ---------- */
   function val(k) { var v = bd.opts[k]; return v == null ? '' : v; }
@@ -313,13 +340,13 @@
     var cut = '<section class="panel"><h2>Taglio</h2><div class="bd-grid">' +
       num('bleed', 'Abbondanza (mm)', '', 'bordo extra attorno alla carta') +
       sel('fill', 'Colore abbondanza', [['auto', 'Come il bordo della carta'], ['#000000', 'Nero'], ['#ffffff', 'Bianco']]) +
-      sel('corners', 'Angoli arrotondati', [['keep', 'Come l’immagine'], ['black', 'Riempi di nero'], ['white', 'Riempi di bianco']]) +
+      sel('corners', 'Angoli delle carte', [['keep', 'Arrotondati (come l’immagine)'], ['crop', 'Quadrati: ingrandisce ~3% e ritaglia'], ['black', 'Arrotondati, riempi di nero'], ['white', 'Arrotondati, riempi di bianco']]) +
       sel('guides', 'Guide di taglio', [['crop', 'Segni agli angoli'], ['lines', 'Linee tra le carte'], ['none', 'Nessuna']]) +
       (o.guides !== 'none' ? num('guideLength', 'Lunghezza segni (mm)') + num('guideWidth', 'Spessore (mm)') +
         '<label class="lbl">Colore guide<input class="input col" type="color" data-c="bd-opt" data-k="guideColor" value="' + esc(o.guideColor) + '"></label>' : '') +
       sel('reg', 'Segni per plotter', [['none', 'Nessuno'], ['silhouette', 'Silhouette (3 angoli)'], ['four', 'Quattro angoli']]) +
       num('uploadBleed', 'Abbondanza già nei tuoi file (mm)', '', '', true) +
-      '</div>' + (o.guides !== 'none' ? chk('guideDash', 'Guide tratteggiate', o.guideDash) : '') +
+      '</div>' + (o.guides !== 'none' ? chk('guideDash', 'Guide tratteggiate', o.guideDash) : '') + chk('header', 'Logo e nome dell’app in cima al foglio (se c’è spazio)', o.header) +
       '</section>';
 
     var prn = '<section class="panel"><h2>Stampa</h2><div class="bd-grid">' +
@@ -349,8 +376,7 @@
 
     var back = bd.source === 'deck' ? '<button class="back" data-a="open-deck" data-id="' + esc(bd.deckId) + '">← Mazzo</button>' : '';
     return '<header class="vh">' + back + '<h1>' + title + '</h1></header>' + na + sourceBox + list +
-      '<div class="bd-cols"><div class="bd-form">' + page + cut + prn + pre + '</div><div class="bd-side"><section class="panel"><h2>Anteprima</h2>' + previewHtml(plan) +
-      '<p class="hint">Anteprima indicativa: le guide e l’abbondanza vere sono nel PDF.</p></section>' + main + '</div></div>' +
+      '<div class="bd-cols"><div class="bd-form">' + page + cut + prn + pre + '</div><div class="bd-side"><section class="panel"><h2>Anteprima</h2><div id="bd-pv">' + previewInner(plan) + '</div></section>' + main + '</div></div>' +
       '<p class="hint" style="margin-top:18px">Le immagini sono quelle di Scryfall, senza ritocchi (nome dell’artista e copyright restano visibili) e senza filigrana. Stampa solo per uso personale: le carte Magic sono © Wizards of the Coast.</p>';
   }
 
@@ -363,7 +389,8 @@
       case 'bd-go': generate(); break;
       case 'bd-zip': zipImages(); break;
       case 'bd-test': testPage(); break;
-      case 'bd-page': bd.page += parseInt(el.dataset.v, 10) || 0; H.render(); break;
+      case 'bd-page': bd.page += parseInt(el.dataset.v, 10) || 0; refreshPreview(); break;
+      case 'bd-zoom': zoomed = !zoomed; refreshPreview(); break;
       case 'bd-del': if (e) { bd.entries.splice(bd.entries.indexOf(e), 1); if (bd.picker === e.id) bd.picker = null; H.render(); } break;
       case 'bd-prints': if (e) openPicker(e); break;
       case 'bd-pick': if (e) pickPrint(e, parseInt(el.dataset.n, 10)); break;
@@ -384,8 +411,8 @@
     init();
     if (c === 'bd-text') bd.text = el.value;
     else if (c === 'bd-pname') bd.presetName = el.value;
-    else if (c === 'bd-opt') bd.opts[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value;
-    else if (c === 'bd-up') bd.upBleed = el.value;
+    else if (c === 'bd-opt') { bd.opts[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value; schedulePreview(); }
+    else if (c === 'bd-up') { bd.upBleed = el.value; schedulePreview(); }
   }
   function change(c, el) {
     init();
@@ -403,5 +430,5 @@
     }
   }
 
-  window.CPABuilder = { open: open, html: html, click: click, input: input, change: change, state: function () { init(); return bd; } };
+  window.CPABuilder = { open: open, html: html, after: after, click: click, input: input, change: change, state: function () { init(); return bd; } };
 })();
