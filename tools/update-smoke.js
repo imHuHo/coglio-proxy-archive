@@ -8,7 +8,7 @@ const w = dom.window, d = w.document;
 const errors = []; w.addEventListener('error', e => errors.push(e.message));
 w.scrollTo = () => {};
 const opened = []; w.open = u => { opened.push(u); return {}; };
-w.eval(read(W + '/version.js')); w.eval(read(W + '/core.js')); w.eval(read(W + '/app.js'));
+w.eval(read(W + '/version.js')); w.CPA_VERSION = '2.0.1'; /* versione fissa per il test */ w.eval(read(W + '/core.js')); w.eval(read(W + '/app.js'));
 let n = 0; const ok = (c, m) => { assert(c, m); n++; };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const $ = s => d.querySelector(s), $$ = s => [...d.querySelectorAll(s)];
