@@ -1,6 +1,6 @@
 <title>Coglio Proxy Archive</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap">
 <style>
 /* Coglio Proxy Archive
  * Layout: barra laterale su PC, barra a schede in basso su telefono; al centro la vista.
@@ -66,14 +66,14 @@ a { color: var(--accent); }
 .main { padding: 8px var(--gx2) 112px var(--gx); max-width: 880px; margin: 0 auto; width: 100%; min-width: 0; }
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px;
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px;
   background: var(--surface); border-top: 1px solid var(--line);
   padding: 6px var(--gx2) calc(6px + env(safe-area-inset-bottom, 0px)) var(--gx);
 }
 .nav {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   border: 0; background: none; padding: 6px 2px; border-radius: 10px;
-  color: var(--muted); font-size: 11px; font-weight: 600; min-width: 0;
+  color: var(--muted); font-size: 10.5px; font-weight: 600; min-width: 0;
 }
 .nav svg { width: 22px; height: 22px; }
 .nav[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
@@ -468,17 +468,60 @@ body.bd-lock { overflow: hidden; }
 .news-old { border-top: 1px solid var(--line); padding-top: 8px; }
 .news-old summary { cursor: pointer; font-weight: 700; font-size: 14px; margin-bottom: 8px; }
 
+/* ---------- Designer ---------- */
+.nav span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
+.dz-item { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; color: var(--fg); text-align: left; font: inherit; }
+.dz-thb { padding: 0; border: 0; background: none; cursor: pointer; display: block; border-radius: 10px; }
+.dz-th { width: 100%; height: auto; aspect-ratio: 745 / 1040; border-radius: 8px; background: var(--bg); display: block; }
+.dz-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.dz-meta b { overflow-wrap: anywhere; font-size: 14px; }
+.dz-meta span:not(.pill) { font-size: 12px; color: var(--muted); }
+.dz-meta .pill { align-self: flex-start; }
+.dz-pickit { cursor: pointer; }
+.dz-mgrid { padding: 12px 16px; overflow: auto; max-height: 60vh; margin-top: 0; }
+.dz-edit { display: grid; gap: 16px; align-items: start; }
+.dz-prev { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.dz-prev canvas { width: min(100%, 320px); height: auto; aspect-ratio: 745 / 1040; border-radius: 12px; box-shadow: 0 6px 24px #0006; background: #222; touch-action: pan-y; }
+.dz-tip { margin: 0; text-align: center; }
+.dz-form { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.dz-form .panel { display: flex; flex-direction: column; gap: 12px; }
+.dz-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.dz-ta { min-height: 0; font: 14px/1.5 var(--body); }
+.dz-syms { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip.small { padding: 3px 9px; font-size: 12.5px; font-family: var(--mono); }
+.dz-srch { display: flex; gap: 8px; }
+.dz-srch .input { flex: 1; min-width: 0; }
+.dz-range { width: 100%; accent-color: var(--accent); }
+.lbl-t { display: block; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.filebtn { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.tag.dzt { background: var(--accent-soft); color: var(--accent); }
+@media (min-width: 900px) {
+  .dz-edit { grid-template-columns: 340px minmax(0, 1fr); }
+  .dz-prev { position: sticky; top: 16px; }
+}
+
 </style>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <script>
-window.CPA_VERSION = '2.2.0';
+window.CPA_VERSION = '3.0.0';
 
 </script>
 <script>
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '3.0.0', date: '30 ottobre 2026', title: 'Coglio Proxy Designer', items: [
+    { t: 'Nuova sezione Designer', d: 'Crei proxy personalizzate direttamente nell\'app: carte tue da zero, token, carte con cornici speciali e alter di carte che esistono già. Anteprima in tempo reale mentre scrivi.' },
+    { t: 'Cornici disegnate da noi', d: 'Classica, tutta arte, senza bordo, token, planeswalker e saga, in tutti i colori, con bordo nero, bianco, argento o oro e angoli arrotondati o quadrati. Mana, tap e simboli ibridi si scrivono tra graffe: {2}{U}{U}, {T}, {W/U}, {G/P}.' },
+    { t: 'La tua arte', d: 'Carichi un\'immagine qualsiasi e la sposti e ingrandisci: col mouse trascini e usi la rotella sull\'arte, sul telefono ci sono i cursori. Le immagini si salvano ridotte, solo sul tuo dispositivo.' },
+    { t: 'Alter di carte esistenti', d: 'Scrivi il nome di una carta e il Designer importa testo, costo, tipo e arte da Scryfall: poi cambi quello che vuoi. Serve internet.' },
+    { t: 'Importa le tue cornici', d: 'Se hai cornici PNG tue (con la zona dell\'arte trasparente) le importi e le usi al posto di quelle disegnate. Restano solo sul tuo dispositivo e non vengono mai caricate da nessuna parte.' },
+    { t: 'Nel mazzo', d: 'Un design lo aggiungi a un mazzo come carta nuova, oppure sostituisce una carta che c\'è già: resta col suo nome, ma nel PDF si stampa il tuo design. Nella lista del mazzo ogni carta ha il pulsante «Design» (e «Togli design»).' },
+    { t: 'Nel PDF', d: 'Le carte con un design si stampano nella schermata Stampa con l\'immagine disegnata, ad angoli quadri e a 300 dpi, insieme alle altre. Se il design non è su quel dispositivo, la carta si stampa con l\'immagine di Scryfall.' },
+    { t: 'Salva e porta con te', d: 'Ogni design si scarica come PNG o JPG e si esporta in un file .json (con l\'arte dentro) per passarlo a un altro dispositivo. I design vivono a parte rispetto al backup dei mazzi.' }
+  ] },
   { v: '2.2.0', date: '30 ottobre 2026', title: 'Mazzi da stampare, CODIGHEL che si usa, stampe più grandi', items: [
     { t: 'Tre stati per i mazzi', d: 'Ogni mazzo ora è Attivo (montato, carte in uso), Non ancora stampato oppure Non attivo (smontato, carte libere). Lo scegli quando importi il mazzo e lo cambi quando vuoi dalla lista dei mazzi o dalla pagina del mazzo.' },
     { t: 'Non ancora stampato', d: 'Le carte di un mazzo che non hai ancora stampato non entrano nell\'archivio, non fanno scattare CODIGHEL e, se le togli con un upgrade, non finiscono tra le sciolte (non esistono ancora). Quando lo stampi lo passi ad Attivo e le carte entrano in archivio.' },
@@ -912,18 +955,20 @@ window.CPA_CHANGELOG = [
   function removeCopies(deck, key, qty, target) {
     var left = qty;
     deck.cards.forEach(function (c) {
-      if (left > 0 && keyOf(c.name) === key && (!target || samePrint(target, c))) { var t = Math.min(c.qty, left); c.qty -= t; left -= t; }
+      if (left > 0 && !c.design && keyOf(c.name) === key && (!target || samePrint(target, c))) { var t = Math.min(c.qty, left); c.qty -= t; left -= t; }
     });
     deck.cards = deck.cards.filter(function (c) { return c.qty > 0; });
     return qty - left;
   }
   function addCopies(deck, card, qty) {
-    var k = keyOf(card.name), set = card.set || '', cn = card.cn || '';
+    var k = keyOf(card.name), set = card.set || '', cn = card.cn || '', ds = card.design || '';
     for (var i = 0; i < deck.cards.length; i++) {
       var c = deck.cards[i];
-      if (keyOf(c.name) === k && c.set === set && c.cn === cn) { c.qty += qty; return; }
+      if (keyOf(c.name) === k && c.set === set && c.cn === cn && (c.design || '') === ds) { c.qty += qty; return; }
     }
-    deck.cards.push({ name: card.name, qty: qty, set: set, cn: cn });
+    var row = { name: card.name, qty: qty, set: set, cn: cn };
+    if (ds) row.design = ds;
+    deck.cards.push(row);
   }
 
   /* Applica l'upgrade a `decks` (modificandolo):
@@ -973,7 +1018,10 @@ window.CPA_CHANGELOG = [
     diff.reprints.forEach(function (r) { rep.reprints.push({ name: r.name, qty: r.qty, from: r.from, to: r.to }); });
     if (binder) rep.binderName = binder.name;
 
+    var kept = {};
+    deck.cards.forEach(function (c) { if (c.design) kept[keyOf(c.name)] = c.design; });
     deck.cards = cloneJ(up.cards);
+    deck.cards.forEach(function (c) { var k = keyOf(c.name); if (kept[k]) { c.design = kept[k]; delete kept[k]; } });
     if (up.commander) deck.commander = up.commander;
     deck.upgrades = deck.upgrades.filter(function (u) { return u.id !== upgradeId; });
     deck.updatedAt = now;
@@ -995,9 +1043,9 @@ window.CPA_CHANGELOG = [
       decks.forEach(function (d) {
         var q = 0;
         d.cards.forEach(function (c) {
-          if (keyOf(c.name) !== k) return;
+          if (keyOf(c.name) !== k || c.design) return;
           q += c.qty;
-          if (d.kind === 'binder' || isFreeDeck(d)) pool.push({ deckId: d.id, deckName: d.name, kind: d.kind, set: c.set || '', cn: c.cn || '', left: c.qty });
+          if ((d.kind === 'binder' || isFreeDeck(d))) pool.push({ deckId: d.id, deckName: d.name, kind: d.kind, set: c.set || '', cn: c.cn || '', left: c.qty });
         });
         if (!q) return;
         if (d.kind === 'binder') loose += q;
@@ -1049,11 +1097,11 @@ window.CPA_CHANGELOG = [
           var left = got, moved = [];
           deck.cards.forEach(function (c) {
             if (left > 0 && keyOf(c.name) === it.key && (kind === 'other' || samePrint(row, c))) {
-              var t = Math.min(c.qty, left); c.qty -= t; left -= t; moved.push({ name: c.name, set: c.set, cn: c.cn, qty: t });
+              var t = Math.min(c.qty, left); c.qty -= t; left -= t; moved.push({ name: c.name, set: c.set, cn: c.cn, qty: t, design: c.design });
             }
           });
           deck.cards = deck.cards.filter(function (c) { return c.qty > 0; });
-          moved.forEach(function (m) { addCopies(deck, { name: m.name, set: row.set || m.set, cn: row.set ? row.cn : m.cn }, m.qty); });
+          moved.forEach(function (m) { addCopies(deck, { name: m.name, set: row.set || m.set, cn: row.set ? row.cn : m.cn, design: m.design }, m.qty); });
           done.push({ name: it.name, qty: got, deckId: src.id, deckName: src.name, kind: src.kind, from: kind, set: row.set, cn: row.cn });
         });
       });
@@ -1064,10 +1112,12 @@ window.CPA_CHANGELOG = [
   /* ---------- Stato ---------- */
   function sanitizeCards(arr) {
     return (Array.isArray(arr) ? arr : []).map(function (c) {
-      return {
+      var o = {
         name: String(c && c.name || '').trim(), qty: Math.max(1, parseInt(c && c.qty, 10) || 1),
         set: String(c && c.set || ''), cn: String(c && c.cn || '')
       };
+      if (c && typeof c.design === 'string' && c.design) o.design = c.design;
+      return o;
     }).filter(function (c) { return c.name; });
   }
   function sanitizeDeck(d) {
@@ -2139,6 +2189,7 @@ window.CPA_CHANGELOG = [
     decks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="13" height="17" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h9"/></svg>',
     import: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
     builder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="7" y="13" width="10" height="8" rx="1"/></svg>',
+    designer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="13" height="18" rx="2"/><path d="M7 15l3-4 2 2 2-3M18 9l3 3-6 6-3.5.5.5-3.5z"/></svg>',
     data: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>',
     search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
   };
@@ -2917,7 +2968,7 @@ window.CPA_CHANGELOG = [
   })();
 
   /* ---------- Struttura generale ---------- */
-  var NAV = [['archive', 'Archivio'], ['decks', 'Mazzi'], ['import', 'Importa'], ['builder', 'Stampa'], ['data', 'Dati']];
+  var NAV = [['archive', 'Archivio'], ['decks', 'Mazzi'], ['import', 'Importa'], ['designer', 'Designer'], ['builder', 'Stampa'], ['data', 'Dati']];
   function navBtn(v, label) {
     var cur = ui.view === v || (v === 'decks' && (ui.view === 'deck' || ui.view === 'upgrade'));
     return '<button class="nav" data-a="nav" data-v="' + v + '"' + (cur ? ' aria-current="page"' : '') + '>' + IC[v] + '<span>' + label + '</span></button>';
@@ -2932,6 +2983,7 @@ window.CPA_CHANGELOG = [
     if (ui.view === 'deck') updateDeckList();
     if (ui.view === 'upgrade') updateUpgradeCols();
     if (ui.view === 'builder' && window.CPABuilder) window.CPABuilder.after();
+    if (ui.view === 'designer' && window.CPADesigner) window.CPADesigner.after();
   }
   function viewHtml() {
     switch (ui.view) {
@@ -2940,12 +2992,14 @@ window.CPA_CHANGELOG = [
       case 'upgrade': return upgradeView();
       case 'import': return importView();
       case 'builder': return window.CPABuilder ? window.CPABuilder.html() : decksView();
+      case 'designer': return window.CPADesigner ? window.CPADesigner.html() : archiveView();
       case 'data': return dataView();
       default: return archiveView();
     }
   }
   function go(v) {
     if (v === 'builder' && window.CPABuilder) { ui.confirm = null; window.CPABuilder.open(null); return; }
+    if (v === 'designer' && window.CPADesigner) { ui.confirm = null; document.body.classList.remove('bd-lock'); window.CPADesigner.open(); return; }
     document.body.classList.remove('bd-lock');
     ui.view = v; ui.confirm = null;
     if (v === 'import' && !(ui.draft && ui.draft.step === 1 && ui.draft.mode !== 'upgrade')) ui.draft = newDraft('deck');
@@ -3100,10 +3154,11 @@ window.CPA_CHANGELOG = [
       var e = A.map[C.keyOf(c.name)], others = e ? e.rows.filter(function (r) { return r.deckId !== d.id; }) : [];
       var isCmd = d.commander && C.keyOf(d.commander) === C.keyOf(c.name);
       return '<div class="crow">' + IMG.thumb(c.name, c.set, c.cn, d.id) + '<span class="qty">' + c.qty + '×</span><span class="nm">' + esc(c.name) + '</span>' +
-        (isCmd ? '<span class="tag cmd">commander</span>' : '') + (c.set ? '<span class="tag">' + esc(c.set) + (c.cn ? ' ' + esc(c.cn) : '') + '</span>' : '') +
+        (isCmd ? '<span class="tag cmd">commander</span>' : '') + (c.design ? '<span class="tag dzt">Design</span>' : '') + (c.set ? '<span class="tag">' + esc(c.set) + (c.cn ? ' ' + esc(c.cn) : '') + '</span>' : '') +
         (others.length ? '<span class="other">' + others.map(function (r) {
           return '<span class="pill ' + (r.active ? 'use' : 'free') + '">anche in ' + esc(r.deckName) + ' ×' + r.qty + (r.active ? ' · in uso' : ' · libera') + '</span>';
-        }).join('') + '</span>' : '') + '</div>';
+        }).join('') + '</span>' : '') +
+        (window.CPADesigner ? (c.design ? '<button class="btn small" data-a="dz-unbind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Togli design</button>' : '<button class="btn small" data-a="dz-bind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Design</button>') : '') + '</div>';
     }).join('') || '<p class="hint">Nessuna carta trovata.</p>';
     IMG.hydrate();
   }
@@ -3351,6 +3406,7 @@ window.CPA_CHANGELOG = [
     var a = el.dataset.a, id = el.dataset.id;
     if (!el.dataset.cf) ui.confirm = null;
     if (a.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.click(a, el); return; }
+    if (a.indexOf('dz-') === 0 && window.CPADesigner) { if (el.dataset.cf) ui.confirm = null; window.CPADesigner.click(a, el); return; }
     var deck;
     switch (a) {
       case 'nav': go(el.dataset.v); break;
@@ -3450,7 +3506,7 @@ window.CPA_CHANGELOG = [
     ui.dataMsg = ''; ui.restoreText = ''; render();
   }
 
-  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (window.CPABuilder && ui.view === 'builder' && window.CPABuilder.escape()) return; if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (window.CPADesigner && ui.view === 'designer' && window.CPADesigner.escape()) return; if (window.CPABuilder && ui.view === 'builder' && window.CPABuilder.escape()) return; if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
   document.addEventListener('mousemove', function (ev) {
     var t = ev.target.closest && ev.target.closest('.th.on');
     IMG.hover(!!t, t, ev);
@@ -3460,6 +3516,7 @@ window.CPA_CHANGELOG = [
   document.addEventListener('input', function (e) {
     var c = e.target.dataset && e.target.dataset.c; if (!c) return;
     if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.input(c, e.target); return; }
+    if (c.indexOf('dz-') === 0 && window.CPADesigner) { window.CPADesigner.input(c, e.target); return; }
     if (c === 'q') { ui.q = e.target.value; ui.limit = 150; updateArchiveList(); }
     else if (c === 'upq') { ui.upQ = e.target.value; updateUpgradeCols(); }
     else if (c === 'deckq') { ui.deckQ = e.target.value; updateDeckList(); }
@@ -3472,6 +3529,7 @@ window.CPA_CHANGELOG = [
   document.addEventListener('change', function (e) {
     var t = e.target, c = t.dataset && t.dataset.c; if (!c) return;
     if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.change(c, t); return; }
+    if (c.indexOf('dz-') === 0 && window.CPADesigner) { window.CPADesigner.change(c, t); return; }
     var d;
     switch (c) {
       case 'fdeck': ui.fdeck = t.value; ui.limit = 150; render(); break;
@@ -3512,7 +3570,8 @@ window.CPA_CHANGELOG = [
   /* Funzioni che la schermata di stampa (builder.js) può usare. */
   window.CPAHost = {
     cmpVersion: UPD.cmp,
-    esc: esc, toast: toast, download: download, getDeck: getDeck, ui: ui, render: render,
+    esc: esc, toast: toast, download: download, getDeck: getDeck, ui: ui, render: render, mutate: mutate,
+    decks: function () { return state.decks; },
     available: function () { return !!store && store.kind !== 'claude' && typeof fetch === 'function'; }
   };
 
@@ -3576,11 +3635,30 @@ window.CPA_CHANGELOG = [
   function available() { return H.available(); }
 
   /* ---------- carte ---------- */
-  function mkEntry(c) { return { id: ++seq, name: c.name, qty: c.qty == null ? 1 : c.qty, set: c.set || '', cn: c.cn || '', card: null, nf: false }; }
+  function mkEntry(c) { var e = { id: ++seq, name: c.name, qty: c.qty == null ? 1 : c.qty, set: c.set || '', cn: c.cn || '', card: null, nf: false }; if (c.design) e.design = c.design; return e; }
+  /* Le carte con un design del Designer si stampano con l'immagine disegnata (angoli quadri, 300 dpi) al posto di quella di Scryfall. */
+  function attachDesigns() {
+    var D = window.CPADesigner, list = bd.entries.filter(function (e) { return e.design && !e.custom; });
+    if (!list.length) return Promise.resolve();
+    if (!D) { list.forEach(function (e) { delete e.design; }); return Promise.resolve(); }
+    var lost = 0;
+    return D.ready().then(function () {
+      return Promise.all(list.map(function (e) {
+        return D.renderBlob(e.design, { type: 'image/jpeg', square: true, quality: 0.95 }).then(function (blob) {
+          return X.fromFile(blob, P.parseJpeg).then(function (img) {
+            e.custom = img; e.fromDesign = true; try { e.thumb = URL.createObjectURL(blob); } catch (er) { e.thumb = null; }
+          });
+        }).catch(function () { delete e.design; lost++; });
+      }));
+    }).then(function () {
+      if (lost) H.toast(lost === 1 ? 'Un design non è disponibile su questo dispositivo: stampo la carta con l\u2019immagine di Scryfall.' : lost + ' design non sono disponibili su questo dispositivo: stampo quelle carte con l\u2019immagine di Scryfall.', null, true);
+    });
+  }
   function inc(e) { return e.qty > 0 && !(bd.nobasic && C.isBasic(e.name)); }
   function entryById(id) { return bd.entries.filter(function (e) { return String(e.id) === String(id); })[0]; }
   function total() { return bd.entries.filter(inc).reduce(function (t, e) { return t + e.qty; }, 0); }
 
+  var openRun = 0;
   function open(deckId) {
     init();
     var d = deckId && H.getDeck(deckId);
@@ -3594,11 +3672,14 @@ window.CPA_CHANGELOG = [
     }
     bd.picker = null; bd.pickList = null;
     H.ui.view = 'builder'; window.scrollTo(0, 0); H.render();
-    if (available()) resolveAll();
+    var my = ++openRun; if (bd.busy === 'design') { bd.busy = ''; bd.progress = ''; }
+    if (!bd.entries.some(function (e) { return e.design; })) { if (available()) resolveAll(); return; }
+    bd.busy = 'design'; bd.progress = 'Preparo i design…'; H.render();
+    attachDesigns().then(function () { if (my !== openRun) return; bd.busy = ''; bd.progress = ''; softRender(); if (available()) resolveAll(); });
   }
 
   function resolveAll() {
-    var todo = bd.entries.filter(function (e) { return !e.card && !e.nf && !e.custom; });
+    var todo = bd.entries.filter(function (e) { return !e.card && !e.nf && !e.custom && !e.design; });
     if (!todo.length || bd.busy) return;
     var my = ++runId;
     bd.busy = 'resolve'; bd.progress = 'Cerco le carte su Scryfall…';
@@ -3825,7 +3906,7 @@ window.CPA_CHANGELOG = [
 
   function rowHtml(e) {
     var fs = e.card ? X.faces(e.card, 'small') : [], th = e.custom ? e.thumb : (fs[0] && fs[0].url), st = '', cls = '';
-    if (e.custom) { st = 'immagine tua'; cls = 'own'; }
+    if (e.custom) { st = e.fromDesign ? 'design Coglio' : 'immagine tua'; cls = 'own'; }
     else if (e.nf) { st = 'non trovata'; cls = 'err'; }
     else if (e.card) {
       var diff = e.set && (e.card.set !== String(e.set).toLowerCase() || (e.cn && String(e.card.collector_number).toLowerCase() !== String(e.cn).toLowerCase()));
@@ -3983,6 +4064,980 @@ window.CPA_CHANGELOG = [
   }
 
   window.CPABuilder = { open: open, html: html, after: after, escape: function () { if (bd && bd.picker != null) { closePicker(); return true; } return false; }, click: click, input: input, change: change, state: function () { init(); return bd; } };
+})();
+
+</script>
+<script>
+/* Coglio Proxy Designer - motore di rendering delle carte (canvas 2D).
+ * Cornici, simboli e grafica sono disegnati qui da zero (nessuna immagine inclusa). Il formato è 745 x 1040 px (63 x 88 mm a ~300 dpi).
+ * Uso: CPACard.render(ctx, design, { art: <immagine|null>, frameImg: <immagine|null> }, { square: false }) */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.CPACard = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+  var W = 745, H = 1040;
+  var F_TITLE = "Cinzel, 'Palatino Linotype', 'Book Antiqua', Georgia, serif";
+  var F_BODY = "'EB Garamond', 'Palatino Linotype', 'Book Antiqua', Georgia, serif";
+  var F_UI = "Manrope, 'Segoe UI', Arial, sans-serif";
+
+  /* ---------- tavolozze (colori scelti da noi) ---------- */
+  var PAL = {
+    W: { name: 'Bianco', a: '#f1ead7', b: '#cfc29e', bar: '#f8f3e4', edge: '#8c7c52', box: '#f8f4e8', ink: '#1b1a17', fg: '#2a2418', glow: '#fff6d6' },
+    U: { name: 'Blu', a: '#8db5e2', b: '#46739f', bar: '#d3e3f5', edge: '#1d3c63', box: '#e1ebf6', ink: '#14202e', fg: '#ffffff', glow: '#cfe6ff' },
+    B: { name: 'Nero', a: '#6a5e68', b: '#2a242d', bar: '#b8adb6', edge: '#120e14', box: '#d3ccd2', ink: '#16121a', fg: '#f0e9f0', glow: '#9f8fa6' },
+    R: { name: 'Rosso', a: '#e48c72', b: '#a33f2c', bar: '#f4cdbf', edge: '#5e1f14', box: '#f4e0d6', ink: '#2a1410', fg: '#ffffff', glow: '#ffd2c2' },
+    G: { name: 'Verde', a: '#86b980', b: '#3c6c46', bar: '#d2e6c9', edge: '#1d3d24', box: '#e0ebd9', ink: '#14231a', fg: '#ffffff', glow: '#d3f0c8' },
+    M: { name: 'Oro (multicolore)', a: '#e6c76d', b: '#a38234', bar: '#f4e6ad', edge: '#5f4a14', box: '#f6eecb', ink: '#241d0c', fg: '#241d0c', glow: '#fff1b0' },
+    A: { name: 'Artefatto', a: '#bcc2ca', b: '#79818c', bar: '#dde0e5', edge: '#3c424b', box: '#e7e9ec', ink: '#15181c', fg: '#101317', glow: '#f0f3f7' },
+    L: { name: 'Terra', a: '#bba07a', b: '#765a3a', bar: '#e2d3b8', edge: '#463421', box: '#ece2d0', ink: '#241a10', fg: '#ffffff', glow: '#f1e2c4' },
+    C: { name: 'Incolore', a: '#cdcac6', b: '#8b8884', bar: '#e2e0dd', edge: '#44413e', box: '#ecebe8', ink: '#1a1917', fg: '#161514', glow: '#f4f2ef' }
+  };
+  var PAL_ORDER = ['W', 'U', 'B', 'R', 'G', 'M', 'A', 'L', 'C'];
+  var MANA = {
+    W: ['#f6efd2', '#2b2417'], U: ['#a9cbee', '#102338'], B: ['#6f6270', '#ffffff'], R: ['#ec9577', '#3a130b'], G: ['#8cc08a', '#10281a'],
+    C: ['#cdc9c4', '#222'], S: ['#dff1f7', '#1f3e4a'], X: ['#cfc7c4', '#1c1a19'], N: ['#cfc7c4', '#1c1a19'], T: ['#2c2a2e', '#fff'], Q: ['#f3f1ee', '#222']
+  };
+  var RARITY = { common: ['#15110f', '#6d6660'], uncommon: ['#c4d4de', '#5d7482'], rare: ['#e5c25a', '#8a6c18'], mythic: ['#ee7a36', '#97380c'] };
+
+  /* ---------- cornici ---------- */
+  var FRAMES = [
+    { id: 'classic', name: 'Classica', sub: 'Creatura, magia, terra…' },
+    { id: 'fullart', name: 'Tutta arte', sub: 'L’arte riempie la carta, bordo nero' },
+    { id: 'borderless', name: 'Senza bordo', sub: 'Arte fino al taglio' },
+    { id: 'token', name: 'Token', sub: 'Pedine e segnalini' },
+    { id: 'planeswalker', name: 'Planeswalker', sub: 'Abilità con costo di lealtà' },
+    { id: 'saga', name: 'Saga', sub: 'Capitoli e arte a destra' }
+  ];
+  var LAYOUT = {
+    classic: { b: 30, title: [50, 50, 645, 64], art: [62, 124, 621, 456], type: [50, 592, 645, 58], box: [62, 660, 621, 290], pt: [506, 944, 184, 56], info: [58, 984] },
+    fullart: { b: 30, title: [50, 50, 645, 64], art: [30, 30, 685, 980], type: [50, 612, 645, 56], box: [50, 678, 645, 292], pt: [506, 944, 184, 56], info: [58, 984], over: true },
+    borderless: { b: 0, title: [40, 44, 665, 64], art: [0, 0, 745, 1040], type: [40, 620, 665, 56], box: [40, 686, 665, 290], pt: [506, 958, 184, 56], info: [48, 1002], over: true },
+    token: { b: 30, title: [120, 50, 505, 62], art: [62, 122, 621, 520], type: [50, 652, 645, 54], box: [90, 716, 565, 232], pt: [506, 944, 184, 56], info: [58, 984], noCost: true, center: true },
+    planeswalker: { b: 30, title: [50, 50, 645, 64], art: [62, 124, 621, 470], type: [50, 602, 645, 54], box: [50, 666, 645, 296], pt: [560, 930, 130, 76], info: [58, 984], walker: true },
+    saga: { b: 30, title: [50, 50, 645, 64], art: [404, 124, 281, 790], type: [50, 926, 645, 54], box: [62, 124, 330, 790], pt: null, info: [58, 988], saga: true }
+  };
+  var DEFAULT_KINDS = { card: 'classic', token: 'token', alter: 'classic' };
+
+  function defaults(kind) {
+    var token = kind === 'token';
+    return {
+      id: '', kind: kind || 'card', name: token ? 'Token' : 'Nuova carta', cost: token ? '' : '{1}{U}', type: token ? 'Token Creature — Spirit' : 'Creature — Wizard',
+      rules: token ? 'Flying' : 'Flying\n{T}: Draw a card, then discard a card.', flavor: '', pt: token ? '1/1' : '2/3', rarity: 'common', set: 'CST', num: '001', artist: '',
+      frame: DEFAULT_KINDS[kind] || 'classic', colors: token ? 'U' : 'U', palette: 'auto', border: 'black', corners: 'round', alterOf: '',
+      art: { id: '', x: 0, y: 0, s: 1 }, frameImg: '', ink: 'dark', createdAt: 0, updatedAt: 0
+    };
+  }
+
+  function paletteKey(d) {
+    if (d.palette && d.palette !== 'auto' && PAL[d.palette]) return d.palette;
+    var cs = String(d.colors || '').toUpperCase().replace(/[^WUBRG]/g, '');
+    cs = cs.split('').filter(function (c, i, a) { return a.indexOf(c) === i; }).join('');
+    if (cs.length > 1) return 'M';
+    if (cs.length === 1) return cs;
+    var t = String(d.type || '').toLowerCase();
+    if (/\bland\b|terra/.test(t)) return 'L';
+    if (/artifact|artefatto/.test(t)) return 'A';
+    return 'C';
+  }
+
+  /* ---------- utilità di disegno ---------- */
+  function rr(ctx, x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, w / 2, h / 2));
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function vgrad(ctx, y, h, a, b) { var g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, a); g.addColorStop(1, b); return g; }
+  var noise = null;
+  function noisePattern(ctx) {
+    if (!noise && typeof document !== 'undefined') {
+      var c = document.createElement('canvas'); c.width = c.height = 192; var x = c.getContext('2d'), im = x.createImageData(192, 192), s = 12345;
+      for (var i = 0; i < im.data.length; i += 4) { s = (s * 1664525 + 1013904223) >>> 0; var v = (s >>> 24) & 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v < 128 ? 0 : 255; im.data[i + 3] = 10 + (v % 14); }
+      x.putImageData(im, 0, 0); noise = c;
+    }
+    return noise ? ctx.createPattern(noise, 'repeat') : null;
+  }
+  function mix(hex, to, t) {
+    var p = function (h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; };
+    var a = p(hex), b = p(to), o = a.map(function (v, i) { return Math.round(v + (b[i] - v) * t); });
+    return 'rgb(' + o.join(',') + ')';
+  }
+
+  /* ---------- simboli del mana (icone disegnate qui) ---------- */
+  function iconPath(ctx, k, r) {
+    ctx.beginPath();
+    if (k === 'W') { ctx.arc(0, 0, r * 0.28, 0, 6.2832); for (var i = 0; i < 8; i++) { var a = i * Math.PI / 4; ctx.moveTo(Math.cos(a - 0.2) * r * 0.42, Math.sin(a - 0.2) * r * 0.42); ctx.lineTo(Math.cos(a) * r * 0.74, Math.sin(a) * r * 0.74); ctx.lineTo(Math.cos(a + 0.2) * r * 0.42, Math.sin(a + 0.2) * r * 0.42); } }
+    else if (k === 'U') { ctx.moveTo(0, -r * 0.72); ctx.bezierCurveTo(r * 0.7, -r * 0.05, r * 0.62, r * 0.7, 0, r * 0.7); ctx.bezierCurveTo(-r * 0.62, r * 0.7, -r * 0.7, -r * 0.05, 0, -r * 0.72); }
+    else if (k === 'B') { ctx.arc(0, -r * 0.1, r * 0.5, 0, 6.2832); ctx.moveTo(-r * 0.3, r * 0.3); ctx.lineTo(-r * 0.3, r * 0.68); ctx.lineTo(r * 0.3, r * 0.68); ctx.lineTo(r * 0.3, r * 0.3); }
+    else if (k === 'R') { ctx.moveTo(r * 0.05, -r * 0.78); ctx.bezierCurveTo(r * 0.7, -r * 0.2, r * 0.7, r * 0.7, 0, r * 0.74); ctx.bezierCurveTo(-r * 0.7, r * 0.7, -r * 0.6, 0, -r * 0.25, -r * 0.25); ctx.bezierCurveTo(-r * 0.2, -r * 0.05, -r * 0.05, 0, r * 0.05, -r * 0.78); }
+    else if (k === 'G') { ctx.moveTo(-r * 0.6, r * 0.6); ctx.bezierCurveTo(-r * 0.7, -r * 0.4, r * 0.1, -r * 0.8, r * 0.7, -r * 0.7); ctx.bezierCurveTo(r * 0.75, -r * 0.05, r * 0.2, r * 0.7, -r * 0.6, r * 0.6); }
+  }
+  function drawIcon(ctx, k, r, color) {
+    ctx.fillStyle = color; iconPath(ctx, k, r); ctx.fill();
+    if (k === 'B') { ctx.fillStyle = MANA.B[0]; ctx.beginPath(); ctx.arc(-r * 0.2, -r * 0.1, r * 0.12, 0, 6.2832); ctx.arc(r * 0.2, -r * 0.1, r * 0.12, 0, 6.2832); ctx.fill(); }
+    if (k === 'G') { ctx.strokeStyle = MANA.G[0]; ctx.lineWidth = r * 0.07; ctx.beginPath(); ctx.moveTo(-r * 0.5, r * 0.5); ctx.lineTo(r * 0.45, -r * 0.5); ctx.stroke(); }
+  }
+  function disc(ctx, cx, cy, r, fill) { ctx.fillStyle = fill; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.fill(); }
+  function symText(ctx, s, cx, cy, d, color) {
+    ctx.fillStyle = color; ctx.font = '700 ' + Math.round(d * (s.length > 1 ? 0.5 : 0.62)) + 'px ' + F_UI; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(s, cx, cy + d * 0.04);
+  }
+  /* d = diametro. key = contenuto fra graffe, es. "2", "U", "W/U", "2/W", "G/P", "T" */
+  function drawSymbol(ctx, key, cx, cy, d) {
+    var k = String(key).toUpperCase(), r = d / 2;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.arc(cx - r * 0.08, cy + r * 0.1, r, 0, 6.2832); ctx.fill();
+    var parts = k.split('/');
+    if (parts.length === 2 && parts[1] === 'P') {
+      var c0 = MANA[parts[0]] || MANA.C; disc(ctx, cx, cy, r, c0[0]); symText(ctx, 'Φ', cx, cy, d, c0[1]);
+    } else if (parts.length === 2) {
+      var a = MANA[parts[0]] || MANA.N, b = MANA[parts[1]] || MANA.N, num = /^\d+$/.test(parts[0]);
+      disc(ctx, cx, cy, r, num ? MANA.N[0] : a[0]);
+      ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.clip();
+      ctx.fillStyle = b[0]; ctx.beginPath(); ctx.moveTo(cx + r, cy - r); ctx.lineTo(cx + r, cy + r); ctx.lineTo(cx - r, cy + r); ctx.closePath(); ctx.fill(); ctx.restore();
+      ctx.save(); ctx.translate(cx - r * 0.34, cy - r * 0.34);
+      if (num) symText(ctx, parts[0], 0, 0, d * 0.62, '#1c1a19'); else drawIcon(ctx, parts[0], r * 0.5, a[1]);
+      ctx.restore(); ctx.save(); ctx.translate(cx + r * 0.36, cy + r * 0.36); drawIcon(ctx, parts[1], r * 0.5, b[1]); ctx.restore();
+    } else if ('WUBRG'.indexOf(k) >= 0 && k.length === 1) {
+      disc(ctx, cx, cy, r, MANA[k][0]); ctx.save(); ctx.translate(cx, cy); drawIcon(ctx, k, r, MANA[k][1]); ctx.restore();
+    } else if (k === 'T' || k === 'Q') {
+      disc(ctx, cx, cy, r, MANA[k][0]); ctx.strokeStyle = MANA[k][1]; ctx.fillStyle = MANA[k][1]; ctx.lineWidth = r * 0.18; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(cx, cy, r * 0.5, k === 'T' ? -2.4 : -0.8, k === 'T' ? 0.9 : 3.3); ctx.stroke();
+      var ax = cx + Math.cos(k === 'T' ? 0.9 : 3.3) * r * 0.5, ay = cy + Math.sin(k === 'T' ? 0.9 : 3.3) * r * 0.5;
+      ctx.beginPath(); ctx.arc(ax, ay, r * 0.2, 0, 6.2832); ctx.fill();
+    } else if (k === 'C') {
+      disc(ctx, cx, cy, r, MANA.C[0]); ctx.fillStyle = MANA.C[1]; ctx.beginPath(); ctx.moveTo(cx, cy - r * 0.5); ctx.lineTo(cx + r * 0.36, cy); ctx.lineTo(cx, cy + r * 0.5); ctx.lineTo(cx - r * 0.36, cy); ctx.closePath(); ctx.fill();
+    } else if (k === 'S') {
+      disc(ctx, cx, cy, r, MANA.S[0]); symText(ctx, '❄', cx, cy, d, MANA.S[1]);
+    } else {
+      disc(ctx, cx, cy, r, MANA.N[0]); symText(ctx, k, cx, cy, d, MANA.N[1]);
+    }
+    ctx.lineWidth = Math.max(1, d * 0.03); ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ---------- testo ricco: parole, simboli {..}, corsivo fra parentesi ---------- */
+  function tokenize(str) {
+    var out = [], paras = String(str == null ? '' : str).replace(/\r/g, '').split('\n');
+    paras.forEach(function (p, pi) {
+      var line = [], it = false, re = /\{([^}]{1,6})\}|\s+|[^\s{]+/g, m;
+      while ((m = re.exec(p))) {
+        if (m[1] != null) line.push({ t: 'sym', s: m[1], it: it });
+        else if (/^\s+$/.test(m[0])) line.push({ t: 'sp', it: it });
+        else {
+          var w = m[0], pre = w[0] === '(', post = w[w.length - 1] === ')';
+          if (pre) it = true;
+          line.push({ t: 'w', s: w, it: it });
+          if (post) it = false;
+        }
+      }
+      out.push(line);
+    });
+    return out;
+  }
+  function wordW(ctx, t, size, face) { ctx.font = (t.it ? 'italic ' : '') + size + 'px ' + face; return ctx.measureText(t.s).width; }
+  /* Impagina i paragrafi in larghezza maxW: restituisce {lines:[{items:[{t,x,w}], h}], h} */
+  function layout(ctx, paras, maxW, size, face, forceItalic) {
+    var lines = [], lh = Math.round(size * 1.16), gap = Math.round(size * 0.34), total = 0;
+    paras.forEach(function (p, pi) {
+      var cur = { items: [], x: 0 }, sp = size * 0.26, lastSp = null;
+      var push = function (extra) { lines.push({ items: cur.items, w: cur.x, lh: lh, para: extra }); cur = { items: [], x: 0 }; };
+      p.forEach(function (t) {
+        if (forceItalic) t = { t: t.t, s: t.s, it: true };
+        if (t.t === 'sp') { if (cur.items.length) { lastSp = { t: t, x: cur.x, w: sp }; cur.x += sp; } return; }
+        var w = t.t === 'sym' ? size * 0.92 : wordW(ctx, t, size, face);
+        if (cur.items.length && cur.x - (lastSp && lastSp.x + lastSp.w === cur.x ? sp : 0) + w > maxW) {
+          cur.x -= (lastSp && lastSp.x + lastSp.w === cur.x ? sp : 0); push(false);
+        }
+        cur.items.push({ t: t, x: cur.x, w: w }); cur.x += w;
+      });
+      if (cur.items.length || !p.length) { cur.x -= 0; push(true); }
+      else if (lines.length) lines[lines.length - 1].para = true;
+      total += 0;
+    });
+    var h = 0; lines.forEach(function (l, i) { h += l.lh; if (l.para && i < lines.length - 1) h += gap; });
+    return { lines: lines, h: h, gap: gap, size: size, face: face };
+  }
+  function drawLayout(ctx, L, x, y, ink, align, boxW) {
+    var cy = y;
+    L.lines.forEach(function (l) {
+      var ox = align === 'center' ? x + (boxW - l.w) / 2 : x;
+      l.items.forEach(function (it) {
+        if (it.t.t === 'sym') drawSymbol(ctx, it.t.s, ox + it.x + it.w / 2 - L.size * 0.02, cy + L.size * 0.5, L.size * 0.84);
+        else { ctx.font = (it.t.it ? 'italic ' : '') + L.size + 'px ' + L.face; ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(it.t.s, ox + it.x, cy + L.size * 0.82); }
+      });
+      cy += l.lh + (l.para ? L.gap : 0);
+    });
+    return cy;
+  }
+  /* sceglie la dimensione più grande che entra in box (w x h) */
+  function fit(ctx, rulesParas, flavorParas, w, h, max, min, face) {
+    for (var s = max; s >= min; s -= 1) {
+      var a = layout(ctx, rulesParas, w, s, face, false), b = flavorParas && flavorParas.length ? layout(ctx, flavorParas, w, s, face, true) : null;
+      var tot = a.h + (b ? b.h + Math.round(s * 0.7) : 0);
+      if (tot <= h || s === min) return { a: a, b: b, size: s, h: tot, sep: b ? Math.round(s * 0.7) : 0 };
+    }
+  }
+
+  /* ---------- elementi della carta ---------- */
+  function bar(ctx, r, pal, radius, over) {
+    var x = r[0], y = r[1], w = r[2], h = r[3];
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+    rr(ctx, x, y, w, h, radius);
+    if (over) { ctx.fillStyle = 'rgba(14,12,18,0.72)'; } else ctx.fillStyle = vgrad(ctx, y, h, mix(pal.bar, '#ffffff', 0.35), mix(pal.bar, pal.a, 0.28));
+    ctx.fill(); ctx.restore();
+    ctx.save(); rr(ctx, x, y, w, h, radius); ctx.lineWidth = 3; ctx.strokeStyle = over ? 'rgba(255,255,255,0.35)' : pal.edge; ctx.stroke();
+    rr(ctx, x + 3, y + 3, w - 6, h - 6, Math.max(2, radius - 3)); ctx.lineWidth = 1.5; ctx.strokeStyle = over ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.6)'; ctx.stroke();
+    ctx.restore();
+  }
+  function drawArtImage(ctx, img, r, art) {
+    var x = r[0], y = r[1], w = r[2], h = r[3];
+    var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    if (!iw || !ih) return;
+    var s = Math.max(w / iw, h / ih) * Math.max(0.2, (art && art.s) || 1);
+    var dw = iw * s, dh = ih * s;
+    var dx = x + (w - dw) / 2 + ((art && art.x) || 0), dy = y + (h - dh) / 2 + ((art && art.y) || 0);
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
+  function artPlaceholder(ctx, r, pal) {
+    var x = r[0], y = r[1], w = r[2], h = r[3];
+    ctx.fillStyle = vgrad(ctx, y, h, mix(pal.a, '#ffffff', 0.15), mix(pal.b, '#000000', 0.35)); ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 2;
+    for (var i = -h; i < w; i += 46) { ctx.beginPath(); ctx.moveTo(x + i, y + h); ctx.lineTo(x + i + h, y); ctx.stroke(); }
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '700 30px ' + F_UI; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('ARTE', x + w / 2, y + h / 2 - 16);
+    ctx.font = '500 20px ' + F_UI; ctx.fillText('carica un’immagine', x + w / 2, y + h / 2 + 18);
+  }
+  function setGem(ctx, cx, cy, rarity, light) {
+    var c = RARITY[rarity] || RARITY.common; ctx.save(); ctx.translate(cx, cy);
+    ctx.beginPath(); ctx.moveTo(-17, 0); ctx.lineTo(-8, -15); ctx.lineTo(8, -15); ctx.lineTo(17, 0); ctx.lineTo(8, 15); ctx.lineTo(-8, 15); ctx.closePath();
+    ctx.fillStyle = c[0]; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = light ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.7)'; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-9, 0); ctx.lineTo(0, -8); ctx.lineTo(9, 0); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.stroke(); ctx.restore();
+  }
+  function fitLine(ctx, text, face, weight, maxSize, minSize, maxW) {
+    for (var s = maxSize; s >= minSize; s--) { ctx.font = weight + ' ' + s + 'px ' + face; if (ctx.measureText(text).width <= maxW) return s; }
+    return minSize;
+  }
+  function costTokens(cost) { var out = [], re = /\{([^}]{1,6})\}/g, m; while ((m = re.exec(String(cost || '')))) out.push(m[1]); return out; }
+
+  function drawTitle(ctx, d, L, pal, over, user) {
+    var r = L.title, ink = over || (user && user.ink === 'light') ? '#ffffff' : pal.ink;
+    var costs = L.noCost ? [] : costTokens(d.cost), sd = 34, cw = costs.length * (sd + 2);
+    var maxW = r[2] - 34 - (cw ? cw + 14 : 0);
+    var name = String(d.name || ''), size = fitLine(ctx, name, F_TITLE, 700, 36, 17, maxW);
+    ctx.font = '700 ' + size + 'px ' + F_TITLE; ctx.fillStyle = ink; ctx.textBaseline = 'middle';
+    if (L.center) { ctx.textAlign = 'center'; ctx.fillText(name, r[0] + r[2] / 2, r[1] + r[3] / 2 + 2); }
+    else { ctx.textAlign = 'left'; ctx.fillText(name, r[0] + 20, r[1] + r[3] / 2 + 2); }
+    var x = r[0] + r[2] - 14 - cw + 1;
+    costs.forEach(function (c, i) { drawSymbol(ctx, c, x + i * (sd + 2) + sd / 2, r[1] + r[3] / 2, sd); });
+  }
+  function drawType(ctx, d, L, pal, over, user) {
+    var r = L.type, ink = over || (user && user.ink === 'light') ? '#ffffff' : pal.ink;
+    var gem = L.walker || L.saga || true;
+    var maxW = r[2] - 40 - (gem ? 52 : 0);
+    var size = fitLine(ctx, String(d.type || ''), F_TITLE, 700, 30, 15, maxW);
+    ctx.font = '700 ' + size + 'px ' + F_TITLE; ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(d.type || ''), r[0] + 20, r[1] + r[3] / 2 + 2);
+    if (gem) setGem(ctx, r[0] + r[2] - 34, r[1] + r[3] / 2, d.rarity, !over);
+  }
+  function drawRulesBox(ctx, d, L, pal, over, user) {
+    var r = L.box, x = r[0], y = r[1], w = r[2], h = r[3];
+    var ink = over || (user && user.ink === 'light') ? '#f4f1f6' : pal.ink;
+    if (!user) {
+      ctx.save(); rr(ctx, x, y, w, h, 10);
+      if (over) { ctx.fillStyle = 'rgba(14,12,18,0.7)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.stroke(); }
+      else {
+        ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3; ctx.fillStyle = vgrad(ctx, y, h, mix(pal.box, '#ffffff', 0.25), pal.box); ctx.fill();
+        ctx.shadowColor = 'transparent'; ctx.lineWidth = 3; ctx.strokeStyle = pal.edge; ctx.stroke();
+        rr(ctx, x + 3, y + 3, w - 6, h - 6, 8); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.stroke();
+      }
+      ctx.restore();
+    }
+    var padX = 22, padY = 16, iw = w - padX * 2, ih = h - padY * 2;
+    var f = fit(ctx, tokenize(d.rules), String(d.flavor || '').trim() ? tokenize(d.flavor) : null, iw, ih, L.center ? 34 : 33, 15, F_BODY);
+    var top = y + padY + Math.max(0, (ih - f.h) / 2);
+    var align = L.center ? 'center' : 'left', yy = drawLayout(ctx, f.a, x + padX, top, ink, align, iw);
+    if (f.b) {
+      yy += f.sep * 0.15;
+      ctx.strokeStyle = over ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x + w * 0.3, yy + f.sep * 0.3); ctx.lineTo(x + w * 0.7, yy + f.sep * 0.3); ctx.stroke();
+      drawLayout(ctx, f.b, x + padX, yy + f.sep * 0.7, ink, align, iw);
+    }
+  }
+  function drawPT(ctx, d, L, pal, over) {
+    if (!L.pt || !String(d.pt || '').trim()) return;
+    var r = L.pt, txt = String(d.pt).trim();
+    ctx.save();
+    if (L.walker) { /* scudo di lealtà */
+      var cx = r[0] + r[2] / 2, cy = r[1] + r[3] / 2;
+      ctx.beginPath(); ctx.moveTo(cx - 52, cy - 32); ctx.lineTo(cx + 52, cy - 32); ctx.lineTo(cx + 52, cy + 12); ctx.lineTo(cx, cy + 46); ctx.lineTo(cx - 52, cy + 12); ctx.closePath();
+      ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3; ctx.fillStyle = '#1a1620'; ctx.fill(); ctx.shadowColor = 'transparent';
+      ctx.lineWidth = 4; ctx.strokeStyle = pal.glow; ctx.stroke();
+      var s = fitLine(ctx, txt, F_TITLE, 700, 44, 22, 84); ctx.font = '700 ' + s + 'px ' + F_TITLE; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(txt, cx, cy - 4);
+    } else {
+      rr(ctx, r[0], r[1], r[2], r[3], 14); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+      ctx.fillStyle = over ? 'rgba(14,12,18,0.85)' : vgrad(ctx, r[1], r[3], mix(pal.bar, '#ffffff', 0.35), mix(pal.bar, pal.a, 0.3)); ctx.fill(); ctx.shadowColor = 'transparent';
+      ctx.lineWidth = 3.5; ctx.strokeStyle = over ? 'rgba(255,255,255,0.45)' : pal.edge; ctx.stroke();
+      var s2 = fitLine(ctx, txt, F_TITLE, 700, 38, 18, r[2] - 28); ctx.font = '700 ' + s2 + 'px ' + F_TITLE; ctx.fillStyle = over ? '#fff' : pal.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(txt, r[0] + r[2] / 2, r[1] + r[3] / 2 + 2);
+    }
+    ctx.restore();
+  }
+  function drawInfo(ctx, d, L, pal, onDark) {
+    var ink = onDark ? 'rgba(255,255,255,0.92)' : pal.fg;
+    ctx.fillStyle = ink; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    var a = [String(d.num || '').trim(), String(d.set || '').trim().toUpperCase()].filter(Boolean).join(' · ');
+    if (onDark) { ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4; }
+    ctx.font = '600 19px ' + F_UI; ctx.fillText(a, L.info[0], L.info[1] + 9);
+    var art = String(d.artist || '').trim();
+    if (art) { ctx.font = '500 18px ' + F_UI; var x0 = L.info[0] + ctx.measureText(a).width + (a ? 18 : 0); ctx.fillText('Illus. ' + art, x0, L.info[1] + 9); }
+    ctx.shadowColor = 'transparent';
+  }
+
+  /* abilità del planeswalker: righe "+1: testo", "−3: testo", "0: testo" */
+  function parseWalker(text) {
+    var lines = String(text || '').split('\n').filter(function (l) { return l.trim(); }), out = [];
+    lines.forEach(function (l) {
+      var m = /^\s*([+−\-–]?\s*\d+|[+−\-–]\s*X)\s*:\s*(.*)$/i.exec(l);
+      if (m) out.push({ cost: m[1].replace(/\s+/g, '').replace(/^-/, '−').replace(/^–/, '−'), text: m[2] });
+      else if (out.length && !m && /^\s/.test(l)) out[out.length - 1].text += ' ' + l.trim();
+      else out.push({ cost: '', text: l.trim() });
+    });
+    return out;
+  }
+  function drawWalkerBox(ctx, d, L, pal, user) {
+    var r = L.box, ab = parseWalker(d.rules), n = Math.max(1, ab.length);
+    var x = r[0], y = r[1], w = r[2], h = r[3];
+    ctx.save(); rr(ctx, x, y, w, h, 10); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+    ctx.fillStyle = vgrad(ctx, y, h, '#2a2530', '#17131c'); ctx.fill(); ctx.shadowColor = 'transparent'; ctx.lineWidth = 3; ctx.strokeStyle = pal.glow; ctx.stroke(); ctx.restore();
+    var rowH = (h - 12) / n, size = 33;
+    for (; size >= 15; size--) {
+      var ok = true;
+      for (var i = 0; i < ab.length; i++) { var l = layout(ctx, tokenize(ab[i].text), w - 150, size, F_BODY, false); if (l.h > rowH - 14) { ok = false; break; } }
+      if (ok) break;
+    }
+    ab.forEach(function (a, i) {
+      var ry = y + 6 + i * rowH;
+      if (i) { ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x + 14, ry); ctx.lineTo(x + w - 14, ry); ctx.stroke(); }
+      if (a.cost) {
+        var pos = a.cost[0] === '+', neg = a.cost[0] === '−';
+        ctx.save(); ctx.translate(x + 62, ry + rowH / 2); ctx.beginPath();
+        if (pos) { ctx.moveTo(-34, 14); ctx.lineTo(0, -30); ctx.lineTo(34, 14); ctx.lineTo(24, 24); ctx.lineTo(-24, 24); }
+        else if (neg) { ctx.moveTo(-34, -14); ctx.lineTo(0, 30); ctx.lineTo(34, -14); ctx.lineTo(24, -24); ctx.lineTo(-24, -24); }
+        else { rr(ctx, -30, -22, 60, 44, 10); }
+        ctx.closePath(); ctx.fillStyle = pal.b; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = pal.glow; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = '700 28px ' + F_TITLE; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(a.cost, 0, pos ? 6 : neg ? -6 : 0); ctx.restore();
+      }
+      var lay = layout(ctx, tokenize(a.text), w - 150, size, F_BODY, false);
+      drawLayout(ctx, lay, x + 112, ry + (rowH - lay.h) / 2, '#f4f1f6', 'left', w - 150);
+    });
+  }
+  function parseSaga(text) {
+    var lines = String(text || '').split('\n').filter(function (l) { return l.trim(); }), intro = [], chapters = [];
+    lines.forEach(function (l) {
+      var m = /^\s*((?:I{1,3}|IV|V|VI{0,3}|\d)(?:\s*[,–—-]\s*(?:I{1,3}|IV|V|VI{0,3}|\d))*)\s*[—–:-]\s*(.*)$/.exec(l);
+      if (m) chapters.push({ num: m[1].replace(/\s+/g, ''), text: m[2] }); else if (!chapters.length) intro.push(l); else chapters[chapters.length - 1].text += ' ' + l.trim();
+    });
+    return { intro: intro.join('\n'), chapters: chapters };
+  }
+  function drawSagaBox(ctx, d, L, pal) {
+    var r = L.box, x = r[0], y = r[1], w = r[2], h = r[3], s = parseSaga(d.rules), n = Math.max(1, s.chapters.length);
+    ctx.save(); rr(ctx, x, y, w, h, 10); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3; ctx.fillStyle = vgrad(ctx, y, h, mix(pal.box, '#ffffff', 0.25), pal.box); ctx.fill();
+    ctx.shadowColor = 'transparent'; ctx.lineWidth = 3; ctx.strokeStyle = pal.edge; ctx.stroke(); ctx.restore();
+    var introH = 0, size = 31, rowsH;
+    for (; size >= 14; size--) {
+      var il = s.intro ? layout(ctx, tokenize(s.intro), w - 40, size, F_BODY, true) : null; introH = il ? il.h + 14 : 0;
+      rowsH = (h - 24 - introH) / n; var ok = true;
+      for (var i = 0; i < s.chapters.length; i++) { var l = layout(ctx, tokenize(s.chapters[i].text), w - 40 - 78, size, F_BODY, false); if (l.h > rowsH - 14) { ok = false; break; } }
+      if (ok) break;
+    }
+    var cy = y + 12;
+    if (s.intro) { var il2 = layout(ctx, tokenize(s.intro), w - 40, size, F_BODY, true); drawLayout(ctx, il2, x + 20, cy, pal.ink, 'left', w - 40); cy += il2.h + 14; }
+    s.chapters.forEach(function (c, i) {
+      var ry = cy + i * rowsH;
+      if (i || s.intro) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x + 14, ry - 3); ctx.lineTo(x + w - 14, ry - 3); ctx.stroke(); }
+      ctx.save(); ctx.translate(x + 44, ry + rowsH / 2 - 2); disc(ctx, 0, 0, 28, pal.b); ctx.lineWidth = 3; ctx.strokeStyle = pal.edge; ctx.beginPath(); ctx.arc(0, 0, 28, 0, 6.2832); ctx.stroke();
+      var fs = fitLine(ctx, c.num, F_TITLE, 700, 26, 12, 46); ctx.font = '700 ' + fs + 'px ' + F_TITLE; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(c.num, 0, 2); ctx.restore();
+      var lay = layout(ctx, tokenize(c.text), w - 40 - 78, size, F_BODY, false);
+      drawLayout(ctx, lay, x + 90, ry + (rowsH - lay.h) / 2 - 4, pal.ink, 'left', w - 40 - 78);
+    });
+  }
+
+  /* ---------- carta intera ---------- */
+  function render(ctx, d, assets, opt) {
+    assets = assets || {}; opt = opt || {};
+    var L = LAYOUT[d.frame] || LAYOUT.classic, pk = paletteKey(d), pal = PAL[pk], user = assets.frameImg ? { ink: d.ink === 'light' ? 'light' : 'dark' } : null;
+    var over = !!L.over && !user, square = opt.square || d.corners === 'square';
+    var BORDER = { black: '#0d0b0e', white: '#f2eee6', silver: '#b9bdc4', gold: '#c9a640' }[d.border] || '#0d0b0e';
+    ctx.save();
+    ctx.clearRect(0, 0, W, H);
+    var outer = square ? 0 : 38;
+    rr(ctx, 0, 0, W, H, outer); ctx.clip();
+    ctx.fillStyle = BORDER; ctx.fillRect(0, 0, W, H);
+    var b = L.b, hasArt = !!assets.art;
+    if (user) {
+      /* cornice importata dall'utente: arte sotto, cornice sopra, testi sopra tutto */
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
+      var ar = LAYOUT.classic.art; if (d.frame === 'fullart' || d.frame === 'borderless') ar = [0, 0, W, H];
+      if (hasArt) drawArtImage(ctx, assets.art, ar, d.art); else { ctx.fillStyle = '#26222c'; ctx.fillRect(0, 0, W, H); }
+      ctx.drawImage(assets.frameImg, 0, 0, W, H); ctx.restore();
+    } else if (over) {
+      /* arte a tutta carta */
+      var ar2 = L.art;
+      ctx.save(); rr(ctx, b, b, W - 2 * b, H - 2 * b, b ? 8 : 0); if (!b) { ctx.beginPath(); ctx.rect(0, 0, W, H); } ctx.clip();
+      if (hasArt) drawArtImage(ctx, assets.art, ar2, d.art); else artPlaceholder(ctx, ar2, pal);
+      var gt = ctx.createLinearGradient(0, 0, 0, 160); gt.addColorStop(0, 'rgba(0,0,0,0.45)'); gt.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gt; ctx.fillRect(0, 0, W, 160);
+      var gb = ctx.createLinearGradient(0, 560, 0, H); gb.addColorStop(0, 'rgba(0,0,0,0)'); gb.addColorStop(1, 'rgba(0,0,0,0.65)'); ctx.fillStyle = gb; ctx.fillRect(0, 560, W, H - 560);
+      ctx.restore();
+    } else {
+      /* corpo della cornice */
+      var fx = b, fy = b, fw = W - 2 * b, fh = H - 2 * b;
+      ctx.save(); rr(ctx, fx, fy, fw, fh, 12); ctx.fillStyle = vgrad(ctx, fy, fh, pal.a, pal.b); ctx.fill();
+      var np = noisePattern(ctx); if (np) { ctx.fillStyle = np; ctx.fill(); }
+      var vg = ctx.createRadialGradient(W / 2, H / 2, 300, W / 2, H / 2, 720); vg.addColorStop(0, 'rgba(255,255,255,0.10)'); vg.addColorStop(1, 'rgba(0,0,0,0.18)'); ctx.fillStyle = vg; ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.35)'; rr(ctx, fx + 3, fy + 3, fw - 6, fh - 6, 10); ctx.stroke(); ctx.restore();
+      /* finestra dell'arte */
+      var ar3 = L.art; ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3; rr(ctx, ar3[0] - 4, ar3[1] - 4, ar3[2] + 8, ar3[3] + 8, 6); ctx.fillStyle = pal.edge; ctx.fill(); ctx.restore();
+      ctx.save(); rr(ctx, ar3[0], ar3[1], ar3[2], ar3[3], 3); ctx.clip();
+      if (hasArt) drawArtImage(ctx, assets.art, ar3, d.art); else artPlaceholder(ctx, ar3, pal);
+      ctx.restore();
+      ctx.save(); rr(ctx, ar3[0], ar3[1], ar3[2], ar3[3], 3); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.stroke(); ctx.restore();
+    }
+    if (!user || true) {
+      var barR = user ? 0 : 14;
+      if (!user) { bar(ctx, L.title, pal, barR, over); bar(ctx, L.type, pal, barR, over); }
+      drawTitle(ctx, d, L, pal, over, user); drawType(ctx, d, L, pal, over, user);
+      if (L.walker) drawWalkerBox(ctx, d, L, pal, user);
+      else if (L.saga) drawSagaBox(ctx, d, L, pal);
+      else drawRulesBox(ctx, d, L, pal, over, user);
+      drawPT(ctx, d, L, pal, over);
+      drawInfo(ctx, d, L, pal, over || !!user || pk === 'B' || pk === 'U' || pk === 'R' || pk === 'G' || pk === 'L');
+    }
+    ctx.restore();
+  }
+
+  return {
+    W: W, H: H, FRAMES: FRAMES, LAYOUT: LAYOUT, PAL: PAL, PAL_ORDER: PAL_ORDER, RARITY: RARITY, defaults: defaults, paletteKey: paletteKey,
+    render: render, tokenize: tokenize, costTokens: costTokens, parseWalker: parseWalker, parseSaga: parseSaga, drawSymbol: drawSymbol,
+    F_TITLE: F_TITLE, F_BODY: F_BODY, F_UI: F_UI
+  };
+});
+
+</script>
+<script>
+/* Coglio Proxy Designer - schermata per creare proxy personalizzate.
+ * Usa il motore di rendering (cardrender.js) e le funzioni che app.js mette in window.CPAHost.
+ * I design stanno in un database a parte (IndexedDB «coglio-designer»): metadati, immagini d'arte e cornici importate. */
+(function () {
+  'use strict';
+  var H = window.CPAHost, R = window.CPACard;
+  if (!H || !R) return;
+  var esc = H.esc, W = R.W, HH = R.H;
+
+  /* ---------- database ---------- */
+  var DB = (function () {
+    var mem = { designs: {}, art: {}, frames: {} }, db = null, persistent = false, opening = null;
+    function open() {
+      if (opening) return opening;
+      opening = new Promise(function (res) {
+        if (!window.indexedDB || (window.claude && typeof window.claude.use === 'function')) return res(null);
+        try {
+          var r = indexedDB.open('coglio-designer', 1);
+          r.onupgradeneeded = function () { var d = r.result; d.createObjectStore('designs', { keyPath: 'id' }); d.createObjectStore('art'); d.createObjectStore('frames', { keyPath: 'id' }); };
+          r.onsuccess = function () { db = r.result; persistent = true; res(db); };
+          r.onerror = r.onblocked = function () { res(null); };
+        } catch (e) { res(null); }
+      });
+      return opening;
+    }
+    function tx(store, mode, fn) {
+      return open().then(function (d) {
+        if (!d) return null;
+        return new Promise(function (res, rej) { var t = d.transaction(store, mode), r = fn(t.objectStore(store)); t.oncomplete = function () { res(r && r.result); }; t.onerror = t.onabort = function () { rej(t.error); }; });
+      });
+    }
+    function all(store) { return tx(store, 'readonly', function (s) { return s.getAll(); }).then(function (a) { return a || Object.keys(mem[store]).map(function (k) { return mem[store][k]; }); }); }
+    function put(store, obj, key) {
+      mem[store][key || obj.id] = obj;
+      return tx(store, 'readwrite', function (s) { return key ? s.put(obj, key) : s.put(obj); });
+    }
+    function get(store, key) { return tx(store, 'readonly', function (s) { return s.get(key); }).then(function (v) { return v === null ? mem[store][key] : v; }); }
+    function del(store, key) { delete mem[store][key]; return tx(store, 'readwrite', function (s) { return s.delete(key); }); }
+    return { open: open, all: all, put: put, get: get, del: del, persistent: function () { return persistent; } };
+  })();
+
+  /* ---------- stato ---------- */
+  var dz = { loaded: false, loading: null, designs: [], frames: [], view: 'list', cur: null, artImg: null, frameImgs: {}, search: { q: '', busy: false, msg: '' }, focus: 'name',
+    bind: null, picker: null, confirm: '', msg: '' };
+  var artCache = {}, thumbTimer = null, drawTimer = null, saveTimer = null;
+
+  function uid(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function load() {
+    if (dz.loaded) return Promise.resolve();
+    if (dz.loading) return dz.loading;
+    dz.loading = Promise.all([DB.all('designs'), DB.all('frames')]).then(function (r) {
+      dz.designs = (r[0] || []).map(norm).sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+      dz.frames = (r[1] || []).sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
+      dz.loaded = true; dz.loading = null;
+    }, function () { dz.loaded = true; dz.loading = null; });
+    return dz.loading;
+  }
+  function norm(d) {
+    var b = R.defaults(d && d.kind === 'token' ? 'token' : 'card'), o = {};
+    Object.keys(b).forEach(function (k) { o[k] = d && d[k] != null ? d[k] : b[k]; });
+    o.art = { id: String(d && d.art && d.art.id || ''), x: +(d && d.art && d.art.x) || 0, y: +(d && d.art && d.art.y) || 0, s: +(d && d.art && d.art.s) || 1 };
+    o.id = String(o.id || uid('z'));
+    ['name', 'cost', 'type', 'rules', 'flavor', 'pt', 'set', 'num', 'artist', 'colors', 'alterOf'].forEach(function (k) { o[k] = String(o[k] == null ? '' : o[k]); });
+    if (!R.LAYOUT[o.frame]) o.frame = 'classic';
+    if (['black', 'white', 'silver', 'gold'].indexOf(o.border) < 0) o.border = 'black';
+    if (['round', 'square'].indexOf(o.corners) < 0) o.corners = 'round';
+    if (!R.RARITY[o.rarity]) o.rarity = 'common';
+    o.ink = o.ink === 'light' ? 'light' : 'dark';
+    o.frameImg = String(o.frameImg || '');
+    return o;
+  }
+  function byId(id) { return dz.designs.filter(function (d) { return d.id === id; })[0] || null; }
+  function saveNow() {
+    if (!dz.cur) return Promise.resolve();
+    var d = dz.cur; d.updatedAt = Date.now();
+    if (!byId(d.id)) dz.designs.unshift(d);
+    return DB.put('designs', clone(d)).catch(function () { H.toast('Non riesco a salvare il design su questo dispositivo.'); });
+  }
+  function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 350); }
+
+  /* ---------- immagini (arte e cornici) ---------- */
+  function blobImage(blob) {
+    return new Promise(function (res, rej) {
+      var url = URL.createObjectURL(blob), im = new Image();
+      im.onload = function () { res({ img: im, url: url }); };
+      im.onerror = function () { URL.revokeObjectURL(url); rej(new Error('immagine non leggibile')); };
+      im.src = url;
+    });
+  }
+  function artImage(id) {
+    if (!id) return Promise.resolve(null);
+    if (!artCache[id]) artCache[id] = DB.get('art', id).then(function (b) { return b ? blobImage(b).then(function (r) { return r.img; }) : null; }).catch(function () { return null; });
+    return artCache[id];
+  }
+  function frameImage(id) {
+    if (!id) return Promise.resolve(null);
+    if (!dz.frameImgs[id]) dz.frameImgs[id] = DB.get('frames', id).then(function (f) { return f && f.blob ? blobImage(f.blob).then(function (r) { return r.img; }) : null; }).catch(function () { return null; });
+    return dz.frameImgs[id];
+  }
+  /* ridimensiona (lato lungo max) e converte in JPEG: l'arte occupa meno spazio e il PDF resta leggero */
+  function shrink(fileOrBlob, max) {
+    return blobImage(fileOrBlob).then(function (r) {
+      var im = r.img, s = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(im.naturalWidth * s)); c.height = Math.max(1, Math.round(im.naturalHeight * s));
+      var x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(r.url);
+      return new Promise(function (res, rej) { c.toBlob(function (b) { if (b) res(b); else rej(new Error('conversione non riuscita')); }, 'image/jpeg', 0.9); });
+    });
+  }
+  function setArt(blob) {
+    var d = dz.cur; if (!d) return Promise.resolve();
+    return shrink(blob, 1800).then(function (jb) {
+      var old = d.art.id, id = uid('a');
+      return DB.put('art', jb, id).then(function () {
+        d.art = { id: id, x: 0, y: 0, s: 1 }; artCache[id] = DB.get('art', id).then(function (b) { return b ? blobImage(b).then(function (r) { return r.img; }) : null; });
+        if (old) { delete artCache[old]; DB.del('art', old); }
+        return artCache[id].then(function (im) { dz.artImg = im; saveNow(); H.render(); });
+      });
+    }).catch(function (e) { H.toast('Immagine non caricata: ' + (e && e.message ? e.message : 'file non valido') + '.'); });
+  }
+
+  /* ---------- disegno ---------- */
+  var fontsP = null;
+  function fonts() {
+    if (!fontsP) {
+      var f = document.fonts;
+      fontsP = !f || !f.load ? Promise.resolve() : Promise.race([
+        Promise.all(['700 24px Cinzel', '600 24px Cinzel', '400 24px "EB Garamond"', 'italic 400 24px "EB Garamond"', '700 24px "EB Garamond"', '600 24px Manrope'].map(function (x) { return f.load(x).catch(function () { return null; }); })),
+        new Promise(function (r) { setTimeout(r, 4000); })]);
+    }
+    return fontsP;
+  }
+  function drawInto(ctx, d, art, frameImg, opt) { R.render(ctx, d, { art: art, frameImg: frameImg }, opt); }
+  function renderBlob(designId, opt) {
+    opt = opt || {};
+    return load().then(function () {
+      var d = byId(designId); if (!d) throw new Error('design non trovato');
+      return Promise.all([artImage(d.art.id), frameImage(d.frameImg), fonts()]).then(function (a) {
+        var c = document.createElement('canvas'), sc = opt.scale || 1; c.width = Math.round(W * sc); c.height = Math.round(HH * sc);
+        var ctx = c.getContext('2d'); if (sc !== 1) ctx.scale(sc, sc);
+        drawInto(ctx, d, a[0], a[1], { square: !!opt.square });
+        return new Promise(function (res, rej) { c.toBlob(function (b) { if (b) res(b); else rej(new Error('render non riuscito')); }, opt.type || 'image/jpeg', opt.quality || 0.95); });
+      });
+    });
+  }
+  function drawPreview() {
+    var cv = document.getElementById('dz-cv'), d = dz.cur;
+    if (!cv || !d) return;
+    var ctx = cv.getContext('2d');
+    try { drawInto(ctx, d, dz.artImg, dz.frameImgNow || null, {}); } catch (e) { /* ignorato */ }
+  }
+  function schedulePreview() { if (drawTimer) return; drawTimer = setTimeout(function () { drawTimer = null; drawPreview(); }, 24); }
+  function drawThumbs() {
+    [].slice.call(document.querySelectorAll('canvas.dz-th')).forEach(function (cv) {
+      var d = byId(cv.getAttribute('data-id')); if (!d) return;
+      Promise.all([artImage(d.art.id), frameImage(d.frameImg), fonts()]).then(function (a) {
+        if (!cv.isConnected) return;
+        var ctx = cv.getContext('2d'); ctx.save(); ctx.scale(cv.width / W, cv.height / HH);
+        try { drawInto(ctx, d, a[0], a[1], {}); } catch (e) { /* ignorato */ }
+        ctx.restore();
+      });
+    });
+  }
+
+  /* ---------- schermata ---------- */
+  function open() { H.ui.view = 'designer'; dz.view = 'list'; dz.cur = null; dz.picker = null; window.scrollTo(0, 0); load().then(function () { H.render(); }); H.render(); }
+  function editDesign(d) {
+    dz.cur = d; dz.view = 'edit'; dz.artImg = null; dz.frameImgNow = null; dz.confirm = ''; dz.search = { q: d.alterOf || '', busy: false, msg: '' };
+    Promise.all([artImage(d.art.id), frameImage(d.frameImg)]).then(function (a) { if (dz.cur === d) { dz.artImg = a[0]; dz.frameImgNow = a[1]; schedulePreview(); } });
+    window.scrollTo(0, 0); H.render();
+  }
+  function create(kind) {
+    var d = norm(R.defaults(kind === 'token' ? 'token' : 'card')); d.id = uid('z'); d.kind = kind || 'card'; d.createdAt = Date.now(); d.updatedAt = d.createdAt;
+    if (kind === 'alter') { d.name = 'Alter'; d.rules = ''; d.cost = ''; d.type = ''; d.pt = ''; }
+    dz.designs.unshift(d); saveNow(); editDesign(d);
+  }
+  function usesPT(d) { var L = R.LAYOUT[d.frame]; return !!(L && L.pt); }
+
+  var SYMS = ['{T}', '{W}', '{U}', '{B}', '{R}', '{G}', '{C}', '{X}', '{1}', '{2}', '{3}', '{W/U}', '{2/W}', '{G/P}'];
+  function chip(a, k, v, label, on, extra) { return '<button class="chip" data-a="' + a + '" data-k="' + k + '" data-v="' + esc(v) + '" aria-pressed="' + !!on + '"' + (extra || '') + '>' + label + '</button>'; }
+  function lbl(t, inner, cls) { return '<label class="lbl ' + (cls || '') + '">' + t + inner + '</label>'; }
+  function inp(k, v, ph, type) { return '<input class="input" data-c="dz-f" data-k="' + k + '" value="' + esc(v) + '" placeholder="' + esc(ph || '') + '" autocomplete="off"' + (type ? ' type="' + type + '"' : '') + '>'; }
+  function sel(k, v, opts) { return '<select class="select" data-c="dz-f" data-k="' + k + '">' + opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(v) === String(o[0]) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>'; }
+  function rng(k, v, min, max, step) { return '<input class="dz-range" type="range" data-c="dz-art" data-k="' + k + '" min="' + min + '" max="' + max + '" step="' + step + '" value="' + v + '">'; }
+
+  function listHtml() {
+    var net = H.available();
+    var h = '<header class="vh"><h1>Designer</h1><p class="sub">Crea proxy personalizzate: carte tue, token, alter di carte esistenti. Poi le leghi a un mazzo e le stampi nel PDF.</p></header>';
+    if (!DB.persistent() && dz.loaded) h += '<p class="warn">Qui dentro i design non si salvano sul dispositivo: restano finché la pagina è aperta. Usa l’app per Windows, l’APK o la versione web.</p>';
+    h += '<section class="panel"><div class="btns"><button class="btn primary" data-a="dz-new" data-k="card">Nuova carta</button><button class="btn" data-a="dz-new" data-k="token">Nuovo token</button>' +
+      '<button class="btn" data-a="dz-new" data-k="alter">Alter di una carta</button></div>' +
+      '<div class="btns"><label class="btn small filebtn">Importa design<input type="file" accept=".json,application/json" data-c="dz-import" hidden></label>' +
+      (dz.designs.length ? '<button class="btn small" data-a="dz-export-all">Esporta tutti</button>' : '') + '</div>' +
+      (dz.msg ? '<p class="hint" role="status">' + esc(dz.msg) + '</p>' : '') + '</section>';
+    if (!dz.loaded) return h + '<p class="hint">Carico i design…</p>';
+    if (!dz.designs.length) return h + '<div class="empty"><p>Nessun design ancora. Parti da una carta nuova, da un token o da un alter di una carta che esiste su Scryfall' + (net ? '' : ' (serve internet: qui non disponibile)') + '.</p></div>';
+    h += '<div class="dz-grid">' + dz.designs.map(function (d) {
+      var fr = R.FRAMES.filter(function (f) { return f.id === d.frame; })[0];
+      var used = deckUse(d.id);
+      return '<article class="dz-item"><button class="dz-thb" data-a="dz-open" data-id="' + esc(d.id) + '" aria-label="Apri ' + esc(d.name) + '"><canvas class="dz-th" data-id="' + esc(d.id) + '" width="186" height="260"></canvas></button>' +
+        '<div class="dz-meta"><b>' + esc(d.name || 'Senza nome') + '</b><span>' + esc(fr ? fr.name : '') + (d.kind === 'alter' ? ' · alter' : d.kind === 'token' ? ' · token' : '') + '</span>' +
+        (used ? '<span class="pill info">in ' + used + (used === 1 ? ' mazzo' : ' mazzi') + '</span>' : '') + '</div>' +
+        '<div class="btns"><button class="btn small" data-a="dz-open" data-id="' + esc(d.id) + '">Modifica</button><button class="btn small" data-a="dz-dup" data-id="' + esc(d.id) + '">Duplica</button></div></article>';
+    }).join('') + '</div>';
+    return h;
+  }
+  function deckUse(id) {
+    var n = 0; (H.decks() || []).forEach(function (dk) { if (dk.cards.some(function (c) { return c.design === id; })) n++; }); return n;
+  }
+
+  function editHtml() {
+    var d = dz.cur; if (!d) return listHtml();
+    var net = H.available(), L = R.LAYOUT[d.frame], pk = R.paletteKey(d), cs = String(d.colors || '').toUpperCase();
+    var h = '<header class="vh"><button class="back" data-a="dz-back">← I miei design</button><h1>' + esc(d.name || 'Senza nome') + '</h1></header>';
+    h += '<div class="dz-edit"><div class="dz-prev"><canvas id="dz-cv" width="' + W + '" height="' + HH + '" aria-label="Anteprima della carta"></canvas>' +
+      '<p class="hint dz-tip">Sull’arte: trascina per spostare, rotella per ingrandire.</p>' +
+      '<div class="btns"><button class="btn small primary" data-a="dz-png">Scarica PNG</button><button class="btn small" data-a="dz-jpg">Scarica JPG per stampa</button></div></div>';
+    h += '<div class="dz-form">';
+    /* alter */
+    h += '<section class="panel"><h2 class="sect" style="margin:0">' + (d.kind === 'alter' ? 'Carta di partenza' : 'Parti da una carta esistente') + '</h2>' +
+      '<div class="dz-srch"><input class="input" data-c="dz-q" placeholder="Nome della carta (es. Lightning Bolt)" value="' + esc(dz.search.q) + '" autocomplete="off"><button class="btn" data-a="dz-alter"' + (dz.search.busy || !net ? ' disabled' : '') + '>' + (dz.search.busy ? 'Cerco…' : 'Importa') + '</button></div>' +
+      '<p class="hint">' + (net ? 'Prende testo, costo, tipo e arte da Scryfall: poi cambi quello che vuoi.' : 'Serve internet: non disponibile dentro Claude.') + '</p>' +
+      (dz.search.msg ? '<p class="hint" role="status">' + esc(dz.search.msg) + '</p>' : '') + '</section>';
+    /* cornice */
+    h += '<section class="panel"><h2 class="sect" style="margin:0">Cornice</h2><div class="chips">' + R.FRAMES.map(function (f) { return chip('dz-set', 'frame', f.id, f.name, d.frame === f.id); }).join('') + '</div>' +
+      '<div class="chips" aria-label="Colore">' + chip('dz-set', 'palette', 'auto', 'Auto (dai colori)', d.palette === 'auto') + R.PAL_ORDER.map(function (k) { return chip('dz-set', 'palette', k, R.PAL[k].name, d.palette === k); }).join('') + '</div>' +
+      '<div class="dz-row">' + lbl('Bordo', sel('border', d.border, [['black', 'Nero'], ['white', 'Bianco'], ['silver', 'Argento'], ['gold', 'Oro']])) +
+      lbl('Angoli', sel('corners', d.corners, [['round', 'Arrotondati'], ['square', 'Quadrati']])) + '</div>' +
+      '<div class="dz-row">' + lbl('Cornice importata', '<select class="select" data-c="dz-frameimg"><option value="">Nessuna (uso la cornice disegnata)</option>' + dz.frames.map(function (f) { return '<option value="' + esc(f.id) + '"' + (d.frameImg === f.id ? ' selected' : '') + '>' + esc(f.name) + '</option>'; }).join('') + '</select>') +
+      (d.frameImg ? lbl('Colore del testo', sel('ink', d.ink, [['dark', 'Scuro'], ['light', 'Chiaro']])) : '') + '</div>' +
+      '<div class="btns"><label class="btn small filebtn">Importa cornice PNG<input type="file" accept="image/png,image/webp" data-c="dz-framefile" multiple hidden></label>' +
+      (d.frameImg ? '<button class="btn small danger" data-a="dz-frame-del">Elimina questa cornice</button>' : '') + '</div>' +
+      '<p class="hint">Le cornici importate sono PNG tuoi (con la zona dell’arte trasparente, formato carta): restano solo su questo dispositivo.</p></section>';
+    /* testo */
+    var cm = R.paletteKey(d);
+    h += '<section class="panel"><h2 class="sect" style="margin:0">Testo</h2>' +
+      lbl('Nome', inp('name', d.name, 'Nome della carta')) +
+      (L && L.noCost ? '' : lbl('Costo di mana', inp('cost', d.cost, '{2}{U}{U}'))) +
+      lbl('Tipo', inp('type', d.type, 'Creature — Wizard')) +
+      '<label class="lbl">' + (L && L.walker ? 'Abilità (una per riga: «+1: testo», «−2: testo»)' : L && L.saga ? 'Capitoli (una riga per capitolo: «I — testo»)' : 'Testo delle regole') + '<textarea class="textarea dz-ta" data-c="dz-f" data-k="rules" rows="6">' + esc(d.rules) + '</textarea></label>' +
+      '<div class="dz-syms" aria-label="Inserisci simbolo">' + SYMS.map(function (s) { return '<button class="chip small" data-a="dz-sym" data-v="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div>' +
+      (L && (L.walker || L.saga) ? '' : '<label class="lbl">Testo di colore (corsivo)<textarea class="textarea dz-ta" data-c="dz-f" data-k="flavor" rows="2">' + esc(d.flavor) + '</textarea></label>') +
+      '<div class="dz-row">' + (usesPT(d) ? lbl(L.walker ? 'Lealtà' : 'Forza/Costituzione', inp('pt', d.pt, L.walker ? '4' : '2/3')) : '') + lbl('Rarità', sel('rarity', d.rarity, [['common', 'Comune'], ['uncommon', 'Non comune'], ['rare', 'Rara'], ['mythic', 'Mitica']])) + '</div>' +
+      '<div class="dz-row">' + lbl('Collezione', inp('set', d.set, 'CST')) + lbl('Numero', inp('num', d.num, '001')) + lbl('Artista', inp('artist', d.artist, 'Nome')) + '</div>' +
+      '<div><span class="lbl-t">Colori della carta</span><div class="chips">' + 'WUBRG'.split('').map(function (c) { return chip('dz-col', 'colors', c, {W: 'Bianco', U: 'Blu', B: 'Nero', R: 'Rosso', G: 'Verde'}[c], cs.indexOf(c) >= 0); }).join('') + '</div><p class="hint">Decidono il colore della cornice quando è su «Auto» (ora: ' + esc(R.PAL[cm].name) + ').</p></div></section>';
+    /* arte */
+    h += '<section class="panel"><h2 class="sect" style="margin:0">Arte</h2><div class="btns"><label class="btn small primary filebtn">Carica immagine<input type="file" accept="image/*" data-c="dz-artfile" hidden></label>' +
+      (d.art.id ? '<button class="btn small" data-a="dz-art-del">Togli</button><button class="btn small" data-a="dz-art-reset">Ricentra</button>' : '') + '</div>' +
+      (d.art.id ? '<label class="lbl">Zoom' + rng('s', d.art.s, 0.4, 4, 0.01) + '</label><label class="lbl">Sposta in orizzontale' + rng('x', d.art.x, -500, 500, 1) + '</label><label class="lbl">Sposta in verticale' + rng('y', d.art.y, -500, 500, 1) + '</label>' : '<p class="hint">Qualsiasi immagine: viene ridotta e salvata solo su questo dispositivo.</p>') + '</section>';
+    /* mazzo */
+    h += deckPanel(d);
+    /* azioni */
+    h += '<section class="panel"><div class="btns"><button class="btn small" data-a="dz-dup" data-id="' + esc(d.id) + '">Duplica</button><button class="btn small" data-a="dz-export-one">Esporta design (.json)</button>' +
+      '<button class="btn small danger' + (dz.confirm === 'del' ? ' armed' : '') + '" data-a="dz-del" data-cf="1">' + (dz.confirm === 'del' ? 'Conferma eliminazione' : 'Elimina design') + '</button></div></section>';
+    return h + '</div></div>';
+  }
+  function deckPanel(d) {
+    var decks = (H.decks() || []).filter(function (x) { return x.kind === 'deck'; });
+    var bound = (H.decks() || []).filter(function (x) { return x.cards.some(function (c) { return c.design === d.id; }); });
+    var cur = dz.bind || (dz.bind = { deckId: decks[0] ? decks[0].id : '', card: '', qty: 1 });
+    var dk = decks.filter(function (x) { return x.id === cur.deckId; })[0] || decks[0];
+    if (dk && cur.deckId !== dk.id) cur.deckId = dk.id;
+    var h = '<section class="panel"><h2 class="sect" style="margin:0">Nel mazzo</h2>';
+    if (!decks.length) return h + '<p class="hint">Importa prima un mazzo: poi potrai aggiungere qui questa carta.</p></section>';
+    h += lbl('Mazzo', '<select class="select" data-c="dz-bdeck">' + decks.map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === cur.deckId ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select>');
+    h += '<div class="dz-row">' + lbl('Copie', '<input class="input" type="number" min="1" max="99" value="' + cur.qty + '" data-c="dz-bqty">') +
+      '<div class="btns" style="align-self:end"><button class="btn" data-a="dz-add">Aggiungi come carta nuova</button></div></div>';
+    h += '<label class="lbl">Oppure sostituisce una carta del mazzo<select class="select" data-c="dz-bcard"><option value="">Scegli la carta…</option>' +
+      (dk ? dk.cards.slice().sort(function (a, b) { return a.name.localeCompare(b.name, 'en'); }).map(function (c) { return '<option value="' + esc(c.name) + '"' + (c.name === cur.card ? ' selected' : '') + '>' + esc(c.name) + (c.qty > 1 ? ' ×' + c.qty : '') + (c.design ? ' (ha già un design)' : '') + '</option>'; }).join('') : '') + '</select></label>';
+    h += '<div class="btns"><button class="btn" data-a="dz-replace"' + (cur.card ? '' : ' disabled') + '>Usa questo design per quella carta</button></div>';
+    h += '<p class="hint">«Sostituisce»: la carta resta nel mazzo con il suo nome, ma nel PDF si stampa questo design. «Nuova»: entra nel mazzo come carta con il nome del design.</p>';
+    if (bound.length) h += '<p class="hint">Già in: ' + bound.map(function (x) { return esc(x.name); }).join(', ') + '.</p>';
+    return h + '</section>';
+  }
+
+  function html() {
+    if (!dz.loaded) load().then(function () { if (H.ui.view === 'designer') H.render(); });
+    var body = dz.view === 'edit' && dz.cur ? editHtml() : listHtml();
+    return body + (dz.picker ? pickerHtml() : '');
+  }
+  function pickerHtml() {
+    var p = dz.picker;
+    return '<div class="bd-modal" data-a="dz-pick-close"><div class="bd-mbox" data-a="dz-keep" role="dialog" aria-label="Scegli un design"><div class="bd-mhead"><strong>Design per «' + esc(p.cardName) + '»</strong><button class="btn small" data-a="dz-pick-close">Chiudi</button></div>' +
+      (dz.designs.length ? '<div class="dz-grid dz-mgrid">' + dz.designs.map(function (d) { return '<button class="dz-item dz-pickit" data-a="dz-pick" data-id="' + esc(d.id) + '"><canvas class="dz-th" data-id="' + esc(d.id) + '" width="186" height="260"></canvas><b>' + esc(d.name) + '</b></button>'; }).join('') + '</div>' : '<p class="hint">Non hai ancora design.</p>') +
+      '<div class="btns"><button class="btn primary" data-a="dz-pick-new">Crea un design per questa carta</button></div></div></div>';
+  }
+  function after() {
+    if (H.ui.view !== 'designer') return;
+    if (dz.view === 'edit' && dz.cur) {
+      drawPreview(); wireCanvas(); fonts().then(schedulePreview);
+    }
+    drawThumbs();
+  }
+
+  /* trascinamento e rotella sull'arte (solo con il mouse: sul touch si usano i cursori) */
+  function wireCanvas() {
+    var cv = document.getElementById('dz-cv'), d = dz.cur; if (!cv || !d) return;
+    var drag = null;
+    function inArt(ev) {
+      var r = cv.getBoundingClientRect(), sx = W / r.width, x = (ev.clientX - r.left) * sx, y = (ev.clientY - r.top) * sx, a = (R.LAYOUT[d.frame] || R.LAYOUT.classic).art;
+      return x >= a[0] && x <= a[0] + a[2] && y >= a[1] && y <= a[1] + a[3];
+    }
+    cv.addEventListener('pointerdown', function (ev) {
+      if (ev.pointerType !== 'mouse' || !d.art.id || !inArt(ev)) return;
+      drag = { x: ev.clientX, y: ev.clientY, ax: d.art.x, ay: d.art.y, k: W / cv.getBoundingClientRect().width };
+      try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* ignorato */ }
+    });
+    cv.addEventListener('pointermove', function (ev) {
+      if (!drag) { cv.style.cursor = ev.pointerType === 'mouse' && d.art.id && inArt(ev) ? 'move' : 'default'; return; }
+      d.art.x = Math.round(drag.ax + (ev.clientX - drag.x) * drag.k); d.art.y = Math.round(drag.ay + (ev.clientY - drag.y) * drag.k); schedulePreview();
+    });
+    var end = function () { if (drag) { drag = null; saveSoon(); syncRanges(); } };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    cv.addEventListener('wheel', function (ev) {
+      if (!d.art.id || !inArt(ev)) return;
+      ev.preventDefault(); d.art.s = Math.max(0.4, Math.min(4, d.art.s * (ev.deltaY < 0 ? 1.05 : 0.95))); schedulePreview(); saveSoon(); syncRanges();
+    }, { passive: false });
+  }
+  function syncRanges() {
+    var d = dz.cur; if (!d) return;
+    [].slice.call(document.querySelectorAll('[data-c="dz-art"]')).forEach(function (el) { el.value = d.art[el.getAttribute('data-k')]; });
+  }
+
+  /* ---------- alter da Scryfall ---------- */
+  function fetchJson(url) { return fetch(url, { headers: { Accept: 'application/json' } }).then(function (r) { if (!r.ok) { var e = new Error('http'); e.status = r.status; throw e; } return r.json(); }); }
+  function fetchBlob(url) { return (window.CapacitorWebFetch || window.fetch).call(window, url).then(function (r) { if (!r.ok) throw new Error('http'); return r.blob(); }); }
+  function alterFrom(name) {
+    var d = dz.cur; if (!d || !name.trim()) return;
+    dz.search.busy = true; dz.search.msg = ''; H.render();
+    fetchJson('https://api.scryfall.com/cards/named?fuzzy=' + encodeURIComponent(name.trim())).then(function (c) {
+      var f = c.card_faces && !c.image_uris ? c.card_faces[0] : c, cols = (f.colors || c.colors || []).join('');
+      var tl = String(f.type_line || c.type_line || ''), rules = String(f.oracle_text || ''), pt = f.power != null ? f.power + '/' + f.toughness : (f.loyalty || '');
+      var frame = /planeswalker/i.test(tl) ? 'planeswalker' : /saga/i.test(tl) ? 'saga' : c.layout === 'token' ? 'token' : (d.frame === 'planeswalker' || d.frame === 'saga' || d.frame === 'token' ? 'classic' : d.frame);
+      d.name = f.name || c.name; d.cost = f.mana_cost || ''; d.type = tl; d.rules = rules; d.flavor = f.flavor_text || ''; d.pt = String(pt || '');
+      d.rarity = R.RARITY[c.rarity] ? c.rarity : 'common'; d.set = String(c.set || '').toUpperCase(); d.num = String(c.collector_number || ''); d.artist = f.artist || c.artist || '';
+      d.colors = cols; d.palette = 'auto'; d.frame = frame; d.alterOf = c.name; d.kind = d.kind === 'card' ? 'alter' : d.kind;
+      var art = (f.image_uris || c.image_uris || {}).art_crop;
+      dz.search.msg = 'Importata: ' + (c.name || name) + '.';
+      if (!art) { dz.search.busy = false; saveNow(); H.render(); return; }
+      return fetchBlob(art).then(function (b) { dz.search.busy = false; return setArt(b); }, function () { dz.search.busy = false; dz.search.msg += ' Il testo è dentro, ma l’arte non si è scaricata: caricane una tua.'; saveNow(); H.render(); });
+    }).catch(function (e) {
+      dz.search.busy = false; dz.search.msg = e && e.status === 404 ? 'Non trovo una carta con quel nome su Scryfall.' : 'Non riesco a contattare Scryfall: controlla la connessione e riprova.'; H.render();
+    });
+  }
+
+  /* ---------- legame con i mazzi ---------- */
+  function keyOf(n) { return window.Core ? window.Core.keyOf(n) : String(n).toLowerCase(); }
+  function addToDeck(d, deckId, qty) {
+    var dk = H.getDeck(deckId); if (!dk) return;
+    H.mutate(d.name + ' aggiunta a ' + dk.name + '.', function () {
+      var ex = dk.cards.filter(function (c) { return c.design === d.id && keyOf(c.name) === keyOf(d.name); })[0];
+      if (ex) ex.qty += qty; else dk.cards.push({ name: d.name, qty: qty, set: '', cn: '', design: d.id });
+      dk.updatedAt = Date.now();
+    });
+  }
+  function bindCard(d, deckId, cardName) {
+    var dk = H.getDeck(deckId); if (!dk || !cardName) return false;
+    var rows = dk.cards.filter(function (c) { return keyOf(c.name) === keyOf(cardName); });
+    if (!rows.length) return false;
+    H.mutate('Il design «' + d.name + '» sostituisce ' + cardName + ' in ' + dk.name + '.', function () { rows.forEach(function (r) { r.design = d.id; }); dk.updatedAt = Date.now(); });
+    return true;
+  }
+  function unbind(deckId, cardName) {
+    var dk = H.getDeck(deckId); if (!dk) return;
+    H.mutate('Design tolto da ' + cardName + '.', function () { dk.cards.forEach(function (r) { if (keyOf(r.name) === keyOf(cardName)) delete r.design; }); dk.updatedAt = Date.now(); });
+  }
+  function dropDesign(id) {
+    var ds = H.decks() || [];
+    if (ds.some(function (dk) { return dk.cards.some(function (c) { return c.design === id; }); })) {
+      H.mutate('Design eliminato: le carte tornano all’immagine di Scryfall.', function () { ds.forEach(function (dk) { dk.cards.forEach(function (c) { if (c.design === id) delete c.design; }); }); });
+    }
+    var d = byId(id);
+    dz.designs = dz.designs.filter(function (x) { return x.id !== id; });
+    DB.del('designs', id); if (d && d.art.id) { DB.del('art', d.art.id); delete artCache[d.art.id]; }
+  }
+
+  /* ---------- esporta / importa ---------- */
+  function blobToDataUrl(b) { return new Promise(function (res) { var r = new FileReader(); r.onload = function () { res(String(r.result)); }; r.onerror = function () { res(''); }; r.readAsDataURL(b); }); }
+  function dataUrlToBlob(u) {
+    var m = /^data:([^;,]+);base64,(.*)$/.exec(u || ''); if (!m) return null;
+    var bin = atob(m[2]), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+    return new Blob([a], { type: m[1] });
+  }
+  function packOne(d) { return artImage(d.art.id).then(function () { return DB.get('art', d.art.id); }).then(function (b) { return (b ? blobToDataUrl(b) : Promise.resolve('')).then(function (u) { return { design: d, art: u }; }); }); }
+  function exportDesigns(list, name) {
+    Promise.all(list.map(packOne)).then(function (items) {
+      var json = JSON.stringify({ app: 'coglio-designer', version: 1, exportedAt: new Date().toISOString(), items: items });
+      return H.download(name, json, 'application/json').then(function (ok) { if (ok !== 'declined') H.toast(ok ? 'File dei design pronto (le cornici importate non sono incluse).' : 'Download non disponibile qui.'); });
+    });
+  }
+  function importFile(file) {
+    var r = new FileReader();
+    r.onload = function () {
+      var data; try { data = JSON.parse(String(r.result)); } catch (e) { dz.msg = 'Errore: il file non è un JSON valido.'; H.render(); return; }
+      var items = data && data.app === 'coglio-designer' && Array.isArray(data.items) ? data.items : null;
+      if (!items) { dz.msg = 'Errore: non è un file di design di Coglio.'; H.render(); return; }
+      var chain = Promise.resolve(), n = 0;
+      items.forEach(function (it) {
+        chain = chain.then(function () {
+          var d = norm(it.design || {}); var wasThere = byId(d.id); if (wasThere) d.id = uid('z');
+          d.frameImg = ''; d.createdAt = Date.now(); d.updatedAt = Date.now();
+          var b = dataUrlToBlob(it.art), aid = '';
+          var p = Promise.resolve();
+          if (b) { aid = uid('a'); p = DB.put('art', b, aid); }
+          d.art = { id: aid, x: +(it.design && it.design.art && it.design.art.x) || 0, y: +(it.design && it.design.art && it.design.art.y) || 0, s: +(it.design && it.design.art && it.design.art.s) || 1 };
+          return p.then(function () { dz.designs.unshift(d); n++; return DB.put('designs', clone(d)); });
+        });
+      });
+      chain.then(function () { dz.msg = n + (n === 1 ? ' design importato.' : ' design importati.'); H.render(); });
+    };
+    r.readAsText(file);
+  }
+  function download(blob, name) { return H.download(name, blob, blob.type); }
+  function fname(d, ext) { return (String(d.name || 'carta').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'carta') + ext; }
+
+  /* ---------- eventi ---------- */
+  function click(a, el) {
+    var d = dz.cur, id = el.getAttribute('data-id'), k = el.getAttribute('data-k'), v = el.getAttribute('data-v');
+    switch (a) {
+      case 'dz-new': create(k); break;
+      case 'dz-open': var t = byId(id); if (t) editDesign(t); break;
+      case 'dz-back': saveNow(); dz.view = 'list'; dz.cur = null; dz.confirm = ''; window.scrollTo(0, 0); H.render(); break;
+      case 'dz-dup':
+        var src = byId(id) || d; if (!src) break;
+        var c = clone(src); c.id = uid('z'); c.name = src.name + ' (copia)'; c.createdAt = c.updatedAt = Date.now();
+        var done = function () { dz.designs.unshift(c); saveNow().then(function () { if (dz.view === 'edit') editDesign(c); else H.render(); }); dz.cur = dz.view === 'edit' ? c : dz.cur; };
+        if (src.art.id) DB.get('art', src.art.id).then(function (b) { if (!b) { c.art.id = ''; done(); return; } var nid = uid('a'); DB.put('art', b, nid).then(function () { c.art.id = nid; done(); }); }); else done();
+        break;
+      case 'dz-set': if (d) { d[k] = v; if (k === 'frame') { var L = R.LAYOUT[v]; if (L && !L.pt) d.pt = d.pt; } saveSoon(); H.render(); } break;
+      case 'dz-col': if (d) { var cs = String(d.colors || '').toUpperCase(); d.colors = cs.indexOf(v) >= 0 ? cs.replace(v, '') : 'WUBRG'.split('').filter(function (x) { return cs.indexOf(x) >= 0 || x === v; }).join(''); saveSoon(); H.render(); } break;
+      case 'dz-sym': insertSym(v); break;
+      case 'dz-png': if (d) { saveNow(); renderBlob(d.id, { type: 'image/png' }).then(function (b) { return download(b, fname(d, '.png')); }).then(function (ok) { if (ok === false) H.toast('Download non disponibile qui.'); }, function () { H.toast('Non riesco a creare l’immagine.'); }); } break;
+      case 'dz-jpg': if (d) { saveNow(); renderBlob(d.id, { type: 'image/jpeg', square: true }).then(function (b) { return download(b, fname(d, '.jpg')); }).then(function (ok) { if (ok === false) H.toast('Download non disponibile qui.'); }, function () { H.toast('Non riesco a creare l’immagine.'); }); } break;
+      case 'dz-art-del': if (d && d.art.id) { var oid = d.art.id; d.art = { id: '', x: 0, y: 0, s: 1 }; dz.artImg = null; DB.del('art', oid); delete artCache[oid]; saveNow(); H.render(); } break;
+      case 'dz-art-reset': if (d) { d.art.x = 0; d.art.y = 0; d.art.s = 1; saveSoon(); H.render(); } break;
+      case 'dz-alter': if (d) alterFrom(dz.search.q || d.name); break;
+      case 'dz-add': if (d && dz.bind && dz.bind.deckId) { saveNow(); addToDeck(d, dz.bind.deckId, Math.max(1, Math.min(99, parseInt(dz.bind.qty, 10) || 1))); H.render(); } break;
+      case 'dz-replace': if (d && dz.bind && dz.bind.card) { saveNow(); if (bindCard(d, dz.bind.deckId, dz.bind.card)) H.render(); } break;
+      case 'dz-del':
+        if (!d) break;
+        if (dz.confirm === 'del') { dropDesign(d.id); dz.cur = null; dz.view = 'list'; dz.confirm = ''; window.scrollTo(0, 0); H.render(); } else { dz.confirm = 'del'; H.render(); }
+        break;
+      case 'dz-frame-del': if (d && d.frameImg) { var fid = d.frameImg; dz.designs.forEach(function (x) { if (x.frameImg === fid) x.frameImg = ''; }); dz.frames = dz.frames.filter(function (f) { return f.id !== fid; }); delete dz.frameImgs[fid]; DB.del('frames', fid); dz.frameImgNow = null; saveNow(); H.render(); } break;
+      case 'dz-export-one': if (d) { saveNow(); exportDesigns([d], fname(d, '.coglio-design.json')); } break;
+      case 'dz-export-all': exportDesigns(dz.designs, 'coglio-design.json'); break;
+      case 'dz-bind': openPicker(el.getAttribute('data-deck'), el.getAttribute('data-name')); break;
+      case 'dz-unbind': unbind(el.getAttribute('data-deck'), el.getAttribute('data-name')); H.render(); break;
+      case 'dz-pick-close': dz.picker = null; H.render(); break;
+      case 'dz-keep': break;
+      case 'dz-pick': if (dz.picker) { var pd = byId(id); if (pd && bindCard(pd, dz.picker.deckId, dz.picker.cardName)) { dz.picker = null; H.render(); } } break;
+      case 'dz-pick-new':
+        if (dz.picker) {
+          var pk = dz.picker, nd = norm(R.defaults('card')); nd.id = uid('z'); nd.name = pk.cardName; nd.createdAt = nd.updatedAt = Date.now(); dz.picker = null;
+          dz.designs.unshift(nd); dz.bind = { deckId: pk.deckId, card: pk.cardName, qty: 1 }; saveNow(); H.ui.view = 'designer'; editDesign(nd);
+        } break;
+    }
+  }
+  function insertSym(s) {
+    var d = dz.cur; if (!d) return;
+    var key = dz.focus === 'cost' ? 'cost' : dz.focus === 'flavor' ? 'flavor' : 'rules';
+    var el = document.querySelector('[data-c="dz-f"][data-k="' + key + '"]');
+    if (!el) return;
+    var pos = typeof el.selectionStart === 'number' ? el.selectionStart : el.value.length, end = typeof el.selectionEnd === 'number' ? el.selectionEnd : pos;
+    el.value = el.value.slice(0, pos) + s + el.value.slice(end); d[key] = el.value;
+    try { el.focus(); el.setSelectionRange(pos + s.length, pos + s.length); } catch (e) { /* ignorato */ }
+    schedulePreview(); saveSoon();
+  }
+  function input(c, el) {
+    var d = dz.cur;
+    if (c === 'dz-f' && d) { d[el.getAttribute('data-k')] = el.value; schedulePreview(); saveSoon(); if (el.getAttribute('data-k') === 'name') { var h1 = document.querySelector('.vh h1'); if (h1) h1.textContent = el.value || 'Senza nome'; } }
+    else if (c === 'dz-art' && d) { d.art[el.getAttribute('data-k')] = parseFloat(el.value) || 0; schedulePreview(); saveSoon(); }
+    else if (c === 'dz-q') dz.search.q = el.value;
+    else if (c === 'dz-bqty' && dz.bind) dz.bind.qty = el.value;
+  }
+  function change(c, el) {
+    var d = dz.cur;
+    if (c === 'dz-f' && d) { d[el.getAttribute('data-k')] = el.value; saveSoon(); if (el.tagName === 'SELECT') H.render(); else schedulePreview(); }
+    else if (c === 'dz-artfile') { if (el.files && el.files[0]) setArt(el.files[0]); }
+    else if (c === 'dz-framefile') {
+      var files = [].slice.call(el.files || []), last = null, p = Promise.resolve();
+      files.forEach(function (f) {
+        p = p.then(function () {
+          return blobImage(f).then(function (r) { URL.revokeObjectURL(r.url); var fr = { id: uid('f'), name: f.name.replace(/\.[^.]+$/, ''), blob: f, ink: 'dark', createdAt: Date.now() }; dz.frames.push(fr); last = fr; return DB.put('frames', fr); },
+            function () { H.toast('«' + f.name + '»: non è un’immagine leggibile.'); });
+        });
+      });
+      p.then(function () { if (last && d) { d.frameImg = last.id; dz.frameImgNow = null; frameImage(last.id).then(function (im) { dz.frameImgNow = im; schedulePreview(); }); saveNow(); } H.render(); });
+    }
+    else if (c === 'dz-frameimg' && d) { d.frameImg = el.value; dz.frameImgNow = null; frameImage(el.value).then(function (im) { dz.frameImgNow = im; schedulePreview(); }); saveSoon(); H.render(); }
+    else if (c === 'dz-import') { if (el.files && el.files[0]) importFile(el.files[0]); }
+    else if (c === 'dz-bdeck' && dz.bind) { dz.bind.deckId = el.value; dz.bind.card = ''; H.render(); }
+    else if (c === 'dz-bcard' && dz.bind) { dz.bind.card = el.value; H.render(); }
+  }
+  function openPicker(deckId, cardName) {
+    dz.picker = { deckId: deckId, cardName: cardName }; H.ui.view = 'designer'; if (dz.view !== 'list') { dz.view = 'list'; dz.cur = null; }
+    load().then(function () { H.render(); }); H.render();
+  }
+  function escape() {
+    if (dz.picker) { dz.picker = null; H.render(); return true; }
+    return false;
+  }
+  document.addEventListener('focusin', function (e) {
+    var t = e.target; if (t && t.getAttribute && t.getAttribute('data-c') === 'dz-f') dz.focus = t.getAttribute('data-k');
+  });
+
+  window.CPADesigner = {
+    open: open, html: html, after: after, click: click, input: input, change: change, escape: escape, renderBlob: renderBlob,
+    ready: load, get: byId, list: function () { return dz.designs.slice(); }, openPicker: openPicker, state: dz
+  };
 })();
 
 </script>

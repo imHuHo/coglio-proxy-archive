@@ -71,11 +71,11 @@ const toastText = () => $('#toast').textContent.replace(/\s+/g, ' ');
   // --- novità ---
   w.localStorage.removeItem('cpa-news-seen');
   clickA('nav', '[data-v="decks"]');
-  ok($('.news-banner') && $('.news-banner').textContent.includes('2.2.0'), 'avviso novità alla prima apertura della versione');
+  ok($('.news-banner') && $('.news-banner').textContent.includes(w.CPA_VERSION), 'avviso novità alla prima apertura della versione');
   clickA('news-open');
   ok($('#news') && text().includes('Codighel! che novità!') && text().includes('Tre stati per i mazzi'), 'sezione novità in Dati');
   ok($$('#news details').length >= 3 && text().includes('Coglio Proxy Builder'), 'versioni precedenti elencate');
-  ok(!$('.news-banner') && w.localStorage.getItem('cpa-news-seen') === '2.2.0', 'avviso sparito e ricordato');
+  ok(!$('.news-banner') && w.localStorage.getItem('cpa-news-seen') === w.CPA_VERSION, 'avviso sparito e ricordato');
   clickA('nav', '[data-v="decks"]');
   ok(!$('.news-banner'), 'non ricompare');
   ok(!errors.length, 'nessun errore JS: ' + errors.join('; '));

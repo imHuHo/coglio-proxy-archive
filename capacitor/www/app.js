@@ -22,6 +22,7 @@
     decks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="13" height="17" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h9"/></svg>',
     import: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
     builder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="7" y="13" width="10" height="8" rx="1"/></svg>',
+    designer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="13" height="18" rx="2"/><path d="M7 15l3-4 2 2 2-3M18 9l3 3-6 6-3.5.5.5-3.5z"/></svg>',
     data: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>',
     search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
   };
@@ -800,7 +801,7 @@
   })();
 
   /* ---------- Struttura generale ---------- */
-  var NAV = [['archive', 'Archivio'], ['decks', 'Mazzi'], ['import', 'Importa'], ['builder', 'Stampa'], ['data', 'Dati']];
+  var NAV = [['archive', 'Archivio'], ['decks', 'Mazzi'], ['import', 'Importa'], ['designer', 'Designer'], ['builder', 'Stampa'], ['data', 'Dati']];
   function navBtn(v, label) {
     var cur = ui.view === v || (v === 'decks' && (ui.view === 'deck' || ui.view === 'upgrade'));
     return '<button class="nav" data-a="nav" data-v="' + v + '"' + (cur ? ' aria-current="page"' : '') + '>' + IC[v] + '<span>' + label + '</span></button>';
@@ -815,6 +816,7 @@
     if (ui.view === 'deck') updateDeckList();
     if (ui.view === 'upgrade') updateUpgradeCols();
     if (ui.view === 'builder' && window.CPABuilder) window.CPABuilder.after();
+    if (ui.view === 'designer' && window.CPADesigner) window.CPADesigner.after();
   }
   function viewHtml() {
     switch (ui.view) {
@@ -823,12 +825,14 @@
       case 'upgrade': return upgradeView();
       case 'import': return importView();
       case 'builder': return window.CPABuilder ? window.CPABuilder.html() : decksView();
+      case 'designer': return window.CPADesigner ? window.CPADesigner.html() : archiveView();
       case 'data': return dataView();
       default: return archiveView();
     }
   }
   function go(v) {
     if (v === 'builder' && window.CPABuilder) { ui.confirm = null; window.CPABuilder.open(null); return; }
+    if (v === 'designer' && window.CPADesigner) { ui.confirm = null; document.body.classList.remove('bd-lock'); window.CPADesigner.open(); return; }
     document.body.classList.remove('bd-lock');
     ui.view = v; ui.confirm = null;
     if (v === 'import' && !(ui.draft && ui.draft.step === 1 && ui.draft.mode !== 'upgrade')) ui.draft = newDraft('deck');
@@ -983,10 +987,11 @@
       var e = A.map[C.keyOf(c.name)], others = e ? e.rows.filter(function (r) { return r.deckId !== d.id; }) : [];
       var isCmd = d.commander && C.keyOf(d.commander) === C.keyOf(c.name);
       return '<div class="crow">' + IMG.thumb(c.name, c.set, c.cn, d.id) + '<span class="qty">' + c.qty + '×</span><span class="nm">' + esc(c.name) + '</span>' +
-        (isCmd ? '<span class="tag cmd">commander</span>' : '') + (c.set ? '<span class="tag">' + esc(c.set) + (c.cn ? ' ' + esc(c.cn) : '') + '</span>' : '') +
+        (isCmd ? '<span class="tag cmd">commander</span>' : '') + (c.design ? '<span class="tag dzt">Design</span>' : '') + (c.set ? '<span class="tag">' + esc(c.set) + (c.cn ? ' ' + esc(c.cn) : '') + '</span>' : '') +
         (others.length ? '<span class="other">' + others.map(function (r) {
           return '<span class="pill ' + (r.active ? 'use' : 'free') + '">anche in ' + esc(r.deckName) + ' ×' + r.qty + (r.active ? ' · in uso' : ' · libera') + '</span>';
-        }).join('') + '</span>' : '') + '</div>';
+        }).join('') + '</span>' : '') +
+        (window.CPADesigner ? (c.design ? '<button class="btn small" data-a="dz-unbind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Togli design</button>' : '<button class="btn small" data-a="dz-bind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Design</button>') : '') + '</div>';
     }).join('') || '<p class="hint">Nessuna carta trovata.</p>';
     IMG.hydrate();
   }
@@ -1234,6 +1239,7 @@
     var a = el.dataset.a, id = el.dataset.id;
     if (!el.dataset.cf) ui.confirm = null;
     if (a.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.click(a, el); return; }
+    if (a.indexOf('dz-') === 0 && window.CPADesigner) { if (el.dataset.cf) ui.confirm = null; window.CPADesigner.click(a, el); return; }
     var deck;
     switch (a) {
       case 'nav': go(el.dataset.v); break;
@@ -1333,7 +1339,7 @@
     ui.dataMsg = ''; ui.restoreText = ''; render();
   }
 
-  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (window.CPABuilder && ui.view === 'builder' && window.CPABuilder.escape()) return; if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (window.CPADesigner && ui.view === 'designer' && window.CPADesigner.escape()) return; if (window.CPABuilder && ui.view === 'builder' && window.CPABuilder.escape()) return; if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
   document.addEventListener('mousemove', function (ev) {
     var t = ev.target.closest && ev.target.closest('.th.on');
     IMG.hover(!!t, t, ev);
@@ -1343,6 +1349,7 @@
   document.addEventListener('input', function (e) {
     var c = e.target.dataset && e.target.dataset.c; if (!c) return;
     if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.input(c, e.target); return; }
+    if (c.indexOf('dz-') === 0 && window.CPADesigner) { window.CPADesigner.input(c, e.target); return; }
     if (c === 'q') { ui.q = e.target.value; ui.limit = 150; updateArchiveList(); }
     else if (c === 'upq') { ui.upQ = e.target.value; updateUpgradeCols(); }
     else if (c === 'deckq') { ui.deckQ = e.target.value; updateDeckList(); }
@@ -1355,6 +1362,7 @@
   document.addEventListener('change', function (e) {
     var t = e.target, c = t.dataset && t.dataset.c; if (!c) return;
     if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.change(c, t); return; }
+    if (c.indexOf('dz-') === 0 && window.CPADesigner) { window.CPADesigner.change(c, t); return; }
     var d;
     switch (c) {
       case 'fdeck': ui.fdeck = t.value; ui.limit = 150; render(); break;
@@ -1395,7 +1403,8 @@
   /* Funzioni che la schermata di stampa (builder.js) può usare. */
   window.CPAHost = {
     cmpVersion: UPD.cmp,
-    esc: esc, toast: toast, download: download, getDeck: getDeck, ui: ui, render: render,
+    esc: esc, toast: toast, download: download, getDeck: getDeck, ui: ui, render: render, mutate: mutate,
+    decks: function () { return state.decks; },
     available: function () { return !!store && store.kind !== 'claude' && typeof fetch === 'function'; }
   };
 

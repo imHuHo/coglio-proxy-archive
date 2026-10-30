@@ -38,11 +38,30 @@
   function available() { return H.available(); }
 
   /* ---------- carte ---------- */
-  function mkEntry(c) { return { id: ++seq, name: c.name, qty: c.qty == null ? 1 : c.qty, set: c.set || '', cn: c.cn || '', card: null, nf: false }; }
+  function mkEntry(c) { var e = { id: ++seq, name: c.name, qty: c.qty == null ? 1 : c.qty, set: c.set || '', cn: c.cn || '', card: null, nf: false }; if (c.design) e.design = c.design; return e; }
+  /* Le carte con un design del Designer si stampano con l'immagine disegnata (angoli quadri, 300 dpi) al posto di quella di Scryfall. */
+  function attachDesigns() {
+    var D = window.CPADesigner, list = bd.entries.filter(function (e) { return e.design && !e.custom; });
+    if (!list.length) return Promise.resolve();
+    if (!D) { list.forEach(function (e) { delete e.design; }); return Promise.resolve(); }
+    var lost = 0;
+    return D.ready().then(function () {
+      return Promise.all(list.map(function (e) {
+        return D.renderBlob(e.design, { type: 'image/jpeg', square: true, quality: 0.95 }).then(function (blob) {
+          return X.fromFile(blob, P.parseJpeg).then(function (img) {
+            e.custom = img; e.fromDesign = true; try { e.thumb = URL.createObjectURL(blob); } catch (er) { e.thumb = null; }
+          });
+        }).catch(function () { delete e.design; lost++; });
+      }));
+    }).then(function () {
+      if (lost) H.toast(lost === 1 ? 'Un design non è disponibile su questo dispositivo: stampo la carta con l\u2019immagine di Scryfall.' : lost + ' design non sono disponibili su questo dispositivo: stampo quelle carte con l\u2019immagine di Scryfall.', null, true);
+    });
+  }
   function inc(e) { return e.qty > 0 && !(bd.nobasic && C.isBasic(e.name)); }
   function entryById(id) { return bd.entries.filter(function (e) { return String(e.id) === String(id); })[0]; }
   function total() { return bd.entries.filter(inc).reduce(function (t, e) { return t + e.qty; }, 0); }
 
+  var openRun = 0;
   function open(deckId) {
     init();
     var d = deckId && H.getDeck(deckId);
@@ -56,11 +75,14 @@
     }
     bd.picker = null; bd.pickList = null;
     H.ui.view = 'builder'; window.scrollTo(0, 0); H.render();
-    if (available()) resolveAll();
+    var my = ++openRun; if (bd.busy === 'design') { bd.busy = ''; bd.progress = ''; }
+    if (!bd.entries.some(function (e) { return e.design; })) { if (available()) resolveAll(); return; }
+    bd.busy = 'design'; bd.progress = 'Preparo i design…'; H.render();
+    attachDesigns().then(function () { if (my !== openRun) return; bd.busy = ''; bd.progress = ''; softRender(); if (available()) resolveAll(); });
   }
 
   function resolveAll() {
-    var todo = bd.entries.filter(function (e) { return !e.card && !e.nf && !e.custom; });
+    var todo = bd.entries.filter(function (e) { return !e.card && !e.nf && !e.custom && !e.design; });
     if (!todo.length || bd.busy) return;
     var my = ++runId;
     bd.busy = 'resolve'; bd.progress = 'Cerco le carte su Scryfall…';
@@ -287,7 +309,7 @@
 
   function rowHtml(e) {
     var fs = e.card ? X.faces(e.card, 'small') : [], th = e.custom ? e.thumb : (fs[0] && fs[0].url), st = '', cls = '';
-    if (e.custom) { st = 'immagine tua'; cls = 'own'; }
+    if (e.custom) { st = e.fromDesign ? 'design Coglio' : 'immagine tua'; cls = 'own'; }
     else if (e.nf) { st = 'non trovata'; cls = 'err'; }
     else if (e.card) {
       var diff = e.set && (e.card.set !== String(e.set).toLowerCase() || (e.cn && String(e.card.collector_number).toLowerCase() !== String(e.cn).toLowerCase()));

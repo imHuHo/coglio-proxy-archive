@@ -1,6 +1,16 @@
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '3.0.0', date: '30 ottobre 2026', title: 'Coglio Proxy Designer', items: [
+    { t: 'Nuova sezione Designer', d: 'Crei proxy personalizzate direttamente nell\'app: carte tue da zero, token, carte con cornici speciali e alter di carte che esistono già. Anteprima in tempo reale mentre scrivi.' },
+    { t: 'Cornici disegnate da noi', d: 'Classica, tutta arte, senza bordo, token, planeswalker e saga, in tutti i colori, con bordo nero, bianco, argento o oro e angoli arrotondati o quadrati. Mana, tap e simboli ibridi si scrivono tra graffe: {2}{U}{U}, {T}, {W/U}, {G/P}.' },
+    { t: 'La tua arte', d: 'Carichi un\'immagine qualsiasi e la sposti e ingrandisci: col mouse trascini e usi la rotella sull\'arte, sul telefono ci sono i cursori. Le immagini si salvano ridotte, solo sul tuo dispositivo.' },
+    { t: 'Alter di carte esistenti', d: 'Scrivi il nome di una carta e il Designer importa testo, costo, tipo e arte da Scryfall: poi cambi quello che vuoi. Serve internet.' },
+    { t: 'Importa le tue cornici', d: 'Se hai cornici PNG tue (con la zona dell\'arte trasparente) le importi e le usi al posto di quelle disegnate. Restano solo sul tuo dispositivo e non vengono mai caricate da nessuna parte.' },
+    { t: 'Nel mazzo', d: 'Un design lo aggiungi a un mazzo come carta nuova, oppure sostituisce una carta che c\'è già: resta col suo nome, ma nel PDF si stampa il tuo design. Nella lista del mazzo ogni carta ha il pulsante «Design» (e «Togli design»).' },
+    { t: 'Nel PDF', d: 'Le carte con un design si stampano nella schermata Stampa con l\'immagine disegnata, ad angoli quadri e a 300 dpi, insieme alle altre. Se il design non è su quel dispositivo, la carta si stampa con l\'immagine di Scryfall.' },
+    { t: 'Salva e porta con te', d: 'Ogni design si scarica come PNG o JPG e si esporta in un file .json (con l\'arte dentro) per passarlo a un altro dispositivo. I design vivono a parte rispetto al backup dei mazzi.' }
+  ] },
   { v: '2.2.0', date: '30 ottobre 2026', title: 'Mazzi da stampare, CODIGHEL che si usa, stampe più grandi', items: [
     { t: 'Tre stati per i mazzi', d: 'Ogni mazzo ora è Attivo (montato, carte in uso), Non ancora stampato oppure Non attivo (smontato, carte libere). Lo scegli quando importi il mazzo e lo cambi quando vuoi dalla lista dei mazzi o dalla pagina del mazzo.' },
     { t: 'Non ancora stampato', d: 'Le carte di un mazzo che non hai ancora stampato non entrano nell\'archivio, non fanno scattare CODIGHEL e, se le togli con un upgrade, non finiscono tra le sciolte (non esistono ancora). Quando lo stampi lo passi ad Attivo e le carte entrano in archivio.' },

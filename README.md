@@ -24,6 +24,10 @@ e l'app ti dice quali carte hai, quante sono libere e in quale mazzo sono impegn
 - **Carte sciolte**: carte non in nessun mazzo (le importi come lista o arrivano dagli upgrade). Sono sempre libere.
   Quando importi un nuovo mazzo l'app mostra **«CODIGHEL! Queste carte le hai già stampate, verifica prima di stampare nuovamente»**
   con le carte della lista che hai già tra le sciolte (e, a parte, quelle libere in mazzi non attivi).
+- **Designer (3.0)**: crea proxy personalizzate (carte tue, token, cornici speciali, alter di carte Scryfall) con anteprima in tempo reale.
+  Cornici, simboli e grafica sono **disegnati da zero nel codice** (nessuna immagine o font di Wizards inclusi); puoi importare **le tue cornici PNG**,
+  che restano solo nel dispositivo. Un design si aggiunge a un mazzo come carta nuova o sostituisce una carta esistente (nel PDF si stampa il design).
+  Design e arte stanno in un database a parte (IndexedDB `coglio-designer`) e si esportano in `.json` con l'arte incorporata. Il motore è `web/cardrender.js`, l'interfaccia `web/designer.js`.
 - **Immagini delle carte**: ogni carta ha la sua miniatura (presa da [Scryfall](https://scryfall.com) in base a nome e collezione, con il numero
   quando c'è). Tocca la miniatura per ingrandirla (le carte a due facce hanno *Gira*), sul PC basta passarci sopra con il mouse.
   **Per mostrare esattamente la stampa che hai**: nelle liste di un mazzo (e nel dettaglio di una carta dell'archivio) apri la miniatura e premi
@@ -106,15 +110,16 @@ Apri `web/index.html` con Chrome o Edge: funziona anche da file locale (senza mo
 ## Struttura
 ```
 web/        l'app (HTML, CSS, JS senza dipendenze) = PWA
-            core.js (archivio) · pdf.js (motore PDF) · proxy.js (Scryfall e immagini) · builder.js (schermata Stampa) · app.js
+            core.js (archivio) · pdf.js (motore PDF) · proxy.js (Scryfall e immagini) · builder.js (schermata Stampa) · cardrender.js + designer.js (Designer) · app.js
 electron/   wrapper Windows
 capacitor/  wrapper Android/iOS
-tools/      test (test.js, pdf-test.js, proxy-test.js, update-test.js, status-test.js, ui-smoke.js, builder-smoke.js, img-smoke.js, update-smoke.js, status-smoke.js), build.py, make_icons.py
+tools/      test (test.js, pdf-test.js, proxy-test.js, update-test.js, status-test.js, ui-smoke.js, builder-smoke.js, img-smoke.js, update-smoke.js, status-smoke.js, designer-test.js, design-core-test.js), build.py, make_icons.py
 dist/       coglio-proxy-archive.html = pagina unica
 ```
 Tutti i dati restano sul dispositivo (IndexedDB del browser). Nessun account, nessun server.
 
 ## Note
 - `pdf-test.js` e `proxy-test.js` girano con solo Node (il primo, se ci sono `python3` con Pillow, `pdfinfo`, `qpdf` e `pdftoppm`, controlla anche i PDF con strumenti esterni e confronta i pixel); `update-test.js` (scarico dell'aggiornamento con rete simulata) e `status-test.js` (stati dei mazzi e riuso delle carte) girano con solo Node; `ui-smoke.js`, `builder-smoke.js`, `img-smoke.js`, `update-smoke.js` e `status-smoke.js` usano jsdom (`node tools/builder-smoke.js <percorso-di-jsdom>`).
+- `designer-test.js` usa Chromium (Playwright): `node tools/designer-test.js`.
 - `test.js`, `ui-smoke.js` e `img-smoke.js` leggono alcune liste di mazzi da `tools/fixtures/`, che non sono nel repository: servono liste tue per provarli.
 - Progetto non ufficiale, non affiliato né approvato da Wizards of the Coast. Immagini e dati delle carte: [Scryfall](https://scryfall.com). Magic: The Gathering è un marchio di Wizards of the Coast.

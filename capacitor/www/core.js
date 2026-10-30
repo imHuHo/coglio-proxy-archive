@@ -401,18 +401,20 @@
   function removeCopies(deck, key, qty, target) {
     var left = qty;
     deck.cards.forEach(function (c) {
-      if (left > 0 && keyOf(c.name) === key && (!target || samePrint(target, c))) { var t = Math.min(c.qty, left); c.qty -= t; left -= t; }
+      if (left > 0 && !c.design && keyOf(c.name) === key && (!target || samePrint(target, c))) { var t = Math.min(c.qty, left); c.qty -= t; left -= t; }
     });
     deck.cards = deck.cards.filter(function (c) { return c.qty > 0; });
     return qty - left;
   }
   function addCopies(deck, card, qty) {
-    var k = keyOf(card.name), set = card.set || '', cn = card.cn || '';
+    var k = keyOf(card.name), set = card.set || '', cn = card.cn || '', ds = card.design || '';
     for (var i = 0; i < deck.cards.length; i++) {
       var c = deck.cards[i];
-      if (keyOf(c.name) === k && c.set === set && c.cn === cn) { c.qty += qty; return; }
+      if (keyOf(c.name) === k && c.set === set && c.cn === cn && (c.design || '') === ds) { c.qty += qty; return; }
     }
-    deck.cards.push({ name: card.name, qty: qty, set: set, cn: cn });
+    var row = { name: card.name, qty: qty, set: set, cn: cn };
+    if (ds) row.design = ds;
+    deck.cards.push(row);
   }
 
   /* Applica l'upgrade a `decks` (modificandolo):
@@ -462,7 +464,10 @@
     diff.reprints.forEach(function (r) { rep.reprints.push({ name: r.name, qty: r.qty, from: r.from, to: r.to }); });
     if (binder) rep.binderName = binder.name;
 
+    var kept = {};
+    deck.cards.forEach(function (c) { if (c.design) kept[keyOf(c.name)] = c.design; });
     deck.cards = cloneJ(up.cards);
+    deck.cards.forEach(function (c) { var k = keyOf(c.name); if (kept[k]) { c.design = kept[k]; delete kept[k]; } });
     if (up.commander) deck.commander = up.commander;
     deck.upgrades = deck.upgrades.filter(function (u) { return u.id !== upgradeId; });
     deck.updatedAt = now;
@@ -484,9 +489,9 @@
       decks.forEach(function (d) {
         var q = 0;
         d.cards.forEach(function (c) {
-          if (keyOf(c.name) !== k) return;
+          if (keyOf(c.name) !== k || c.design) return;
           q += c.qty;
-          if (d.kind === 'binder' || isFreeDeck(d)) pool.push({ deckId: d.id, deckName: d.name, kind: d.kind, set: c.set || '', cn: c.cn || '', left: c.qty });
+          if ((d.kind === 'binder' || isFreeDeck(d))) pool.push({ deckId: d.id, deckName: d.name, kind: d.kind, set: c.set || '', cn: c.cn || '', left: c.qty });
         });
         if (!q) return;
         if (d.kind === 'binder') loose += q;
@@ -538,11 +543,11 @@
           var left = got, moved = [];
           deck.cards.forEach(function (c) {
             if (left > 0 && keyOf(c.name) === it.key && (kind === 'other' || samePrint(row, c))) {
-              var t = Math.min(c.qty, left); c.qty -= t; left -= t; moved.push({ name: c.name, set: c.set, cn: c.cn, qty: t });
+              var t = Math.min(c.qty, left); c.qty -= t; left -= t; moved.push({ name: c.name, set: c.set, cn: c.cn, qty: t, design: c.design });
             }
           });
           deck.cards = deck.cards.filter(function (c) { return c.qty > 0; });
-          moved.forEach(function (m) { addCopies(deck, { name: m.name, set: row.set || m.set, cn: row.set ? row.cn : m.cn }, m.qty); });
+          moved.forEach(function (m) { addCopies(deck, { name: m.name, set: row.set || m.set, cn: row.set ? row.cn : m.cn, design: m.design }, m.qty); });
           done.push({ name: it.name, qty: got, deckId: src.id, deckName: src.name, kind: src.kind, from: kind, set: row.set, cn: row.cn });
         });
       });
@@ -553,10 +558,12 @@
   /* ---------- Stato ---------- */
   function sanitizeCards(arr) {
     return (Array.isArray(arr) ? arr : []).map(function (c) {
-      return {
+      var o = {
         name: String(c && c.name || '').trim(), qty: Math.max(1, parseInt(c && c.qty, 10) || 1),
         set: String(c && c.set || ''), cn: String(c && c.cn || '')
       };
+      if (c && typeof c.design === 'string' && c.design) o.design = c.design;
+      return o;
     }).filter(function (c) { return c.name; });
   }
   function sanitizeDeck(d) {
