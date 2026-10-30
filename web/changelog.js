@@ -3,6 +3,10 @@
 window.CPA_CHANGELOG = [
   { v: '3.1.0', date: '30 ottobre 2026', title: 'Più cornici ed extra', items: [
     { t: 'Nuove cornici', d: 'Nyx (Theros), Terre M15, Neve (Kaldheim), Devoid (Zendikar) e Miracle: le trovi nel menu «Cornice importata», con scelta automatica sui colori.' },
+    { t: 'Scegli la stampa', d: 'Quando parti da una carta esistente, un menu ti fa scegliere la stampa (il set): cambia arte, collezione, numero, rarità, artista e testo di colore, e il testo della carta resta quello che hai scritto.' },
+    { t: 'Cartelle nel Designer', d: 'Raggruppi i tuoi design in cartelle (per mazzo, per cube, per uso…): le crei, rinomini ed elimini dalla lista, e sposti ogni carta dal suo menu «Cartella». Eliminando una cartella i design restano, senza cartella.' },
+    { t: 'Elimina dalla lista', d: 'Ogni design ha il pulsante «Elimina» direttamente nella lista, con una conferma, senza dover entrare nella modifica.' },
+    { t: 'Un solo «Nuova carta»', d: 'Tolti «Nuovo token» e «Alter di una carta»: sono già dentro «Nuova carta» (cornice token, e «Parti da una carta esistente»).' },
     { t: 'Extra della cornice', d: 'Nell\'editor c\'è la sezione «Extra della cornice»: corona leggendaria (normale o fluttuante), corona interna (Nyx o Compagno), stampo olografico, forza/costituzione scura, pips dell\'identità di colore e il timbro «The List».' }
   ] },
   { v: '3.0.0', date: '30 ottobre 2026', title: 'Coglio Proxy Designer', items: [

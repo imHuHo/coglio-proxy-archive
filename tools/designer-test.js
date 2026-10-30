@@ -33,7 +33,8 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
 
   const mkCard = (name) => ({ id: name, name, set: 'tst', collector_number: '1', border_color: 'black', layout: 'normal', image_status: 'highres_scan',
     image_uris: { small: 'https://cards.scryfall.io/small/a.jpg', normal: 'https://cards.scryfall.io/normal/a.jpg', large: 'https://cards.scryfall.io/large/a.jpg', art_crop: 'https://cards.scryfall.io/art_crop/a.png' },
-    mana_cost: '{R}', type_line: 'Instant', oracle_text: 'Lightning Bolt deals 3 damage to any target.', flavor_text: 'The sparkmage shrieked.', rarity: 'common', colors: ['R'], artist: 'Christopher Moeller' });
+    mana_cost: '{R}', type_line: 'Instant', oracle_text: 'Lightning Bolt deals 3 damage to any target.', flavor_text: 'The sparkmage shrieked.', rarity: 'common', colors: ['R'], artist: 'Christopher Moeller',
+    set_name: 'Test Set', released_at: '2011-01-01', prints_search_uri: 'https://api.scryfall.com/cards/search?order=released&unique=prints&q=oracleid%3Aabc' });
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   await ctx.route('https://cards.scryfall.io/**', r => r.request().url().includes('art_crop') ? r.fulfill({ status: 200, contentType: 'image/png', body: artPng, headers: { 'access-control-allow-origin': '*' } }) : r.fulfill({ status: 200, contentType: 'image/jpeg', body: jpg, headers: { 'access-control-allow-origin': '*' } }));
   await ctx.route('https://api.scryfall.com/**', r => {
@@ -43,6 +44,10 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
       const q = u.searchParams.get('fuzzy') || u.searchParams.get('exact') || '';
       if (/nonexist/i.test(q)) return r.fulfill({ status: 404, contentType: 'application/json', headers: h, body: '{}' });
       return r.fulfill({ status: 200, contentType: 'application/json', headers: h, body: JSON.stringify(mkCard('Lightning Bolt')) });
+    }
+    if (u.pathname === '/cards/search') {
+      const a = mkCard('Lightning Bolt'), b = Object.assign(mkCard('Lightning Bolt'), { id: 'p2', set: 'xyz', set_name: 'Altra Edizione', collector_number: '99', released_at: '2015-01-01', rarity: 'rare', artist: 'Altro Artista', flavor_text: 'Altro testo.' });
+      return r.fulfill({ status: 200, contentType: 'application/json', headers: h, body: JSON.stringify({ object: 'list', has_more: false, data: [a, b] }) });
     }
     if (u.pathname === '/cards/collection') {
       const ids = JSON.parse(r.request().postData()).identifiers;
@@ -140,7 +145,7 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
 
   /* alter da Scryfall */
   await page.click('[data-a="dz-back"]');
-  await page.click('[data-a="dz-new"][data-k="alter"]');
+  await page.click('[data-a="dz-new"][data-k="card"]');
   await page.waitForSelector('[data-c="dz-q"]');
   await page.fill('[data-c="dz-q"]', 'nonexistent card');
   await page.click('[data-a="dz-alter"]');
@@ -151,7 +156,16 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await page.waitForFunction(() => /Importata: Lightning Bolt/.test(document.body.innerText));
   ok(await page.inputValue('[data-c="dz-f"][data-k="name"]') === 'Lightning Bolt', 'nome importato');
   ok((await page.inputValue('[data-c="dz-f"][data-k="rules"]')).includes('3 damage'), 'testo importato');
+  await page.waitForSelector('[data-c="dz-art"][data-k="s"]');
   ok(await page.locator('[data-c="dz-art"][data-k="s"]').count() === 1, 'arte importata da Scryfall');
+  /* scelta della stampa */
+  await page.waitForSelector('[data-c="dz-print"]');
+  ok(await page.locator('[data-c="dz-print"] option').count() === 2, 'due stampe disponibili');
+  ok((await page.inputValue('[data-c="dz-print"]')) === '0', 'la stampa importata \u00e8 quella selezionata');
+  await page.selectOption('[data-c="dz-print"]', '1');
+  await page.waitForFunction(() => /Stampa scelta: Altra Edizione/.test(document.body.innerText));
+  ok(await page.evaluate(() => { const d = CPADesigner.state.cur; return d.set === 'XYZ' && d.num === '99' && d.rarity === 'rare' && d.artist === 'Altro Artista' && d.flavor === 'Altro testo.'; }), 'la stampa cambia collezione, numero, rarit\u00e0, artista e testo di colore');
+  ok(await page.inputValue('[data-c="dz-f"][data-k="name"]') === 'Lightning Bolt', 'il testo della carta resta');
   await page.waitForTimeout(200);
 
   /* sostituzione di una carta del mazzo */
@@ -299,6 +313,38 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await page.click('[data-a="dz-back"]');
   await go(); await nav('designer'); await page.waitForSelector('.dz-item');
   ok(await page.evaluate(() => CPADesigner.state.frames.filter(f => f.group === 'bnd').length) === 0, 'tolte dall\u2019utente, non tornano al riavvio');
+
+  /* elimina dalla lista e cartelle */
+  await page.waitForSelector('.dz-item');
+  ok(await page.locator('[data-a="dz-new"][data-k="token"], [data-a="dz-new"][data-k="alter"]').count() === 0, 'tolti i pulsanti token e alter');
+  const nAll = await page.locator('.dz-item').count();
+  await page.click('[data-a="dz-f-new"]'); await page.fill('[data-c="dz-ftext"]', 'Cube'); await page.click('[data-a="dz-f-save"]');
+  await page.waitForFunction(() => /Cube \(0\)/.test(document.body.innerText));
+  ok(/Questa cartella \u00e8 vuota/.test(await text()), 'cartella vuota creata');
+  await page.click('[data-a="dz-new"][data-k="card"]'); await page.waitForSelector('#dz-cv');
+  ok(await page.evaluate(() => CPADesigner.state.cur.folder) === 'Cube', 'la nuova carta nasce nella cartella aperta');
+  await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item');
+  ok(await page.locator('.dz-item').count() === 1, 'nella cartella c\u2019\u00e8 solo la sua carta');
+  await page.click('[data-a="dz-f-pick"][data-v="*"]');
+  ok(await page.locator('.dz-item').count() === nAll + 1, 'Tutte mostra ogni design');
+  await page.locator('select[data-c="dz-move"]').last().selectOption('Cube');
+  await page.click('[data-a="dz-f-pick"][data-v="Cube"]');
+  ok(await page.locator('.dz-item').count() === 2, 'spostato un design nella cartella dal menu');
+  await go(); await nav('designer'); await page.waitForSelector('.dz-item');
+  ok(/Cube \(2\)/.test(await text()), 'cartelle e assegnazioni restano dopo il riavvio');
+  await page.click('[data-a="dz-f-pick"][data-v="Cube"]');
+  await page.click('[data-a="dz-f-rename"]'); await page.fill('[data-c="dz-ftext"]', 'Cubo'); await page.click('[data-a="dz-f-save"]');
+  await page.waitForFunction(() => /Cubo \(2\)/.test(document.body.innerText));
+  ok(await page.evaluate(() => CPADesigner.list().filter(d => d.folder === 'Cubo').length) === 2, 'rinominata la cartella, i design la seguono');
+  await page.locator('[data-a="dz-item-del"]').first().click();
+  ok(/Conferma/.test(await page.innerText('[data-a="dz-item-del"]')), 'eliminazione dalla lista chiede conferma');
+  await page.locator('[data-a="dz-item-del"]').first().click();
+  await page.waitForFunction(() => document.querySelectorAll('.dz-item').length === 1);
+  ok(true, 'design eliminato direttamente dalla lista');
+  await page.click('[data-a="dz-f-del"]'); await page.click('[data-a="dz-f-del"]');
+  await page.waitForFunction(() => !/Cubo \(/.test(document.body.innerText));
+  ok(await page.evaluate(() => CPADesigner.list().every(d => !d.folder)), 'cartella eliminata: i design restano, senza cartella');
+  await page.click('[data-a="dz-f-pick"][data-v="*"]');
 
   /* mobile: sei voci nel menu in basso */
   await page.setViewportSize({ width: 390, height: 800 });
