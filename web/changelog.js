@@ -1,6 +1,10 @@
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '3.3.0', date: '31 ottobre 2026', title: 'Bicolore e carte bifronte', items: [
+    { t: 'Cornici e corone a due colori', d: 'Nel Designer puoi mescolare due colori nella cornice (e, con le cornici importate, anche nella corona): il secondo compare da destra con una sfumatura, come nei bicolori di Card Conjurer, anche sul riquadro di forza e costituzione. Le carte con costo ibrido, ad esempio {W/U}, lo prendono da sole.' },
+    { t: 'Tasto Trasforma', d: 'Ogni design può avere un retro: il tasto «Trasforma» nell\'editor gira la carta e ti fa modificare l\'altra faccia. Importando una carta bifronte da Scryfall (trasformabile o modale) il retro arriva già con testo, arte e cornice del retro. Nel Builder il retro si stampa come retro della carta.' },
+  ] },
   { v: '3.2.1', date: '30 ottobre 2026', title: 'Token nel Builder', items: [
     { t: 'Token del mazzo', d: 'Nel Builder, spuntando «Aggiungi i token», i token collegati alle carte del mazzo compaiono in un elenco a parte, con anteprima, e finiscono nel PDF e nell\'anteprima. Senza doppioni: una copia ciascuno, ma cambi la quantità (0 = non stamparlo) o scegli un\'altra stampa. Valgono anche per le carte con un design del Designer.' },
   ] },

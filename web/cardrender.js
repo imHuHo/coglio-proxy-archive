@@ -63,12 +63,18 @@
     return {
       id: '', kind: kind || 'card', name: token ? 'Token' : 'Nuova carta', cost: token ? '' : '{1}{U}', type: token ? 'Token Creature — Spirit' : 'Creature — Wizard',
       rules: token ? 'Flying' : 'Flying\n{T}: Draw a card, then discard a card.', flavor: '', pt: token ? '1/1' : '2/3', rarity: 'common', set: 'CST', num: '001', artist: '',
-      watermark: '', crown: '', inner: '', holo: '', darkpt: '', pips: '', list: '', frame: DEFAULT_KINDS[kind] || 'classic', colors: token ? 'U' : 'U', palette: 'auto', border: 'black', corners: 'round', alterOf: '',
+      watermark: '', crown: '', cmix: '', mix: '', inner: '', holo: '', darkpt: '', pips: '', list: '', frame: DEFAULT_KINDS[kind] || 'classic', colors: token ? 'U' : 'U', palette: 'auto', border: 'black', corners: 'round', alterOf: '',
       art: { id: '', x: 0, y: 0, s: 1 }, frameImg: '', ink: 'dark', createdAt: 0, updatedAt: 0
     };
   }
 
+  /* due colori mescolati (sinistra → destra): «BR» = nero a sinistra, rosso a destra */
+  function mixOf(v) {
+    var m = String(v || '').toUpperCase().replace(/[^WUBRG]/g, '');
+    return m.length === 2 && m[0] !== m[1] ? m : null;
+  }
   function paletteKey(d) {
+    var mx = mixOf(d.mix); if (mx) return mx[0];
     if (d.palette && d.palette !== 'auto' && PAL[d.palette]) return d.palette;
     var cs = String(d.colors || '').toUpperCase().replace(/[^WUBRG]/g, '');
     cs = cs.split('').filter(function (c, i, a) { return a.indexOf(c) === i; }).join('');
@@ -292,14 +298,27 @@
   }
   /* extra delle cornici importate (corone, stampi, P/C scuro, pips, The List): chiavi in ordine dal basso verso l'alto */
   function overlaysFor(d, pk) {
-    var o = RES.overlays, keys = [], ex = pk === 'L' || pk === 'C' ? 'A' : pk;
-    if (d.darkpt) keys.push('darkpt:' + (pk === 'L' ? 'C' : pk));
-    if (d.crown === 'legend') keys.push('crown:' + pk); else if (d.crown === 'floating') keys.push('fcrown:' + pk);
-    if (d.inner === 'nyx' || d.inner === 'comp') keys.push('inner:' + d.inner + ':' + ex);
-    if (d.holo === 'color') keys.push('holo:' + pk); else if (d.holo) keys.push('holo:' + d.holo);
-    if (d.pips) { var cs = ('WUBRG').split('').filter(function (c) { return String(d.colors || '').toUpperCase().indexOf(c) >= 0; }).join(''); if (cs) keys.push('pips:' + cs); }
-    if (d.list) keys.push('list:' + d.list);
-    return keys.map(function (k) { return o[k]; }).filter(Boolean);
+    var o = RES.overlays, keys = [], ex = pk === 'L' || pk === 'C' ? 'A' : pk, cm = mixOf(d.cmix), ck = cm ? cm[0] : pk, out = [];
+    function add(k, mask) { var v = o[k]; if (v) out.push(mask ? { img: v.img, b: v.b, erase: v.erase, mask: true } : v); }
+    if (d.darkpt) add('darkpt:' + (pk === 'L' ? 'C' : pk));
+    if (d.crown === 'legend' || d.crown === 'floating') {
+      var pre = d.crown === 'legend' ? 'crown:' : 'fcrown:';
+      add(pre + ck); if (cm) add(pre + cm[1], true);
+    }
+    if (d.inner === 'nyx' || d.inner === 'comp') add('inner:' + d.inner + ':' + ex);
+    if (d.holo === 'color') add('holo:' + pk); else if (d.holo) add('holo:' + d.holo);
+    if (d.pips) { var cs = ('WUBRG').split('').filter(function (c) { return String(d.colors || '').toUpperCase().indexOf(c) >= 0; }).join(''); if (cs) add('pips:' + cs); }
+    if (d.list) add('list:' + d.list);
+    return out;
+  }
+  /* strato che compare da sinistra a destra: serve per mescolare due cornici o due corone */
+  function rightLayer(src, b) {
+    var c = document.createElement('canvas'); c.width = W; c.height = H; var x = c.getContext('2d');
+    if (b) x.drawImage(src, b[0], b[1], b[2], b[3]); else x.drawImage(src, 0, 0, W, H);
+    x.globalCompositeOperation = 'destination-in';
+    var g = x.createLinearGradient(W * 0.36, 0, W * 0.64, 0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,1)');
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    return c;
   }
   function drawType(ctx, d, L, pal, over, user) {
     var r = L.type, ink = zoneInk(user, 'type', over || (user && user.ink === 'light') ? '#ffffff' : pal.ink);
@@ -514,12 +533,14 @@
       ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
       var ar = (assets.frameGeo && assets.frameGeo.art) || LAYOUT.classic.art; if (d.frame === 'fullart' || d.frame === 'borderless') ar = [0, 0, W, H];
       if (hasArt) drawArtImage(ctx, assets.art, ar, d.art); else { ctx.fillStyle = '#26222c'; ctx.fillRect(0, 0, W, H); }
-      var ovs = overlaysFor(d, pk), er = ovs.filter(function (o) { return o.erase; })[0];
-      if (er) { var tc = document.createElement('canvas'); tc.width = W; tc.height = H; var tx = tc.getContext('2d'); tx.drawImage(assets.frameImg, 0, 0, W, H); tx.clearRect(er.erase[0], er.erase[1], er.erase[2], er.erase[3]); ctx.drawImage(tc, 0, 0); }
-      else ctx.drawImage(assets.frameImg, 0, 0, W, H);
+      var ovs = overlaysFor(d, pk), er = ovs.filter(function (o) { return o.erase; })[0], mx = mixOf(d.mix) && assets.frameImg2 ? assets.frameImg2 : null;
+      var piece = function (img) { if (!er) return img; var tc = document.createElement('canvas'); tc.width = W; tc.height = H; var tx = tc.getContext('2d'); tx.drawImage(img, 0, 0, W, H); tx.clearRect(er.erase[0], er.erase[1], er.erase[2], er.erase[3]); return tc; };
+      ctx.drawImage(piece(assets.frameImg), 0, 0, W, H);
+      if (mx) ctx.drawImage(rightLayer(piece(mx)), 0, 0);
       if (assets.frameGeo && assets.frameGeo.panel && !L.walker && !L.saga) { var bx = L.box; ctx.fillStyle = assets.frameGeo.panel; ctx.fillRect(bx[0] + 4, bx[1] + 4, bx[2] - 8, bx[3] - 8); }
-      if (assets.ptImg && L.pt && String(d.pt || '').trim() && !L.walker) ctx.drawImage(assets.ptImg, 0, 0, W, H);
-      ovs.forEach(function (o) { ctx.drawImage(o.img, o.b[0], o.b[1], o.b[2], o.b[3]); });
+      var pti = mx && assets.ptImg2 ? assets.ptImg2 : assets.ptImg;
+      if (pti && L.pt && String(d.pt || '').trim() && !L.walker) ctx.drawImage(pti, 0, 0, W, H);
+      ovs.forEach(function (o) { if (o.mask) ctx.drawImage(rightLayer(o.img, o.b), 0, 0); else ctx.drawImage(o.img, o.b[0], o.b[1], o.b[2], o.b[3]); });
       ctx.restore();
     } else if (over) {
       /* arte a tutta carta */
@@ -533,6 +554,8 @@
       /* corpo della cornice */
       var fx = b, fy = b, fw = W - 2 * b, fh = H - 2 * b;
       ctx.save(); rr(ctx, fx, fy, fw, fh, 12); ctx.fillStyle = vgrad(ctx, fy, fh, pal.a, pal.b); ctx.fill();
+      var mk = mixOf(d.mix), pal2 = mk && PAL[mk[1]];
+      if (pal2) { var t2 = document.createElement('canvas'); t2.width = W; t2.height = H; var x2 = t2.getContext('2d'); rr(x2, fx, fy, fw, fh, 12); x2.fillStyle = vgrad(x2, fy, fh, pal2.a, pal2.b); x2.fill(); ctx.drawImage(rightLayer(t2), 0, 0); }
       var np = noisePattern(ctx); if (np) { ctx.fillStyle = np; ctx.fill(); }
       var vg = ctx.createRadialGradient(W / 2, H / 2, 300, W / 2, H / 2, 720); vg.addColorStop(0, 'rgba(255,255,255,0.10)'); vg.addColorStop(1, 'rgba(0,0,0,0.18)'); ctx.fillStyle = vg; ctx.fill();
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.35)'; rr(ctx, fx + 3, fy + 3, fw - 6, fh - 6, 10); ctx.stroke(); ctx.restore();
@@ -558,7 +581,7 @@
   }
 
   return {
-    W: W, H: H, FRAMES: FRAMES, LAYOUT: LAYOUT, PAL: PAL, PAL_ORDER: PAL_ORDER, RARITY: RARITY, defaults: defaults, paletteKey: paletteKey,
+    W: W, H: H, FRAMES: FRAMES, LAYOUT: LAYOUT, PAL: PAL, PAL_ORDER: PAL_ORDER, RARITY: RARITY, defaults: defaults, paletteKey: paletteKey, mixOf: mixOf,
     render: render, tokenize: tokenize, costTokens: costTokens, parseWalker: parseWalker, parseSaga: parseSaga, drawSymbol: drawSymbol,
     F_UI: F_UI, setResources: setResources, hasSymbols: function () { return Object.keys(RES.symbols).length > 0; }, hasOverlays: function () { return Object.keys(RES.overlays).length > 0; }, hasWalker: function () { return !!RES.walker; }, hasWatermarks: function () { return Object.keys(RES.watermarks).length > 0; }
   };

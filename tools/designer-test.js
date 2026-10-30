@@ -45,6 +45,13 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
     if (u.pathname === '/cards/named') {
       const q = u.searchParams.get('fuzzy') || u.searchParams.get('exact') || '';
       if (/nonexist/i.test(q)) return r.fulfill({ status: 404, contentType: 'application/json', headers: h, body: '{}' });
+      if (/delver/i.test(q)) {
+        const im = { small: 'https://cards.scryfall.io/small/a.jpg', normal: 'https://cards.scryfall.io/normal/a.jpg', art_crop: 'https://cards.scryfall.io/art_crop/a.png' };
+        const dfc = Object.assign(mkCard('Delver of Secrets // Insectile Aberration'), { layout: 'transform', image_uris: undefined, mana_cost: undefined, type_line: undefined, oracle_text: undefined, card_faces: [
+          { name: 'Delver of Secrets', mana_cost: '{U}', type_line: 'Creature \u2014 Human Wizard', oracle_text: 'Transform at upkeep.', colors: ['U'], power: '1', toughness: '1', artist: 'Front Artist', image_uris: im },
+          { name: 'Insectile Aberration', mana_cost: '', type_line: 'Creature \u2014 Human Insect', oracle_text: 'Flying', colors: ['U'], power: '3', toughness: '2', artist: 'Back Artist', image_uris: im }] });
+        return r.fulfill({ status: 200, contentType: 'application/json', headers: h, body: JSON.stringify(dfc) });
+      }
       return r.fulfill({ status: 200, contentType: 'application/json', headers: h, body: JSON.stringify(mkCard('Lightning Bolt')) });
     }
     if (u.pathname === '/cards/search') {
@@ -414,7 +421,7 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   });
   ok(w.ext === 'M15BoxTopper' && w.old === 'Fourth' && w.abu === 'ABU' && w.m8 === '8th' && w.sta === 'MysticalArchive' && w.pw === 'PlaneswalkerRegular' && w.reg === 'M15RegularNew' && w.tok === null && w.borl === 'Borderless' && w.crown === 'legend', 'la cornice dedotta dai dati della carta: ' + JSON.stringify(w));
   await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
-  await page.evaluate(() => CPADesigner.applyFrameFor({ frame: '2015', layout: 'normal', type_line: 'Creature', set: 'xxx', border_color: 'black', frame_effects: ['extendedart', 'legendary'] }));
+  await page.evaluate(() => CPADesigner.applyFrameFor({ frame: '2015', layout: 'normal', type_line: 'Legendary Creature', set: 'xxx', border_color: 'black', frame_effects: ['extendedart', 'legendary'] }));
   await page.waitForSelector('.bd-mbox button[data-a="dz-dlg-yes"]');
   ok(/Extended Art/.test(await page.locator('.bd-mbox').innerText()), 'il dialogo nomina la cornice mancante');
   await page.click('.bd-mbox button[data-a="dz-dlg-yes"]');
@@ -423,6 +430,36 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   ok(true, 'cornice scaricata e applicata dal dialogo');
   await page.evaluate(() => CPADesigner.applyFrameFor({ frame: '2015', layout: 'normal', type_line: 'Creature', set: 'xxx', border_color: 'black', frame_effects: ['extendedart'] }));
   ok(await page.evaluate(() => !document.querySelector('.bd-mbox') && CPADesigner.state.cur.frameImg === 'auto:cc-M15BoxTopper'), 'se la cornice c’è già si applica senza chiedere');
+  await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item');
+
+  /* carta bifronte: retro importato da Scryfall, tasto Trasforma, retro nell'esportazione */
+  await page.click('[data-a="dz-new"][data-k="card"]'); await page.waitForSelector('[data-c="dz-q"]');
+  ok(/aggiungi il retro/.test(await page.locator('[data-a="dz-flip"]').innerText()), 'prima di importare il tasto propone di aggiungere il retro');
+  await page.fill('[data-c="dz-q"]', 'delver'); await page.click('[data-a="dz-alter"]');
+  await page.waitForFunction(() => /Importata: Delver/.test(document.body.innerText) && CPADesigner.state.root.back && CPADesigner.state.root.back.art.id);
+  ok(await page.evaluate(() => { const b = CPADesigner.state.root.back; return b.name === 'Insectile Aberration' && b.pt === '3/2' && b.rules === 'Flying' && b.artist === 'Back Artist'; }), 'il retro prende la seconda faccia di Scryfall');
+  const dlgBtn = await page.locator('.bd-mbox button[data-a="dz-dlg-no"]').count(); if (dlgBtn) await page.click('.bd-mbox button[data-a="dz-dlg-no"]');
+  ok(/mostra il retro/.test(await page.locator('[data-a="dz-flip"]').innerText()), 'tasto Trasforma: mostra il retro');
+  await page.click('[data-a="dz-flip"]');
+  ok(await page.inputValue('[data-c="dz-f"][data-k="name"]') === 'Insectile Aberration' && /mostra il fronte/.test(await page.locator('[data-a="dz-flip"]').innerText()), 'Trasforma mostra e modifica il retro');
+  ok(await page.locator('[data-a="dz-alter"]').count() === 0 && await page.locator('[data-a="dz-add"]').count() === 0, 'sul retro niente importazione e niente mazzo');
+  await page.fill('[data-c="dz-f"][data-k="name"]', 'Retro modificato'); await page.waitForTimeout(450);
+  await page.click('[data-a="dz-flip"]');
+  ok(await page.inputValue('[data-c="dz-f"][data-k="name"]') === 'Delver of Secrets', 'di nuovo sul fronte');
+  ok(await page.evaluate(async () => { const r = CPADesigner.state.root, f = await CPADesigner.renderBlob(r.id, {}), b = await CPADesigner.renderBlob(r.id, { face: 'back' }); return f.size > 1000 && b.size > 1000 && CPADesigner.hasBack(r.id) && r.back.name === 'Retro modificato'; }), 'fronte e retro si disegnano e il retro si salva');
+  const idBd = await page.evaluate(() => CPADesigner.state.root.id);
+  await page.click('[data-a="dz-dup"]'); await page.waitForFunction(id => CPADesigner.state.root.id !== id, idBd);
+  ok(await page.evaluate(() => { const b = CPADesigner.state.root.back; return !!b && b.name === 'Retro modificato' && !!b.art.id; }), 'duplicare porta con sé anche il retro e la sua arte');
+  await page.click('[data-a="dz-back-del"]');
+  ok(await page.evaluate(() => !CPADesigner.state.root.back), 'tolto il retro');
+  /* due colori */
+  await page.evaluate(() => { const d = CPADesigner.state.cur; d.mix = 'BR'; d.cmix = 'BR'; d.crown = 'legend'; });
+  ok(await page.evaluate(() => CPACard.mixOf('BR') === 'BR' && CPACard.mixOf('BB') === null && CPACard.paletteKey({ mix: 'RG', colors: 'W' }) === 'R'), 'la cornice a due colori usa il colore di sinistra come base');
+  await page.selectOption('[data-c="dz-mix"][data-k="mix"][data-side="0"]', 'W'); await page.selectOption('[data-c="dz-mix"][data-k="mix"][data-side="1"]', 'U');
+  ok(await page.evaluate(() => CPADesigner.state.cur.mix) === 'WU', 'i selettori impostano la cornice a due colori');
+  await page.selectOption('[data-c="dz-mix"][data-k="mix"][data-side="1"]', ''); ok(await page.evaluate(() => CPADesigner.state.cur.mix) === '', 'togliendo un colore la cornice torna normale');
+  const hy = await page.evaluate(() => CPADesigner.wantFrame({ frame: '2015', layout: 'normal', type_line: 'Creature', set: 'x', border_color: 'black', mana_cost: '{W/U}{W/U}', colors: ['W', 'U'] }).mix);
+  ok(hy === 'WU', 'una carta ibrida prende la cornice a due colori');
   await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item');
 
   /* mobile: sei voci nel menu in basso */

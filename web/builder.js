@@ -51,6 +51,12 @@
           return X.fromFile(blob, P.parseJpeg).then(function (img) {
             e.custom = img; e.fromDesign = true; try { e.thumb = URL.createObjectURL(blob); } catch (er) { e.thumb = null; }
           });
+        }).then(function () {
+          /* carta bifronte: il retro del design si stampa come retro della carta */
+          if (!D.hasBack || !D.hasBack(e.design)) return;
+          return D.renderBlob(e.design, { type: 'image/jpeg', square: true, quality: 0.95, face: 'back' }).then(function (bb) {
+            return X.fromFile(bb, P.parseJpeg).then(function (img) { e.customBack = img; try { e.thumbBack = URL.createObjectURL(bb); } catch (er) { e.thumbBack = null; } });
+          });
         }).catch(function () { delete e.design; lost++; });
       }));
     }).then(function () {

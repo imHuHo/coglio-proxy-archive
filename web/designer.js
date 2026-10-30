@@ -40,7 +40,7 @@
   })();
 
   /* ---------- stato ---------- */
-  var dz = { costOpen: false, loaded: false, loading: null, designs: [], frames: [], res: [], folders: [], folder: '*', fEdit: null, fText: '', fConfirm: false, itemConfirm: '', prints: { list: [], busy: false, msg: '' }, view: 'list', cur: null, artImg: null, frameImgs: {}, search: { q: '', busy: false, msg: '' }, focus: 'name',
+  var dz = { root: null, face: 'front', costOpen: false, loaded: false, loading: null, designs: [], frames: [], res: [], folders: [], folder: '*', fEdit: null, fText: '', fConfirm: false, itemConfirm: '', prints: { list: [], busy: false, msg: '' }, view: 'list', cur: null, artImg: null, frameImgs: {}, search: { q: '', busy: false, msg: '' }, focus: 'name',
     bind: null, picker: null, confirm: '', msg: '' };
   var artCache = {}, thumbTimer = null, drawTimer = null, saveTimer = null;
 
@@ -119,7 +119,7 @@
     });
     return Promise.all(jobs).then(function () { R.setResources({ fonts: fonts, symbols: syms, watermarks: wms, overlays: ovs, walker: wk }); });
   }
-  function norm(d) {
+  function norm(d, isFace) {
     var b = R.defaults(d && d.kind === 'token' ? 'token' : 'card'), o = {};
     Object.keys(b).forEach(function (k) { o[k] = d && d[k] != null ? d[k] : b[k]; });
     o.art = { id: String(d && d.art && d.art.id || ''), x: +(d && d.art && d.art.x) || 0, y: +(d && d.art && d.art.y) || 0, s: +(d && d.art && d.art.s) || 1 };
@@ -133,12 +133,16 @@
     o.folder = String(d && d.folder || '').slice(0, 40);
     o.frameImg = String(o.frameImg || ''); o.watermark = String(o.watermark || '');
     ['crown', 'inner', 'holo', 'darkpt', 'pips', 'list'].forEach(function (k) { o[k] = String(o[k] || ''); });
+    o.mix = R.mixOf(o.mix) || ''; o.cmix = R.mixOf(o.cmix) || '';
+    o.back = !isFace && d && d.back && typeof d.back === 'object' ? norm(d.back, true) : null;
+    if (o.back) o.back.id = o.id;
+    if (isFace) delete o.back;
     return o;
   }
   function byId(id) { return dz.designs.filter(function (d) { return d.id === id; })[0] || null; }
   function saveNow() {
     if (!dz.cur) return Promise.resolve();
-    var d = dz.cur; d.updatedAt = Date.now();
+    var d = dz.root && (dz.cur === dz.root || dz.cur === dz.root.back) ? dz.root : dz.cur; d.updatedAt = Date.now();
     if (!byId(d.id)) dz.designs.unshift(d);
     return DB.put('designs', clone(d)).catch(function () { H.toast('Non riesco a salvare il design su questo dispositivo.'); });
   }
@@ -159,10 +163,10 @@
     return artCache[id];
   }
   /* d.frameImg può essere l'id di una cornice, oppure «auto:<pacchetto>»: sceglie la cornice del pacchetto in base ai colori della carta */
-  function fid(d) {
+  function fid(d, key) {
     var v = d && d.frameImg; if (!v) return '';
     var m = /^auto:(.+)$/.exec(v); if (!m) return v;
-    var pk = R.paletteKey(d), list = dz.frames.filter(function (f) { return f.group === m[1]; });
+    var pk = key || R.paletteKey(d), list = dz.frames.filter(function (f) { return f.group === m[1]; });
     var f = list.filter(function (x) { return x.key === pk; })[0] || list.filter(function (x) { return x.key === 'C'; })[0] || list[0];
     return f ? f.id : '';
   }
@@ -174,6 +178,15 @@
     }).catch(function () { return null; });
     return dz.frameImgs[id];
   }
+  /* cornice (e, se la carta è bicolore, anche la seconda) pronta per il disegno */
+  function assetsFor(d) {
+    var mx = R.mixOf(d.mix);
+    return Promise.all([frameAssets(fid(d)), mx && /^auto:/.test(d.frameImg || '') ? frameAssets(fid(d, mx[1])) : null]).then(function (r) {
+      if (!r[0]) return null;
+      if (!r[1]) return r[0];
+      return { frameImg: r[0].frameImg, ptImg: r[0].ptImg, frameGeo: r[0].frameGeo, frameImg2: r[1].frameImg, ptImg2: r[1].ptImg };
+    });
+  }
   /* ridimensiona (lato lungo max) e converte in JPEG: l'arte occupa meno spazio e il PDF resta leggero */
   function shrink(fileOrBlob, max) {
     return blobImage(fileOrBlob).then(function (r) {
@@ -184,14 +197,14 @@
       return new Promise(function (res, rej) { c.toBlob(function (b) { if (b) res(b); else rej(new Error('conversione non riuscita')); }, 'image/jpeg', 0.9); });
     });
   }
-  function setArt(blob) {
-    var d = dz.cur; if (!d) return Promise.resolve();
+  function setArt(blob, target) {
+    var d = target || dz.cur; if (!d) return Promise.resolve();
     return shrink(blob, 1800).then(function (jb) {
       var old = d.art.id, id = uid('a');
       return DB.put('art', jb, id).then(function () {
         d.art = { id: id, x: 0, y: 0, s: 1 }; artCache[id] = DB.get('art', id).then(function (b) { return b ? blobImage(b).then(function (r) { return r.img; }) : null; });
         if (old) { delete artCache[old]; DB.del('art', old); }
-        return artCache[id].then(function (im) { dz.artImg = im; saveNow(); H.render(); });
+        return artCache[id].then(function (im) { if (d === dz.cur) dz.artImg = im; saveNow(); H.render(); });
       });
     }).catch(function (e) { H.toast('Immagine non caricata: ' + (e && e.message ? e.message : 'file non valido') + '.'); });
   }
@@ -207,12 +220,12 @@
     }
     return fontsP;
   }
-  function drawInto(ctx, d, art, fa, opt) { R.render(ctx, d, { art: art, frameImg: fa ? fa.frameImg : null, ptImg: fa ? fa.ptImg : null, frameGeo: fa ? fa.frameGeo : null }, opt); }
+  function drawInto(ctx, d, art, fa, opt) { R.render(ctx, d, { art: art, frameImg: fa ? fa.frameImg : null, ptImg: fa ? fa.ptImg : null, frameGeo: fa ? fa.frameGeo : null, frameImg2: fa ? fa.frameImg2 : null, ptImg2: fa ? fa.ptImg2 : null }, opt); }
   function renderBlob(designId, opt) {
     opt = opt || {};
     return load().then(function () {
-      var d = byId(designId); if (!d) throw new Error('design non trovato');
-      return Promise.all([artImage(d.art.id), frameAssets(fid(d)), fonts()]).then(function (a) {
+      var d = byId(designId); if (d && opt.face === 'back') d = d.back; if (!d) throw new Error('design non trovato');
+      return Promise.all([artImage(d.art.id), assetsFor(d), fonts()]).then(function (a) {
         var c = document.createElement('canvas'), sc = opt.scale || 1; c.width = Math.round(W * sc); c.height = Math.round(HH * sc);
         var ctx = c.getContext('2d'); if (sc !== 1) ctx.scale(sc, sc);
         drawInto(ctx, d, a[0], a[1], { square: !!opt.square });
@@ -224,13 +237,13 @@
     var cv = document.getElementById('dz-cv'), d = dz.cur;
     if (!cv || !d) return;
     var ctx = cv.getContext('2d');
-    frameAssets(fid(d)).then(function (fa) { if (dz.cur !== d) return; try { drawInto(cv.getContext('2d'), d, dz.artImg, fa, {}); } catch (e) { /* ignorato */ } });
+    assetsFor(d).then(function (fa) { if (dz.cur !== d) return; try { drawInto(cv.getContext('2d'), d, dz.artImg, fa, {}); } catch (e) { /* ignorato */ } });
   }
   function schedulePreview() { if (drawTimer) return; drawTimer = setTimeout(function () { drawTimer = null; drawPreview(); }, 24); }
   function drawThumbs() {
     [].slice.call(document.querySelectorAll('canvas.dz-th')).forEach(function (cv) {
       var d = byId(cv.getAttribute('data-id')); if (!d) return;
-      Promise.all([artImage(d.art.id), frameAssets(fid(d)), fonts()]).then(function (a) {
+      Promise.all([artImage(d.art.id), assetsFor(d), fonts()]).then(function (a) {
         if (!cv.isConnected) return;
         var ctx = cv.getContext('2d'); ctx.save(); ctx.scale(cv.width / W, cv.height / HH);
         try { drawInto(ctx, d, a[0], a[1], {}); } catch (e) { /* ignorato */ }
@@ -240,9 +253,9 @@
   }
 
   /* ---------- schermata ---------- */
-  function open() { H.ui.view = 'designer'; dz.view = 'list'; dz.cur = null; dz.picker = null; dz.dlg = null; window.scrollTo(0, 0); load().then(function () { H.render(); }); H.render(); }
+  function open() { H.ui.view = 'designer'; dz.view = 'list'; dz.cur = null; dz.root = null; dz.picker = null; dz.dlg = null; window.scrollTo(0, 0); load().then(function () { H.render(); }); H.render(); }
   function editDesign(d) {
-    dz.cur = d; dz.view = 'edit'; dz.artImg = null; dz.confirm = ''; dz.search = { q: d.alterOf || '', busy: false, msg: '' }; dz.prints = { list: [], busy: false, msg: '' }; dz.dlg = null;
+    dz.cur = d; dz.root = d; dz.face = 'front'; dz.view = 'edit'; dz.artImg = null; dz.confirm = ''; dz.search = { q: d.alterOf || '', busy: false, msg: '' }; dz.prints = { list: [], busy: false, msg: '' }; dz.dlg = null;
     artImage(d.art.id).then(function (a) { if (dz.cur === d) { dz.artImg = a; schedulePreview(); } });
     window.scrollTo(0, 0); H.render();
   }
@@ -250,6 +263,28 @@
     var d = norm(R.defaults(kind === 'token' ? 'token' : 'card')); d.id = uid('z'); d.kind = kind || 'card'; d.createdAt = Date.now(); d.updatedAt = d.createdAt; if (dz.folder && dz.folder !== '*') d.folder = dz.folder;
     if (kind === 'alter') { d.name = 'Alter'; d.rules = ''; d.cost = ''; d.type = ''; d.pt = ''; }
     dz.designs.unshift(d); saveNow(); editDesign(d);
+  }
+  /* ---------- carte bifronte: ogni design può avere un retro, che si modifica come una carta a sé ---------- */
+  function makeBack(r) {
+    var b = norm({ frame: r.frame, border: r.border, corners: r.corners, ink: r.ink, frameImg: r.frameImg, colors: r.colors, rarity: r.rarity, set: r.set, num: r.num,
+      name: 'Retro', cost: '', type: '', rules: '', flavor: '', pt: '', artist: '' }, true);
+    b.id = r.id; return b;
+  }
+  function dropBackArt(r) { if (r && r.back && r.back.art.id) { DB.del('art', r.back.art.id); delete artCache[r.back.art.id]; } }
+  function showFace(face) {
+    var r = dz.root; if (!r) return;
+    var t = face === 'back' && r.back ? r.back : r; dz.face = t === r ? 'front' : 'back'; dz.cur = t; dz.artImg = null; dz.confirm = '';
+    artImage(t.art.id).then(function (a) { if (dz.cur === t) { dz.artImg = a; schedulePreview(); } });
+    window.scrollTo(0, 0); H.render();
+  }
+  function flip() {
+    var r = dz.root; if (!r) return;
+    if (!r.back) { r.back = makeBack(r); saveNow(); }
+    showFace(dz.face === 'front' ? 'back' : 'front');
+  }
+  function removeBack() {
+    var r = dz.root; if (!r || !r.back) return;
+    dropBackArt(r); r.back = null; showFace('front'); saveNow();
   }
   function usesPT(d) { var L = R.LAYOUT[d.frame]; return !!(L && L.pt); }
 
@@ -511,21 +546,21 @@
   var SHOWSET = { sta: ['MysticalArchive', 'Mystical Archive'], wot: ['EnchantingTales', 'Enchanting Tales'], khm: ['Kaldheim-2', 'Kaldheim'], dmu: ['DMUStainedGlass', 'Stained Glass'], otp: ['BreakingNews', 'Breaking News'], pip: ['Pipboy', 'Pip-Boy'], who: ['TARDIS', 'TARDIS'], big: ['Vault', 'Vault'], cmr: ['CommanderLegends', 'Commander Legends'], dbl: ['DoubleFeature', 'Double Feature'] };
   function cand(b, id, name) { return { b: b, id: id, name: name }; }
   /* che cornice ha la carta di Scryfall? Restituisce { c: cornice, crown, holo, list } oppure null se non serve (token...) */
-  function wantFrame(c) {
-    var f0 = c.card_faces && !c.image_uris ? c.card_faces[0] : c, fx = c.frame_effects || [], pt = c.promo_types || [];
+  function wantFrame(c, fi) {
+    var bk = fi === 1, f0 = c.card_faces && !c.image_uris ? c.card_faces[bk && c.card_faces[1] ? 1 : 0] : c, fx = c.frame_effects || [], pt = c.promo_types || [];
     function has(e) { return fx.indexOf(e) >= 0; }
     var tl = String(f0.type_line || c.type_line || ''), fr = String(c.frame || '2015'), lay = String(c.layout || ''), set = String(c.set || '').toLowerCase();
     var bord = c.border_color === 'borderless', ext = has('extendedart'), full = !!c.full_art;
     if (lay === 'token' || lay === 'double_faced_token' || lay === 'emblem' || /\btoken\b/i.test(tl) && !/creature|artifact/i.test(tl)) return null;
     var out, isPW = /planeswalker/i.test(tl), isSaga = /\bsaga\b/i.test(tl), isLand = /\bland\b/i.test(tl), snow = /\bsnow\b/i.test(tl);
-    var tf = lay === 'transform' || lay === 'double_faced_token', mdfc = lay === 'modal_dfc', back = false;
+    var tf = lay === 'transform' || lay === 'double_faced_token', mdfc = lay === 'modal_dfc';
     if (fr === '1993') out = OLDSETS.indexOf(set) >= 0 ? cand('', 'ABU', 'Alpha/Beta/Unlimited') : cand('', 'Fourth', 'Fourth Edition');
     else if (fr === '1997') out = cand('', 'SeventhButFifth', 'Fifth Edition');
     else if (fr === 'future') out = cand('', 'FutureRegular', 'Future Shifted');
     else if (fr === '2003' && has('colorshifted')) out = cand('', 'Colorshifted', 'Colorshifted (Planar Chaos)');
     else if (fr === '2003') out = cand('m8', '8th', '8th Edition');
-    else if (isPW) out = has('compleated') ? cand('', 'PlaneswalkerCompleated', 'Compleated') : bord ? cand('', 'PlaneswalkerBorderless', 'Borderless — Planeswalker') : ext ? cand('', 'PlaneswalkerBoxTopper', 'Extended Art — Planeswalker') : mdfc ? cand('', 'PlaneswalkerMDFC', 'MDFC') : tf ? cand('', 'PlaneswalkerTransformFront', 'Transform (Front) — Planeswalker') : cand('pw', 'PlaneswalkerRegular', 'Planeswalker');
-    else if (isSaga) out = has('nyxtouched') ? cand('', 'SagaNyx', 'Saghe (Nyx)') : tf ? cand('', 'SagaDFC', 'Sagas (Front)') : cand('', 'SagaRegular', 'Saghe');
+    else if (isPW) out = has('compleated') ? cand('', 'PlaneswalkerCompleated', 'Compleated') : bord ? cand('', 'PlaneswalkerBorderless', 'Borderless — Planeswalker') : ext ? cand('', 'PlaneswalkerBoxTopper', 'Extended Art — Planeswalker') : mdfc ? cand('', 'PlaneswalkerMDFC', 'MDFC') : tf ? (bk ? cand('', 'PlaneswalkerTransformBack', 'Transform (Back) — Planeswalker') : cand('', 'PlaneswalkerTransformFront', 'Transform (Front) — Planeswalker')) : cand('pw', 'PlaneswalkerRegular', 'Planeswalker');
+    else if (isSaga) out = has('nyxtouched') ? cand('', 'SagaNyx', 'Saghe (Nyx)') : tf && !bk ? cand('', 'SagaDFC', 'Sagas (Front)') : cand('', 'SagaRegular', 'Saghe');
     else if (lay === 'adventure') out = cand('', 'Adventure', 'Adventures (Eldraine)');
     else if (lay === 'split') out = /\bfuse\b/i.test(String(c.oracle_text || '')) ? cand('', 'Fuse', 'Fuse Cards') : cand('', 'Split', 'Split Cards');
     else if (lay === 'flip') out = cand('', 'Flip', 'Flip (Kamigawa)');
@@ -534,7 +569,8 @@
     else if (has('etched')) out = has('nyxtouched') ? cand('', 'EtchedNyx', 'Etched (Nyx)') : snow ? cand('', 'EtchedSnow', 'Etched (Snow)') : cand('', 'Etched', 'Etched');
     else if (UBSETS.indexOf(set) >= 0 && !isLand) out = full || bord ? cand('', 'UBFull', 'Universes Beyond (Full art)') : ext ? cand('', 'UBExtendedArt', 'Universes Beyond (Extended art)') : cand('', 'UB', 'Universes Beyond');
     else if (mdfc) out = bord ? cand('', 'ModalBorderless', 'Borderless — Modali') : ext ? cand('', 'ModalExtended', 'Extended Art — Modali') : cand('', 'ModalRegular', 'Regular — Modali');
-    else if (tf) out = bord ? cand('', 'TransformBorderlessFront', 'Borderless (Front)') : ext ? cand('', 'TransformExtendedFront', 'Extended Art (Front)') : cand('', 'M15TransformFront', 'Transform (Front)');
+    else if (tf) out = bk ? (bord ? cand('', 'TransformBorderlessBack', 'Borderless (Back)') : ext ? cand('', 'TransformExtendedBack', 'Extended Art (Back)') : cand('', 'M15TransformBack', 'Transform (Back)')) :
+      bord ? cand('', 'TransformBorderlessFront', 'Borderless (Front)') : ext ? cand('', 'TransformExtendedFront', 'Extended Art (Front)') : cand('', 'M15TransformFront', 'Transform (Front)');
     else if (isLand && (full || bord)) out = snow ? cand('', 'FullartBasicRoundBottom', 'Fullart Snow Basics') : cand('', 'TextlessBasics', 'Fullart Basics (THB)');
     else if (isLand && !/\b(?:legendary|artifact|creature)\b/i.test(tl) && /basic/i.test(tl)) out = cand('lands', 'M15Lands', 'Terre M15');
     else if (has('showcase') && SHOWSET[set]) out = cand('', SHOWSET[set][0], SHOWSET[set][1]);
@@ -549,7 +585,11 @@
     else if (snow) out = cand('snow', 'M15Snow', 'Neve (Kaldheim)');
     else out = cand('m15', 'M15RegularNew', 'M15 moderna');
     var stamp = String(c.security_stamp || '');
-    return { c: out, crown: has('legendary') && !isPW && !isSaga ? 'legend' : '', holo: stamp === 'oval' ? 'color' : stamp === 'acorn' ? 'acorn' : '',
+    /* costo ibrido con due soli colori (es. {W/U}): la cornice vera è metà e metà */
+    var hy = [], mc = String(f0.mana_cost || c.mana_cost || ''), re = /\{([WUBRG])\/([WUBRG])\}/g, mm;
+    while ((mm = re.exec(mc))) [mm[1], mm[2]].forEach(function (x) { if (hy.indexOf(x) < 0) hy.push(x); });
+    var cols = (f0.colors || c.colors || []).join(''), mix = hy.length === 2 && cols.length === 2 && hy.every(function (x) { return cols.indexOf(x) >= 0; }) && !isPW && !isSaga ? hy.join('') : '';
+    return { c: out, mix: mix, crown: has('legendary') && /\blegendary\b/i.test(tl) && !isPW && !isSaga ? 'legend' : '', holo: stamp === 'oval' ? 'color' : stamp === 'acorn' ? 'acorn' : '',
       list: pt.indexOf('thelist') >= 0 ? (fr === '2015' ? 'regular' : 'old') : '' };
   }
   function candGroup(x) {
@@ -558,33 +598,47 @@
     return '';
   }
   /* imposta la cornice e gli extra della carta presa a modello; se il pacchetto manca chiede se scaricarlo */
-  function applyFrameFor(c) {
-    var d = dz.cur; if (!d || !c) return;
-    var w = wantFrame(c); if (!w) return;
-    d.crown = w.crown; d.holo = w.holo; d.list = w.list;
+  function applyFrameFor(c, target, fi) {
+    var d = target || dz.cur; if (!d || !c) return;
+    var w = wantFrame(c, fi); if (!w) return;
+    d.crown = w.crown; d.holo = w.holo; d.list = w.list; d.mix = w.mix; d.cmix = w.mix;
     var g = candGroup(w.c);
-    if (g) { dz.dlg = null; pickFrame(d, 'auto:' + g); return; }
-    if (w.c.id) dz.dlg = { d: d, x: w.c, busy: false, msg: '' };
+    if (g) { pickFrame(d, 'auto:' + g); return; }
+    if (w.c.id) {
+      var q = dz.dlg || (dz.dlg = { items: [], busy: false, msg: '' });
+      q.items = q.items.filter(function (it) { return it.d !== d; }); q.items.push({ d: d, x: w.c });
+    }
     saveSoon(); H.render();
   }
+  function dlgNames() {
+    var seen = [], out = [];
+    dz.dlg.items.forEach(function (it) { if (seen.indexOf(it.x.id) < 0) { seen.push(it.x.id); out.push('\u00ab' + esc(it.x.name) + '\u00bb'); } });
+    return out;
+  }
   function dlgHtml() {
-    var q = dz.dlg;
-    return '<div class="bd-modal" data-a="dz-dlg-no"><div class="bd-mbox" data-a="dz-keep" role="dialog" aria-label="Cornice mancante"><div class="bd-mhead"><strong>Cornice mancante</strong></div>' +
-      '<p>Per essere identica alla carta di riferimento serve la cornice «' + esc(q.x.name) + '», che non è ancora scaricata. Vuoi scaricarla ora?</p>' +
+    var q = dz.dlg, nm = dlgNames(), pl = nm.length > 1;
+    return '<div class="bd-modal" data-a="dz-dlg-no"><div class="bd-mbox" data-a="dz-keep" role="dialog" aria-label="Cornice mancante"><div class="bd-mhead"><strong>' + (pl ? 'Cornici mancanti' : 'Cornice mancante') + '</strong></div>' +
+      '<p>Per essere identica alla carta di riferimento ' + (pl ? 'servono le cornici ' : 'serve la cornice ') + nm.join(' e ') + ', che non ' + (pl ? 'sono ancora scaricate' : '\u00e8 ancora scaricata') + '. Vuoi ' + (pl ? 'scaricarle' : 'scaricarla') + ' ora?</p>' +
       (q.msg ? '<p class="hint" role="status">' + esc(q.msg) + '</p>' : '') +
-      '<div class="btns"><button class="btn primary" data-a="dz-dlg-yes"' + (q.busy ? ' disabled' : '') + '>' + (q.busy ? 'Scarico…' : 'Scarica e usa') + '</button><button class="btn" data-a="dz-dlg-no"' + (q.busy ? ' disabled' : '') + '>Tieni la cornice attuale</button></div></div></div>';
+      '<div class="btns"><button class="btn primary" data-a="dz-dlg-yes"' + (q.busy ? ' disabled' : '') + '>' + (q.busy ? 'Scarico\u2026' : 'Scarica e usa') + '</button><button class="btn" data-a="dz-dlg-no"' + (q.busy ? ' disabled' : '') + '>Tieni la cornice attuale</button></div></div></div>';
   }
   function dlgYes() {
     var q = dz.dlg; if (!q || q.busy) return;
     q.busy = true; q.msg = ''; H.render();
+    var ids = []; q.items.forEach(function (it) { if (ids.indexOf(it.x.id) < 0 && !candGroup(it.x)) ids.push(it.x.id); });
     loadCatalog().then(function () {
-      var e = (cat.list || []).filter(function (x) { return x.id === q.x.id; })[0];
-      if (!e) throw new Error('nocat');
-      return installPack(e);
-    }).then(function (ok) {
+      return ids.reduce(function (p, id) {
+        return p.then(function () {
+          var e = (cat.list || []).filter(function (x) { return x.id === id; })[0];
+          if (!e) throw new Error('nocat');
+          return installPack(e).then(function (ok) { if (!ok) throw new Error('fail'); });
+        });
+      }, Promise.resolve());
+    }).then(function () {
       if (dz.dlg !== q) return;
-      if (!ok) throw new Error('fail');
-      dz.dlg = null; if (dz.cur === q.d && candGroup(q.x)) pickFrame(q.d, 'auto:' + candGroup(q.x)); else H.render();
+      dz.dlg = null;
+      q.items.forEach(function (it) { var g = candGroup(it.x); if (g) pickFrame(it.d, 'auto:' + g); });
+      H.render();
     }).catch(function () { if (dz.dlg === q) { q.busy = false; q.msg = 'Non riesco a scaricarla: controlla la connessione e riprova.'; H.render(); } });
   }
   function printLabel(c) { return String(c.set_name || c.set || '').replace(/</g, '') + ' (' + String(c.set || '').toUpperCase() + ') \u00b7 #' + (c.collector_number || '?') + (c.released_at ? ' \u00b7 ' + String(c.released_at).slice(0, 4) : ''); }
@@ -633,7 +687,7 @@
       var fr = R.FRAMES.filter(function (f) { return f.id === d.frame; })[0];
       var used = deckUse(d.id), armed = dz.itemConfirm === d.id;
       return '<article class="dz-item"><button class="dz-thb" data-a="dz-open" data-id="' + esc(d.id) + '" aria-label="Apri ' + esc(d.name) + '"><canvas class="dz-th" data-id="' + esc(d.id) + '" width="186" height="260"></canvas></button>' +
-        '<div class="dz-meta"><b>' + esc(d.name || 'Senza nome') + '</b><span>' + esc(fr ? fr.name : '') + (d.kind === 'alter' ? ' · alter' : d.kind === 'token' ? ' · token' : '') + '</span>' +
+        '<div class="dz-meta"><b>' + esc(d.name || 'Senza nome') + '</b><span>' + esc(fr ? fr.name : '') + (d.kind === 'alter' ? ' · alter' : d.kind === 'token' ? ' · token' : '') + (d.back ? ' · bifronte' : '') + '</span>' +
         (used ? '<span class="pill info">in ' + used + (used === 1 ? ' mazzo' : ' mazzi') + '</span>' : '') + '</div>' +
         (names.length ? '<select class="select dz-move" data-c="dz-move" data-id="' + esc(d.id) + '" aria-label="Cartella di ' + esc(d.name) + '"><option value="">Senza cartella</option>' + names.map(function (n) { return '<option value="' + esc(n) + '"' + (d.folder === n ? ' selected' : '') + '>\uD83D\uDCC1 ' + esc(n) + '</option>'; }).join('') + '</select>' : '') +
         '<div class="btns"><button class="btn small" data-a="dz-open" data-id="' + esc(d.id) + '">Modifica</button><button class="btn small" data-a="dz-dup" data-id="' + esc(d.id) + '">Duplica</button>' +
@@ -645,19 +699,27 @@
     var n = 0; (H.decks() || []).forEach(function (dk) { if (dk.cards.some(function (c) { return c.design === id; })) n++; }); return n;
   }
 
+  var MIXC = [['', '\u2014'], ['W', 'Bianco'], ['U', 'Blu'], ['B', 'Nero'], ['R', 'Rosso'], ['G', 'Verde']];
+  function mixRow(title, k, v) {
+    var m = R.mixOf(v) || '', a = m[0] || '', b = m[1] || '';
+    function one(side, cur) { return '<select class="select" data-c="dz-mix" data-k="' + k + '" data-side="' + side + '" aria-label="' + esc(title) + (side ? ': destra' : ': sinistra') + '">' + MIXC.map(function (o) { return '<option value="' + o[0] + '"' + (cur === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>'; }
+    return '<div class="lbl"><span class="lbl-t">' + esc(title) + '</span><div class="dz-row">' + lbl('Sinistra', one(0, a)) + lbl('Destra', one(1, b)) + '</div>' + (m ? '' : '<p class="hint">Scegli due colori diversi: il secondo compare da destra con una sfumatura (come i bicolori e gli ibridi).</p>') + '</div>';
+  }
   function editHtml() {
     var d = dz.cur; if (!d) return listHtml();
     var net = H.available(), L = R.LAYOUT[d.frame], pk = R.paletteKey(d), cs = String(d.colors || '').toUpperCase();
-    var h = '<header class="vh"><button class="back" data-a="dz-back">← I miei design</button><h1>' + esc(d.name || 'Senza nome') + '</h1></header>';
+    var root = dz.root || d, isBack = d !== root && d === root.back;
+    var h = '<header class="vh"><button class="back" data-a="dz-back">← I miei design</button><h1>' + esc(d.name || 'Senza nome') + (isBack ? ' <span class="pill info">retro</span>' : root.back ? ' <span class="pill info">fronte</span>' : '') + '</h1></header>';
     h += '<div class="dz-edit"><div class="dz-prev"><canvas id="dz-cv" width="' + W + '" height="' + HH + '" aria-label="Anteprima della carta"></canvas>' +
       '<p class="hint dz-tip">Sull’arte: trascina per spostare, rotella per ingrandire.</p>' +
-      '<div class="btns"><button class="btn small primary" data-a="dz-png">Scarica PNG</button><button class="btn small" data-a="dz-jpg">Scarica JPG per stampa</button></div></div>';
+      '<div class="btns"><button class="btn small primary" data-a="dz-flip" aria-label="Trasforma la carta">\u27F2 ' + (!root.back ? 'Carta bifronte: aggiungi il retro' : isBack ? 'Trasforma: mostra il fronte' : 'Trasforma: mostra il retro') + '</button></div>' +
+      '<div class="btns"><button class="btn small primary" data-a="dz-png">Scarica PNG' + (isBack ? ' del retro' : '') + '</button><button class="btn small" data-a="dz-jpg">Scarica JPG per stampa' + (isBack ? ' del retro' : '') + '</button></div></div>';
     h += '<div class="dz-form">';
     /* cartella */
     var fnames = folderNames();
-    if (fnames.length) h += '<section class="panel">' + lbl('Cartella', sel('folder', d.folder, [['', 'Senza cartella']].concat(fnames.map(function (n) { return [n, '\uD83D\uDCC1 ' + n]; })))) + '</section>';
+    if (fnames.length && !isBack) h += '<section class="panel">' + lbl('Cartella', sel('folder', d.folder, [['', 'Senza cartella']].concat(fnames.map(function (n) { return [n, '\uD83D\uDCC1 ' + n]; })))) + '</section>';
     /* alter */
-    h += '<section class="panel"><h2 class="sect" style="margin:0">' + (d.kind === 'alter' ? 'Carta di partenza' : 'Parti da una carta esistente') + '</h2>' +
+    if (!isBack) h += '<section class="panel"><h2 class="sect" style="margin:0">' + (d.kind === 'alter' ? 'Carta di partenza' : 'Parti da una carta esistente') + '</h2>' +
       '<div class="dz-srch"><input class="input" data-c="dz-q" placeholder="Nome della carta (es. Lightning Bolt)" value="' + esc(dz.search.q) + '" autocomplete="off"><button class="btn" data-a="dz-alter"' + (dz.search.busy || !net ? ' disabled' : '') + '>' + (dz.search.busy ? 'Cerco…' : 'Importa') + '</button></div>' +
       '<p class="hint">' + (net ? 'Prende testo, costo, tipo e arte da Scryfall: poi cambi quello che vuoi.' : 'Serve internet: non disponibile dentro Claude.') + '</p>' +
       printsHtml(d, net) +
@@ -665,6 +727,7 @@
     /* cornice */
     h += '<section class="panel"><h2 class="sect" style="margin:0">Cornice</h2><div class="chips">' + R.FRAMES.map(function (f) { return chip('dz-set', 'frame', f.id, f.name, d.frame === f.id); }).join('') + '</div>' +
       '<div class="chips" aria-label="Colore">' + chip('dz-set', 'palette', 'auto', 'Auto (dai colori)', d.palette === 'auto') + R.PAL_ORDER.map(function (k) { return chip('dz-set', 'palette', k, R.PAL[k].name, d.palette === k); }).join('') + '</div>' +
+      mixRow('Cornice a due colori (sfumata)', 'mix', d.mix) +
       '<div class="dz-row">' + lbl('Bordo', sel('border', d.border, [['black', 'Nero'], ['white', 'Bianco'], ['silver', 'Argento'], ['gold', 'Oro']])) +
       lbl('Angoli', sel('corners', d.corners, [['round', 'Arrotondati'], ['square', 'Quadrati']])) + '</div>' +
       '<div class="lbl"><span class="lbl-t">Cornice (segue i colori della carta)</span>' + frameTiles(d) + '</div>' +
@@ -678,6 +741,7 @@
       h += '<section class="panel"><h2 class="sect" style="margin:0">Extra della cornice</h2>' +
         '<div class="dz-row">' + lbl('Corona leggendaria', sel('crown', d.crown, [['', 'Nessuna'], ['legend', 'Corona'], ['floating', 'Corona fluttuante']])) +
         lbl('Corona interna', sel('inner', d.inner, [['', 'Nessuna'], ['nyx', 'Nyx'], ['comp', 'Compagno']])) + '</div>' +
+        (d.crown ? mixRow('Corona a due colori (sfumata)', 'cmix', d.cmix) : '') +
         '<div class="dz-row">' + lbl('Stampo olografico', sel('holo', d.holo, [['', 'Nessuno'], ['color', 'A colori'], ['plain', 'Semplice'], ['gray', 'Grigio'], ['acorn', 'Ghianda'], ['alchemy', 'Alchemy']])) +
         lbl('«The List»', sel('list', d.list, [['', 'Nessuno'], ['regular', 'Post-M15'], ['old', 'Pre-M15']])) + '</div>' +
         '<div class="dz-row">' + lbl('Forza/Costituzione scura', sel('darkpt', d.darkpt, yn)) + lbl('Pips dell\u2019identità di colore', sel('pips', d.pips, yn)) + '</div>' +
@@ -701,9 +765,11 @@
       (d.art.id ? '<button class="btn small" data-a="dz-art-del">Togli</button><button class="btn small" data-a="dz-art-reset">Ricentra</button>' : '') + '</div>' +
       (d.art.id ? '<label class="lbl">Zoom' + rng('s', d.art.s, 0.4, 4, 0.01) + '</label><label class="lbl">Sposta in orizzontale' + rng('x', d.art.x, -500, 500, 1) + '</label><label class="lbl">Sposta in verticale' + rng('y', d.art.y, -500, 500, 1) + '</label>' : '<p class="hint">Qualsiasi immagine: viene ridotta e salvata solo su questo dispositivo.</p>') + '</section>';
     /* mazzo */
-    h += deckPanel(d);
+    if (!isBack) h += deckPanel(d);
     /* azioni */
-    h += '<section class="panel"><div class="btns"><button class="btn small" data-a="dz-dup" data-id="' + esc(d.id) + '">Duplica</button><button class="btn small" data-a="dz-export-one">Esporta design (.json)</button>' +
+    if (isBack) h += '<section class="panel"><p class="hint">Stai modificando il retro della carta. Cartella, mazzo, duplica ed elimina sono sul fronte.</p><div class="btns"><button class="btn small danger" data-a="dz-back-del">Togli il retro</button></div></section>';
+    else h += '<section class="panel"><div class="btns"><button class="btn small" data-a="dz-dup" data-id="' + esc(d.id) + '">Duplica</button><button class="btn small" data-a="dz-export-one">Esporta design (.json)</button>' +
+      (d.back ? '<button class="btn small danger" data-a="dz-back-del">Togli il retro</button>' : '') +
       '<button class="btn small danger' + (dz.confirm === 'del' ? ' armed' : '') + '" data-a="dz-del" data-cf="1">' + (dz.confirm === 'del' ? 'Conferma eliminazione' : 'Elimina design') + '</button></div></section>';
     return h + '</div></div>';
   }
@@ -792,27 +858,44 @@
     d.artist = f.artist || c.artist || ''; d.flavor = f.flavor_text || '';
     dz.search.msg = 'Stampa scelta: ' + printLabel(c) + '.';
     applyFrameFor(c);
-    var art = (f.image_uris || c.image_uris || {}).art_crop;
-    if (!art) { saveNow(); H.render(); return; }
+    var bf = d.back && c.card_faces && !c.image_uris && c.card_faces[1];
+    if (bf) { d.back.set = d.set; d.back.num = d.num; d.back.rarity = d.rarity; d.back.artist = bf.artist || c.artist || ''; d.back.flavor = bf.flavor_text || ''; applyFrameFor(c, d.back, 1); }
+    var art = (f.image_uris || c.image_uris || {}).art_crop, bart = bf && (bf.image_uris || {}).art_crop;
+    function backArt() { return bart ? fetchBlob(bart).then(function (b) { return setArt(b, d.back); }, function () { return null; }) : null; }
+    if (!art) { saveNow(); H.render(); backArt(); return; }
     dz.search.busy = true; H.render();
-    fetchBlob(art).then(function (b) { dz.search.busy = false; return setArt(b); }, function () { dz.search.busy = false; dz.search.msg += ' L\u2019arte non si \u00e8 scaricata: resta quella di prima.'; saveNow(); H.render(); });
+    fetchBlob(art).then(function (b) { dz.search.busy = false; return setArt(b, d); }, function () { dz.search.busy = false; dz.search.msg += ' L\u2019arte non si \u00e8 scaricata: resta quella di prima.'; saveNow(); H.render(); }).then(backArt);
+  }
+  /* i campi di una faccia di Scryfall, pronti per un design */
+  function faceFields(c, f, cur) {
+    var cols = (f.colors || c.colors || []).join(''), tl = String(f.type_line || c.type_line || ''), pt = f.power != null ? f.power + '/' + f.toughness : (f.loyalty || '');
+    var frame = /planeswalker/i.test(tl) ? 'planeswalker' : /saga/i.test(tl) ? 'saga' : c.layout === 'token' ? 'token' : (cur === 'planeswalker' || cur === 'saga' || cur === 'token' ? 'classic' : cur);
+    return { name: f.name || c.name, cost: f.mana_cost || '', type: tl, rules: String(f.oracle_text || ''), flavor: f.flavor_text || '', pt: String(pt || ''), colors: cols, artist: f.artist || c.artist || '', frame: frame, palette: 'auto' };
   }
   function alterFrom(name) {
     var d = dz.cur; if (!d || !name.trim()) return;
     dz.search.busy = true; dz.search.msg = ''; H.render();
     fetchJson('https://api.scryfall.com/cards/named?fuzzy=' + encodeURIComponent(name.trim())).then(function (c) {
-      var f = c.card_faces && !c.image_uris ? c.card_faces[0] : c, cols = (f.colors || c.colors || []).join('');
-      var tl = String(f.type_line || c.type_line || ''), rules = String(f.oracle_text || ''), pt = f.power != null ? f.power + '/' + f.toughness : (f.loyalty || '');
-      var frame = /planeswalker/i.test(tl) ? 'planeswalker' : /saga/i.test(tl) ? 'saga' : c.layout === 'token' ? 'token' : (d.frame === 'planeswalker' || d.frame === 'saga' || d.frame === 'token' ? 'classic' : d.frame);
-      d.name = f.name || c.name; d.cost = f.mana_cost || ''; d.type = tl; d.rules = rules; d.flavor = f.flavor_text || ''; d.pt = String(pt || '');
-      d.rarity = R.RARITY[c.rarity] ? c.rarity : 'common'; d.set = String(c.set || '').toUpperCase(); d.num = String(c.collector_number || ''); d.artist = f.artist || c.artist || '';
-      d.colors = cols; d.palette = 'auto'; d.frame = frame; d.alterOf = c.name; d.kind = d.kind === 'card' ? 'alter' : d.kind;
-      var art = (f.image_uris || c.image_uris || {}).art_crop;
-      dz.search.msg = 'Importata: ' + (c.name || name) + '.';
+      var f = c.card_faces && !c.image_uris ? c.card_faces[0] : c;
+      var ff = faceFields(c, f, d.frame); Object.keys(ff).forEach(function (k) { d[k] = ff[k]; });
+      d.rarity = R.RARITY[c.rarity] ? c.rarity : 'common'; d.set = String(c.set || '').toUpperCase(); d.num = String(c.collector_number || '');
+      d.alterOf = c.name; d.kind = d.kind === 'card' ? 'alter' : d.kind;
       applyFrameFor(c);
+      /* carta bifronte: il retro è la seconda faccia */
+      var bf = c.card_faces && !c.image_uris && c.card_faces.length > 1 && /^(transform|modal_dfc)$/.test(c.layout || '') ? c.card_faces[1] : null, bart = null;
+      if (bf) {
+        if (!d.back) d.back = makeBack(d);
+        var bb = faceFields(c, bf, d.back.frame); Object.keys(bb).forEach(function (k) { d.back[k] = bb[k]; });
+        d.back.rarity = d.rarity; d.back.set = d.set; d.back.num = d.num; d.back.border = d.border; d.back.corners = d.corners;
+        applyFrameFor(c, d.back, 1);
+        bart = (bf.image_uris || {}).art_crop;
+      } else if (d.back) { dropBackArt(d); d.back = null; }
+      var art = (f.image_uris || c.image_uris || {}).art_crop;
+      dz.search.msg = 'Importata: ' + (c.name || name) + (bf ? ' (carta bifronte: usa «Trasforma» per vedere il retro)' : '') + '.';
       dz.prints = { list: [], busy: false, msg: '' }; if (c.prints_search_uri) setTimeout(function () { loadPrints(c.prints_search_uri); }, 0);
-      if (!art) { dz.search.busy = false; saveNow(); H.render(); return; }
-      return fetchBlob(art).then(function (b) { dz.search.busy = false; return setArt(b); }, function () { dz.search.busy = false; dz.search.msg += ' Il testo è dentro, ma l’arte non si è scaricata: caricane una tua.'; saveNow(); H.render(); });
+      function backArt() { return bart ? fetchBlob(bart).then(function (b) { return setArt(b, d.back); }, function () { return null; }) : null; }
+      if (!art) { dz.search.busy = false; saveNow(); H.render(); return backArt(); }
+      return fetchBlob(art).then(function (b) { dz.search.busy = false; return setArt(b, d); }, function () { dz.search.busy = false; dz.search.msg += ' Il testo è dentro, ma l’arte non si è scaricata: caricane una tua.'; saveNow(); H.render(); }).then(backArt);
     }).catch(function (e) {
       dz.search.busy = false; dz.search.msg = e && e.status === 404 ? 'Non trovo una carta con quel nome su Scryfall.' : 'Non riesco a contattare Scryfall: controlla la connessione e riprova.'; H.render();
     });
@@ -846,7 +929,7 @@
     }
     var d = byId(id);
     dz.designs = dz.designs.filter(function (x) { return x.id !== id; });
-    DB.del('designs', id); if (d && d.art.id) { DB.del('art', d.art.id); delete artCache[d.art.id]; }
+    DB.del('designs', id); if (d && d.art.id) { DB.del('art', d.art.id); delete artCache[d.art.id]; } dropBackArt(d);
   }
 
   /* ---------- esporta / importa ---------- */
@@ -857,7 +940,8 @@
     var bin = atob(m[2]), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
     return new Blob([a], { type: m[1] });
   }
-  function packOne(d) { return artImage(d.art.id).then(function () { return DB.get('art', d.art.id); }).then(function (b) { return (b ? blobToDataUrl(b) : Promise.resolve('')).then(function (u) { return { design: d, art: u }; }); }); }
+  function packArt(face) { return face && face.art.id ? DB.get('art', face.art.id).then(function (b) { return b ? blobToDataUrl(b) : ''; }) : Promise.resolve(''); }
+  function packOne(d) { return Promise.all([packArt(d), packArt(d.back)]).then(function (u) { return { design: d, art: u[0], backArt: u[1] }; }); }
   function exportDesigns(list, name) {
     Promise.all(list.map(packOne)).then(function (items) {
       var json = JSON.stringify({ app: 'coglio-designer', version: 1, exportedAt: new Date().toISOString(), items: items });
@@ -880,6 +964,12 @@
           var p = Promise.resolve();
           if (b) { aid = uid('a'); p = DB.put('art', b, aid); }
           d.art = { id: aid, x: +(it.design && it.design.art && it.design.art.x) || 0, y: +(it.design && it.design.art && it.design.art.y) || 0, s: +(it.design && it.design.art && it.design.art.s) || 1 };
+          var bb = dataUrlToBlob(it.backArt);
+          if (d.back) {
+            var bid = bb ? uid('a') : '', bsrc = it.design && it.design.back && it.design.back.art || {};
+            d.back.art = { id: bid, x: +bsrc.x || 0, y: +bsrc.y || 0, s: +bsrc.s || 1 }; d.back.id = d.id; d.back.frameImg = /^auto:/.test(d.back.frameImg) ? d.back.frameImg : '';
+            if (bb) p = p.then(function () { return DB.put('art', bb, bid); });
+          }
           return p.then(function () { dz.designs.unshift(d); n++; return DB.put('designs', clone(d)); });
         });
       });
@@ -910,18 +1000,24 @@
       case 'dz-cat-add': installPack((cat.list || []).filter(function (e) { return e.id === id; })[0]); break;
       case 'dz-cat-del': dropGroup('cc-' + id); H.toast('Pacchetto rimosso.'); H.render(); break;
       case 'dz-open': var t = byId(id); if (t) editDesign(t); break;
-      case 'dz-back': saveNow(); dz.view = 'list'; dz.cur = null; dz.confirm = ''; window.scrollTo(0, 0); H.render(); break;
+      case 'dz-back': saveNow(); dz.view = 'list'; dz.cur = null; dz.root = null; dz.confirm = ''; window.scrollTo(0, 0); H.render(); break;
       case 'dz-dup':
-        var src = byId(id) || d; if (!src) break;
-        var c = clone(src); c.id = uid('z'); c.name = src.name + ' (copia)'; c.createdAt = c.updatedAt = Date.now();
-        var done = function () { dz.designs.unshift(c); saveNow().then(function () { if (dz.view === 'edit') editDesign(c); else H.render(); }); dz.cur = dz.view === 'edit' ? c : dz.cur; };
-        if (src.art.id) DB.get('art', src.art.id).then(function (b) { if (!b) { c.art.id = ''; done(); return; } var nid = uid('a'); DB.put('art', b, nid).then(function () { c.art.id = nid; done(); }); }); else done();
+        var src = byId(id) || dz.root || d; if (!src) break;
+        saveNow();
+        var c = clone(src); c.id = uid('z'); c.name = src.name + ' (copia)'; c.createdAt = c.updatedAt = Date.now(); if (c.back) c.back.id = c.id;
+        function copyArt(srcFace, dstFace) {
+          if (!srcFace || !srcFace.art.id) return Promise.resolve();
+          return DB.get('art', srcFace.art.id).then(function (bl) { if (!bl) { dstFace.art.id = ''; return; } var nid = uid('a'); return DB.put('art', bl, nid).then(function () { dstFace.art.id = nid; }); });
+        }
+        copyArt(src, c).then(function () { return copyArt(src.back, c.back); }).then(function () {
+          dz.designs.unshift(c); return DB.put('designs', clone(c));
+        }).then(function () { if (dz.view === 'edit') editDesign(c); else H.render(); });
         break;
       case 'dz-set': if (d) { d[k] = v; if (k === 'frame') { var L = R.LAYOUT[v]; if (L && !L.pt) d.pt = d.pt; } saveSoon(); H.render(); } break;
       case 'dz-col': if (d) { var cs = String(d.colors || '').toUpperCase(); d.colors = cs.indexOf(v) >= 0 ? cs.replace(v, '') : 'WUBRG'.split('').filter(function (x) { return cs.indexOf(x) >= 0 || x === v; }).join(''); saveSoon(); H.render(); } break;
       case 'dz-sym': insertSym(v); break;
-      case 'dz-png': if (d) { saveNow(); renderBlob(d.id, { type: 'image/png' }).then(function (b) { return download(b, fname(d, '.png')); }).then(function (ok) { if (ok === false) H.toast('Download non disponibile qui.'); }, function () { H.toast('Non riesco a creare l’immagine.'); }); } break;
-      case 'dz-jpg': if (d) { saveNow(); renderBlob(d.id, { type: 'image/jpeg', square: true }).then(function (b) { return download(b, fname(d, '.jpg')); }).then(function (ok) { if (ok === false) H.toast('Download non disponibile qui.'); }, function () { H.toast('Non riesco a creare l’immagine.'); }); } break;
+      case 'dz-png': if (d) { saveNow(); renderBlob(d.id, { type: 'image/png', face: dz.cur === dz.root ? 'front' : 'back' }).then(function (b) { return download(b, fname(d, '.png')); }).then(function (ok) { if (ok === false) H.toast('Download non disponibile qui.'); }, function () { H.toast('Non riesco a creare l’immagine.'); }); } break;
+      case 'dz-jpg': if (d) { saveNow(); renderBlob(d.id, { type: 'image/jpeg', square: true, face: dz.cur === dz.root ? 'front' : 'back' }).then(function (b) { return download(b, fname(d, '.jpg')); }).then(function (ok) { if (ok === false) H.toast('Download non disponibile qui.'); }, function () { H.toast('Non riesco a creare l’immagine.'); }); } break;
       case 'dz-art-del': if (d && d.art.id) { var oid = d.art.id; d.art = { id: '', x: 0, y: 0, s: 1 }; dz.artImg = null; DB.del('art', oid); delete artCache[oid]; saveNow(); H.render(); } break;
       case 'dz-art-reset': if (d) { d.art.x = 0; d.art.y = 0; d.art.s = 1; saveSoon(); H.render(); } break;
       case 'dz-alter': if (d) alterFrom(dz.search.q || d.name); break;
@@ -963,6 +1059,8 @@
       case 'dz-bind': openPicker(el.getAttribute('data-deck'), el.getAttribute('data-name')); break;
       case 'dz-unbind': unbind(el.getAttribute('data-deck'), el.getAttribute('data-name')); H.render(); break;
       case 'dz-pick-close': dz.picker = null; H.render(); break;
+      case 'dz-flip': flip(); break;
+      case 'dz-back-del': removeBack(); break;
       case 'dz-dlg-yes': dlgYes(); break;
       case 'dz-dlg-no': if (dz.dlg && !dz.dlg.busy) { dz.dlg = null; H.render(); } break;
       case 'dz-print-pick': { var pc = dz.prints.list[parseInt(id, 10)]; if (pc && d) applyPrint(pc); break; }
@@ -1010,6 +1108,12 @@
   function change(c, el) {
     var d = dz.cur;
     if (c === 'dz-f' && d) { d[el.getAttribute('data-k')] = el.value; saveSoon(); if (el.tagName === 'SELECT') H.render(); else schedulePreview(); }
+    else if (c === 'dz-mix' && d) {
+      var kk = el.getAttribute('data-k'), side = parseInt(el.getAttribute('data-side'), 10), cur = R.mixOf(d[kk]) || '', ca = cur[0] || '', cb = cur[1] || '';
+      if (side) cb = el.value; else ca = el.value;
+      d[kk] = ca && cb && ca !== cb ? ca + cb : ''; saveSoon(); H.render();
+      if (!d[kk] && ca && cb && ca === cb) H.toast('Scegli due colori diversi.');
+    }
     else if (c === 'dz-artfile') { if (el.files && el.files[0]) setArt(el.files[0]); }
     else if (c === 'dz-move') { var md = byId(el.getAttribute('data-id')); if (md) { md.folder = el.value; md.updatedAt = Date.now(); DB.put('designs', clone(md)); H.render(); } }
     else if (c === 'dz-framefile') {
@@ -1052,6 +1156,6 @@
 
   window.CPADesigner = {
     open: open, html: html, after: after, click: click, input: input, change: change, escape: escape, renderBlob: renderBlob,
-    ready: load, get: byId, list: function () { return dz.designs.slice(); }, openPicker: openPicker, state: dz, wantFrame: wantFrame, applyFrameFor: applyFrameFor
+    ready: load, get: byId, list: function () { return dz.designs.slice(); }, openPicker: openPicker, state: dz, wantFrame: wantFrame, applyFrameFor: applyFrameFor, flip: flip, hasBack: function (id) { var d = byId(id); return !!(d && d.back); }
   };
 })();
