@@ -669,6 +669,7 @@
   }
   function go(v) {
     if (v === 'builder' && window.CPABuilder) { ui.confirm = null; window.CPABuilder.open(null); return; }
+    document.body.classList.remove('bd-lock');
     ui.view = v; ui.confirm = null;
     if (v === 'import' && !(ui.draft && ui.draft.step === 1 && ui.draft.mode !== 'upgrade')) ui.draft = newDraft('deck');
     window.scrollTo(0, 0); render();
@@ -1133,7 +1134,7 @@
     ui.dataMsg = ''; ui.restoreText = ''; render();
   }
 
-  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (window.CPABuilder && ui.view === 'builder' && window.CPABuilder.escape()) return; if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
   document.addEventListener('mousemove', function (ev) {
     var t = ev.target.closest && ev.target.closest('.th.on');
     IMG.hover(!!t, t, ev);

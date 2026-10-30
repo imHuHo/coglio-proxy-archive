@@ -399,10 +399,24 @@ input.col { padding: 2px; height: 40px; min-width: 0; }
 .bd-st.info, .bd-st.own { background: var(--accent-soft); color: var(--accent); }
 .bd-acts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; padding-left: 44px; }
 label.btn { cursor: pointer; }
-.bd-pick { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; background: var(--surface2); border-radius: 10px; margin: 4px 0; max-height: 300px; overflow: auto; }
-.bd-p { display: grid; gap: 2px; justify-items: center; width: 74px; padding: 4px; border: 2px solid transparent; border-radius: 8px; background: none; color: var(--fg); font: 600 10.5px var(--mono); cursor: pointer; }
-.bd-p img { width: 66px; height: 92px; object-fit: cover; border-radius: 4px; background: var(--line); }
-.bd-p:hover, .bd-p.on { border-color: var(--accent); }
+body.bd-lock { overflow: hidden; }
+.bd-modal { position: fixed; inset: 0; z-index: 60; background: rgba(8, 10, 22, .8); display: grid; place-items: center;
+  padding: max(12px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); }
+.bd-mbox { background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 18px 50px #000a;
+  width: min(980px, 100%); max-height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.bd-mhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); flex: none; }
+.bd-mhead h2 { margin: 0; font: 800 20px var(--display); }
+.bd-mhead p { margin: 2px 0 0; color: var(--muted); font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.bd-mwait { padding: 40px 16px; text-align: center; color: var(--muted); margin: 0; }
+.bd-mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px 12px; padding: 16px; overflow: auto; flex: 1 1 auto; min-height: 0; }
+.bd-mp { display: grid; gap: 3px; align-content: start; text-align: center; background: none; border: 2px solid transparent; border-radius: 12px; padding: 6px; color: inherit; cursor: pointer; }
+.bd-mp:hover, .bd-mp:focus-visible { border-color: var(--accent); background: var(--accent-soft); }
+.bd-mp.on { border-color: var(--free); background: var(--free-bg); }
+.bd-mimg { position: relative; display: block; aspect-ratio: 488 / 680; border-radius: 4.5% / 3.2%; overflow: hidden; background: var(--surface2); box-shadow: 0 3px 12px #0004; }
+.bd-mimg img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bd-mimg i { position: absolute; left: 6px; top: 6px; background: var(--free); color: var(--surface); font: 800 10.5px var(--body); font-style: normal; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 999px; }
+.bd-mp b { font: 700 13px var(--mono); margin-top: 4px; }
+.bd-mp small { color: var(--muted); font-size: 12px; line-height: 1.25; overflow-wrap: anywhere; }
 .bd-cols { display: grid; gap: 0; }
 .bd-form, .bd-side { min-width: 0; }
 .bd-warn { background: var(--part-bg); color: var(--part); border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 600; margin-bottom: 14px; }
@@ -2670,6 +2684,7 @@ label.btn { cursor: pointer; }
   }
   function go(v) {
     if (v === 'builder' && window.CPABuilder) { ui.confirm = null; window.CPABuilder.open(null); return; }
+    document.body.classList.remove('bd-lock');
     ui.view = v; ui.confirm = null;
     if (v === 'import' && !(ui.draft && ui.draft.step === 1 && ui.draft.mode !== 'upgrade')) ui.draft = newDraft('deck');
     window.scrollTo(0, 0); render();
@@ -3134,7 +3149,7 @@ label.btn { cursor: pointer; }
     ui.dataMsg = ''; ui.restoreText = ''; render();
   }
 
-  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (window.CPABuilder && ui.view === 'builder' && window.CPABuilder.escape()) return; if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
   document.addEventListener('mousemove', function (ev) {
     var t = ev.target.closest && ev.target.closest('.th.on');
     IMG.hover(!!t, t, ev);
@@ -3272,6 +3287,7 @@ label.btn { cursor: pointer; }
       bd.source = 'paste'; bd.deckId = null; bd.deckName = '';
       if (bd.report) bd.report = null;
     }
+    bd.picker = null; bd.pickList = null;
     H.ui.view = 'builder'; window.scrollTo(0, 0); H.render();
     if (available()) resolveAll();
   }
@@ -3319,6 +3335,7 @@ label.btn { cursor: pointer; }
       bd.pickList = list; H.render();
     }, function () { if (bd.picker === my) { bd.pickList = []; H.toast('Non riesco a caricare le stampe di questa carta.'); H.render(); } });
   }
+  function closePicker() { if (bd && bd.picker != null) { bd.picker = null; bd.pickList = null; H.render(); } }
   function pickPrint(e, i) {
     var it = Array.isArray(bd.pickList) && bd.pickList[i]; if (!it) return;
     e.card = it.card; e.set = it.set; e.cn = it.cn; e.nf = false;
@@ -3483,7 +3500,7 @@ label.btn { cursor: pointer; }
     var box = document.getElementById('bd-pv'); if (!box) return;
     box.innerHTML = previewInner(planNow()); drawPreview();
   }
-  function after() { init(); drawPreview(); }
+  function after() { init(); document.body.classList.toggle('bd-lock', bd.picker != null); drawPreview(); }
 
   /* ---------- campi del modulo ---------- */
   function val(k) { var v = bd.opts[k]; return v == null ? '' : v; }
@@ -3520,14 +3537,24 @@ label.btn { cursor: pointer; }
       '<label class="btn small">' + (e.custom ? 'Cambia' : 'Tua immagine') + '<input type="file" accept="image/*" hidden data-c="bd-file" data-id="' + e.id + '" data-side="front"></label>' +
       (e.custom ? '<label class="btn small">' + (e.customBack ? 'Cambia retro' : 'Retro') + '<input type="file" accept="image/*" hidden data-c="bd-file" data-id="' + e.id + '" data-side="back"></label>' : '') +
       '<button class="btn small danger" data-a="bd-del" data-id="' + e.id + '" aria-label="Togli ' + esc(e.name) + '">×</button></span></div>';
-    if (bd.picker === e.id) {
-      h += '<div class="bd-pick">' + (bd.pickList === 'load' ? '<span class="hint">Carico le stampe…</span>' :
-        (Array.isArray(bd.pickList) && bd.pickList.length ? bd.pickList.slice(0, 80).map(function (it, i) {
-          var f = X.faces(it.card, 'small')[0];
-          return '<button class="bd-p' + (e.card && e.card.id === it.card.id ? ' on' : '') + '" data-a="bd-pick" data-id="' + e.id + '" data-n="' + i + '" title="' + esc(it.setName + ' · ' + it.released) + '"><img src="' + esc(f ? f.url : '') + '" alt="" loading="lazy"><span>' + esc(it.set.toUpperCase() + ' ' + it.cn) + '</span></button>';
-        }).join('') : '<span class="hint">Nessuna altra stampa trovata.</span>')) + '</div>';
-    }
     return h;
+  }
+
+  /* Finestra per scegliere un'altra stampa: carte grandi e ben leggibili, con collezione, numero e anno. */
+  function pickerHtml() {
+    var e = bd.picker != null ? entryById(bd.picker) : null; if (!e) return '';
+    var list = bd.pickList, body;
+    if (list === 'load') body = '<p class="bd-mwait">Carico le stampe di ' + esc(e.name) + '…</p>';
+    else if (!Array.isArray(list) || !list.length) body = '<p class="bd-mwait">Non ho trovato altre stampe di questa carta.</p>';
+    else body = '<div class="bd-mgrid">' + list.map(function (it, i) {
+      var f = X.faces(it.card, 'normal')[0], cur = e.card && e.card.id === it.card.id, yr = (it.released || '').slice(0, 4);
+      return '<button class="bd-mp' + (cur ? ' on' : '') + '" data-a="bd-pick" data-id="' + e.id + '" data-n="' + i + '" aria-label="' + esc(it.setName + ' ' + it.set.toUpperCase() + ' ' + it.cn) + '">' +
+        '<span class="bd-mimg"><img src="' + esc(f ? f.url : '') + '" alt="" loading="lazy">' + (cur ? '<i>In uso</i>' : '') + '</span>' +
+        '<b>' + esc(it.set.toUpperCase()) + ' · ' + esc(it.cn) + '</b><small>' + esc(it.setName) + (yr ? ' · ' + esc(yr) : '') + '</small></button>';
+    }).join('') + '</div>';
+    return '<div class="bd-modal" data-a="bd-pclose" role="dialog" aria-modal="true" aria-label="Scegli la stampa"><div class="bd-mbox" data-a="bd-keep">' +
+      '<div class="bd-mhead"><div><h2>Scegli la stampa</h2><p>' + esc(e.name) + (Array.isArray(list) ? ' · ' + list.length + (list.length === 1 ? ' stampa' : ' stampe') : '') + '</p></div>' +
+      '<button class="btn" data-a="bd-pclose">Chiudi</button></div>' + body + '</div></div>';
   }
 
   function html() {
@@ -3595,7 +3622,7 @@ label.btn { cursor: pointer; }
     var back = bd.source === 'deck' ? '<button class="back" data-a="open-deck" data-id="' + esc(bd.deckId) + '">← Mazzo</button>' : '';
     return '<header class="vh">' + back + '<h1>' + title + '</h1></header>' + na + sourceBox + list +
       '<div class="bd-cols"><div class="bd-form">' + page + cut + prn + pre + '</div><div class="bd-side"><section class="panel"><h2>Anteprima</h2><div id="bd-pv">' + previewInner(plan) + '</div></section>' + main + '</div></div>' +
-      '<p class="hint" style="margin-top:18px">Le immagini sono quelle di Scryfall, senza ritocchi (nome dell’artista e copyright restano visibili) e senza filigrana. Stampa solo per uso personale: le carte Magic sono © Wizards of the Coast.</p>';
+      pickerHtml() + '<p class="hint" style="margin-top:18px">Le immagini sono quelle di Scryfall, senza ritocchi (nome dell’artista e copyright restano visibili) e senza filigrana. Stampa solo per uso personale: le carte Magic sono © Wizards of the Coast.</p>';
   }
 
   /* ---------- eventi (inoltrati da app.js) ---------- */
@@ -3612,6 +3639,8 @@ label.btn { cursor: pointer; }
       case 'bd-del': if (e) { bd.entries.splice(bd.entries.indexOf(e), 1); if (bd.picker === e.id) bd.picker = null; H.render(); } break;
       case 'bd-prints': if (e) openPicker(e); break;
       case 'bd-pick': if (e) pickPrint(e, parseInt(el.dataset.n, 10)); break;
+      case 'bd-pclose': closePicker(); break;
+      case 'bd-keep': break;
       case 'bd-psave':
         var nm = (bd.presetName || '').trim();
         if (!nm) { H.toast('Dai un nome alle impostazioni per salvarle.'); break; }
@@ -3648,7 +3677,7 @@ label.btn { cursor: pointer; }
     }
   }
 
-  window.CPABuilder = { open: open, html: html, after: after, click: click, input: input, change: change, state: function () { init(); return bd; } };
+  window.CPABuilder = { open: open, html: html, after: after, escape: function () { if (bd && bd.picker != null) { closePicker(); return true; } return false; }, click: click, input: input, change: change, state: function () { init(); return bd; } };
 })();
 
 </script>

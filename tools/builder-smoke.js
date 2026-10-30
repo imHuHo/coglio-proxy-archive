@@ -90,8 +90,13 @@ const blobBytes = b => new Promise(r => { const fr = new w.FileReader(); fr.onlo
   opt('decklist', false);
 
   // --- stampa alternativa ---
-  clickA('bd-prints'); ok(await waitFor(() => $$('.bd-p').length === 3), 'stampe alternative caricate');
-  click($$('.bd-p')[2]); ok($$('.bd-row')[0].textContent.includes('LEA 270'), 'stampa scelta');
+  clickA('bd-prints');
+  ok(await waitFor(() => $$('.bd-mp').length === 3), 'stampe alternative in una finestra, con le carte in grande');
+  ok($('.bd-modal') && d.body.classList.contains('bd-lock') && $('.bd-mp.on'), 'finestra aperta, pagina bloccata, stampa attuale evidenziata');
+  d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); ok(!$('.bd-modal') && !d.body.classList.contains('bd-lock'), 'Esc chiude la finestra');
+  clickA('bd-prints'); ok(await waitFor(() => $$('.bd-mp').length === 3)); click($('.bd-mbox')); ok($('.bd-modal'), 'un clic dentro non chiude'); click($('.bd-modal')); ok(!$('.bd-modal'), 'un clic fuori chiude');
+  clickA('bd-prints'); ok(await waitFor(() => $$('.bd-mp').length === 3));
+  click($$('.bd-mp')[2]); ok(!$('.bd-modal') && $$('.bd-row')[0].textContent.includes('LEA 270'), 'stampa scelta, finestra chiusa');
 
   // --- genera il PDF ---
   blobs.length = 0;

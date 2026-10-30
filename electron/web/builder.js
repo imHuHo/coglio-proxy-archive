@@ -54,6 +54,7 @@
       bd.source = 'paste'; bd.deckId = null; bd.deckName = '';
       if (bd.report) bd.report = null;
     }
+    bd.picker = null; bd.pickList = null;
     H.ui.view = 'builder'; window.scrollTo(0, 0); H.render();
     if (available()) resolveAll();
   }
@@ -101,6 +102,7 @@
       bd.pickList = list; H.render();
     }, function () { if (bd.picker === my) { bd.pickList = []; H.toast('Non riesco a caricare le stampe di questa carta.'); H.render(); } });
   }
+  function closePicker() { if (bd && bd.picker != null) { bd.picker = null; bd.pickList = null; H.render(); } }
   function pickPrint(e, i) {
     var it = Array.isArray(bd.pickList) && bd.pickList[i]; if (!it) return;
     e.card = it.card; e.set = it.set; e.cn = it.cn; e.nf = false;
@@ -265,7 +267,7 @@
     var box = document.getElementById('bd-pv'); if (!box) return;
     box.innerHTML = previewInner(planNow()); drawPreview();
   }
-  function after() { init(); drawPreview(); }
+  function after() { init(); document.body.classList.toggle('bd-lock', bd.picker != null); drawPreview(); }
 
   /* ---------- campi del modulo ---------- */
   function val(k) { var v = bd.opts[k]; return v == null ? '' : v; }
@@ -302,14 +304,24 @@
       '<label class="btn small">' + (e.custom ? 'Cambia' : 'Tua immagine') + '<input type="file" accept="image/*" hidden data-c="bd-file" data-id="' + e.id + '" data-side="front"></label>' +
       (e.custom ? '<label class="btn small">' + (e.customBack ? 'Cambia retro' : 'Retro') + '<input type="file" accept="image/*" hidden data-c="bd-file" data-id="' + e.id + '" data-side="back"></label>' : '') +
       '<button class="btn small danger" data-a="bd-del" data-id="' + e.id + '" aria-label="Togli ' + esc(e.name) + '">×</button></span></div>';
-    if (bd.picker === e.id) {
-      h += '<div class="bd-pick">' + (bd.pickList === 'load' ? '<span class="hint">Carico le stampe…</span>' :
-        (Array.isArray(bd.pickList) && bd.pickList.length ? bd.pickList.slice(0, 80).map(function (it, i) {
-          var f = X.faces(it.card, 'small')[0];
-          return '<button class="bd-p' + (e.card && e.card.id === it.card.id ? ' on' : '') + '" data-a="bd-pick" data-id="' + e.id + '" data-n="' + i + '" title="' + esc(it.setName + ' · ' + it.released) + '"><img src="' + esc(f ? f.url : '') + '" alt="" loading="lazy"><span>' + esc(it.set.toUpperCase() + ' ' + it.cn) + '</span></button>';
-        }).join('') : '<span class="hint">Nessuna altra stampa trovata.</span>')) + '</div>';
-    }
     return h;
+  }
+
+  /* Finestra per scegliere un'altra stampa: carte grandi e ben leggibili, con collezione, numero e anno. */
+  function pickerHtml() {
+    var e = bd.picker != null ? entryById(bd.picker) : null; if (!e) return '';
+    var list = bd.pickList, body;
+    if (list === 'load') body = '<p class="bd-mwait">Carico le stampe di ' + esc(e.name) + '…</p>';
+    else if (!Array.isArray(list) || !list.length) body = '<p class="bd-mwait">Non ho trovato altre stampe di questa carta.</p>';
+    else body = '<div class="bd-mgrid">' + list.map(function (it, i) {
+      var f = X.faces(it.card, 'normal')[0], cur = e.card && e.card.id === it.card.id, yr = (it.released || '').slice(0, 4);
+      return '<button class="bd-mp' + (cur ? ' on' : '') + '" data-a="bd-pick" data-id="' + e.id + '" data-n="' + i + '" aria-label="' + esc(it.setName + ' ' + it.set.toUpperCase() + ' ' + it.cn) + '">' +
+        '<span class="bd-mimg"><img src="' + esc(f ? f.url : '') + '" alt="" loading="lazy">' + (cur ? '<i>In uso</i>' : '') + '</span>' +
+        '<b>' + esc(it.set.toUpperCase()) + ' · ' + esc(it.cn) + '</b><small>' + esc(it.setName) + (yr ? ' · ' + esc(yr) : '') + '</small></button>';
+    }).join('') + '</div>';
+    return '<div class="bd-modal" data-a="bd-pclose" role="dialog" aria-modal="true" aria-label="Scegli la stampa"><div class="bd-mbox" data-a="bd-keep">' +
+      '<div class="bd-mhead"><div><h2>Scegli la stampa</h2><p>' + esc(e.name) + (Array.isArray(list) ? ' · ' + list.length + (list.length === 1 ? ' stampa' : ' stampe') : '') + '</p></div>' +
+      '<button class="btn" data-a="bd-pclose">Chiudi</button></div>' + body + '</div></div>';
   }
 
   function html() {
@@ -377,7 +389,7 @@
     var back = bd.source === 'deck' ? '<button class="back" data-a="open-deck" data-id="' + esc(bd.deckId) + '">← Mazzo</button>' : '';
     return '<header class="vh">' + back + '<h1>' + title + '</h1></header>' + na + sourceBox + list +
       '<div class="bd-cols"><div class="bd-form">' + page + cut + prn + pre + '</div><div class="bd-side"><section class="panel"><h2>Anteprima</h2><div id="bd-pv">' + previewInner(plan) + '</div></section>' + main + '</div></div>' +
-      '<p class="hint" style="margin-top:18px">Le immagini sono quelle di Scryfall, senza ritocchi (nome dell’artista e copyright restano visibili) e senza filigrana. Stampa solo per uso personale: le carte Magic sono © Wizards of the Coast.</p>';
+      pickerHtml() + '<p class="hint" style="margin-top:18px">Le immagini sono quelle di Scryfall, senza ritocchi (nome dell’artista e copyright restano visibili) e senza filigrana. Stampa solo per uso personale: le carte Magic sono © Wizards of the Coast.</p>';
   }
 
   /* ---------- eventi (inoltrati da app.js) ---------- */
@@ -394,6 +406,8 @@
       case 'bd-del': if (e) { bd.entries.splice(bd.entries.indexOf(e), 1); if (bd.picker === e.id) bd.picker = null; H.render(); } break;
       case 'bd-prints': if (e) openPicker(e); break;
       case 'bd-pick': if (e) pickPrint(e, parseInt(el.dataset.n, 10)); break;
+      case 'bd-pclose': closePicker(); break;
+      case 'bd-keep': break;
       case 'bd-psave':
         var nm = (bd.presetName || '').trim();
         if (!nm) { H.toast('Dai un nome alle impostazioni per salvarle.'); break; }
@@ -430,5 +444,5 @@
     }
   }
 
-  window.CPABuilder = { open: open, html: html, after: after, click: click, input: input, change: change, state: function () { init(); return bd; } };
+  window.CPABuilder = { open: open, html: html, after: after, escape: function () { if (bd && bd.picker != null) { closePicker(); return true; } return false; }, click: click, input: input, change: change, state: function () { init(); return bd; } };
 })();
