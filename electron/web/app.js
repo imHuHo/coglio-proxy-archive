@@ -240,6 +240,86 @@
       try { var a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; document.body.appendChild(a); a.click(); a.remove(); } catch (e2) { /* ignorato */ }
     }
   }
+  /* ---------- Bracket (Commander Spellbook) ---------- */
+  /* Il calcolo usa l'API pubblica di Commander Spellbook. Nell'app Windows la richiesta parte dal programma (cpaNet),
+     su Android da una chiamata nativa; nel browser può essere bloccata (CORS) e allora resta «copia e apri il sito». */
+  var BK = (function () {
+    var box = null, run = 0, last = null;
+    var URL_API = 'https://backend.commanderspellbook.com/estimate-bracket/', WEB = 'https://commanderbracket.app/bracket';
+    function available() { return !!store && store.kind !== 'claude' && (typeof fetch === 'function' || !!window.cpaNet); }
+    function call(payload) {
+      if (window.cpaNet && typeof window.cpaNet.bracket === 'function') {
+        return window.cpaNet.bracket(payload).then(function (r) {
+          if (r && r.ok) return r.json;
+          throw new Error(r && r.error ? r.error : 'network');
+        });
+      }
+      var ctl = typeof AbortController === 'function' ? new AbortController() : null, t = ctl && setTimeout(function () { ctl.abort(); }, 25000);
+      return fetch(URL_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: ctl ? ctl.signal : undefined })
+        .then(function (res) { if (!res.ok) throw new Error('http'); return res.json(); })
+        .then(function (j) { if (t) clearTimeout(t); return j; }, function (e) { if (t) clearTimeout(t); throw e; });
+    }
+    function close() { if (box) { box.remove(); box = null; run++; } }
+    function isOpen() { return !!box; }
+    function shell(deck, inner) {
+      if (!box) {
+        box = document.createElement('div'); box.id = 'bk'; box.className = 'lb bk'; box.setAttribute('data-a', 'bk-close');
+        box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Bracket di ' + deck.name);
+        document.body.appendChild(box);
+      }
+      box.innerHTML = '<div class="bk-box" data-a="bk-keep"><div class="bk-head"><strong>Bracket · ' + esc(deck.name) + '</strong>' +
+        '<button class="btn small" data-a="bk-close" id="bkx">Chiudi</button></div>' + inner + '</div>';
+      var x = box.querySelector('#bkx'); if (x) x.focus();
+    }
+    function list(title, arr) {
+      return arr.length ? '<div class="bk-sec"><h4>' + esc(title) + ' <span>' + arr.length + '</span></h4><p>' + arr.map(esc).join(' · ') + '</p></div>' : '';
+    }
+    function webBtn() { return '<button class="btn small bracket" data-a="bk-web" data-id="' + esc(last ? last.id : '') + '">Controlla anche su commanderbracket.app</button>'; }
+    function show(deck, sum) {
+      var combos = sum.combos.map(function (c) {
+        return '<li><b>' + c.cards.map(esc).join(' + ') + '</b>' + (c.result.length ? ' → ' + esc(c.result.join(', ')) : '') +
+          (c.twoCard ? ' <em class="bk-tag">due carte</em>' : '') + '</li>';
+      }).join('');
+      var warn = sum.banned.length ? '<p class="lb-warn">Carte bandite in Commander: ' + sum.banned.map(esc).join(', ') + '.</p>' : '';
+      var unk = sum.unknown.length ? '<div class="bk-sec"><h4>Carte non riconosciute <span>' + sum.unknown.length + '</span></h4><p>' + sum.unknown.slice(0, 12).map(esc).join(' · ') + (sum.unknown.length > 12 ? ' · … e altre ' + (sum.unknown.length - 12) : '') +
+        '<br><small>Non contano nella stima: controlla il nome.</small></p></div>' : '';
+      shell(deck,
+        '<div class="bk-score"><div class="bk-num"><small>Bracket stimato</small><b>' + esc(sum.range) + '</b></div>' +
+        '<div><span class="bk-chip t-' + esc(sum.tag.toLowerCase()) + '">' + esc(sum.name) + '</span><p>' + esc(sum.note) + '</p></div></div>' + warn +
+        list('Game Changer', sum.gameChangers) + list('Distruzione di terre di massa', sum.massLandDenial) + list('Turni extra', sum.extraTurns) +
+        (combos ? '<div class="bk-sec"><h4>Combo trovate <span>' + sum.combos.length + '</span></h4><ul>' + combos + '</ul></div>' : '') + unk +
+        (!sum.gameChangers.length && !sum.massLandDenial.length && !sum.extraTurns.length && !sum.combos.length && !sum.banned.length ? '<p class="bk-none">Nessun Game Changer, turno extra, distruzione di terre o combo trovati.</p>' : '') +
+        '<p class="bk-foot">Stima di Commander Spellbook: il bracket 1 e il 5 (cEDH) dipendono da come giocate, e il bracket vero lo decidete al tavolo. La lista del mazzo viene inviata a Commander Spellbook per il calcolo.</p>' +
+        '<div class="bk-bar">' + webBtn() + '</div>');
+    }
+    function fail(deck, why) {
+      shell(deck, '<p class="lb-warn">' + (why === 'cors' ? 'Da questo browser il calcolo non è disponibile: il sito di Commander Spellbook non permette richieste da altre pagine.' :
+        'Non sono riuscito a calcolare il bracket (' + (why === 'timeout' ? 'tempo scaduto' : why === 'http' ? 'il servizio ha risposto con un errore' : 'nessuna connessione') + ').') + '</p>' +
+        '<p>Puoi farlo sul sito: copio la lista e lo apro, poi incolli e premi «Check my bracket».</p><div class="bk-bar">' + webBtn() + '</div>');
+    }
+    function start(deck) {
+      last = deck; var my = ++run, payload = C.bracketPayload(deck);
+      shell(deck, '<p class="lb-wait bk-wait">Calcolo il bracket di «' + esc(deck.name) + '»…</p>');
+      var native = !!window.cpaNet;
+      call(payload).then(function (j) {
+        if (my !== run || !box) return;
+        show(deck, C.bracketSummary(j, payload));
+      }, function (e) {
+        if (my !== run || !box) return;
+        var m = e && e.message;
+        fail(deck, m === 'timeout' || m === 'http' ? m : (!native && e instanceof TypeError && location.protocol.indexOf('http') === 0 && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) ? 'cors' : 'network');
+      });
+    }
+    function web(deck) {
+      openExternal(WEB);
+      copyText(C.bracketText(deck)).then(function (ok) {
+        toast(ok ? 'Lista di «' + deck.name + '» copiata. Nella pagina del bracket incollala e premi «Check my bracket».'
+          : 'Copia automatica non riuscita: usa «Copia lista .txt» nel mazzo e incollala su commanderbracket.app/bracket.', null, true);
+      });
+    }
+    return { available: available, start: start, web: web, close: close, isOpen: isOpen };
+  })();
+
   function applyTheme() {
     var t = state.settings.theme, r = document.documentElement;
     if (t === 'light' || t === 'dark') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme');
@@ -656,7 +736,7 @@
       '</span><span class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="open-deck" data-id="' + esc(d.id) + '">Apri</button></span></div></article>';
   }
   function bracketBtn(d) {
-    return '<button class="btn small bracket" data-a="bracket" data-id="' + esc(d.id) + '" title="Copia la lista e apri commanderbracket.app">Verifica bracket</button>';
+    return '<button class="btn small bracket" data-a="bracket" data-id="' + esc(d.id) + '" title="Calcola il bracket del mazzo">Verifica bracket</button>';
   }
   function decksView() {
     var ds = state.decks.filter(function (d) { return d.kind === 'deck'; }), bs = state.decks.filter(function (d) { return d.kind === 'binder'; });
@@ -963,14 +1043,14 @@
       case 'restore-json': restore(ui.restoreText); break;
       case 'bracket':
         deck = getDeck(id);
-        if (deck) {
-          /* l'apertura della pagina deve partire subito dal clic, prima della copia (che è asincrona) */
-          openExternal('https://commanderbracket.app/bracket');
-          copyText(C.bracketText(deck)).then(function (ok) {
-            toast(ok ? 'Lista di «' + deck.name + '» copiata. Nella pagina del bracket incollala e premi «Check my bracket».'
-              : 'Copia automatica non riuscita: usa «Copia lista .txt» nel mazzo e incollala su commanderbracket.app/bracket.', null, true);
-          });
-        } break;
+        if (deck) { if (BK.available()) BK.start(deck); else BK.web(deck); }
+        break;
+      case 'bk-web':
+        deck = getDeck(id) || getDeck();
+        if (deck) BK.web(deck);
+        break;
+      case 'bk-close': BK.close(); break;
+      case 'bk-keep': break;
       case 'lb-close': IMG.close(); break;
       case 'lb-flip': IMG.flip(); break;
       case 'lb-prints': IMG.prints(); break;
@@ -994,7 +1074,7 @@
     ui.dataMsg = ''; ui.restoreText = ''; render();
   }
 
-  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && IMG.isOpen()) IMG.close(); });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
   document.addEventListener('mousemove', function (ev) {
     var t = ev.target.closest && ev.target.closest('.th.on');
     IMG.hover(!!t, t, ev);

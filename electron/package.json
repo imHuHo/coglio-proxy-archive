@@ -21,6 +21,7 @@
     "productName": "Coglio Proxy Archive",
     "files": [
       "main.js",
+      "preload.js",
       "web/**/*"
     ],
     "directories": {

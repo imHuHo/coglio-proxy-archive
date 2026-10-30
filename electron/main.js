@@ -1,5 +1,30 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, net } = require('electron');
 const path = require('path');
+
+const BRACKET_URL = 'https://backend.commanderspellbook.com/estimate-bracket/';
+
+/* Calcolo del bracket tramite l'API pubblica di Commander Spellbook.
+   Si accettano solo liste ben formate e di dimensione ragionevole. */
+function validPayload(p) {
+  const ok = (a) => Array.isArray(a) && a.length <= 400 && a.every((x) =>
+    x && typeof x.card === 'string' && x.card.length > 0 && x.card.length <= 200 && Number.isInteger(x.quantity) && x.quantity > 0 && x.quantity <= 500);
+  return !!p && typeof p === 'object' && ok(p.commanders) && ok(p.main);
+}
+ipcMain.handle('cpa:bracket', async (_event, payload) => {
+  if (!validPayload(payload)) return { ok: false, error: 'bad-request' };
+  try {
+    const res = await net.fetch(BRACKET_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ commanders: payload.commanders, main: payload.main }),
+      signal: AbortSignal.timeout(25000)
+    });
+    if (!res.ok) return { ok: false, status: res.status, error: 'http' };
+    return { ok: true, json: await res.json() };
+  } catch (e) {
+    return { ok: false, error: e && e.name === 'TimeoutError' ? 'timeout' : 'network' };
+  }
+});
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -7,11 +32,14 @@ function createWindow() {
     title: 'Coglio Proxy Archive',
     icon: path.join(__dirname, 'web', 'icons', 'icon-512.png'),
     backgroundColor: '#eceef5',
-    webPreferences: { contextIsolation: true, sandbox: true }
+    webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(__dirname, 'preload.js') }
   });
   win.setMenuBarVisibility(false);
   win.loadFile(path.join(__dirname, 'web', 'index.html'));
-  win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https:\/\//i.test(url)) shell.openExternal(url);
+    return { action: 'deny' };
+  });
 }
 
 app.whenReady().then(() => {

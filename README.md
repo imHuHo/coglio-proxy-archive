@@ -28,8 +28,11 @@ e l'app ti dice quali carte hai, quante sono libere e in quale mazzo sono impegn
   Nell'archivio, dove la stessa carta può stare in più mazzi, la miniatura in cima alla riga è la stampa del mazzo attivo (o quella con più copie): le altre sono nel dettaglio.
   Gli indirizzi trovati restano salvati sul dispositivo, quindi ogni carta si cerca una volta sola. Si spengono dalla scheda *Dati*.
   Funzionano nell'app Windows, nell'APK e nella versione web installata; **non** dentro la pagina di anteprima di Claude, che blocca i siti esterni.
-- **Verifica bracket**: il tasto giallo sui mazzi copia la decklist (commander a parte) e apre [commanderbracket.app](https://commanderbracket.app/bracket);
-  lì la incolli e premi *Check my bracket*. Il calcolo lo fa il loro sito: l'app non ha un'API da chiamare.
+- **Verifica bracket**: il tasto giallo sui mazzi calcola il bracket con l'API pubblica di [Commander Spellbook](https://commanderspellbook.com)
+  e mostra fascia stimata, Game Changer, distruzione di terre di massa, turni extra e combo trovate. Nell'app Windows la richiesta
+  parte dal programma (`electron/preload.js` + `main.js`), su Android da una chiamata nativa (`CapacitorHttp`). Nel browser quel sito
+  blocca le richieste da altre pagine (CORS): lì il pannello propone «copia la lista e apri [commanderbracket.app](https://commanderbracket.app/bracket)».
+  Per il calcolo la lista del mazzo viene inviata a Commander Spellbook. È una stima: il bracket vero si decide al tavolo.
 - **Backup** in JSON (scarica, copia, ripristina). Ogni azione distruttiva ha *Annulla*.
 
 ### Come vengono contate le carte

@@ -224,6 +224,65 @@
     return (cmd && name ? 'Commander\n1 ' + name + '\n\nDeck\n' : '') + main.join('\n');
   }
 
+  /* Richiesta per l'API di Commander Spellbook: comandante a parte, il resto del mazzo con le quantità. */
+  function bracketPayload(deck) {
+    var cmd = deck.commander ? keyOf(deck.commander) : '', taken = !cmd, commanders = [], main = [];
+    deck.cards.slice().sort(function (a, b) { return a.name.localeCompare(b.name, 'en'); }).forEach(function (c) {
+      var q = c.qty;
+      if (!taken && keyOf(c.name) === cmd) { taken = true; commanders.push({ card: c.name, quantity: 1 }); q--; }
+      if (q > 0) main.push({ card: c.name, quantity: q });
+    });
+    return { commanders: commanders, main: main };
+  }
+
+  /* Sigla di Commander Spellbook → bracket Wizards. È una stima: E/C/P/S/R sono fasce di potenza, non il bracket deciso al tavolo. */
+  var BRACKET_TAGS = {
+    E: { range: '1–2', name: 'Exhibition', note: 'Nessuna carta che alza il bracket.' },
+    C: { range: '2', name: 'Core', note: 'Al massimo qualche turno extra.' },
+    P: { range: '3', name: 'Powerful', note: 'Qualche Game Changer.' },
+    O: { range: '3', name: 'Oddball', note: 'Combo particolari: valuta a mano.' },
+    S: { range: '3–4', name: 'Spicy', note: 'C\'è una combo a due carte, ma non rapida.' },
+    R: { range: '4+', name: 'Ruthless', note: 'Almeno uno fra: 4+ Game Changer, distruzione di terre di massa, molti turni extra, combo a due carte rapida.' },
+    B: { range: 'non legale', name: 'Banned', note: 'Contiene carte bandite in Commander.' }
+  };
+  function bracketSummary(resp, payload) {
+    var tag = resp && typeof resp.bracketTag === 'string' ? resp.bracketTag.toUpperCase() : '';
+    var info = BRACKET_TAGS[tag] || { range: '?', name: tag || 'n/d', note: 'Risposta non riconosciuta.' };
+    var cards = Array.isArray(resp && resp.cards) ? resp.cards : [];
+    var names = function (flag) {
+      var out = [], seen = {};
+      cards.forEach(function (c) {
+        var n = c && c.card && c.card.name;
+        if (n && c[flag] && !seen[n]) { seen[n] = 1; out.push(n); }
+      });
+      return out.sort(function (a, b) { return a.localeCompare(b, 'en'); });
+    };
+    var known = {};
+    cards.forEach(function (c) {
+      var n = c && c.card && c.card.name; if (!n) return;
+      known[keyOf(n)] = 1; known[keyOf(n.split(' // ')[0])] = 1;
+    });
+    var unknown = [];
+    (payload ? payload.commanders.concat(payload.main) : []).forEach(function (x) {
+      var k = keyOf(x.card), f = keyOf(x.card.split(' // ')[0]);
+      if (!known[k] && !known[f] && unknown.indexOf(x.card) < 0) unknown.push(x.card);
+    });
+    var combos = [], seenC = {};
+    (Array.isArray(resp && resp.combos) ? resp.combos : []).forEach(function (r) {
+      var cb = r && r.combo; if (!cb) return;
+      var cs = (cb.uses || []).map(function (u) { return u && u.card && u.card.name; }).filter(Boolean);
+      var res = (cb.produces || []).map(function (p) { return p && p.feature && p.feature.name; }).filter(Boolean);
+      var key = cs.slice().sort().join('|') + '>' + res.join('|');
+      if (!cs.length || seenC[key]) return; seenC[key] = 1;
+      combos.push({ cards: cs, result: res, tag: cb.bracketTag || '', twoCard: !!r.definitelyTwoCard, fast: typeof r.speed === 'number' ? r.speed : null });
+    });
+    return {
+      tag: tag, range: info.range, name: info.name, note: info.note,
+      gameChangers: names('gameChanger'), massLandDenial: names('massLandDenial'), extraTurns: names('extraTurn'), banned: names('banned'),
+      combos: combos, unknown: unknown
+    };
+  }
+
   function diffText(deck, upgrade, diff) {
     var l = ['Upgrade "' + upgrade.name + '" per ' + deck.name, '', 'ESCE (' + diff.outQty + '):'];
     diff.out.forEach(function (x) { l.push(x.qty + ' ' + x.name); });
@@ -359,7 +418,7 @@
   return {
     keyOf: keyOf, searchNorm: searchNorm, isBasic: isBasic, uid: uid,
     parseList: parseList, buildArchive: buildArchive, diffUpgrade: diffUpgrade,
-    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, clone: cloneJ, exportText: exportText, bracketText: bracketText, diffText: diffText,
+    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, clone: cloneJ, exportText: exportText, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, diffText: diffText,
     sanitizeDeck: sanitizeDeck, sanitizeSettings: sanitizeSettings, inUse: inUse
   };
 });

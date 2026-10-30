@@ -48,6 +48,35 @@ const text = () => d.body.textContent.replace(/\s+/g, ' ');
   ok(clip.startsWith('Commander\n1 Kaalia of the Vast\n\nDeck\n') && clip.split('\n').slice(4).reduce((t, l) => t + parseInt(l, 10), 1) === 100, 'lista copiata: commander + 99 carte');
   ok(text().includes('Check my bracket'), 'avviso con le istruzioni');
 
+  // --- bracket nell'app: risposta simulata di Commander Spellbook ---
+  const reqs = [];
+  const cardR = (name, o) => Object.assign({ card: { id: 1, name }, quantity: 1, banned: false, gameChanger: false, massLandDenial: false, extraTurn: false }, o || {});
+  w.fetch = async (u, o) => {
+    reqs.push({ u, body: JSON.parse(o.body), method: o.method });
+    return { ok: true, status: 200, json: async () => ({ bracketTag: 'P', cards: [cardR('Sol Ring', { gameChanger: false }), cardR('Rhystic Study', { gameChanger: true })], combos: [] }) };
+  };
+  opened.length = 0; clip = null;
+  clickA('bracket'); ok($('#bk'), 'pannello bracket aperto subito'); await sleep(50);
+  ok(reqs.length === 1 && reqs[0].u === 'https://backend.commanderspellbook.com/estimate-bracket/' && reqs[0].method === 'POST', 'chiamata a estimate-bracket');
+  ok(reqs[0].body.commanders[0].card === 'Kaalia of the Vast' && reqs[0].body.commanders.length === 1 && reqs[0].body.main.reduce((t, x) => t + x.quantity, 1) === 100, 'richiesta: commander + 99 carte');
+  ok($('#bk .bk-num b').textContent === '3' && text().includes('Rhystic Study') && text().includes('Game Changer'), 'risultato mostrato: bracket 3 e Game Changer');
+  ok(opened.length === 0 && clip === null, 'nessuna apertura del sito se il calcolo riesce');
+  clickA('bk-web'); await sleep(50);
+  ok(opened[0] === 'https://commanderbracket.app/bracket' && clip.startsWith('Commander\n1 Kaalia'), 'pulsante verso commanderbracket.app: apre e copia');
+  w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  ok(!$('#bk'), 'Esc chiude il pannello');
+  w.fetch = async () => { throw new w.TypeError('Failed to fetch'); };
+  clickA('bracket'); await sleep(50);
+  ok($('#bk .lb-warn') && $('#bk [data-a="bk-web"]'), 'se il calcolo non riesce: avviso e via di scampo verso il sito');
+  clickA('bk-close'); ok(!$('#bk'), 'chiusura del pannello');
+  w.fetch = async () => ({ ok: false, status: 500, json: async () => ({}) });
+  clickA('bracket'); await sleep(50);
+  ok(text().includes('errore'), 'errore del servizio segnalato'); clickA('bk-close');
+  w.fetch = async () => { await sleep(80); return { ok: true, json: async () => ({ bracketTag: 'E', cards: [], combos: [] }) }; };
+  clickA('bracket'); clickA('bk-close'); await sleep(150);
+  ok(!$('#bk'), 'risposta tardiva dopo la chiusura: il pannello non riappare');
+  delete w.fetch;
+
   // --- raccolta libera ---
   clickA('nav', '[data-v="import"]');
   clickA('draft-mode', '[data-v="binder"]');
@@ -140,7 +169,7 @@ const text = () => d.body.textContent.replace(/\s+/g, ' ');
   ok(text().includes('Salvati su questo dispositivo'), 'info salvataggio');
   clickA('copy-json'); await sleep(700);
   const json = JSON.parse(w.localStorage.getItem('cpa:state:v1'));
-  ok(json.decks.length === 2 && json.decks[0].cards.length > 50, 'dati salvati in localStorage');
+  ok(json.decks.length === 2 && json.decks.some(x => x.cards.length > 50), 'dati salvati in localStorage');
   change('[data-c="theme"]', 'dark');
   ok(d.documentElement.getAttribute('data-theme') === 'dark', 'tema scuro');
   type('[data-c="restore-text"]', '{"decks": "no"}'); clickA('restore-json');

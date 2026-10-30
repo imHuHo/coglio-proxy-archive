@@ -320,3 +320,26 @@ a { color: var(--accent); }
 .btn.bracket:hover { background: #ffd651; }
 :root:not([data-theme="light"]) .btn.bracket { color: #2a2100; }
 .deckcard .foot .btns { gap: 6px; }
+
+/* ----- pannello bracket ----- */
+.bk { align-items: start; overflow: auto; }
+.bk-box { background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 18px 50px #0008; width: min(520px, 100%); margin: auto; padding: 16px; display: grid; gap: 12px; }
+.bk-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bk-head strong { overflow-wrap: anywhere; }
+.bk-score { display: flex; gap: 14px; align-items: center; }
+.bk-score p { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.bk-num { display: grid; place-items: center; min-width: 96px; padding: 10px 12px; border-radius: 14px; background: #f6c93a; color: #2a2100; }
+.bk-num small { font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; }
+.bk-num b { font: 800 30px/1.1 var(--display, inherit); }
+.bk-chip { display: inline-block; font-weight: 800; font-size: 12px; padding: 3px 10px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--line); }
+.bk-chip.t-r, .bk-chip.t-b { background: var(--part-bg); color: var(--part); border-color: var(--part); }
+.bk-sec h4 { margin: 0 0 4px; font-size: 13px; display: flex; gap: 8px; align-items: baseline; }
+.bk-sec h4 span { font: 600 11px var(--mono); color: var(--muted); }
+.bk-sec p, .bk-sec ul { margin: 0; font-size: 13.5px; overflow-wrap: anywhere; }
+.bk-sec ul { padding-left: 18px; display: grid; gap: 4px; }
+.bk-tag { font-style: normal; font: 700 10px var(--mono); background: var(--surface2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px; margin-left: 4px; }
+.bk-none, .bk-wait { margin: 6px 0; text-align: center; }
+.bk-wait { color: var(--muted); }
+.bk-foot { margin: 0; font-size: 11.5px; color: var(--muted); }
+.bk-bar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.bk-box p { margin: 0; }

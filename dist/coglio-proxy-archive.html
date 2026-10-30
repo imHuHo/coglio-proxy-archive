@@ -325,6 +325,29 @@ a { color: var(--accent); }
 :root:not([data-theme="light"]) .btn.bracket { color: #2a2100; }
 .deckcard .foot .btns { gap: 6px; }
 
+/* ----- pannello bracket ----- */
+.bk { align-items: start; overflow: auto; }
+.bk-box { background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 18px 50px #0008; width: min(520px, 100%); margin: auto; padding: 16px; display: grid; gap: 12px; }
+.bk-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bk-head strong { overflow-wrap: anywhere; }
+.bk-score { display: flex; gap: 14px; align-items: center; }
+.bk-score p { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.bk-num { display: grid; place-items: center; min-width: 96px; padding: 10px 12px; border-radius: 14px; background: #f6c93a; color: #2a2100; }
+.bk-num small { font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; }
+.bk-num b { font: 800 30px/1.1 var(--display, inherit); }
+.bk-chip { display: inline-block; font-weight: 800; font-size: 12px; padding: 3px 10px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--line); }
+.bk-chip.t-r, .bk-chip.t-b { background: var(--part-bg); color: var(--part); border-color: var(--part); }
+.bk-sec h4 { margin: 0 0 4px; font-size: 13px; display: flex; gap: 8px; align-items: baseline; }
+.bk-sec h4 span { font: 600 11px var(--mono); color: var(--muted); }
+.bk-sec p, .bk-sec ul { margin: 0; font-size: 13.5px; overflow-wrap: anywhere; }
+.bk-sec ul { padding-left: 18px; display: grid; gap: 4px; }
+.bk-tag { font-style: normal; font: 700 10px var(--mono); background: var(--surface2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px; margin-left: 4px; }
+.bk-none, .bk-wait { margin: 6px 0; text-align: center; }
+.bk-wait { color: var(--muted); }
+.bk-foot { margin: 0; font-size: 11.5px; color: var(--muted); }
+.bk-bar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.bk-box p { margin: 0; }
+
 </style>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
@@ -555,6 +578,65 @@ a { color: var(--accent); }
     return (cmd && name ? 'Commander\n1 ' + name + '\n\nDeck\n' : '') + main.join('\n');
   }
 
+  /* Richiesta per l'API di Commander Spellbook: comandante a parte, il resto del mazzo con le quantità. */
+  function bracketPayload(deck) {
+    var cmd = deck.commander ? keyOf(deck.commander) : '', taken = !cmd, commanders = [], main = [];
+    deck.cards.slice().sort(function (a, b) { return a.name.localeCompare(b.name, 'en'); }).forEach(function (c) {
+      var q = c.qty;
+      if (!taken && keyOf(c.name) === cmd) { taken = true; commanders.push({ card: c.name, quantity: 1 }); q--; }
+      if (q > 0) main.push({ card: c.name, quantity: q });
+    });
+    return { commanders: commanders, main: main };
+  }
+
+  /* Sigla di Commander Spellbook → bracket Wizards. È una stima: E/C/P/S/R sono fasce di potenza, non il bracket deciso al tavolo. */
+  var BRACKET_TAGS = {
+    E: { range: '1–2', name: 'Exhibition', note: 'Nessuna carta che alza il bracket.' },
+    C: { range: '2', name: 'Core', note: 'Al massimo qualche turno extra.' },
+    P: { range: '3', name: 'Powerful', note: 'Qualche Game Changer.' },
+    O: { range: '3', name: 'Oddball', note: 'Combo particolari: valuta a mano.' },
+    S: { range: '3–4', name: 'Spicy', note: 'C\'è una combo a due carte, ma non rapida.' },
+    R: { range: '4+', name: 'Ruthless', note: 'Almeno uno fra: 4+ Game Changer, distruzione di terre di massa, molti turni extra, combo a due carte rapida.' },
+    B: { range: 'non legale', name: 'Banned', note: 'Contiene carte bandite in Commander.' }
+  };
+  function bracketSummary(resp, payload) {
+    var tag = resp && typeof resp.bracketTag === 'string' ? resp.bracketTag.toUpperCase() : '';
+    var info = BRACKET_TAGS[tag] || { range: '?', name: tag || 'n/d', note: 'Risposta non riconosciuta.' };
+    var cards = Array.isArray(resp && resp.cards) ? resp.cards : [];
+    var names = function (flag) {
+      var out = [], seen = {};
+      cards.forEach(function (c) {
+        var n = c && c.card && c.card.name;
+        if (n && c[flag] && !seen[n]) { seen[n] = 1; out.push(n); }
+      });
+      return out.sort(function (a, b) { return a.localeCompare(b, 'en'); });
+    };
+    var known = {};
+    cards.forEach(function (c) {
+      var n = c && c.card && c.card.name; if (!n) return;
+      known[keyOf(n)] = 1; known[keyOf(n.split(' // ')[0])] = 1;
+    });
+    var unknown = [];
+    (payload ? payload.commanders.concat(payload.main) : []).forEach(function (x) {
+      var k = keyOf(x.card), f = keyOf(x.card.split(' // ')[0]);
+      if (!known[k] && !known[f] && unknown.indexOf(x.card) < 0) unknown.push(x.card);
+    });
+    var combos = [], seenC = {};
+    (Array.isArray(resp && resp.combos) ? resp.combos : []).forEach(function (r) {
+      var cb = r && r.combo; if (!cb) return;
+      var cs = (cb.uses || []).map(function (u) { return u && u.card && u.card.name; }).filter(Boolean);
+      var res = (cb.produces || []).map(function (p) { return p && p.feature && p.feature.name; }).filter(Boolean);
+      var key = cs.slice().sort().join('|') + '>' + res.join('|');
+      if (!cs.length || seenC[key]) return; seenC[key] = 1;
+      combos.push({ cards: cs, result: res, tag: cb.bracketTag || '', twoCard: !!r.definitelyTwoCard, fast: typeof r.speed === 'number' ? r.speed : null });
+    });
+    return {
+      tag: tag, range: info.range, name: info.name, note: info.note,
+      gameChangers: names('gameChanger'), massLandDenial: names('massLandDenial'), extraTurns: names('extraTurn'), banned: names('banned'),
+      combos: combos, unknown: unknown
+    };
+  }
+
   function diffText(deck, upgrade, diff) {
     var l = ['Upgrade "' + upgrade.name + '" per ' + deck.name, '', 'ESCE (' + diff.outQty + '):'];
     diff.out.forEach(function (x) { l.push(x.qty + ' ' + x.name); });
@@ -690,7 +772,7 @@ a { color: var(--accent); }
   return {
     keyOf: keyOf, searchNorm: searchNorm, isBasic: isBasic, uid: uid,
     parseList: parseList, buildArchive: buildArchive, diffUpgrade: diffUpgrade,
-    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, clone: cloneJ, exportText: exportText, bracketText: bracketText, diffText: diffText,
+    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, clone: cloneJ, exportText: exportText, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, diffText: diffText,
     sanitizeDeck: sanitizeDeck, sanitizeSettings: sanitizeSettings, inUse: inUse
   };
 });
@@ -939,6 +1021,86 @@ a { color: var(--accent); }
       try { var a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; document.body.appendChild(a); a.click(); a.remove(); } catch (e2) { /* ignorato */ }
     }
   }
+  /* ---------- Bracket (Commander Spellbook) ---------- */
+  /* Il calcolo usa l'API pubblica di Commander Spellbook. Nell'app Windows la richiesta parte dal programma (cpaNet),
+     su Android da una chiamata nativa; nel browser può essere bloccata (CORS) e allora resta «copia e apri il sito». */
+  var BK = (function () {
+    var box = null, run = 0, last = null;
+    var URL_API = 'https://backend.commanderspellbook.com/estimate-bracket/', WEB = 'https://commanderbracket.app/bracket';
+    function available() { return !!store && store.kind !== 'claude' && (typeof fetch === 'function' || !!window.cpaNet); }
+    function call(payload) {
+      if (window.cpaNet && typeof window.cpaNet.bracket === 'function') {
+        return window.cpaNet.bracket(payload).then(function (r) {
+          if (r && r.ok) return r.json;
+          throw new Error(r && r.error ? r.error : 'network');
+        });
+      }
+      var ctl = typeof AbortController === 'function' ? new AbortController() : null, t = ctl && setTimeout(function () { ctl.abort(); }, 25000);
+      return fetch(URL_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: ctl ? ctl.signal : undefined })
+        .then(function (res) { if (!res.ok) throw new Error('http'); return res.json(); })
+        .then(function (j) { if (t) clearTimeout(t); return j; }, function (e) { if (t) clearTimeout(t); throw e; });
+    }
+    function close() { if (box) { box.remove(); box = null; run++; } }
+    function isOpen() { return !!box; }
+    function shell(deck, inner) {
+      if (!box) {
+        box = document.createElement('div'); box.id = 'bk'; box.className = 'lb bk'; box.setAttribute('data-a', 'bk-close');
+        box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Bracket di ' + deck.name);
+        document.body.appendChild(box);
+      }
+      box.innerHTML = '<div class="bk-box" data-a="bk-keep"><div class="bk-head"><strong>Bracket · ' + esc(deck.name) + '</strong>' +
+        '<button class="btn small" data-a="bk-close" id="bkx">Chiudi</button></div>' + inner + '</div>';
+      var x = box.querySelector('#bkx'); if (x) x.focus();
+    }
+    function list(title, arr) {
+      return arr.length ? '<div class="bk-sec"><h4>' + esc(title) + ' <span>' + arr.length + '</span></h4><p>' + arr.map(esc).join(' · ') + '</p></div>' : '';
+    }
+    function webBtn() { return '<button class="btn small bracket" data-a="bk-web" data-id="' + esc(last ? last.id : '') + '">Controlla anche su commanderbracket.app</button>'; }
+    function show(deck, sum) {
+      var combos = sum.combos.map(function (c) {
+        return '<li><b>' + c.cards.map(esc).join(' + ') + '</b>' + (c.result.length ? ' → ' + esc(c.result.join(', ')) : '') +
+          (c.twoCard ? ' <em class="bk-tag">due carte</em>' : '') + '</li>';
+      }).join('');
+      var warn = sum.banned.length ? '<p class="lb-warn">Carte bandite in Commander: ' + sum.banned.map(esc).join(', ') + '.</p>' : '';
+      var unk = sum.unknown.length ? '<div class="bk-sec"><h4>Carte non riconosciute <span>' + sum.unknown.length + '</span></h4><p>' + sum.unknown.slice(0, 12).map(esc).join(' · ') + (sum.unknown.length > 12 ? ' · … e altre ' + (sum.unknown.length - 12) : '') +
+        '<br><small>Non contano nella stima: controlla il nome.</small></p></div>' : '';
+      shell(deck,
+        '<div class="bk-score"><div class="bk-num"><small>Bracket stimato</small><b>' + esc(sum.range) + '</b></div>' +
+        '<div><span class="bk-chip t-' + esc(sum.tag.toLowerCase()) + '">' + esc(sum.name) + '</span><p>' + esc(sum.note) + '</p></div></div>' + warn +
+        list('Game Changer', sum.gameChangers) + list('Distruzione di terre di massa', sum.massLandDenial) + list('Turni extra', sum.extraTurns) +
+        (combos ? '<div class="bk-sec"><h4>Combo trovate <span>' + sum.combos.length + '</span></h4><ul>' + combos + '</ul></div>' : '') + unk +
+        (!sum.gameChangers.length && !sum.massLandDenial.length && !sum.extraTurns.length && !sum.combos.length && !sum.banned.length ? '<p class="bk-none">Nessun Game Changer, turno extra, distruzione di terre o combo trovati.</p>' : '') +
+        '<p class="bk-foot">Stima di Commander Spellbook: il bracket 1 e il 5 (cEDH) dipendono da come giocate, e il bracket vero lo decidete al tavolo. La lista del mazzo viene inviata a Commander Spellbook per il calcolo.</p>' +
+        '<div class="bk-bar">' + webBtn() + '</div>');
+    }
+    function fail(deck, why) {
+      shell(deck, '<p class="lb-warn">' + (why === 'cors' ? 'Da questo browser il calcolo non è disponibile: il sito di Commander Spellbook non permette richieste da altre pagine.' :
+        'Non sono riuscito a calcolare il bracket (' + (why === 'timeout' ? 'tempo scaduto' : why === 'http' ? 'il servizio ha risposto con un errore' : 'nessuna connessione') + ').') + '</p>' +
+        '<p>Puoi farlo sul sito: copio la lista e lo apro, poi incolli e premi «Check my bracket».</p><div class="bk-bar">' + webBtn() + '</div>');
+    }
+    function start(deck) {
+      last = deck; var my = ++run, payload = C.bracketPayload(deck);
+      shell(deck, '<p class="lb-wait bk-wait">Calcolo il bracket di «' + esc(deck.name) + '»…</p>');
+      var native = !!window.cpaNet;
+      call(payload).then(function (j) {
+        if (my !== run || !box) return;
+        show(deck, C.bracketSummary(j, payload));
+      }, function (e) {
+        if (my !== run || !box) return;
+        var m = e && e.message;
+        fail(deck, m === 'timeout' || m === 'http' ? m : (!native && e instanceof TypeError && location.protocol.indexOf('http') === 0 && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) ? 'cors' : 'network');
+      });
+    }
+    function web(deck) {
+      openExternal(WEB);
+      copyText(C.bracketText(deck)).then(function (ok) {
+        toast(ok ? 'Lista di «' + deck.name + '» copiata. Nella pagina del bracket incollala e premi «Check my bracket».'
+          : 'Copia automatica non riuscita: usa «Copia lista .txt» nel mazzo e incollala su commanderbracket.app/bracket.', null, true);
+      });
+    }
+    return { available: available, start: start, web: web, close: close, isOpen: isOpen };
+  })();
+
   function applyTheme() {
     var t = state.settings.theme, r = document.documentElement;
     if (t === 'light' || t === 'dark') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme');
@@ -1355,7 +1517,7 @@ a { color: var(--accent); }
       '</span><span class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="open-deck" data-id="' + esc(d.id) + '">Apri</button></span></div></article>';
   }
   function bracketBtn(d) {
-    return '<button class="btn small bracket" data-a="bracket" data-id="' + esc(d.id) + '" title="Copia la lista e apri commanderbracket.app">Verifica bracket</button>';
+    return '<button class="btn small bracket" data-a="bracket" data-id="' + esc(d.id) + '" title="Calcola il bracket del mazzo">Verifica bracket</button>';
   }
   function decksView() {
     var ds = state.decks.filter(function (d) { return d.kind === 'deck'; }), bs = state.decks.filter(function (d) { return d.kind === 'binder'; });
@@ -1662,14 +1824,14 @@ a { color: var(--accent); }
       case 'restore-json': restore(ui.restoreText); break;
       case 'bracket':
         deck = getDeck(id);
-        if (deck) {
-          /* l'apertura della pagina deve partire subito dal clic, prima della copia (che è asincrona) */
-          openExternal('https://commanderbracket.app/bracket');
-          copyText(C.bracketText(deck)).then(function (ok) {
-            toast(ok ? 'Lista di «' + deck.name + '» copiata. Nella pagina del bracket incollala e premi «Check my bracket».'
-              : 'Copia automatica non riuscita: usa «Copia lista .txt» nel mazzo e incollala su commanderbracket.app/bracket.', null, true);
-          });
-        } break;
+        if (deck) { if (BK.available()) BK.start(deck); else BK.web(deck); }
+        break;
+      case 'bk-web':
+        deck = getDeck(id) || getDeck();
+        if (deck) BK.web(deck);
+        break;
+      case 'bk-close': BK.close(); break;
+      case 'bk-keep': break;
       case 'lb-close': IMG.close(); break;
       case 'lb-flip': IMG.flip(); break;
       case 'lb-prints': IMG.prints(); break;
@@ -1693,7 +1855,7 @@ a { color: var(--accent); }
     ui.dataMsg = ''; ui.restoreText = ''; render();
   }
 
-  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && IMG.isOpen()) IMG.close(); });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
   document.addEventListener('mousemove', function (ev) {
     var t = ev.target.closest && ev.target.closest('.th.on');
     IMG.hover(!!t, t, ev);

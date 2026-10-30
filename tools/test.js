@@ -143,4 +143,31 @@ function sum(cards) { return cards.reduce((t, c) => t + c.qty, 0); }
   ok(C.bracketText(d).startsWith('Commander\n1 Mountain\n\nDeck\n1 Kaalia') && C.bracketText(d).includes('2 Mountain'), 'bracketText: una sola copia va a commander');
 }
 
+// 11. richiesta e riepilogo del bracket (forma reale della risposta di Commander Spellbook)
+{
+  const d = mk('b2', 'Prova', 'deck', true, [{ name: 'Sol Ring', qty: 1, set: '', cn: '' }, { name: 'Kaalia of the Vast', qty: 1, set: '', cn: '' }, { name: 'Island', qty: 3, set: '', cn: '' }]);
+  d.commander = 'Kaalia of the Vast';
+  const pl = C.bracketPayload(d);
+  ok(JSON.stringify(pl) === JSON.stringify({ commanders: [{ card: 'Kaalia of the Vast', quantity: 1 }], main: [{ card: 'Island', quantity: 3 }, { card: 'Sol Ring', quantity: 1 }] }), 'bracketPayload: commander a parte, resto con quantità');
+  d.commander = null;
+  ok(C.bracketPayload(d).commanders.length === 0 && C.bracketPayload(d).main.length === 3, 'bracketPayload senza commander');
+  const card = (name, o) => Object.assign({ card: { id: 1, name }, quantity: 1, banned: false, gameChanger: false, massLandDenial: false, extraTurn: false }, o || {});
+  const resp = {
+    bracketTag: 'R',
+    cards: [card('Sol Ring'), card('Demonic Tutor', { gameChanger: true }), card('Rhystic Study', { gameChanger: true }), card('Time Warp', { extraTurn: true }),
+      card('Armageddon', { massLandDenial: true }), card('Island', { quantity: 3 }), card('Kaalia of the Vast')],
+    combos: [{ combo: { uses: [{ card: { name: 'Kaalia of the Vast' } }, { card: { name: 'Master of Cruelties' } }], produces: [{ feature: { name: 'Target opponent loses the game' } }], bracketTag: 'S' }, definitelyTwoCard: true, speed: 5 },
+      { combo: { uses: [{ card: { name: 'Master of Cruelties' } }, { card: { name: 'Kaalia of the Vast' } }], produces: [{ feature: { name: 'Target opponent loses the game' } }], bracketTag: 'S' }, definitelyTwoCard: true }]
+  };
+  const pl2 = { commanders: [{ card: 'Kaalia of the Vast', quantity: 1 }], main: [{ card: 'Sol Ring', quantity: 1 }, { card: 'Island', quantity: 3 }, { card: 'Nonexistent Cardzz', quantity: 1 }, { card: 'Fire // Ice', quantity: 1 }] };
+  resp.cards.push(card('Fire // Ice'));
+  const sm = C.bracketSummary(resp, pl2);
+  ok(sm.tag === 'R' && sm.range === '4+' && sm.name === 'Ruthless', 'bracketSummary: tag R → 4+');
+  ok(sm.gameChangers.join() === 'Demonic Tutor,Rhystic Study' && sm.massLandDenial.join() === 'Armageddon' && sm.extraTurns.join() === 'Time Warp' && sm.banned.length === 0, 'bracketSummary: elenchi per categoria');
+  ok(sm.combos.length === 1 && sm.combos[0].twoCard && sm.combos[0].result[0] === 'Target opponent loses the game', 'bracketSummary: combo deduplicate');
+  ok(sm.unknown.join() === 'Nonexistent Cardzz', 'bracketSummary: carte non riconosciute (le doppie facce no)');
+  ok(C.bracketSummary({ bracketTag: 'B', cards: [card('Mana Crypt', { banned: true })], combos: [] }).banned[0] === 'Mana Crypt', 'bracketSummary: bandite');
+  ok(C.bracketSummary({}).range === '?' && C.bracketSummary(null).combos.length === 0, 'bracketSummary: risposta vuota senza errori');
+}
+
 console.log('OK, ' + n + ' controlli passati');

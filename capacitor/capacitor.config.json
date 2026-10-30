@@ -3,5 +3,12 @@
   "appName": "Coglio Proxy Archive",
   "webDir": "www",
   "backgroundColor": "#eceef5",
-  "server": { "androidScheme": "https" }
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
 }
