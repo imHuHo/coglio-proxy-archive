@@ -190,6 +190,36 @@ const text = () => d.body.textContent.replace(/\s+/g, ' ');
   clickA('undo');
   ok($$('.deckcard').length === 2, 'eliminazione annullata');
 
+  // --- stampe: avviso «già stampata» con le collezioni ---
+  clickA('nav', '[data-v="import"]');
+  type('[data-c="draft-text"]', '1 Blood Crypt (RNA) 245\n1 Sol Ring (CMM) 400');
+  clickA('draft-next');
+  const same = $('.reuse:not(.alt)'), diffp = $('.reuse.alt');
+  ok(same && same.textContent.includes('Blood Crypt') && same.textContent.includes('esattamente'), 'avviso: stessa identica stampa');
+  ok(diffp && diffp.textContent.includes('Stessa carta, stampa diversa') && diffp.textContent.includes('C21 263') && diffp.textContent.includes('CMM 400'), 'avviso: stessa carta con un\'altra stampa');
+  ok(!same.textContent.includes('Sol Ring') && !diffp.textContent.includes('Blood Crypt'), 'le due liste non si mescolano');
+
+  // --- stampe: upgrade che cambia solo il printing ---
+  clickA('nav', '[data-v="import"]');
+  type('[data-c="draft-text"]', '1 Sol Ring (C21) 263\n1 Arcane Signet (ELD) 331\n1 Terminate (RTR) 1');
+  type('[data-c="draft-name"]', 'Stampe');
+  clickA('draft-next'); clickA('draft-create');
+  clickA('deck-tab', '[data-v="ups"]'); clickA('new-up');
+  type('[data-c="draft-text"]', '1 Sol Ring (CMM) 400\n1 Arcane Signet (ELD) 331\n1 Swords to Plowshares (STA) 1');
+  type('[data-c="draft-name"]', 'Cambio stampa');
+  clickA('draft-next');
+  ok($('h1').textContent === 'Cambio stampa', 'upgrade con stampe creato');
+  ok($('.col.rp') && $('.col.rp').textContent.includes('Sol Ring') && $('.col.rp').textContent.includes('C21 263 → CMM 400'), 'sezione «Cambia solo la stampa»');
+  ok(!$('.col.out').textContent.includes('Sol Ring') && $('.col.out').textContent.includes('Terminate') && $('.col.in').textContent.includes('Swords to Plowshares') && !$('.col.in').textContent.includes('Sol Ring'), 'carta cambiata del tutto resta in esce/entra');
+  ok($$('.sum b').map(b => b.textContent).join() === '2,0,2' && text().includes('cambiano solo la stampa'), 'riepilogo con stampa: ' + $$('.sum b').map(b => b.textContent).join());
+  ok($('.col.rp .sm.alt') && $('.col.rp .sm.alt').textContent.includes('altra stampa'), 'nota: hai la stessa carta in un\'altra stampa');
+  clickA('copy-up'); await sleep(50);
+  ok(clip.includes('CAMBIA SOLO LA STAMPA (1):') && clip.includes('(C21) 263 → (CMM) 400'), 'lista dei cambi con le stampe');
+  clickA('up-st', '[data-v="have"]');
+  ok(!$('.col.rp .up-row'), 'filtro «già in archivio» nasconde la nuova stampa da procurare');
+  clickA('up-st', '[data-v="all"]');
+  clickA('back-deck'); clickA('del-deck'); clickA('del-deck');
+
   await sleep(500);
   ok(errors.length === 0, 'nessun errore JS: ' + errors.join(' | '));
   console.log('UI OK, ' + n + ' controlli passati');

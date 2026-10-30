@@ -806,13 +806,14 @@
   /* ---------- Upgrade ---------- */
   function upgradeCard(d, u) {
     var df = C.diffUpgrade(d, u, state.decks, state.settings);
-    return '<article class="deckcard"><div class="top"><div><h2>' + esc(u.name) + '</h2><div class="meta">' + plural(df.inQty, 'carta cambia', 'carte cambiano') + ' · ' + df.covered + ' già in archivio · ' + df.missing + ' da procurare</div></div></div>' +
+    return '<article class="deckcard"><div class="top"><div><h2>' + esc(u.name) + '</h2><div class="meta">' + plural(df.inQty, 'carta cambia', 'carte cambiano') + (df.reprintQty ? ' (' + df.reprintQty + ' solo stampa)' : '') + ' · ' + df.covered + ' già in archivio · ' + df.missing + ' da procurare</div></div></div>' +
       '<div class="foot"><span></span><button class="btn small" data-a="open-up" data-id="' + esc(u.id) + '">Apri</button></div></article>';
   }
   function planHtml(plan) {
     var n = function (a) { return a.reduce(function (t, x) { return t + x.qty; }, 0); };
     var toL = n(plan.toLoose), fromL = n(plan.fromLoose), fromD = n(plan.fromDecks), li = [];
-    if (toL) li.push('<li><b>' + plural(toL, 'carta esce', 'carte escono') + '</b> dal mazzo e finisc' + (toL === 1 ? 'e' : 'ono') + ' nelle carte sciolte' + (plan.createdBinder ? ' (creo la lista «' + esc(plan.binderName) + '»)' : '') + '.</li>');
+    var rp = n(plan.reprints || []);
+    if (toL) li.push('<li><b>' + plural(toL, 'carta esce', 'carte escono') + '</b>' + (rp ? ' (' + plural(rp, 'è la vecchia stampa di una carta che resta', 'sono vecchie stampe di carte che restano') + ')' : '') + ' dal mazzo e finisc' + (toL === 1 ? 'e' : 'ono') + ' nelle carte sciolte' + (plan.createdBinder ? ' (creo la lista «' + esc(plan.binderName) + '»)' : '') + '.</li>');
     if (fromL) li.push('<li><b>' + plural(fromL, 'carta entra', 'carte entrano') + '</b> dalle carte sciolte: ' + (fromL === 1 ? 'smette' : 'smettono') + ' di essere sciolt' + (fromL === 1 ? 'a' : 'e') + '.</li>');
     if (fromD) {
       var by = {}; plan.fromDecks.forEach(function (x) { by[x.deckName] = (by[x.deckName] || 0) + x.qty; });
@@ -829,10 +830,12 @@
     var df = C.diffUpgrade(d, u, state.decks, state.settings);
     var plan = C.applyUpgradeMoves(clone(state.decks), d.id, u.id, state.settings);
     var aApply = armed('apply-up:' + u.id), aDel = armed('del-up:' + u.id);
-    var have = df.inn.filter(function (x) { return !x.missing; }).length, need = df.inn.length - have;
+    var allIn = df.inn.concat(df.reprints);
+    var have = allIn.filter(function (x) { return !x.missing; }).length, need = allIn.length - have;
     return '<header class="vh"><button class="back" data-a="back-deck">← ' + esc(d.name) + '</button><h1>' + esc(u.name) + '</h1></header>' +
       '<section class="panel"><label class="lbl">Nome upgrade<input class="input" data-c="up-name" value="' + esc(u.name) + '"></label>' +
       '<div class="sum"><div><b>' + df.inQty + '</b><span>carte cambiano</span></div><div class="g"><b>' + df.covered + '</b><span>già nel tuo archivio</span></div><div class="r"><b>' + df.missing + '</b><span>da procurare</span></div></div>' +
+      (df.reprintQty || df.altCover ? '<p class="hint">Di queste <b>' + df.newQty + '</b> sono carte nuove e <b>' + df.reprintQty + '</b> cambiano solo la stampa.' + (df.altCover ? ' Per <b>' + df.altCover + '</b> hai già la stessa carta in un\'altra stampa.' : '') + '</p>' : '') +
       (df.commanderChange ? '<p class="warn">Il commander dell\'upgrade è diverso da quello del mazzo.</p>' : '') +
       (df.outQty !== df.inQty ? '<p class="warn">Il nuovo mazzo ha ' + sum(u.cards) + ' carte contro le ' + sum(d.cards) + ' attuali.</p>' : '') +
       planHtml(plan) +
@@ -841,24 +844,39 @@
       '<button class="btn small danger' + (aDel ? ' armed' : '') + '" data-a="del-up" data-cf="1" data-id="' + esc(u.id) + '">' + (aDel ? 'Conferma eliminazione' : 'Elimina upgrade') + '</button></div>' +
       '<p class="hint">Applica quando hai fatto lo scambio fisico: le carte tolte passano alle sciolte e la lista del mazzo diventa quella dell\'upgrade.</p></section>' +
       '<div class="sticky"><div class="search">' + IC.search + '<input class="input" data-c="upq" type="search" inputmode="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Cerca una carta tra quelle che cambiano" aria-label="Cerca nell\'upgrade" value="' + esc(ui.upQ) + '"></div>' +
-      '<div class="chips" role="group" aria-label="Carte che entrano">' + upChip('all', 'Tutte', df.inn.length) + upChip('have', 'Già in archivio', have) + upChip('need', 'Da procurare', need) + '</div>' +
+      '<div class="chips" role="group" aria-label="Carte che entrano">' + upChip('all', 'Tutte', allIn.length) + upChip('have', 'Già in archivio', have) + upChip('need', 'Da procurare', need) + '</div>' +
       '<p class="hint">I filtri riguardano le carte che entrano.</p></div><div class="cols" id="upcols"></div>';
   }
+  function prLabel(x) { return x && x.set ? String(x.set).toUpperCase() + (x.cn ? ' ' + x.cn : '') : 'stampa non indicata'; }
+  function ptag(x) { return x && x.set ? ' <span class="ptag">' + esc(prLabel(x)) + '</span>' : ''; }
+  function where(rows) {
+    return rows.map(function (r) { return esc(r.deckName) + (r.kind === 'binder' && !/sciolt/i.test(r.deckName) ? ' (sciolte)' : '') + ' ×' + r.qty + ' · ' + esc(prLabel(r)); }).join('; ');
+  }
   function upOutRow(x) {
-    return '<div class="up-row">' + IMG.thumb(x.name, x.set, x.cn) + '<span class="nm">' + esc(x.name) + '</span><span class="qty">' + x.qty + '×</span><span class="sm">Finisce nelle carte sciolte.</span></div>';
+    return '<div class="up-row">' + IMG.thumb(x.name, x.set, x.cn) + '<span class="nm">' + esc(x.name) + ptag(x) + '</span><span class="qty">' + x.qty + '×</span><span class="sm">Finisce nelle carte sciolte.</span></div>';
+  }
+  /* stato di una carta che entra: copie libere con la stessa stampa, copie libere in altra stampa, copie in uso */
+  function upStatus(x, newWord) {
+    var st;
+    if (x.basic) return '<span class="pill info">terra base</span><span class="sm">Considerata sempre disponibile.</span>';
+    if (!x.missing) {
+      return '<span class="pill free">Hai già ' + (x.set ? (x.qty > 1 ? 'tutte' : 'questa stampa') : (x.qty > 1 ? 'tutte' : 'questa carta')) + '</span><span class="sm">Libera in: ' +
+        x.sources.map(function (s) { return esc(s.deckName) + (s.kind === 'binder' ? ' (sciolte)' : ''); }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(', ') + '</span>';
+    }
+    st = '<span class="pill use">' + newWord + (x.qty > 1 ? ' ×' + x.missing : '') + '</span>';
+    var note = [];
+    if (x.covered) note.push('ne hai ' + x.covered + ' libere in questa stampa (' + x.sources.map(function (s) { return esc(s.deckName); }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(', ') + ')');
+    if (x.altCover) st += '<span class="sm alt">Hai già la stessa carta in un\'altra stampa: ' + where(x.altSources) + '. Se non ti serve quell\'immagine puoi riusarla; per l\'archivio è una carta diversa.</span>';
+    if (x.busyIn.length) note.push('in uso in ' + x.busyIn.map(function (s) { return esc(s.deckName); }).join(', '));
+    if (note.length) st += '<span class="sm">' + note.join(' · ') + '</span>';
+    return st;
   }
   function upInRow(x) {
-    var st;
-    if (x.basic) st = '<span class="pill info">terra base</span><span class="sm">Considerata sempre disponibile.</span>';
-    else if (!x.missing) st = '<span class="pill free">Hai già ' + (x.qty > 1 ? 'tutte' : 'questa carta') + '</span><span class="sm">Libera in: ' + x.sources.map(function (s) { return esc(s.deckName) + (s.kind === 'binder' ? ' (sciolte)' : ''); }).join(', ') + '</span>';
-    else {
-      st = '<span class="pill use">Da procurare' + (x.qty > 1 ? ' ×' + x.missing : '') + '</span>';
-      var note = [];
-      if (x.covered) note.push('ne hai ' + x.covered + ' libere in ' + x.sources.map(function (s) { return esc(s.deckName); }).join(', '));
-      if (x.busyIn.length) note.push('in uso in ' + x.busyIn.map(function (s) { return esc(s.deckName); }).join(', '));
-      if (note.length) st += '<span class="sm">' + note.join(' · ') + '</span>';
-    }
-    return '<div class="up-row">' + IMG.thumb(x.name, x.set, x.cn) + '<span class="nm">' + esc(x.name) + '</span><span class="qty">' + x.qty + '×</span>' + st + '</div>';
+    return '<div class="up-row">' + IMG.thumb(x.name, x.set, x.cn) + '<span class="nm">' + esc(x.name) + ptag(x) + '</span><span class="qty">' + x.qty + '×</span>' + upStatus(x, 'Da procurare') + '</div>';
+  }
+  function upReprintRow(x) {
+    return '<div class="up-row rp">' + IMG.thumb(x.name, x.from.set, x.from.cn) + '<span class="arr" aria-hidden="true">→</span>' + IMG.thumb(x.name, x.to.set, x.to.cn) +
+      '<span class="nm">' + esc(x.name) + ' <span class="ptag">' + esc(prLabel(x.from)) + ' → ' + esc(prLabel(x.to)) + '</span></span><span class="qty">' + x.qty + '×</span>' + upStatus(x, 'Da stampare') + '</div>';
   }
   function updateUpgradeCols() {
     var el = $('#upcols'); if (!el) return;
@@ -866,11 +884,14 @@
     var df = C.diffUpgrade(d, u, state.decks, state.settings), q = C.searchNorm(ui.upQ);
     var match = function (x) { return !q || C.searchNorm(x.name).indexOf(q) >= 0; };
     var outs = df.out.filter(match).sort(byName);
-    var inns = df.inn.filter(match).filter(function (x) { return ui.upSt === 'have' ? !x.missing : ui.upSt === 'need' ? x.missing > 0 : true; }).sort(byName);
+    var stf = function (x) { return ui.upSt === 'have' ? !x.missing : ui.upSt === 'need' ? x.missing > 0 : true; };
+    var inns = df.inn.filter(match).filter(stf).sort(byName);
+    var reps = df.reprints.filter(match).filter(stf).sort(byName);
     var qsum = function (a) { return a.reduce(function (t, x) { return t + x.qty; }, 0); };
     var none = function (all, whenEmpty) { return '<p class="hint">' + (all ? 'Nessuna corrispondenza.' : whenEmpty) + '</p>'; };
     el.innerHTML = '<section class="col out"><h2>Esce dal mazzo <span class="qty">' + qsum(outs) + '</span></h2><div class="list">' + (outs.map(upOutRow).join('') || none(df.out.length, 'Nessuna carta esce.')) + '</div></section>' +
-      '<section class="col in"><h2>Entra nel mazzo <span class="qty">' + qsum(inns) + '</span></h2><div class="list">' + (inns.map(upInRow).join('') || none(df.inn.length, 'Nessuna carta entra.')) + '</div></section>';
+      '<section class="col in"><h2>Entra nel mazzo <span class="qty">' + qsum(inns) + '</span></h2><div class="list">' + (inns.map(upInRow).join('') || none(df.inn.length, 'Nessuna carta entra.')) + '</div></section>' +
+      (df.reprints.length ? '<section class="col rp"><h2>Cambia solo la stampa <span class="qty">' + qsum(reps) + '</span></h2><p class="hint">Stessa carta, collezione o numero diversi: per l\'archivio è un\'altra carta. La vecchia stampa passa alle sciolte, la nuova va stampata (a meno che tu non l\'abbia già libera).</p><div class="list">' + (reps.map(upReprintRow).join('') || none(df.reprints.length, '')) + '</div></section>' : '');
     IMG.hydrate();
   }
 
@@ -910,18 +931,18 @@
   }
   function reuseBanner(cards) {
     var r = C.findReusable(cards, state.decks, state.settings);
-    var loose = r.filter(function (x) { return x.loose > 0; });
-    var inact = r.filter(function (x) { return x.inactive.length > 0; });
+    var ex = r.filter(function (x) { return x.exact > 0; }), ot = r.filter(function (x) { return x.other > 0; });
+    var want = function (x) { return x.wanted.length === 1 ? ptag(x.wanted[0]) : ''; };
     var h = '';
-    if (loose.length) {
-      h += '<div class="reuse"><p><b>CODIGHEL!</b> Queste carte le hai già stampate, verifica prima di stampare nuovamente:</p><ul>' + loose.map(function (x) {
-        return '<li><span class="qty">' + x.looseCovered + '×</span> ' + esc(x.name) + (x.loose < x.need ? '<span class="sm"> (ne servono ' + x.need + ', ne hai ' + x.loose + ' sciolte)</span>' : '') + '</li>';
+    if (ex.length) {
+      h += '<div class="reuse"><p><b>CODIGHEL!</b> Queste carte le hai già stampate, <b>esattamente in questa stampa</b>: verifica prima di stampare di nuovo.</p><ul>' + ex.map(function (x) {
+        return '<li><span class="qty">' + x.exact + '×</span> ' + esc(x.name) + want(x) + '<span class="sm"> in ' + where(x.exactRows) + (x.exact < x.need ? ' · ne servono ' + x.need : '') + '</span></li>';
       }).join('') + '</ul></div>';
     }
-    if (inact.length) {
-      h += '<details class="reuse alt"><summary>' + plural(inact.length, 'carta', 'carte') + ' libere anche in mazzi non attivi</summary><ul>' + inact.map(function (x) {
-        return '<li>' + esc(x.name) + '<span class="sm"> in ' + x.inactive.map(function (i) { return esc(i.deckName); }).join(', ') + '</span></li>';
-      }).join('') + '</ul></details>';
+    if (ot.length) {
+      h += '<div class="reuse alt"><p><b>Stessa carta, stampa diversa.</b> Hai già queste carte ma in un\'altra stampa. Se ti basta puoi riusarle; se vuoi proprio quella della lista vanno stampate (per l\'archivio sono carte diverse).</p><ul>' + ot.map(function (x) {
+        return '<li><span class="qty">' + x.other + '×</span> ' + esc(x.name) + (x.wanted.length === 1 ? '<span class="sm"> nella lista: ' + esc(prLabel(x.wanted[0])) + '</span>' : '') + '<span class="sm"> hai: ' + where(x.otherRows) + '</span></li>';
+      }).join('') + '</ul></div>';
     }
     return h;
   }

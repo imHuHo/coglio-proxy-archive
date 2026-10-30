@@ -147,52 +147,98 @@
   }
 
   /* ---------- Upgrade ---------- */
+  /* Stampe: due copie sono «la stessa stampa» se coincidono collezione e numero. Se una delle due non indica
+     la collezione (o il numero) non si può dire che siano diverse, quindi vale come uguale. */
+  function pk(c) { return (c.set || '').toLowerCase() + '|' + (c.cn || '').toLowerCase(); }
+  function samePrint(a, b) {
+    if (!a.set || !b.set) return true;
+    if (String(a.set).toLowerCase() !== String(b.set).toLowerCase()) return false;
+    return !a.cn || !b.cn || String(a.cn).toLowerCase() === String(b.cn).toLowerCase();
+  }
   function qtyMap(cards) {
     var m = {}, order = [];
     cards.forEach(function (c) {
-      var k = keyOf(c.name);
-      if (m[k]) m[k].qty += c.qty;
-      else { m[k] = { key: k, name: c.name, qty: c.qty, set: c.set || '', cn: c.cn || '' }; order.push(k); }
+      var k = keyOf(c.name), e = m[k];
+      if (!e) { e = m[k] = { key: k, name: c.name, qty: 0, set: c.set || '', cn: c.cn || '', rows: [] }; order.push(k); }
+      e.qty += c.qty;
+      for (var i = 0; i < e.rows.length; i++) {
+        if (pk(e.rows[i]) === pk(c)) { e.rows[i].qty += c.qty; return; }
+      }
+      e.rows.push({ set: c.set || '', cn: c.cn || '', qty: c.qty });
     });
     return { m: m, order: order };
   }
-
-  function diffUpgrade(deck, upgrade, decks, settings) {
-    var base = qtyMap(deck.cards), up = qtyMap(upgrade.cards);
-    var out = [], inn = [];
-    base.order.forEach(function (k) {
-      var b = base.m[k], u = up.m[k], d = b.qty - (u ? u.qty : 0);
-      if (d > 0) out.push({ key: k, name: b.name, qty: d, set: b.set, cn: b.cn });
-    });
-    up.order.forEach(function (k) {
-      var u = up.m[k], b = base.m[k], d = u.qty - (b ? b.qty : 0);
-      if (d > 0) inn.push({ key: k, name: u.name, qty: d, set: u.set, cn: u.cn });
-    });
-    var unlimited = !settings || settings.basicsUnlimited !== false;
-    var others = decks.filter(function (x) { return x.id !== deck.id; });
-    inn.forEach(function (it) {
-      var basic = isBasic(it.name) && unlimited;
-      var avail = 0, sources = [], busyIn = [];
-      others.forEach(function (d) {
-        var q = 0;
-        d.cards.forEach(function (c) { if (keyOf(c.name) === it.key) q += c.qty; });
-        if (!q) return;
-        if (inUse(d)) busyIn.push({ deckId: d.id, deckName: d.name, qty: q });
-        else { avail += q; sources.push({ deckId: d.id, deckName: d.name, qty: q, kind: d.kind }); }
+  function rowsOf(e, collapse) {
+    if (!e) return [];
+    if (collapse) return [{ set: '', cn: '', qty: e.qty }];
+    return e.rows.map(function (r) { return { set: r.set, cn: r.cn, qty: r.qty }; });
+  }
+  function pairOff(L, R, eq) {
+    L.forEach(function (l) {
+      R.forEach(function (r) {
+        if (l.qty > 0 && r.qty > 0 && eq(l, r)) { var t = Math.min(l.qty, r.qty); l.qty -= t; r.qty -= t; }
       });
-      it.basic = basic;
-      it.covered = basic ? it.qty : Math.min(it.qty, avail);
-      it.missing = it.qty - it.covered;
-      it.sources = sources;
-      it.busyIn = busyIn;
     });
+  }
+
+  /* Confronto fra il mazzo e un upgrade. Ogni differenza è di uno di tre tipi:
+   *  - out:      la carta esce (stesso nome non c'è più nell'upgrade, o ne servono meno copie);
+   *  - inn:      la carta entra (nome nuovo, o copie in più);
+   *  - reprints: lo stesso nome resta ma cambia la stampa (collezione/numero): la vecchia esce, la nuova va stampata.
+   * Per le carte che entrano si distingue tra copie libere con ESATTAMENTE la stampa voluta (covered) e copie libere
+   * della stessa carta ma in un'altra stampa (altCover): per l'archivio sono carte diverse. */
+  function diffUpgrade(deck, upgrade, decks, settings) {
+    var unlimited = !settings || settings.basicsUnlimited !== false;
+    var base = qtyMap(deck.cards), up = qtyMap(upgrade.cards);
+    var keys = base.order.concat(up.order.filter(function (k) { return !base.m[k]; }));
+    var out = [], inn = [], reprints = [];
+    keys.forEach(function (k) {
+      var bm = base.m[k], um = up.m[k], name = (um || bm).name;
+      var collapse = isBasic(name) && unlimited;
+      var L = rowsOf(bm, collapse), R = rowsOf(um, collapse);
+      pairOff(L, R, function (x, y) { return pk(x) === pk(y); });
+      pairOff(L, R, samePrint);
+      L.forEach(function (l) {
+        R.forEach(function (r) {
+          if (l.qty > 0 && r.qty > 0) {
+            var t = Math.min(l.qty, r.qty); l.qty -= t; r.qty -= t;
+            reprints.push({ key: k, name: um.name, qty: t, from: { set: l.set, cn: l.cn }, to: { set: r.set, cn: r.cn }, set: r.set, cn: r.cn });
+          }
+        });
+      });
+      L.forEach(function (l) { if (l.qty > 0) out.push({ key: k, name: bm.name, qty: l.qty, set: l.set, cn: l.cn }); });
+      R.forEach(function (r) { if (r.qty > 0) inn.push({ key: k, name: um.name, qty: r.qty, set: r.set, cn: r.cn }); });
+    });
+    var others = decks.filter(function (x) { return x.id !== deck.id; });
+    var avail = function (it) {
+      var ex = 0, alt = 0, sources = [], altSources = [], busy = {}, busyIn = [];
+      others.forEach(function (d) {
+        d.cards.forEach(function (c) {
+          if (keyOf(c.name) !== it.key) return;
+          if (inUse(d)) {
+            if (!busy[d.id]) { busy[d.id] = { deckId: d.id, deckName: d.name, qty: 0 }; busyIn.push(busy[d.id]); }
+            busy[d.id].qty += c.qty;
+          } else if (samePrint(it, c)) { ex += c.qty; sources.push({ deckId: d.id, deckName: d.name, qty: c.qty, kind: d.kind, set: c.set || '', cn: c.cn || '' }); }
+          else { alt += c.qty; altSources.push({ deckId: d.id, deckName: d.name, qty: c.qty, kind: d.kind, set: c.set || '', cn: c.cn || '' }); }
+        });
+      });
+      it.basic = isBasic(it.name) && unlimited;
+      it.covered = it.basic ? it.qty : Math.min(it.qty, ex);
+      it.missing = it.qty - it.covered;
+      it.altCover = it.basic ? 0 : Math.min(it.missing, alt);
+      it.sources = sources; it.altSources = altSources; it.busyIn = busyIn;
+    };
+    inn.forEach(avail); reprints.forEach(avail);
     var sum = function (a, f) { return a.reduce(function (t, x) { return t + f(x); }, 0); };
+    var q = function (x) { return x.qty; };
     return {
-      out: out, inn: inn,
-      outQty: sum(out, function (x) { return x.qty; }),
-      inQty: sum(inn, function (x) { return x.qty; }),
-      covered: sum(inn, function (x) { return x.covered; }),
-      missing: sum(inn, function (x) { return x.missing; }),
+      out: out, inn: inn, reprints: reprints,
+      dropQty: sum(out, q), newQty: sum(inn, q), reprintQty: sum(reprints, q),
+      outQty: sum(out, q) + sum(reprints, q),
+      inQty: sum(inn, q) + sum(reprints, q),
+      covered: sum(inn, function (x) { return x.covered; }) + sum(reprints, function (x) { return x.covered; }),
+      missing: sum(inn, function (x) { return x.missing; }) + sum(reprints, function (x) { return x.missing; }),
+      altCover: sum(inn, function (x) { return x.altCover; }) + sum(reprints, function (x) { return x.altCover; }),
       commanderChange: !!(upgrade.commander && upgrade.commander !== deck.commander)
     };
   }
@@ -323,13 +369,21 @@
     return { n: n, sig: String(b.sig || ''), at: +b.at || 0, manual: !!b.manual };
   }
 
+  function printTag(x) { return x && x.set ? ' (' + String(x.set).toUpperCase() + ')' + (x.cn ? ' ' + x.cn : '') : ''; }
   function diffText(deck, upgrade, diff) {
-    var l = ['Upgrade "' + upgrade.name + '" per ' + deck.name, '', 'ESCE (' + diff.outQty + '):'];
-    diff.out.forEach(function (x) { l.push(x.qty + ' ' + x.name); });
-    l.push('', 'ENTRA (' + diff.inQty + '):');
+    var l = ['Upgrade "' + upgrade.name + '" per ' + deck.name, '', 'ESCE (' + diff.dropQty + '):'];
+    diff.out.forEach(function (x) { l.push(x.qty + ' ' + x.name + printTag(x)); });
+    l.push('', 'ENTRA (' + diff.newQty + '):');
     diff.inn.forEach(function (x) {
-      l.push(x.qty + ' ' + x.name + (x.missing ? '  [da procurare: ' + x.missing + ']' : '  [in archivio]'));
+      l.push(x.qty + ' ' + x.name + printTag(x) + (x.missing ? '  [da procurare: ' + x.missing + (x.altCover ? ', ne hai ' + x.altCover + ' in altra stampa' : '') + ']' : '  [in archivio]'));
     });
+    if (diff.reprints.length) {
+      l.push('', 'CAMBIA SOLO LA STAMPA (' + diff.reprintQty + '):');
+      diff.reprints.forEach(function (x) {
+        l.push(x.qty + ' ' + x.name + ':' + (printTag(x.from) || ' stampa non indicata') + ' →' + (printTag(x.to) || ' stampa non indicata') +
+          (x.missing ? '  [da procurare: ' + x.missing + (x.altCover ? ', ne hai ' + x.altCover + ' in altra stampa' : '') + ']' : '  [in archivio]'));
+      });
+    }
     return l.join('\n');
   }
 
@@ -337,10 +391,10 @@
   /* ---------- Upgrade applicato: le carte si spostano davvero ---------- */
   function cloneJ(o) { return JSON.parse(JSON.stringify(o)); }
 
-  function removeCopies(deck, key, qty) {
+  function removeCopies(deck, key, qty, target) {
     var left = qty;
     deck.cards.forEach(function (c) {
-      if (left > 0 && keyOf(c.name) === key) { var t = Math.min(c.qty, left); c.qty -= t; left -= t; }
+      if (left > 0 && keyOf(c.name) === key && (!target || samePrint(target, c))) { var t = Math.min(c.qty, left); c.qty -= t; left -= t; }
     });
     deck.cards = deck.cards.filter(function (c) { return c.qty > 0; });
     return qty - left;
@@ -363,36 +417,40 @@
     var deck = decks.filter(function (d) { return d.id === deckId; })[0];
     var up = deck.upgrades.filter(function (u) { return u.id === upgradeId; })[0];
     var diff = diffUpgrade(deck, up, decks, settings);
-    var rep = { toLoose: [], fromLoose: [], fromDecks: [], createdBinder: false, binderName: '', diff: diff };
+    var rep = { toLoose: [], fromLoose: [], fromDecks: [], reprints: [], createdBinder: false, binderName: '', diff: diff };
     var now = Date.now();
 
-    diff.inn.forEach(function (it) {
+    /* entrano (carte nuove e nuove stampe): si prendono solo copie con ESATTAMENTE quella stampa */
+    diff.inn.concat(diff.reprints).forEach(function (it) {
       var need = it.qty;
       decks.filter(function (d) { return d.kind === 'binder'; }).forEach(function (b) {
         if (need <= 0) return;
-        var t = removeCopies(b, it.key, need);
+        var t = removeCopies(b, it.key, need, it);
         if (t) { need -= t; b.updatedAt = now; rep.fromLoose.push({ name: it.name, qty: t, deckId: b.id, deckName: b.name }); }
       });
       decks.filter(function (d) { return d.kind === 'deck' && !d.active && d.id !== deck.id; }).forEach(function (d) {
         if (need <= 0) return;
-        var t = removeCopies(d, it.key, need);
+        var t = removeCopies(d, it.key, need, it);
         if (t) { need -= t; d.updatedAt = now; rep.fromDecks.push({ name: it.name, qty: t, deckId: d.id, deckName: d.name }); }
       });
     });
 
+    /* escono (carte tolte e vecchie stampe): finiscono nelle sciolte con la stampa che avevano */
+    var gone = diff.out.concat(diff.reprints.map(function (r) { return { key: r.key, name: r.name, qty: r.qty, set: r.from.set, cn: r.from.cn }; }));
     var binder = decks.filter(function (d) { return d.kind === 'binder'; })[0] || null;
-    if (diff.out.length) {
+    if (gone.length) {
       if (!binder) {
         binder = { id: uid('d'), name: 'Carte sciolte', kind: 'binder', active: false, commander: null, cards: [], upgrades: [], createdAt: now, updatedAt: now };
         decks.push(binder); rep.createdBinder = true;
       }
-      diff.out.forEach(function (x) {
-        var src = deck.cards.filter(function (c) { return keyOf(c.name) === x.key; })[0] || { name: x.name };
+      gone.forEach(function (x) {
+        var src = x.set ? { name: x.name, set: x.set, cn: x.cn } : (deck.cards.filter(function (c) { return keyOf(c.name) === x.key; })[0] || { name: x.name });
         addCopies(binder, src, x.qty);
         rep.toLoose.push({ name: x.name, qty: x.qty });
       });
       binder.updatedAt = now;
     }
+    diff.reprints.forEach(function (r) { rep.reprints.push({ name: r.name, qty: r.qty, from: r.from, to: r.to }); });
     if (binder) rep.binderName = binder.name;
 
     deck.cards = cloneJ(up.cards);
@@ -402,24 +460,53 @@
     return rep;
   }
 
-  /* Carte di una lista da stampare che hai già: sciolte (stampate e libere) o libere in mazzi non attivi. */
+  /* Carte di una lista da stampare che hai già: sciolte (stampate e libere) o libere in mazzi non attivi.
+   * Per ogni carta si distingue:
+   *  - exact: copie libere con ESATTAMENTE la stampa richiesta (se la lista non indica la collezione, vale qualsiasi);
+   *  - other: copie libere della stessa carta ma in un'altra stampa (per l'archivio sono carte diverse).
+   * loose/looseCovered/inactive restano per compatibilità: contano per nome, senza guardare la stampa. */
   function findReusable(cards, decks, settings) {
     var unlimited = !settings || settings.basicsUnlimited !== false;
     var need = qtyMap(cards), out = [];
     need.order.forEach(function (k) {
       var it = need.m[k];
       if (unlimited && isBasic(it.name)) return;
-      var loose = 0, inactive = [];
+      var loose = 0, inactive = [], pool = [];
       decks.forEach(function (d) {
         var q = 0;
-        d.cards.forEach(function (c) { if (keyOf(c.name) === k) q += c.qty; });
+        d.cards.forEach(function (c) {
+          if (keyOf(c.name) !== k) return;
+          q += c.qty;
+          if (d.kind === 'binder' || !d.active) pool.push({ deckId: d.id, deckName: d.name, kind: d.kind, set: c.set || '', cn: c.cn || '', left: c.qty });
+        });
         if (!q) return;
         if (d.kind === 'binder') loose += q;
         else if (!d.active) inactive.push({ deckId: d.id, deckName: d.name, qty: q });
       });
-      if (loose || inactive.length) {
-        out.push({ key: k, name: it.name, need: it.qty, loose: loose, looseCovered: Math.min(it.qty, loose), inactive: inactive });
-      }
+      if (!loose && !inactive.length) return;
+      var exactRows = [], otherRows = [], exact = 0, other = 0;
+      var rows = it.rows.map(function (r) { return { set: r.set, cn: r.cn, left: r.qty }; });
+      rows.forEach(function (r) {
+        pool.forEach(function (p) {
+          if (r.left > 0 && p.left > 0 && samePrint(r, p)) {
+            var t = Math.min(r.left, p.left); r.left -= t; p.left -= t; exact += t;
+            exactRows.push({ deckId: p.deckId, deckName: p.deckName, kind: p.kind, qty: t, set: p.set, cn: p.cn });
+          }
+        });
+      });
+      rows.forEach(function (r) {
+        pool.forEach(function (p) {
+          if (r.left > 0 && p.left > 0) {
+            var t = Math.min(r.left, p.left); r.left -= t; p.left -= t; other += t;
+            otherRows.push({ deckId: p.deckId, deckName: p.deckName, kind: p.kind, qty: t, set: p.set, cn: p.cn });
+          }
+        });
+      });
+      out.push({
+        key: k, name: it.name, need: it.qty, wanted: it.rows.map(function (r) { return { set: r.set, cn: r.cn, qty: r.qty }; }),
+        exact: exact, other: other, exactRows: exactRows, otherRows: otherRows,
+        loose: loose, looseCovered: Math.min(it.qty, loose), inactive: inactive
+      });
     });
     return out;
   }
@@ -459,7 +546,7 @@
   return {
     keyOf: keyOf, searchNorm: searchNorm, isBasic: isBasic, uid: uid,
     parseList: parseList, buildArchive: buildArchive, diffUpgrade: diffUpgrade,
-    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, clone: cloneJ, exportText: exportText, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, bracketNumber: bracketNumber, deckSig: deckSig, diffText: diffText,
+    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, samePrint: samePrint, clone: cloneJ, exportText: exportText, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, bracketNumber: bracketNumber, deckSig: deckSig, diffText: diffText,
     sanitizeDeck: sanitizeDeck, sanitizeSettings: sanitizeSettings, inUse: inUse
   };
 });

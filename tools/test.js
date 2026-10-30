@@ -191,4 +191,61 @@ function sum(cards) { return cards.reduce((t, c) => t + c.qty, 0); }
   ok(sd.bracket.n === 3 && sd.bracket.manual === true && C.sanitizeDeck(Object.assign({}, d, { bracket: { n: 9 } })).bracket === null && C.sanitizeDeck(d).bracket === null, 'sanitizeDeck: bracket valido tenuto, non valido scartato');
 }
 
+// 13. stampe: cambia solo il printing / stessa stampa / stampa diversa
+{
+  const c = (name, qty, set, cn) => ({ name, qty, set: set || '', cn: cn || '' });
+  const base = mk('pk', 'Mazzo', 'deck', true, [c('Sol Ring', 1, 'C21', '263'), c('Arcane Signet', 1, 'ELD', '331'), c('Lightning Greaves', 1), c('Terminate', 1, 'RTR', '1')]);
+  const upg = { id: 'pu', name: 'U', cards: [c('Sol Ring', 1, 'CMM', '400'), c('Arcane Signet', 1, 'ELD', '331'), c('Lightning Greaves', 1, 'CMM', '400'), c('Swords to Plowshares', 1, 'STA', '1')], commander: null, createdAt: 0 };
+  base.upgrades = [upg];
+  const bind = mk('pb', 'Sciolte', 'binder', false, [c('Sol Ring', 1, 'CMM', '400')]);
+  const alt = mk('pa', 'Altro', 'deck', false, [c('Swords to Plowshares', 1, 'STA', '2')]);
+  const df = C.diffUpgrade(base, upg, [base, bind, alt], {});
+  ok(df.reprints.length === 1 && df.reprints[0].name === 'Sol Ring' && df.reprints[0].from.set === 'C21' && df.reprints[0].to.set === 'CMM', 'stampa: Sol Ring cambia solo stampa');
+  ok(df.out.length === 1 && df.out[0].name === 'Terminate' && df.inn.length === 1 && df.inn[0].name === 'Swords to Plowshares', 'stampa: carte cambiate del tutto restano out/in');
+  ok(!df.out.concat(df.inn, df.reprints).some(x => x.name === 'Arcane Signet' || x.name === 'Lightning Greaves'), 'stampa: uguale o senza collezione = nessun cambio');
+  ok(df.dropQty === 1 && df.newQty === 1 && df.reprintQty === 1 && df.outQty === 2 && df.inQty === 2, 'stampa: totali separati');
+  ok(df.reprints[0].covered === 1 && df.reprints[0].sources[0].set === 'CMM' && df.reprints[0].missing === 0, 'stampa: la nuova stampa è già libera nelle sciolte');
+  ok(df.inn[0].covered === 0 && df.inn[0].missing === 1 && df.inn[0].altCover === 1 && df.inn[0].altSources[0].cn === '2', 'stampa: stessa carta ma altra stampa non conta come coperta');
+  ok(df.covered === 1 && df.missing === 1 && df.altCover === 1, 'stampa: riepilogo coperte/mancanti/altra stampa');
+  ok(C.diffText(base, upg, df).includes('CAMBIA SOLO LA STAMPA (1):') && C.diffText(base, upg, df).includes('1 Sol Ring: (C21) 263 → (CMM) 400'), 'stampa: lista dei cambi');
+  // stesse collezione, numero diverso = stampa diversa; due copie → una cambia e una esce
+  const b2 = mk('p2', 'M', 'deck', true, [c('Sol Ring', 2, 'SLD', '1563')]);
+  const u2 = { id: 'p2u', name: 'U', cards: [c('Sol Ring', 1, 'SLD', '1564')], commander: null, createdAt: 0 };
+  const d2 = C.diffUpgrade(b2, u2, [b2], {});
+  ok(d2.reprints.length === 1 && d2.reprints[0].qty === 1 && d2.out.length === 1 && d2.out[0].qty === 1 && d2.out[0].set === 'SLD' && d2.inn.length === 0, 'stampa: stesso set numero diverso, e copia in meno');
+  // terre base: la stampa non conta se illimitate
+  const b3 = mk('p3', 'T', 'deck', true, [c('Mountain', 1, 'M21', '270')]);
+  const u3 = { id: 'p3u', name: 'U', cards: [c('Mountain', 1, 'ZNR', '380')], commander: null, createdAt: 0 };
+  ok(C.diffUpgrade(b3, u3, [b3], { basicsUnlimited: true }).reprints.length === 0 && C.diffUpgrade(b3, u3, [b3], { basicsUnlimited: false }).reprints.length === 1, 'stampa: terre base illimitate ignorano la stampa');
+  // applicazione: prende solo la stampa esatta e rimette nelle sciolte la vecchia
+  const decks = [base, bind, alt];
+  const rep = C.applyUpgradeMoves(decks, 'pk', 'pu', {});
+  const has = (d, name, set, cn) => d.cards.some(x => x.name === name && x.set === set && x.cn === cn && x.qty > 0);
+  ok(!has(bind, 'Sol Ring', 'CMM', '400') && has(bind, 'Sol Ring', 'C21', '263') && has(bind, 'Terminate', 'RTR', '1'), 'applica: la stampa esatta esce dalle sciolte, la vecchia ci entra');
+  ok(has(alt, 'Swords to Plowshares', 'STA', '2') && rep.fromDecks.length === 0, 'applica: un\'altra stampa non viene presa da sola');
+  ok(rep.reprints.length === 1 && rep.fromLoose.some(x => x.name === 'Sol Ring'), 'applica: resoconto con le stampe cambiate');
+}
+
+// 14. avviso «già stampata»: stessa stampa / altra stampa
+{
+  const c = (name, qty, set, cn) => ({ name, qty, set: set || '', cn: cn || '' });
+  const bind = mk('rb', 'Sciolte', 'binder', false, [c('Sol Ring', 1, 'CMM', '400'), c('Arcane Signet', 2, 'ELD', '331')]);
+  const alt = mk('ra', 'Smontato', 'deck', false, [c('Swords to Plowshares', 1, 'STA', '2')]);
+  const act = mk('rc', 'Montato', 'deck', true, [c('Terminate', 1, 'RTR', '1')]);
+  const p = C.parseList('1 Sol Ring (CMM) 400\n1 Swords to Plowshares (STA) 1\n1 Arcane Signet (ELD) 331\n1 Terminate (RTR) 1');
+  const r = C.findReusable(p.cards, [bind, alt, act], {});
+  const g = n => r.find(x => x.name === n);
+  ok(r.length === 3 && !g('Terminate'), 'riuso: carta in mazzo attivo ignorata');
+  ok(g('Sol Ring').exact === 1 && g('Sol Ring').other === 0 && g('Sol Ring').exactRows[0].deckName === 'Sciolte', 'riuso: stessa identica stampa');
+  ok(g('Swords to Plowshares').exact === 0 && g('Swords to Plowshares').other === 1 && g('Swords to Plowshares').otherRows[0].cn === '2' && g('Swords to Plowshares').otherRows[0].deckName === 'Smontato', 'riuso: stessa carta, altro numero = stampa diversa');
+  ok(g('Arcane Signet').exact === 1 && g('Arcane Signet').other === 0 && g('Arcane Signet').loose === 2, 'riuso: ne servono 1, ne hai 2 identiche');
+  const r2 = C.findReusable(C.parseList('1 Swords to Plowshares').cards, [bind, alt], {});
+  ok(r2[0].exact === 1 && r2[0].other === 0, 'riuso: lista senza collezione = qualsiasi stampa va bene');
+  const r3 = C.findReusable(C.parseList('2 Sol Ring (CMM) 400\n1 Sol Ring (C21) 263').cards, [bind], {});
+  ok(r3[0].need === 3 && r3[0].exact === 1 && r3[0].other === 0, 'riuso: righe con stampe diverse della stessa carta');
+  const bind2 = mk('rb2', 'S2', 'binder', false, [c('Sol Ring', 1, 'C21', '263')]);
+  const r4 = C.findReusable(C.parseList('1 Sol Ring (CMM) 400').cards, [bind2], {});
+  ok(r4[0].exact === 0 && r4[0].other === 1, 'riuso: solo altra stampa');
+}
+
 console.log('OK, ' + n + ' controlli passati');

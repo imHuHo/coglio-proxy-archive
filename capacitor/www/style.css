@@ -356,3 +356,12 @@ button.bk-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 2p
 .bk-badge.stale { opacity: .5; box-shadow: inset 0 0 0 2px #0006; background-image: repeating-linear-gradient(135deg, transparent 0 4px, #ffffff55 4px 6px); }
 .bk-set { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
 .bk-set span { flex: 1 1 100%; }
+
+/* stampe: stessa carta con stampa diversa */
+.ptag { font: 600 11px var(--mono); color: var(--muted); background: var(--surface2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px; white-space: nowrap; }
+.col.rp { grid-column: 1 / -1; }
+.col.rp h2 { color: var(--part); }
+.col.rp > .hint { margin: -2px 0 8px; }
+.up-row.rp .arr { color: var(--muted); font-weight: 700; }
+.up-row .sm.alt { color: var(--part); }
+.reuse + .reuse { margin-top: 10px; }

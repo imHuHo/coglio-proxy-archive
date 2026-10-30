@@ -39,6 +39,12 @@ e l'app ti dice quali carte hai, quante sono libere e in quale mazzo sono impegn
   numero, lo imposti a mano dal pannello. Nell'app Windows la richiesta parte dal programma (`electron/preload.js` + `main.js`), su Android da una
   chiamata nativa (`CapacitorHttp`); nel browser Commander Spellbook blocca le richieste da altre pagine (CORS) e il pannello propone
   «copia la lista e apri [commanderbracket.app](https://commanderbracket.app/bracket)». Per il calcolo la lista viene inviata a Commander Spellbook.
+- **Stampe diverse = carte diverse.** Per l'archivio una carta è identificata da nome *e* stampa (collezione + numero). Quando importi un mazzo,
+  l'avviso CODIGHEL separa le carte che hai già libere **in quella esatta stampa** da quelle che hai **ma in un'altra stampa** (le puoi riusare, oppure
+  stampare quella nuova). Negli upgrade ogni differenza è di tre tipi: *esce*, *entra*, *cambia solo la stampa*; per le carte che entrano si vede se
+  la stampa voluta è già libera o se hai solo un'altra stampa, e applicando l'upgrade si prendono dalle sciolte solo copie con la stampa esatta
+  (la vecchia stampa torna tra le sciolte). Se nella lista non è indicata la collezione, qualsiasi stampa va bene; per le terre base la stampa non conta
+  finché sono considerate illimitate.
 - **Backup** in JSON (scarica, copia, ripristina). Ogni azione distruttiva ha *Annulla*.
 
 ### Come vengono contate le carte
