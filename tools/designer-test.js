@@ -175,7 +175,7 @@ let n = 0; const ok = (c, m) => { n++; assert.ok(c, m); };
   fs.writeFileSync('/tmp/claude-0/dz/pack-test.json', JSON.stringify(pack));
   await page.click('[data-a="dz-back"]'); await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
   await page.setInputFiles('[data-c="dz-framefile"]', '/tmp/claude-0/dz/pack-test.json');
-  await page.waitForFunction(() => /Importate 2 cornici/.test(document.body.innerText));
+  await page.waitForFunction(() => /Importati: 2 cornici/.test(document.body.innerText));
   ok(await page.inputValue('[data-c="dz-frameimg"]') === 'auto:tst', 'dopo il pacchetto la cornice è «automatica»');
   ok(/Prova — automatica/.test(await page.innerHTML('[data-c="dz-frameimg"]')), 'opzione automatica nel menu');
   await page.waitForTimeout(300);
@@ -190,6 +190,25 @@ let n = 0; const ok = (c, m) => { n++; assert.ok(c, m); };
   await page.click('[data-a="dz-frame-del"]');
   await page.waitForFunction(() => CPADesigner.state.frames.every(f => f.group !== 'tst'));
   ok(await page.inputValue('[data-c="dz-frameimg"]') === '', 'pacchetto eliminato, torna la cornice disegnata');
+
+  /* simboli e font importati (pacchetto solo-risorse) */
+  const symPng = 'data:image/png;base64,' + framePng.toString('base64');
+  fs.writeFileSync('/tmp/claude-0/dz/res-test.json', JSON.stringify({ app: 'coglio-frames', version: 1, symbols: { W: symPng, U: symPng, R: symPng, CIRCLE: symPng }, fonts: [{ role: 'title', family: 'CPA Title', style: 'normal', ttf: 'data:font/ttf;base64,AAAA' }] }));
+  await page.click('[data-a="dz-back"]'); await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
+  const full = () => page.evaluate(() => document.getElementById('dz-cv').toDataURL().length + ':' + document.getElementById('dz-cv').toDataURL().slice(-400));
+  const beforeS = await full();
+  await page.setInputFiles('[data-c="dz-framefile"]', '/tmp/claude-0/dz/res-test.json');
+  await page.waitForFunction(() => /simboli di mana/.test(document.body.innerText));
+  ok(await page.evaluate(() => CPADesigner.state.res.some(r => r.kind === 'symbols' && Object.keys(r.map).length === 4)), 'simboli salvati');
+  ok(await page.evaluate(() => CPACard.hasSymbols()), 'il motore usa i simboli importati');
+  await page.waitForTimeout(300);
+  ok((await full()) !== beforeS, 'i simboli cambiano l\u2019anteprima');
+  await go(); await nav('designer'); await page.waitForSelector('.dz-item');
+  ok(await page.evaluate(() => CPADesigner.state.res.length) >= 1 && await page.evaluate(() => CPACard.hasSymbols()), 'simboli ancora attivi dopo il riavvio');
+  await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
+  await page.click('[data-a="dz-res-del"]');
+  await page.waitForFunction(() => CPADesigner.state.res.length === 0);
+  ok(await page.evaluate(() => !CPACard.hasSymbols()), 'simboli e font tolti');
   await page.click('[data-a="dz-back"]');
 
   /* vista mazzo: etichette Design */

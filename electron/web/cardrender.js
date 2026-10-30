@@ -7,8 +7,17 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
   var W = 745, H = 1040;
-  var F_TITLE = "Cinzel, 'Palatino Linotype', 'Book Antiqua', Georgia, serif";
-  var F_BODY = "'EB Garamond', 'Palatino Linotype', 'Book Antiqua', Georgia, serif";
+  var BASE_TITLE = "Cinzel, 'Palatino Linotype', 'Book Antiqua', Georgia, serif";
+  var BASE_BODY = "'EB Garamond', 'Palatino Linotype', 'Book Antiqua', Georgia, serif";
+  var F_TITLE = BASE_TITLE, F_BODY = BASE_BODY;
+  /* risorse importate dall'utente (font e simboli di mana): senza di esse si usano font e simboli disegnati qui */
+  var RES = { symbols: {} };
+  function setResources(r) {
+    r = r || {}; var f = r.fonts || {};
+    RES.symbols = r.symbols || {};
+    F_TITLE = f.title ? "'CPA Title', " + BASE_TITLE : BASE_TITLE;
+    F_BODY = f.body ? "'CPA Body', " + BASE_BODY : BASE_BODY;
+  }
   var F_UI = "Manrope, 'Segoe UI', Arial, sans-serif";
 
   /* ---------- tavolozze (colori scelti da noi) ---------- */
@@ -115,6 +124,14 @@
   /* d = diametro. key = contenuto fra graffe, es. "2", "U", "W/U", "2/W", "G/P", "T" */
   function drawSymbol(ctx, key, cx, cy, d) {
     var k = String(key).toUpperCase(), r = d / 2;
+    var img = RES.symbols[k];
+    if (!img && /^\d+$/.test(k) && RES.symbols.CIRCLE) {
+      var cir = RES.symbols.CIRCLE, ch = d * 1.08, cw = ch * cir.width / cir.height;
+      ctx.save(); ctx.drawImage(cir, cx - cw / 2, cy - ch / 2, cw, ch);
+      ctx.fillStyle = '#14110f'; ctx.font = '700 ' + Math.round(d * (k.length > 1 ? 0.5 : 0.64)) + 'px ' + F_TITLE; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k, cx, cy + d * 0.05);
+      ctx.restore(); return;
+    }
+    if (img) { var ih = d * 1.08, iw = ih * img.width / img.height; ctx.save(); ctx.drawImage(img, cx - iw / 2, cy - ih / 2, iw, ih); ctx.restore(); return; }
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.arc(cx - r * 0.08, cy + r * 0.1, r, 0, 6.2832); ctx.fill();
     var parts = k.split('/');
@@ -457,6 +474,6 @@
   return {
     W: W, H: H, FRAMES: FRAMES, LAYOUT: LAYOUT, PAL: PAL, PAL_ORDER: PAL_ORDER, RARITY: RARITY, defaults: defaults, paletteKey: paletteKey,
     render: render, tokenize: tokenize, costTokens: costTokens, parseWalker: parseWalker, parseSaga: parseSaga, drawSymbol: drawSymbol,
-    F_TITLE: F_TITLE, F_BODY: F_BODY, F_UI: F_UI
+    F_UI: F_UI, setResources: setResources, hasSymbols: function () { return Object.keys(RES.symbols).length > 0; }
   };
 });

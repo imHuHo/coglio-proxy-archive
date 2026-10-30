@@ -40,7 +40,7 @@
   })();
 
   /* ---------- stato ---------- */
-  var dz = { loaded: false, loading: null, designs: [], frames: [], view: 'list', cur: null, artImg: null, frameImgs: {}, search: { q: '', busy: false, msg: '' }, focus: 'name',
+  var dz = { loaded: false, loading: null, designs: [], frames: [], res: [], view: 'list', cur: null, artImg: null, frameImgs: {}, search: { q: '', busy: false, msg: '' }, focus: 'name',
     bind: null, picker: null, confirm: '', msg: '' };
   var artCache = {}, thumbTimer = null, drawTimer = null, saveTimer = null;
 
@@ -51,10 +51,29 @@
     if (dz.loading) return dz.loading;
     dz.loading = Promise.all([DB.all('designs'), DB.all('frames')]).then(function (r) {
       dz.designs = (r[0] || []).map(norm).sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
-      dz.frames = (r[1] || []).sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
-      dz.loaded = true; dz.loading = null;
+      var all = (r[1] || []).sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
+      dz.frames = all.filter(function (f) { return !f.kind || f.kind === 'frame'; });
+      dz.res = all.filter(function (f) { return f.kind === 'font' || f.kind === 'symbols'; });
+      return initResources().then(function () { dz.loaded = true; dz.loading = null; });
     }, function () { dz.loaded = true; dz.loading = null; });
     return dz.loading;
+  }
+  /* font e simboli di mana importati dall'utente: si registrano nel browser e nel motore di rendering */
+  function initResources() {
+    var fonts = {}, syms = {}, jobs = [];
+    dz.res.forEach(function (rec) {
+      if (rec.kind === 'font' && rec.blob && window.FontFace && document.fonts) {
+        jobs.push(rec.blob.arrayBuffer().then(function (buf) {
+          var ff = new FontFace(rec.family, buf, { style: rec.style === 'italic' ? 'italic' : 'normal', weight: '100 900' });
+          return ff.load().then(function () { document.fonts.add(ff); if (rec.role === 'title') fonts.title = true; if (rec.role === 'body' || rec.role === 'bodyItalic') fonts.body = true; });
+        }).catch(function () { return null; }));
+      } else if (rec.kind === 'symbols' && rec.map) {
+        Object.keys(rec.map).forEach(function (k) {
+          jobs.push(blobImage(rec.map[k]).then(function (r) { syms[k] = r.img; }).catch(function () { return null; }));
+        });
+      }
+    });
+    return Promise.all(jobs).then(function () { R.setResources({ fonts: fonts, symbols: syms }); });
   }
   function norm(d) {
     var b = R.defaults(d && d.kind === 'token' ? 'token' : 'card'), o = {};
@@ -208,7 +227,8 @@
       r.onerror = function () { res(null); };
       r.onload = function () {
         var data; try { data = JSON.parse(String(r.result)); } catch (e) { data = null; }
-        if (!data || data.app !== 'coglio-frames' || !Array.isArray(data.frames)) { H.toast('«' + file.name + '»: non è un pacchetto di cornici di Coglio.'); return res(null); }
+        if (data && data.app === 'coglio-frames' && !Array.isArray(data.frames)) data.frames = [];
+        if (!data || data.app !== 'coglio-frames') { H.toast('«' + file.name + '»: non è un pacchetto di cornici di Coglio.'); return res(null); }
         var names = {}; (data.groups || []).forEach(function (g) { names[g.id] = g.name; });
         var chain = Promise.resolve(), n = 0, first = '';
         data.frames.forEach(function (f) {
@@ -222,7 +242,30 @@
             return DB.put('frames', rec);
           });
         });
-        chain.then(function () { H.toast(n ? 'Importate ' + n + (n === 1 ? ' cornice.' : ' cornici.') : 'Il pacchetto non contiene cornici utilizzabili.'); res(n ? first : null); }, function () { H.toast('Non riesco a salvare le cornici su questo dispositivo.'); res(null); });
+        var nsym = 0, nfont = 0;
+        if (data.symbols && typeof data.symbols === 'object') {
+          chain = chain.then(function () {
+            var map = {}; Object.keys(data.symbols).forEach(function (k) { var b = dataUrlToBlob(data.symbols[k]); if (b) { map[String(k).toUpperCase()] = b; nsym++; } });
+            if (!nsym) return null;
+            var rec = { id: 'res-symbols', kind: 'symbols', map: map, createdAt: Date.now() };
+            dz.res = dz.res.filter(function (x) { return x.id !== rec.id; }); dz.res.push(rec); return DB.put('frames', rec);
+          });
+        }
+        (Array.isArray(data.fonts) ? data.fonts : []).forEach(function (f) {
+          var b = dataUrlToBlob(f.ttf); if (!b) return;
+          chain = chain.then(function () {
+            var rec = { id: 'res-font-' + String(f.role || f.family), kind: 'font', role: String(f.role || ''), family: String(f.family || 'CPA Font'), style: f.style === 'italic' ? 'italic' : 'normal', blob: b, createdAt: Date.now() };
+            dz.res = dz.res.filter(function (x) { return x.id !== rec.id; }); dz.res.push(rec); nfont++; return DB.put('frames', rec);
+          });
+        });
+        chain.then(function () { return nsym || nfont ? initResources() : null; }).then(function () {
+          var parts = [];
+          if (n) parts.push(n + (n === 1 ? ' cornice' : ' cornici'));
+          if (nsym) parts.push(nsym + ' simboli di mana');
+          if (nfont) parts.push(nfont + (nfont === 1 ? ' font' : ' font'));
+          H.toast(parts.length ? 'Importati: ' + parts.join(', ') + '.' : 'Il pacchetto non contiene niente di utilizzabile.');
+          res(n ? first : (nsym || nfont ? '*' : null));
+        }, function () { H.toast('Non riesco a salvare le risorse su questo dispositivo.'); res(null); });
       };
       r.readAsText(file);
     });
@@ -275,7 +318,7 @@
       (d.frameImg ? lbl('Colore del testo', sel('ink', d.ink, [['dark', 'Scuro'], ['light', 'Chiaro']])) : '') + '</div>' +
       '<div class="btns"><label class="btn small filebtn">Importa cornici (PNG o pacchetto)<input type="file" accept="image/png,image/webp,.json,application/json" data-c="dz-framefile" multiple hidden></label>' +
       (d.frameImg ? '<button class="btn small danger" data-a="dz-frame-del">' + (/^auto:/.test(d.frameImg) ? 'Elimina il pacchetto di cornici' : 'Elimina questa cornice') + '</button>' : '') + '</div>' +
-      '<p class="hint">Le cornici importate (PNG tuoi con la zona dell’arte trasparente, oppure un pacchetto .json) restano solo su questo dispositivo. Con «automatica» la cornice segue i colori della carta.</p></section>';
+      (dz.res.length ? '<p class="hint">Simboli di mana e font importati: ' + dz.res.map(function (x) { return x.kind === 'symbols' ? 'simboli' : 'font ' + (x.role || ''); }).join(', ') + '. <button class="btn small danger" data-a="dz-res-del">Togli simboli e font</button></p>' : '') + '<p class="hint">Le cornici importate (PNG tuoi con la zona dell’arte trasparente, oppure un pacchetto .json) restano solo su questo dispositivo. Con «automatica» la cornice segue i colori della carta.</p></section>';
     /* testo */
     var cm = R.paletteKey(d);
     h += '<section class="panel"><h2 class="sect" style="margin:0">Testo</h2>' +
@@ -486,6 +529,9 @@
         if (!d) break;
         if (dz.confirm === 'del') { dropDesign(d.id); dz.cur = null; dz.view = 'list'; dz.confirm = ''; window.scrollTo(0, 0); H.render(); } else { dz.confirm = 'del'; H.render(); }
         break;
+      case 'dz-res-del':
+        dz.res.forEach(function (x) { DB.del('frames', x.id); }); dz.res = [];
+        R.setResources({}); H.toast('Simboli e font importati tolti: tornano quelli disegnati. Riavvia l\u2019app per scaricare i font dalla memoria.'); H.render(); break;
       case 'dz-frame-del':
         if (d && d.frameImg) {
           var cur = d.frameImg, auto = /^auto:(.+)$/.exec(cur), gone = auto ? dz.frames.filter(function (f) { return f.group === auto[1]; }).map(function (f) { return f.id; }) : [cur];
@@ -532,7 +578,7 @@
     else if (c === 'dz-framefile') {
       var files = [].slice.call(el.files || []), last = null, p = Promise.resolve();
       files.forEach(function (f) {
-        if (/\.json$/i.test(f.name) || f.type === 'application/json') { p = p.then(function () { return importPack(f).then(function (g) { if (g) last = { id: 'auto:' + g }; }); }); return; }
+        if (/\.json$/i.test(f.name) || f.type === 'application/json') { p = p.then(function () { return importPack(f).then(function (g) { if (g && g !== '*') last = { id: 'auto:' + g }; if (g) { dz.frameImgs = {}; } }); }); return; }
         p = p.then(function () {
           return blobImage(f).then(function (r) { URL.revokeObjectURL(r.url); var fr = { id: uid('f'), name: f.name.replace(/\.[^.]+$/, ''), blob: f, ink: 'dark', createdAt: Date.now() }; dz.frames.push(fr); last = fr; return DB.put('frames', fr); },
             function () { H.toast('«' + f.name + '»: non è un’immagine leggibile.'); });
