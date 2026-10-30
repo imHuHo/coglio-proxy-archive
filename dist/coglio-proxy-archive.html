@@ -66,7 +66,7 @@ a { color: var(--accent); }
 .main { padding: 8px var(--gx2) 112px var(--gx); max-width: 880px; margin: 0 auto; width: 100%; min-width: 0; }
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px;
   background: var(--surface); border-top: 1px solid var(--line);
   padding: 6px var(--gx2) calc(6px + env(safe-area-inset-bottom, 0px)) var(--gx);
 }
@@ -309,12 +309,13 @@ a { color: var(--accent); }
 #hv img { display: block; width: 100%; border-radius: 4.5% / 3.2%; box-shadow: 0 14px 40px #000a; background: var(--surface2); aspect-ratio: 488 / 680; }
 
 .where li .th { width: 30px; height: 42px; }
-.lb-box.wide { width: min(560px, 100%); }
+.lb-box.wide { width: min(960px, 100%); }
 .lb-box.wide .lb-name { flex-basis: 100%; }
-.pr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; width: 100%; max-height: min(64vh, 560px); overflow: auto; padding: 2px; }
+.pr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 12px; width: 100%; max-height: min(78vh, 820px); overflow: auto; padding: 2px; }
 .pr { border: 2px solid transparent; background: none; padding: 3px; border-radius: 8px; display: grid; gap: 4px; color: #fff; text-align: center; }
-.pr img { width: 100%; border-radius: 5px; background: var(--surface2); aspect-ratio: 146 / 204; object-fit: cover; }
-.pr span { font: 500 10.5px var(--mono); }
+.pr img { width: 100%; border-radius: 6px; background: var(--surface2); aspect-ratio: 488 / 680; object-fit: cover; }
+.pr span { font: 600 12.5px var(--mono); }
+.pr .pn { font: 500 11.5px var(--ui, inherit); opacity: .8; overflow-wrap: anywhere; }
 .pr:hover, .pr:focus-visible { border-color: #fff8; }
 .pr.cur { border-color: var(--accent); background: #ffffff1a; }
 .lb-wait { grid-column: 1 / -1; color: #fff; text-align: center; margin: 12px 0; }
@@ -450,11 +451,61 @@ body.bd-lock { overflow: hidden; }
 .upd-notes pre{white-space:pre-wrap;word-break:break-word;margin:6px 0 0;font:inherit;max-height:180px;overflow:auto}
 #upd-prog{width:100%;height:10px;margin:4px 0}
 
+/* Stati mazzo e riuso */
+.stsel { width: auto; max-width: 190px; font-size: 13px; padding: 6px 8px; font-weight: 700; }
+.deckcard.is-np { border-color: var(--warn, #d9a21b); border-style: dashed; }
+.reuse .sm { display: block; margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+.reuse li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px; }
+.reuse li .sm { display: inline; margin: 0; }
+.ru-ck { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; cursor: pointer; padding: 4px 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.ru-ck input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+
+/* Novità */
+.news-banner { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; margin: 0 0 14px; padding: 10px 14px; border-radius: 12px; background: var(--part-bg); border: 1px solid var(--part); color: var(--fg); font-size: 14px; }
+.news-banner b { color: var(--part); font: 800 15px var(--display); letter-spacing: .02em; }
+.news-cur h3 { margin: 0 0 6px; font: 700 15px var(--body); }
+.news-list { margin: 0; padding-left: 18px; display: grid; gap: 8px; font-size: 14px; line-height: 1.45; }
+.news-old { border-top: 1px solid var(--line); padding-top: 8px; }
+.news-old summary { cursor: pointer; font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+
 </style>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <script>
-window.CPA_VERSION = '2.1.0';
+window.CPA_VERSION = '2.2.0';
+
+</script>
+<script>
+/* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
+   alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
+window.CPA_CHANGELOG = [
+  { v: '2.2.0', date: '30 ottobre 2026', title: 'Mazzi da stampare, CODIGHEL che si usa, stampe più grandi', items: [
+    { t: 'Tre stati per i mazzi', d: 'Ogni mazzo ora è Attivo (montato, carte in uso), Non ancora stampato oppure Non attivo (smontato, carte libere). Lo scegli quando importi il mazzo e lo cambi quando vuoi dalla lista dei mazzi o dalla pagina del mazzo.' },
+    { t: 'Non ancora stampato', d: 'Le carte di un mazzo che non hai ancora stampato non entrano nell\'archivio, non fanno scattare CODIGHEL e, se le togli con un upgrade, non finiscono tra le sciolte (non esistono ancora). Quando lo stampi lo passi ad Attivo e le carte entrano in archivio.' },
+    { t: 'Mazzi non attivi = carte disponibili', d: 'Le carte dei mazzi non attivi risultano libere: le trovi come disponibili in archivio, nell\'avviso CODIGHEL e quando applichi un upgrade, proprio come le carte sciolte.' },
+    { t: 'CODIGHEL! Adesso si può usare', d: 'Quando importi un mazzo e compare l\'avviso, spunta le carte che vuoi riusare: le tolgo da dove sono (sciolte o mazzo non attivo) e le metto già nel nuovo mazzo, così non le ristampi. Vale anche per la stessa carta in un\'altra stampa: nel mazzo resta la stampa che hai davvero.' },
+    { t: 'Cambia stampa più grande', d: 'In Archivio, scegliendo la stampa di una carta, le immagini sono molto più grandi e nitide, con nome e anno della collezione.' },
+    { t: 'Versione web su GitHub Pages', d: 'L\'app c\'è anche come sito, sempre aggiornato: in Dati il pulsante «Ricarica l\'app con l\'ultima versione» azzera la copia in cache senza toccare i tuoi dati.' },
+    { t: 'Codighel! che novità!', d: 'Questa sezione: a ogni aggiornamento trovi qui tutte le novità spiegate, e alla prima apertura dopo l\'update compare un avviso.' }
+  ] },
+  { v: '2.1.0', date: '30 ottobre 2026', title: 'Verifica aggiornamenti', items: [
+    { t: 'Verifica aggiornamenti', d: 'In Dati il pulsante controlla le versioni su GitHub. Su Windows scarica lo zip nella cartella Download con barra di avanzamento; su Android apre il download dell\'APK; sul web rimanda alla pagina della versione.' }
+  ] },
+  { v: '2.0.1', date: '30 ottobre 2026', title: 'Il Builder migliora', items: [
+    { t: 'Anteprima in tempo reale', d: 'Il foglio del PDF si aggiorna subito quando cambi le impostazioni, senza dover scaricare. È disegnato con le stesse operazioni del PDF.' },
+    { t: 'Angoli quadrati', d: 'Carte rettangolari senza lo stondamento classico (ingrandisce di circa il 3% e ritaglia).' },
+    { t: 'Logo e nome in cima al foglio', d: 'Ogni foglio parte con il logo e il nome dell\'app.' },
+    { t: 'Scelta della stampa in una finestra', d: 'Per cambiare stampa di una carta nel Builder si apre una finestra con le carte in grande.' },
+    { t: 'Token', d: '«Gettoni» ora si chiama «token».' }
+  ] },
+  { v: '2.0.0', date: '30 ottobre 2026', title: 'Coglio Proxy Builder', items: [
+    { t: 'PDF stampabile di proxy', d: 'Dal mazzo («Crea PDF») o da una lista incollata (scheda «Stampa») ottieni un PDF pronto da stampare, con le immagini di Scryfall, senza filigrana. Solo fronti (il retro vero solo per le carte double-faced), con guide di taglio, margini, segni di registro e fronte-retro configurabili.' }
+  ] },
+  { v: '1.x', date: 'prima della 2.0', title: 'Le basi', items: [
+    { t: 'Archivio e CODIGHEL', d: 'Le carte si riconoscono per nome e per stampa: una stampa diversa conta come carta diversa. L\'avviso CODIGHEL ti dice quali carte hai già stampato, in quella esatta stampa o in un\'altra.' },
+    { t: 'Immagini e bracket', d: 'Miniature delle carte da Scryfall (toccale per ingrandirle e cambiare stampa) e tasto «Verifica bracket» con il numero 2-4 in un box colorato accanto al titolo del mazzo.' }
+  ] }
+];
 
 </script>
 <script>
@@ -562,11 +613,17 @@ window.CPA_VERSION = '2.1.0';
   }
 
   /* ---------- Archivio ---------- */
-  function inUse(deck) { return deck.kind === 'deck' && !!deck.active; }
+  /* Stato di un mazzo: 'active' (montato: carte in uso), 'unprinted' (non ancora stampato: le sue carte non esistono ancora
+   * e non entrano nell'archivio), 'inactive' (smontato: carte libere), 'binder' (carte sciolte, sempre libere). */
+  function statusOf(d) { return d.kind === 'binder' ? 'binder' : d.status === 'unprinted' ? 'unprinted' : d.active ? 'active' : 'inactive'; }
+  function inUse(deck) { return statusOf(deck) === 'active'; }
+  function isPrinted(d) { return statusOf(d) !== 'unprinted'; }
+  function isFreeDeck(d) { return statusOf(d) === 'inactive'; }
 
   function buildArchive(decks) {
     var map = {}, list = [];
     decks.forEach(function (d) {
+      if (!isPrinted(d)) return;
       d.cards.forEach(function (c) {
         var k = keyOf(c.name), e = map[k];
         if (!e) {
@@ -673,6 +730,7 @@ window.CPA_VERSION = '2.1.0';
     var avail = function (it) {
       var ex = 0, alt = 0, sources = [], altSources = [], busy = {}, busyIn = [];
       others.forEach(function (d) {
+        if (!isPrinted(d)) return;
         d.cards.forEach(function (c) {
           if (keyOf(c.name) !== it.key) return;
           if (inUse(d)) {
@@ -888,7 +946,7 @@ window.CPA_VERSION = '2.1.0';
         var t = removeCopies(b, it.key, need, it);
         if (t) { need -= t; b.updatedAt = now; rep.fromLoose.push({ name: it.name, qty: t, deckId: b.id, deckName: b.name }); }
       });
-      decks.filter(function (d) { return d.kind === 'deck' && !d.active && d.id !== deck.id; }).forEach(function (d) {
+      decks.filter(function (d) { return isFreeDeck(d) && d.id !== deck.id; }).forEach(function (d) {
         if (need <= 0) return;
         var t = removeCopies(d, it.key, need, it);
         if (t) { need -= t; d.updatedAt = now; rep.fromDecks.push({ name: it.name, qty: t, deckId: d.id, deckName: d.name }); }
@@ -898,7 +956,9 @@ window.CPA_VERSION = '2.1.0';
     /* escono (carte tolte e vecchie stampe): finiscono nelle sciolte con la stampa che avevano */
     var gone = diff.out.concat(diff.reprints.map(function (r) { return { key: r.key, name: r.name, qty: r.qty, set: r.from.set, cn: r.from.cn }; }));
     var binder = decks.filter(function (d) { return d.kind === 'binder'; })[0] || null;
-    if (gone.length) {
+    /* un mazzo non ancora stampato non ha carte vere: quelle che escono non diventano sciolte */
+    rep.unprinted = !isPrinted(deck);
+    if (gone.length && isPrinted(deck)) {
       if (!binder) {
         binder = { id: uid('d'), name: 'Carte sciolte', kind: 'binder', active: false, commander: null, cards: [], upgrades: [], createdAt: now, updatedAt: now };
         decks.push(binder); rep.createdBinder = true;
@@ -937,11 +997,11 @@ window.CPA_VERSION = '2.1.0';
         d.cards.forEach(function (c) {
           if (keyOf(c.name) !== k) return;
           q += c.qty;
-          if (d.kind === 'binder' || !d.active) pool.push({ deckId: d.id, deckName: d.name, kind: d.kind, set: c.set || '', cn: c.cn || '', left: c.qty });
+          if (d.kind === 'binder' || isFreeDeck(d)) pool.push({ deckId: d.id, deckName: d.name, kind: d.kind, set: c.set || '', cn: c.cn || '', left: c.qty });
         });
         if (!q) return;
         if (d.kind === 'binder') loose += q;
-        else if (!d.active) inactive.push({ deckId: d.id, deckName: d.name, qty: q });
+        else if (isFreeDeck(d)) inactive.push({ deckId: d.id, deckName: d.name, qty: q });
       });
       if (!loose && !inactive.length) return;
       var exactRows = [], otherRows = [], exact = 0, other = 0;
@@ -971,6 +1031,36 @@ window.CPA_VERSION = '2.1.0';
     return out;
   }
 
+  /* Mazzo in creazione: prende dalle sciolte e dai mazzi non attivi le copie scelte.
+   * picks: { 'chiave|exact': true, 'chiave|other': true } (le chiavi sono quelle di findReusable).
+   * Le copie scelte escono dalla loro lista e restano nel nuovo mazzo; se prese in un'altra stampa, il mazzo registra la stampa che hai davvero. */
+  function applyReuse(decks, deck, picks, settings) {
+    var done = [], now = Date.now();
+    var others = decks.filter(function (d) { return d.id !== deck.id; });
+    findReusable(deck.cards, others, settings).forEach(function (it) {
+      ['exact', 'other'].forEach(function (kind) {
+        if (!picks || !picks[it.key + '|' + kind]) return;
+        (kind === 'exact' ? it.exactRows : it.otherRows).forEach(function (row) {
+          var src = others.filter(function (d) { return d.id === row.deckId; })[0];
+          if (!src) return;
+          var got = removeCopies(src, it.key, row.qty, { set: row.set, cn: row.cn });
+          if (!got) return;
+          src.updatedAt = now;
+          var left = got, moved = [];
+          deck.cards.forEach(function (c) {
+            if (left > 0 && keyOf(c.name) === it.key && (kind === 'other' || samePrint(row, c))) {
+              var t = Math.min(c.qty, left); c.qty -= t; left -= t; moved.push({ name: c.name, set: c.set, cn: c.cn, qty: t });
+            }
+          });
+          deck.cards = deck.cards.filter(function (c) { return c.qty > 0; });
+          moved.forEach(function (m) { addCopies(deck, { name: m.name, set: row.set || m.set, cn: row.set ? row.cn : m.cn }, m.qty); });
+          done.push({ name: it.name, qty: got, deckId: src.id, deckName: src.name, kind: src.kind, from: kind, set: row.set, cn: row.cn });
+        });
+      });
+    });
+    return done;
+  }
+
   /* ---------- Stato ---------- */
   function sanitizeCards(arr) {
     return (Array.isArray(arr) ? arr : []).map(function (c) {
@@ -984,7 +1074,8 @@ window.CPA_VERSION = '2.1.0';
     return {
       id: String(d.id || uid('d')), name: String(d.name || 'Mazzo'),
       kind: d.kind === 'binder' ? 'binder' : 'deck',
-      active: d.kind === 'binder' ? false : !!d.active,
+      status: d.kind === 'binder' ? 'inactive' : d.status === 'unprinted' ? 'unprinted' : d.active ? 'active' : 'inactive',
+      active: d.kind === 'binder' || d.status === 'unprinted' ? false : !!d.active,
       commander: d.commander ? String(d.commander) : null,
       bracket: sanitizeBracket(d.bracket),
       cards: sanitizeCards(d.cards),
@@ -1006,7 +1097,7 @@ window.CPA_VERSION = '2.1.0';
   return {
     keyOf: keyOf, searchNorm: searchNorm, isBasic: isBasic, uid: uid,
     parseList: parseList, buildArchive: buildArchive, diffUpgrade: diffUpgrade,
-    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, samePrint: samePrint, clone: cloneJ, exportText: exportText, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, bracketNumber: bracketNumber, deckSig: deckSig, diffText: diffText,
+    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, applyReuse: applyReuse, statusOf: statusOf, isPrinted: isPrinted, samePrint: samePrint, clone: cloneJ, exportText: exportText, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, bracketNumber: bracketNumber, deckSig: deckSig, diffText: diffText,
     sanitizeDeck: sanitizeDeck, sanitizeSettings: sanitizeSettings, inUse: inUse
   };
 });
@@ -2279,6 +2370,40 @@ window.CPA_VERSION = '2.1.0';
     }
   }
 
+  /* ---------- Novità («Codighel! che novità!») ---------- */
+  var NEWS = (function () {
+    var KEY = 'cpa-news-seen', hidden = false;
+    function log() { return Array.isArray(window.CPA_CHANGELOG) ? window.CPA_CHANGELOG : []; }
+    function seen() { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
+    function mark() { try { localStorage.setItem(KEY, String(window.CPA_VERSION || '')); } catch (e) { /* ignorato */ } }
+    function entry() { var v = window.CPA_VERSION; return log().filter(function (x) { return x.v === v; })[0] || null; }
+    function list(e) {
+      return '<ul class="news-list">' + e.items.map(function (i) { return '<li><b>' + esc(i.t) + '</b> ' + esc(i.d) + '</li>'; }).join('') + '</ul>';
+    }
+    function banner() {
+      var e = entry(), cur = String(window.CPA_VERSION || '');
+      if (!e || hidden || seen() === cur || ui.view === 'builder') return '';
+      if (!state.decks.length && !seen()) { mark(); return ''; }
+      return '<div class="news-banner" role="status"><span><b>Codighel!</b> È arrivata la versione ' + esc(cur) + ': ' + esc(e.title) + '.</span>' +
+        '<span class="btns"><button class="btn small primary" data-a="news-open">Che novità!</button><button class="btn small" data-a="news-close">Chiudi</button></span></div>';
+    }
+    function panel() {
+      var l = log(); if (!l.length) return '';
+      var cur = String(window.CPA_VERSION || ''), first = entry() || l[0];
+      var head = function (e) { return esc(e.v) + (e.date ? ' · ' + esc(e.date) : '') + ' — ' + esc(e.title); };
+      return '<section class="panel" id="news"><h2 class="sect" style="margin:0">Codighel! che novità!</h2>' +
+        '<div class="news-cur"><h3>' + head(first) + '</h3>' + list(first) + '</div>' +
+        l.filter(function (e) { return e !== first; }).map(function (e) { return '<details class="news-old"><summary>' + head(e) + '</summary>' + list(e) + '</details>'; }).join('') +
+        '</section>';
+    }
+    function close() { hidden = true; mark(); render(); }
+    function open() {
+      hidden = true; mark(); ui.view = 'data'; ui.confirm = null; render();
+      setTimeout(function () { var el = document.getElementById('news'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30);
+    }
+    return { banner: banner, panel: panel, close: close, open: open };
+  })();
+
   /* ---------- Aggiornamenti (GitHub Releases) ---------- */
   var UPD = (function () {
     var REPO = 'imHuHo/coglio-proxy-archive';
@@ -2750,7 +2875,7 @@ window.CPA_VERSION = '2.1.0';
           cache[key(name, c.set, c.collector_number)] = { u: f.u, b: f.b, t: Date.now() };
           var cur = c.set === set0 && String(c.collector_number).toLowerCase() === cn0;
           return '<button class="pr' + (cur ? ' cur' : '') + '" data-a="lb-pick" data-s="' + esc(c.set) + '" data-n="' + esc(c.collector_number) + '" title="' + esc(c.set_name || '') + '">' +
-            '<img src="' + esc(url(f.u, 'small')) + '" alt="' + esc(c.set_name || c.set) + '" loading="lazy"><span>' + esc(c.set.toUpperCase()) + ' ' + esc(c.collector_number) + ' · ' + esc((c.released_at || '').slice(0, 4)) + '</span></button>';
+            '<img src="' + esc(url(f.u, 'normal')) + '" alt="' + esc(c.set_name || c.set) + '" loading="lazy"><span>' + esc(c.set.toUpperCase()) + ' ' + esc(c.collector_number) + ' · ' + esc((c.released_at || '').slice(0, 4)) + '</span>' + (c.set_name ? '<span class="pn">' + esc(c.set_name) + '</span>' : '') + '</button>';
         }).join('');
         persist();
       }).catch(function () {
@@ -2801,7 +2926,7 @@ window.CPA_VERSION = '2.1.0';
     var navHtml = NAV.map(function (n) { return navBtn(n[0], n[1]); }).join('');
     APP.innerHTML =
       '<div class="shell"><aside class="side"><div class="brand">' + LOGO + '<span><b>Coglio</b><small>Proxy Archive</small></span></div>' + navHtml + '</aside>' +
-      '<main class="main"><div class="mobile-brand">' + LOGO + '<span><b>Coglio</b><small>Proxy Archive</small></span></div>' + viewHtml() + '</main></div>' +
+      '<main class="main"><div class="mobile-brand">' + LOGO + '<span><b>Coglio</b><small>Proxy Archive</small></span></div>' + NEWS.banner() + viewHtml() + '</main></div>' +
       '<nav class="tabs" aria-label="Sezioni">' + navHtml + '</nav>';
     if (ui.view === 'archive' && state.decks.length) updateArchiveList();
     if (ui.view === 'deck') updateDeckList();
@@ -2904,13 +3029,24 @@ window.CPA_VERSION = '2.1.0';
   }
 
   /* ---------- Mazzi ---------- */
-  function switchHtml(d) {
-    return '<label class="switch"><input type="checkbox" data-c="active" data-id="' + esc(d.id) + '"' + (d.active ? ' checked' : '') + '><span class="tr"></span><span>' + (d.active ? 'Attivo' : 'Non attivo') + '</span></label>';
+  var STATUS = [['active', 'Attivo'], ['unprinted', 'Non ancora stampato'], ['inactive', 'Non attivo']];
+  function statusSelect(d, id, cls) {
+    var cur = C.statusOf(d);
+    return '<select class="select ' + (cls || '') + '" data-c="' + (id || 'status') + '" data-id="' + esc(d.id || '') + '" aria-label="Stato del mazzo">' + STATUS.map(function (o) {
+      return '<option value="' + o[0] + '"' + (cur === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+    }).join('') + '</select>';
+  }
+  function switchHtml(d) { return statusSelect(d, 'status', 'stsel'); }
+  function statusHint(d) {
+    var st = C.statusOf(d);
+    return st === 'active' ? 'Mazzo montato: le sue carte risultano in uso.' :
+      st === 'unprinted' ? 'Non ancora stampato: le sue carte non entrano nell\'archivio finché non lo stampi. Quando è pronto, passalo ad Attivo.' :
+        'Mazzo smontato: le sue carte risultano libere e le ritrovi anche tra le carte disponibili per altri mazzi.';
   }
   function deckCard(d) {
-    var on = d.kind === 'deck' && d.active;
+    var on = d.kind === 'deck' && d.active, np = d.kind === 'deck' && C.statusOf(d) === 'unprinted';
     var meta = d.kind === 'deck' ? (d.commander ? 'Commander: ' + esc(d.commander) : 'Nessun commander scelto') : 'Carte sciolte, sempre disponibili';
-    return '<article class="deckcard' + (on ? ' is-on' : '') + '"><div class="top"><div><h2>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + '</div></div>' +
+    return '<article class="deckcard' + (on ? ' is-on' : np ? ' is-np' : '') + '"><div class="top"><div><h2>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + '</div></div>' +
       (d.kind === 'deck' ? switchHtml(d) : '') + '</div><div class="foot"><span>' +
       (d.upgrades.length ? '<span class="pill info">' + plural(d.upgrades.length, 'upgrade', 'upgrade') + '</span>' : '<span class="hint">Nessun upgrade</span>') +
       '</span><span class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="open-deck" data-id="' + esc(d.id) + '">Apri</button></span></div></article>';
@@ -2928,8 +3064,8 @@ window.CPA_VERSION = '2.1.0';
   function decksView() {
     var ds = state.decks.filter(function (d) { return d.kind === 'deck'; }), bs = state.decks.filter(function (d) { return d.kind === 'binder'; });
     if (!state.decks.length) return '<header class="vh"><h1>Mazzi</h1></header>' + welcome();
-    var act = ds.filter(function (d) { return d.active; }).length;
-    return '<header class="vh"><h1>Mazzi</h1><p class="sub"><b>' + act + '</b> attivi su <b>' + ds.length + '</b>. Un mazzo attivo è montato: le sue carte risultano in uso nell\'archivio.</p></header>' +
+    var act = ds.filter(function (d) { return d.active; }).length, np = ds.filter(function (d) { return C.statusOf(d) === 'unprinted'; }).length;
+    return '<header class="vh"><h1>Mazzi</h1><p class="sub"><b>' + act + '</b> attivi su <b>' + ds.length + '</b>' + (np ? ' · <b>' + np + '</b> da stampare' : '') + '. Un mazzo attivo è montato: le sue carte risultano in uso nell\'archivio.</p></header>' +
       '<div class="btns" style="margin-bottom:12px"><button class="btn primary" data-a="nav" data-v="import">Importa un mazzo</button></div>' +
       '<div class="list">' + ds.map(deckCard).join('') + '</div>' +
       (bs.length ? '<h2 class="sect">Carte sciolte</h2><div class="list">' + bs.map(deckCard).join('') + '</div>' : '');
@@ -2953,7 +3089,7 @@ window.CPA_VERSION = '2.1.0';
     return '<header class="vh"><button class="back" data-a="nav" data-v="decks">← Mazzi</button><h1>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h1></header>' +
       '<section class="panel"><label class="lbl">Nome<input class="input" data-c="deck-name" value="' + esc(d.name) + '"></label>' +
       (d.kind === 'deck' ? '<label class="lbl">Commander<select class="select" data-c="deck-cmd">' + cmdOpts + '</select></label><div>' + switchHtml(d) +
-        '<p class="hint" style="margin-top:6px">' + (d.active ? 'Le carte di questo mazzo risultano in uso.' : 'Mazzo smontato: le sue carte risultano libere.') + '</p></div>' : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
+        '<p class="hint" style="margin-top:6px">' + statusHint(d) + '</p></div>' : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
       '<div class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="make-pdf" data-id="' + esc(d.id) + '">Crea PDF</button><button class="btn small" data-a="copy-deck">Copia lista .txt</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina') + '</button></div></section>' + tabs + body;
   }
   function updateDeckList() {
@@ -3066,7 +3202,7 @@ window.CPA_VERSION = '2.1.0';
 
   /* ---------- Importazione ---------- */
   function newDraft(mode, deckId) {
-    return { mode: mode, deckId: deckId || null, step: 1, name: '', text: '', parsed: null, commander: null, cq: '', active: true, error: '' };
+    return { mode: mode, deckId: deckId || null, step: 1, name: '', text: '', parsed: null, commander: null, cq: '', status: 'active', reuse: {}, error: '' };
   }
   function importView() {
     var d = ui.draft || (ui.draft = newDraft('deck'));
@@ -3099,22 +3235,33 @@ window.CPA_VERSION = '2.1.0';
     }).join('');
   }
   function reuseBanner(cards) {
-    var r = C.findReusable(cards, state.decks, state.settings);
+    var r = C.findReusable(cards, state.decks, state.settings), pk = (ui.draft && ui.draft.reuse) || {};
     var ex = r.filter(function (x) { return x.exact > 0; }), ot = r.filter(function (x) { return x.other > 0; });
     var want = function (x) { return x.wanted.length === 1 ? ptag(x.wanted[0]) : ''; };
+    var ck = function (x, kind, label) {
+      return '<label class="ru-ck"><input type="checkbox" data-c="reuse" data-k="' + esc(x.key) + '" data-t="' + kind + '"' + (pk[x.key + '|' + kind] ? ' checked' : '') + '><span>' + label + '</span></label>';
+    };
     var h = '';
     if (ex.length) {
-      h += '<div class="reuse"><p><b>CODIGHEL!</b> Queste carte le hai già stampate, <b>esattamente in questa stampa</b>: verifica prima di stampare di nuovo.</p><ul>' + ex.map(function (x) {
-        return '<li><span class="qty">' + x.exact + '×</span> ' + esc(x.name) + want(x) + '<span class="sm"> in ' + where(x.exactRows) + (x.exact < x.need ? ' · ne servono ' + x.need : '') + '</span></li>';
-      }).join('') + '</ul></div>';
+      h += '<div class="reuse"><p><b>CODIGHEL!</b> Queste carte le hai già stampate, <b>esattamente in questa stampa</b>: verifica prima di stampare di nuovo.</p>' +
+        '<p class="sm">Spunta quelle che vuoi usare: le tolgo da dove sono (carte sciolte o mazzo non attivo) e le metto già nel nuovo mazzo.</p><ul>' + ex.map(function (x) {
+          return '<li>' + ck(x, 'exact', 'Usa') + '<span class="qty">' + x.exact + '×</span> ' + esc(x.name) + want(x) + '<span class="sm"> in ' + where(x.exactRows) + (x.exact < x.need ? ' · ne servono ' + x.need : '') + '</span></li>';
+        }).join('') + '</ul><div class="btns"><button class="btn small" data-a="reuse-all">Usa tutte</button><button class="btn small" data-a="reuse-none">Nessuna</button></div></div>';
     }
     if (ot.length) {
-      h += '<div class="reuse alt"><p><b>Stessa carta, stampa diversa.</b> Hai già queste carte ma in un\'altra stampa. Se ti basta puoi riusarle; se vuoi proprio quella della lista vanno stampate (per l\'archivio sono carte diverse).</p><ul>' + ot.map(function (x) {
-        return '<li><span class="qty">' + x.other + '×</span> ' + esc(x.name) + (x.wanted.length === 1 ? '<span class="sm"> nella lista: ' + esc(prLabel(x.wanted[0])) + '</span>' : '') + '<span class="sm"> hai: ' + where(x.otherRows) + '</span></li>';
+      h += '<div class="reuse alt"><p><b>Stessa carta, stampa diversa.</b> Hai già queste carte ma in un\'altra stampa. Se ti basta puoi riusarle (nel mazzo resta la stampa che hai davvero); se vuoi proprio quella della lista vanno stampate (per l\'archivio sono carte diverse).</p><ul>' + ot.map(function (x) {
+        return '<li>' + ck(x, 'other', 'Usa questa stampa') + '<span class="qty">' + x.other + '×</span> ' + esc(x.name) + (x.wanted.length === 1 ? '<span class="sm"> nella lista: ' + esc(prLabel(x.wanted[0])) + '</span>' : '') + '<span class="sm"> hai: ' + where(x.otherRows) + '</span></li>';
       }).join('') + '</ul></div>';
     }
-    return h;
+    return h + (h ? '<p class="hint" id="reuse-sum" role="status">' + reuseSumText() + '</p>' : '');
   }
+  function reuseSumText() {
+    var d = ui.draft; if (!d || !d.parsed) return '';
+    var n = 0, pk = d.reuse || {};
+    C.findReusable(d.parsed.cards, state.decks, state.settings).forEach(function (x) { n += (pk[x.key + '|exact'] ? x.exact : 0) + (pk[x.key + '|other'] ? x.other : 0); });
+    return n ? 'Prenderò ' + plural(n, 'copia', 'copie') + ' da quelle che hai già: non le devi stampare.' : 'Nessuna carta presa: le stamperai tutte.';
+  }
+  function reuseSummary() { var el = $('#reuse-sum'); if (el) el.textContent = reuseSumText(); }
   function importStep2(d) {
     var p = d.parsed;
     return '<header class="vh"><button class="back" data-a="draft-back">← Lista</button><h1>Scegli il commander</h1><p class="sub"><b>' + p.total + '</b> carte (' + p.unique + ' diverse)' + (p.excluded ? ' · ' + p.excluded + ' escluse (sideboard)' : '') + '</p></header>' +
@@ -3124,7 +3271,8 @@ window.CPA_VERSION = '2.1.0';
       reuseBanner(p.cards) +
       '<div class="search">' + IC.search + '<input class="input" data-c="cmd-q" type="search" placeholder="Cerca il commander nella lista" autocomplete="off" aria-label="Cerca il commander" value="' + esc(d.cq) + '"></div>' +
       '<div class="pick" id="cmdlist" role="radiogroup" aria-label="Commander">' + cmdListHtml(d) + '</div>' +
-      '<label class="switch"><input type="checkbox" data-c="draft-active"' + (d.active ? ' checked' : '') + '><span class="tr"></span><span>Mazzo attivo (montato adesso)</span></label>' +
+      '<label class="lbl">Stato del mazzo' + statusSelect({ kind: 'deck', status: d.status, active: d.status === 'active' }, 'draft-status') + '</label>' +
+      '<p class="hint" style="margin-top:-4px">' + esc(statusHint({ kind: 'deck', status: d.status, active: d.status === 'active' })) + '</p>' +
       '<div class="btns"><button class="btn primary" data-a="draft-create">Crea mazzo</button></div></section>';
   }
   function draftNext() {
@@ -3146,13 +3294,17 @@ window.CPA_VERSION = '2.1.0';
     var kind = d.mode === 'binder' ? 'binder' : 'deck';
     var nd = {
       id: C.uid('d'), name: d.name.trim() || (kind === 'binder' ? 'Carte sciolte' : d.commander || 'Nuovo mazzo'), kind: kind,
-      active: kind === 'deck' && d.active, commander: kind === 'deck' ? (d.commander || null) : null,
-      cards: p.cards, upgrades: [], createdAt: now, updatedAt: now
+      status: kind === 'deck' ? d.status : 'inactive', active: kind === 'deck' && d.status === 'active', commander: kind === 'deck' ? (d.commander || null) : null,
+      cards: C.clone(p.cards), upgrades: [], createdAt: now, updatedAt: now
     };
+    var taken = kind === 'deck' ? C.applyReuse(state.decks, nd, d.reuse, state.settings) : [];
+    taken.forEach(function (x) { touch(x.deckId); });
     state.decks.push(nd); touch(nd.id);
     if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch (e) { /* ignorato */ } }
     ui.view = kind === 'deck' ? 'deck' : 'archive'; ui.deckId = nd.id; ui.deckTab = 'cards'; ui.deckQ = ''; ui.draft = null;
-    toast((kind === 'deck' ? 'Mazzo creato' : 'Carte aggiunte') + ': ' + plural(sum(p.cards), 'carta', 'carte')); window.scrollTo(0, 0); render();
+    var nTaken = taken.reduce(function (t, x) { return t + x.qty; }, 0);
+    toast((kind === 'deck' ? 'Mazzo creato' : 'Carte aggiunte') + ': ' + plural(sum(p.cards), 'carta', 'carte') +
+      (nTaken ? ' · ' + plural(nTaken, 'copia presa', 'copie prese') + ' da carte sciolte e mazzi non attivi, non da stampare' : ''), null, !!nTaken); window.scrollTo(0, 0); render();
   }
 
   /* ---------- Dati ---------- */
@@ -3168,6 +3320,7 @@ window.CPA_VERSION = '2.1.0';
   function dataView() {
     var armedReset = armed('reset');
     return '<header class="vh"><h1>Dati</h1><p class="sub">' + esc(storageLabel()) + '</p></header>' +
+      NEWS.panel() +
       '<section class="panel"><h2 class="sect" style="margin:0">Impostazioni</h2>' +
       '<label class="lbl">Tema<select class="select" data-c="theme"><option value="auto"' + (state.settings.theme === 'auto' ? ' selected' : '') + '>Automatico</option><option value="light"' + (state.settings.theme === 'light' ? ' selected' : '') + '>Chiaro</option><option value="dark"' + (state.settings.theme === 'dark' ? ' selected' : '') + '>Scuro</option></select></label>' +
       '<label class="switch"><input type="checkbox" data-c="basics"' + (state.settings.basicsUnlimited ? ' checked' : '') + '><span class="tr"></span><span>Terre base sempre disponibili negli upgrade</span></label>' +
@@ -3240,6 +3393,10 @@ window.CPA_VERSION = '2.1.0';
         break;
       case 'draft-mode': ui.draft.mode = el.dataset.v; render(); break;
       case 'draft-next': draftNext(); break;
+      case 'reuse-all':
+        C.findReusable(ui.draft.parsed.cards, state.decks, state.settings).forEach(function (x) { if (x.exact > 0) ui.draft.reuse[x.key + '|exact'] = true; });
+        render(); break;
+      case 'reuse-none': ui.draft.reuse = {}; render(); break;
       case 'draft-back': ui.draft.step = 1; render(); break;
       case 'draft-create': draftCreate(); break;
       case 'dl-json':
@@ -3270,6 +3427,8 @@ window.CPA_VERSION = '2.1.0';
       case 'lb-back': IMG.back(); break;
       case 'lb-pick': IMG.pick(el.dataset.s, el.dataset.n); break;
       case 'lb-keep': break;
+      case 'news-open': NEWS.open(); break;
+      case 'news-close': NEWS.close(); break;
       case 'upd-check': UPD.check(); break;
       case 'upd-go': UPD.start(); break;
       case 'upd-reload': UPD.reload(); break;
@@ -3319,11 +3478,13 @@ window.CPA_VERSION = '2.1.0';
       case 'fset': ui.fset = t.value; ui.limit = 150; render(); break;
       case 'sort': ui.sort = t.value; render(); break;
       case 'nobasic': ui.nobasic = t.checked; ui.limit = 150; render(); break;
-      case 'active':
+      case 'status':
         d = getDeck(t.dataset.id);
         if (d) {
-          d.active = t.checked; d.updatedAt = Date.now(); touch(d.id);
-          toast(t.checked ? d.name + ' attivo: le sue ' + sum(d.cards) + ' carte risultano in uso.' : d.name + ' non attivo: le sue carte tornano libere.');
+          var st = t.value; d.status = st; d.active = st === 'active'; d.updatedAt = Date.now(); touch(d.id);
+          toast(st === 'active' ? d.name + ' attivo: le sue ' + sum(d.cards) + ' carte risultano in uso.' :
+            st === 'unprinted' ? d.name + ' non ancora stampato: le sue carte non entrano nell\'archivio finché non lo stampi.' :
+              d.name + ' non attivo: le sue carte tornano libere.');
           render();
         } break;
       case 'deck-name': d = getDeck(); if (d && t.value.trim()) { d.name = t.value.trim(); d.updatedAt = Date.now(); touch(d.id); render(); } break;
@@ -3333,7 +3494,8 @@ window.CPA_VERSION = '2.1.0';
         var u = d && d.upgrades.filter(function (x) { return x.id === ui.upId; })[0];
         if (u && t.value.trim()) { u.name = t.value.trim(); touch(d.id); render(); } break;
       case 'cmd': ui.draft.commander = t.value || null; break;
-      case 'draft-active': ui.draft.active = t.checked; break;
+      case 'draft-status': ui.draft.status = t.value; render(); break;
+      case 'reuse': ui.draft.reuse[t.dataset.k + '|' + t.dataset.t] = t.checked; reuseSummary(); break;
       case 'draft-file':
         if (t.files && t.files[0]) {
           var f = t.files[0];

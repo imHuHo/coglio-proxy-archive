@@ -122,11 +122,11 @@ const text = () => d.body.textContent.replace(/\s+/g, ' ');
   clickA('nav', '[data-v="decks"]');
   ok($$('.deckcard').length === 2, 'due schede mazzo (mazzo + raccolta)');
   ok($$('.deckcard .bracket').length === 1, 'tasto Verifica bracket solo sul mazzo, non sulle sciolte');
-  change('[data-c="active"]', false);
+  change('[data-c="status"]', 'inactive');
   ok(text().includes('Non attivo'), 'mazzo disattivato');
   clickA('nav', '[data-v="archive"]'); type('#q', 'mountain');
   ok($('#alist .item').classList.contains('s-free'), 'Mountain libere con mazzo non attivo');
-  clickA('nav', '[data-v="decks"]'); change('[data-c="active"]', true);
+  clickA('nav', '[data-v="decks"]'); change('[data-c="status"]', 'active');
 
   // --- upgrade ---
   clickA('open-deck');

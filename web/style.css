@@ -62,7 +62,7 @@ a { color: var(--accent); }
 .main { padding: 8px var(--gx2) 112px var(--gx); max-width: 880px; margin: 0 auto; width: 100%; min-width: 0; }
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px;
   background: var(--surface); border-top: 1px solid var(--line);
   padding: 6px var(--gx2) calc(6px + env(safe-area-inset-bottom, 0px)) var(--gx);
 }
@@ -305,12 +305,13 @@ a { color: var(--accent); }
 #hv img { display: block; width: 100%; border-radius: 4.5% / 3.2%; box-shadow: 0 14px 40px #000a; background: var(--surface2); aspect-ratio: 488 / 680; }
 
 .where li .th { width: 30px; height: 42px; }
-.lb-box.wide { width: min(560px, 100%); }
+.lb-box.wide { width: min(960px, 100%); }
 .lb-box.wide .lb-name { flex-basis: 100%; }
-.pr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; width: 100%; max-height: min(64vh, 560px); overflow: auto; padding: 2px; }
+.pr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 12px; width: 100%; max-height: min(78vh, 820px); overflow: auto; padding: 2px; }
 .pr { border: 2px solid transparent; background: none; padding: 3px; border-radius: 8px; display: grid; gap: 4px; color: #fff; text-align: center; }
-.pr img { width: 100%; border-radius: 5px; background: var(--surface2); aspect-ratio: 146 / 204; object-fit: cover; }
-.pr span { font: 500 10.5px var(--mono); }
+.pr img { width: 100%; border-radius: 6px; background: var(--surface2); aspect-ratio: 488 / 680; object-fit: cover; }
+.pr span { font: 600 12.5px var(--mono); }
+.pr .pn { font: 500 11.5px var(--ui, inherit); opacity: .8; overflow-wrap: anywhere; }
 .pr:hover, .pr:focus-visible { border-color: #fff8; }
 .pr.cur { border-color: var(--accent); background: #ffffff1a; }
 .lb-wait { grid-column: 1 / -1; color: #fff; text-align: center; margin: 12px 0; }
@@ -445,3 +446,20 @@ body.bd-lock { overflow: hidden; }
 .upd-notes{margin:6px 0 10px}
 .upd-notes pre{white-space:pre-wrap;word-break:break-word;margin:6px 0 0;font:inherit;max-height:180px;overflow:auto}
 #upd-prog{width:100%;height:10px;margin:4px 0}
+
+/* Stati mazzo e riuso */
+.stsel { width: auto; max-width: 190px; font-size: 13px; padding: 6px 8px; font-weight: 700; }
+.deckcard.is-np { border-color: var(--warn, #d9a21b); border-style: dashed; }
+.reuse .sm { display: block; margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+.reuse li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px; }
+.reuse li .sm { display: inline; margin: 0; }
+.ru-ck { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; cursor: pointer; padding: 4px 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.ru-ck input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+
+/* Novità */
+.news-banner { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; margin: 0 0 14px; padding: 10px 14px; border-radius: 12px; background: var(--part-bg); border: 1px solid var(--part); color: var(--fg); font-size: 14px; }
+.news-banner b { color: var(--part); font: 800 15px var(--display); letter-spacing: .02em; }
+.news-cur h3 { margin: 0 0 6px; font: 700 15px var(--body); }
+.news-list { margin: 0; padding-left: 18px; display: grid; gap: 8px; font-size: 14px; line-height: 1.45; }
+.news-old { border-top: 1px solid var(--line); padding-top: 8px; }
+.news-old summary { cursor: pointer; font-weight: 700; font-size: 14px; margin-bottom: 8px; }

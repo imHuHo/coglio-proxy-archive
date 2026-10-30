@@ -33,6 +33,9 @@ e l'app ti dice quali carte hai, quante sono libere e in quale mazzo sono impegn
   Nell'archivio, dove la stessa carta può stare in più mazzi, la miniatura in cima alla riga è la stampa del mazzo attivo (o quella con più copie): le altre sono nel dettaglio.
   Gli indirizzi trovati restano salvati sul dispositivo, quindi ogni carta si cerca una volta sola. Si spengono dalla scheda *Dati*.
   Funzionano nell'app Windows, nell'APK e nella versione web installata; **non** dentro la pagina di anteprima di Claude, che blocca i siti esterni.
+- **Stati del mazzo**: Attivo (montato, carte in uso), Non ancora stampato (le sue carte non entrano nell'archivio, non fanno scattare CODIGHEL e, se tolte con un upgrade, non diventano sciolte) e Non attivo (smontato, carte libere: restano disponibili come le sciolte per altri mazzi e upgrade). Si sceglie in importazione e si cambia dalla lista dei mazzi o dalla pagina del mazzo.
+- **CODIGHEL che si usa**: nell'avviso dell'importazione si spuntano le carte da riusare; escono dalle sciolte (o dal mazzo non attivo) e restano nel nuovo mazzo, con la stampa posseduta se diversa.
+- **Novità**: la sezione «Codighel! che novità!» in Dati e l'avviso alla prima apertura dopo un aggiornamento leggono `web/changelog.js`. **A ogni release si aggiunge in cima la voce della nuova versione** (e si aggiorna `web/version.js`).
 - **Aggiornamenti**: in *Dati* il pulsante *Verifica aggiornamenti* interroga l'ultima release su GitHub e confronta la versione. Nell'app Windows scarica lo zip nella cartella Download (con barra di avanzamento) e lo mostra; da estrarre sopra la vecchia cartella, i dati stanno in `%APPDATA%` e restano. Su Android apre il download dell'APK; nella versione web rimanda alla pagina della release. La versione installata viene scritta da GitHub Actions a partire dal tag (`web/version.js`).
 - **Verifica bracket**: il tasto giallo sui mazzi calcola il bracket (2, 3 o 4) con le regole di Wizards e i dati dell'API pubblica di
   [Commander Spellbook](https://commanderspellbook.com): Game Changer, distruzione di terre di massa, turni extra, combo, carte bandite.
@@ -106,12 +109,12 @@ web/        l'app (HTML, CSS, JS senza dipendenze) = PWA
             core.js (archivio) · pdf.js (motore PDF) · proxy.js (Scryfall e immagini) · builder.js (schermata Stampa) · app.js
 electron/   wrapper Windows
 capacitor/  wrapper Android/iOS
-tools/      test (test.js, pdf-test.js, proxy-test.js, update-test.js, ui-smoke.js, builder-smoke.js, img-smoke.js, update-smoke.js), build.py, make_icons.py
+tools/      test (test.js, pdf-test.js, proxy-test.js, update-test.js, status-test.js, ui-smoke.js, builder-smoke.js, img-smoke.js, update-smoke.js, status-smoke.js), build.py, make_icons.py
 dist/       coglio-proxy-archive.html = pagina unica
 ```
 Tutti i dati restano sul dispositivo (IndexedDB del browser). Nessun account, nessun server.
 
 ## Note
-- `pdf-test.js` e `proxy-test.js` girano con solo Node (il primo, se ci sono `python3` con Pillow, `pdfinfo`, `qpdf` e `pdftoppm`, controlla anche i PDF con strumenti esterni e confronta i pixel); `update-test.js` (scarico dell'aggiornamento con rete simulata) gira con solo Node; `ui-smoke.js`, `builder-smoke.js`, `img-smoke.js` e `update-smoke.js` usano jsdom (`node tools/builder-smoke.js <percorso-di-jsdom>`).
+- `pdf-test.js` e `proxy-test.js` girano con solo Node (il primo, se ci sono `python3` con Pillow, `pdfinfo`, `qpdf` e `pdftoppm`, controlla anche i PDF con strumenti esterni e confronta i pixel); `update-test.js` (scarico dell'aggiornamento con rete simulata) e `status-test.js` (stati dei mazzi e riuso delle carte) girano con solo Node; `ui-smoke.js`, `builder-smoke.js`, `img-smoke.js`, `update-smoke.js` e `status-smoke.js` usano jsdom (`node tools/builder-smoke.js <percorso-di-jsdom>`).
 - `test.js`, `ui-smoke.js` e `img-smoke.js` leggono alcune liste di mazzi da `tools/fixtures/`, che non sono nel repository: servono liste tue per provarli.
 - Progetto non ufficiale, non affiliato né approvato da Wizards of the Coast. Immagini e dati delle carte: [Scryfall](https://scryfall.com). Magic: The Gathering è un marchio di Wizards of the Coast.

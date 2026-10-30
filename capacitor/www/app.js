@@ -253,6 +253,40 @@
     }
   }
 
+  /* ---------- Novità («Codighel! che novità!») ---------- */
+  var NEWS = (function () {
+    var KEY = 'cpa-news-seen', hidden = false;
+    function log() { return Array.isArray(window.CPA_CHANGELOG) ? window.CPA_CHANGELOG : []; }
+    function seen() { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
+    function mark() { try { localStorage.setItem(KEY, String(window.CPA_VERSION || '')); } catch (e) { /* ignorato */ } }
+    function entry() { var v = window.CPA_VERSION; return log().filter(function (x) { return x.v === v; })[0] || null; }
+    function list(e) {
+      return '<ul class="news-list">' + e.items.map(function (i) { return '<li><b>' + esc(i.t) + '</b> ' + esc(i.d) + '</li>'; }).join('') + '</ul>';
+    }
+    function banner() {
+      var e = entry(), cur = String(window.CPA_VERSION || '');
+      if (!e || hidden || seen() === cur || ui.view === 'builder') return '';
+      if (!state.decks.length && !seen()) { mark(); return ''; }
+      return '<div class="news-banner" role="status"><span><b>Codighel!</b> È arrivata la versione ' + esc(cur) + ': ' + esc(e.title) + '.</span>' +
+        '<span class="btns"><button class="btn small primary" data-a="news-open">Che novità!</button><button class="btn small" data-a="news-close">Chiudi</button></span></div>';
+    }
+    function panel() {
+      var l = log(); if (!l.length) return '';
+      var cur = String(window.CPA_VERSION || ''), first = entry() || l[0];
+      var head = function (e) { return esc(e.v) + (e.date ? ' · ' + esc(e.date) : '') + ' — ' + esc(e.title); };
+      return '<section class="panel" id="news"><h2 class="sect" style="margin:0">Codighel! che novità!</h2>' +
+        '<div class="news-cur"><h3>' + head(first) + '</h3>' + list(first) + '</div>' +
+        l.filter(function (e) { return e !== first; }).map(function (e) { return '<details class="news-old"><summary>' + head(e) + '</summary>' + list(e) + '</details>'; }).join('') +
+        '</section>';
+    }
+    function close() { hidden = true; mark(); render(); }
+    function open() {
+      hidden = true; mark(); ui.view = 'data'; ui.confirm = null; render();
+      setTimeout(function () { var el = document.getElementById('news'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30);
+    }
+    return { banner: banner, panel: panel, close: close, open: open };
+  })();
+
   /* ---------- Aggiornamenti (GitHub Releases) ---------- */
   var UPD = (function () {
     var REPO = 'imHuHo/coglio-proxy-archive';
@@ -724,7 +758,7 @@
           cache[key(name, c.set, c.collector_number)] = { u: f.u, b: f.b, t: Date.now() };
           var cur = c.set === set0 && String(c.collector_number).toLowerCase() === cn0;
           return '<button class="pr' + (cur ? ' cur' : '') + '" data-a="lb-pick" data-s="' + esc(c.set) + '" data-n="' + esc(c.collector_number) + '" title="' + esc(c.set_name || '') + '">' +
-            '<img src="' + esc(url(f.u, 'small')) + '" alt="' + esc(c.set_name || c.set) + '" loading="lazy"><span>' + esc(c.set.toUpperCase()) + ' ' + esc(c.collector_number) + ' · ' + esc((c.released_at || '').slice(0, 4)) + '</span></button>';
+            '<img src="' + esc(url(f.u, 'normal')) + '" alt="' + esc(c.set_name || c.set) + '" loading="lazy"><span>' + esc(c.set.toUpperCase()) + ' ' + esc(c.collector_number) + ' · ' + esc((c.released_at || '').slice(0, 4)) + '</span>' + (c.set_name ? '<span class="pn">' + esc(c.set_name) + '</span>' : '') + '</button>';
         }).join('');
         persist();
       }).catch(function () {
@@ -775,7 +809,7 @@
     var navHtml = NAV.map(function (n) { return navBtn(n[0], n[1]); }).join('');
     APP.innerHTML =
       '<div class="shell"><aside class="side"><div class="brand">' + LOGO + '<span><b>Coglio</b><small>Proxy Archive</small></span></div>' + navHtml + '</aside>' +
-      '<main class="main"><div class="mobile-brand">' + LOGO + '<span><b>Coglio</b><small>Proxy Archive</small></span></div>' + viewHtml() + '</main></div>' +
+      '<main class="main"><div class="mobile-brand">' + LOGO + '<span><b>Coglio</b><small>Proxy Archive</small></span></div>' + NEWS.banner() + viewHtml() + '</main></div>' +
       '<nav class="tabs" aria-label="Sezioni">' + navHtml + '</nav>';
     if (ui.view === 'archive' && state.decks.length) updateArchiveList();
     if (ui.view === 'deck') updateDeckList();
@@ -878,13 +912,24 @@
   }
 
   /* ---------- Mazzi ---------- */
-  function switchHtml(d) {
-    return '<label class="switch"><input type="checkbox" data-c="active" data-id="' + esc(d.id) + '"' + (d.active ? ' checked' : '') + '><span class="tr"></span><span>' + (d.active ? 'Attivo' : 'Non attivo') + '</span></label>';
+  var STATUS = [['active', 'Attivo'], ['unprinted', 'Non ancora stampato'], ['inactive', 'Non attivo']];
+  function statusSelect(d, id, cls) {
+    var cur = C.statusOf(d);
+    return '<select class="select ' + (cls || '') + '" data-c="' + (id || 'status') + '" data-id="' + esc(d.id || '') + '" aria-label="Stato del mazzo">' + STATUS.map(function (o) {
+      return '<option value="' + o[0] + '"' + (cur === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+    }).join('') + '</select>';
+  }
+  function switchHtml(d) { return statusSelect(d, 'status', 'stsel'); }
+  function statusHint(d) {
+    var st = C.statusOf(d);
+    return st === 'active' ? 'Mazzo montato: le sue carte risultano in uso.' :
+      st === 'unprinted' ? 'Non ancora stampato: le sue carte non entrano nell\'archivio finché non lo stampi. Quando è pronto, passalo ad Attivo.' :
+        'Mazzo smontato: le sue carte risultano libere e le ritrovi anche tra le carte disponibili per altri mazzi.';
   }
   function deckCard(d) {
-    var on = d.kind === 'deck' && d.active;
+    var on = d.kind === 'deck' && d.active, np = d.kind === 'deck' && C.statusOf(d) === 'unprinted';
     var meta = d.kind === 'deck' ? (d.commander ? 'Commander: ' + esc(d.commander) : 'Nessun commander scelto') : 'Carte sciolte, sempre disponibili';
-    return '<article class="deckcard' + (on ? ' is-on' : '') + '"><div class="top"><div><h2>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + '</div></div>' +
+    return '<article class="deckcard' + (on ? ' is-on' : np ? ' is-np' : '') + '"><div class="top"><div><h2>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + '</div></div>' +
       (d.kind === 'deck' ? switchHtml(d) : '') + '</div><div class="foot"><span>' +
       (d.upgrades.length ? '<span class="pill info">' + plural(d.upgrades.length, 'upgrade', 'upgrade') + '</span>' : '<span class="hint">Nessun upgrade</span>') +
       '</span><span class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="open-deck" data-id="' + esc(d.id) + '">Apri</button></span></div></article>';
@@ -902,8 +947,8 @@
   function decksView() {
     var ds = state.decks.filter(function (d) { return d.kind === 'deck'; }), bs = state.decks.filter(function (d) { return d.kind === 'binder'; });
     if (!state.decks.length) return '<header class="vh"><h1>Mazzi</h1></header>' + welcome();
-    var act = ds.filter(function (d) { return d.active; }).length;
-    return '<header class="vh"><h1>Mazzi</h1><p class="sub"><b>' + act + '</b> attivi su <b>' + ds.length + '</b>. Un mazzo attivo è montato: le sue carte risultano in uso nell\'archivio.</p></header>' +
+    var act = ds.filter(function (d) { return d.active; }).length, np = ds.filter(function (d) { return C.statusOf(d) === 'unprinted'; }).length;
+    return '<header class="vh"><h1>Mazzi</h1><p class="sub"><b>' + act + '</b> attivi su <b>' + ds.length + '</b>' + (np ? ' · <b>' + np + '</b> da stampare' : '') + '. Un mazzo attivo è montato: le sue carte risultano in uso nell\'archivio.</p></header>' +
       '<div class="btns" style="margin-bottom:12px"><button class="btn primary" data-a="nav" data-v="import">Importa un mazzo</button></div>' +
       '<div class="list">' + ds.map(deckCard).join('') + '</div>' +
       (bs.length ? '<h2 class="sect">Carte sciolte</h2><div class="list">' + bs.map(deckCard).join('') + '</div>' : '');
@@ -927,7 +972,7 @@
     return '<header class="vh"><button class="back" data-a="nav" data-v="decks">← Mazzi</button><h1>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h1></header>' +
       '<section class="panel"><label class="lbl">Nome<input class="input" data-c="deck-name" value="' + esc(d.name) + '"></label>' +
       (d.kind === 'deck' ? '<label class="lbl">Commander<select class="select" data-c="deck-cmd">' + cmdOpts + '</select></label><div>' + switchHtml(d) +
-        '<p class="hint" style="margin-top:6px">' + (d.active ? 'Le carte di questo mazzo risultano in uso.' : 'Mazzo smontato: le sue carte risultano libere.') + '</p></div>' : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
+        '<p class="hint" style="margin-top:6px">' + statusHint(d) + '</p></div>' : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
       '<div class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="make-pdf" data-id="' + esc(d.id) + '">Crea PDF</button><button class="btn small" data-a="copy-deck">Copia lista .txt</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina') + '</button></div></section>' + tabs + body;
   }
   function updateDeckList() {
@@ -1040,7 +1085,7 @@
 
   /* ---------- Importazione ---------- */
   function newDraft(mode, deckId) {
-    return { mode: mode, deckId: deckId || null, step: 1, name: '', text: '', parsed: null, commander: null, cq: '', active: true, error: '' };
+    return { mode: mode, deckId: deckId || null, step: 1, name: '', text: '', parsed: null, commander: null, cq: '', status: 'active', reuse: {}, error: '' };
   }
   function importView() {
     var d = ui.draft || (ui.draft = newDraft('deck'));
@@ -1073,22 +1118,33 @@
     }).join('');
   }
   function reuseBanner(cards) {
-    var r = C.findReusable(cards, state.decks, state.settings);
+    var r = C.findReusable(cards, state.decks, state.settings), pk = (ui.draft && ui.draft.reuse) || {};
     var ex = r.filter(function (x) { return x.exact > 0; }), ot = r.filter(function (x) { return x.other > 0; });
     var want = function (x) { return x.wanted.length === 1 ? ptag(x.wanted[0]) : ''; };
+    var ck = function (x, kind, label) {
+      return '<label class="ru-ck"><input type="checkbox" data-c="reuse" data-k="' + esc(x.key) + '" data-t="' + kind + '"' + (pk[x.key + '|' + kind] ? ' checked' : '') + '><span>' + label + '</span></label>';
+    };
     var h = '';
     if (ex.length) {
-      h += '<div class="reuse"><p><b>CODIGHEL!</b> Queste carte le hai già stampate, <b>esattamente in questa stampa</b>: verifica prima di stampare di nuovo.</p><ul>' + ex.map(function (x) {
-        return '<li><span class="qty">' + x.exact + '×</span> ' + esc(x.name) + want(x) + '<span class="sm"> in ' + where(x.exactRows) + (x.exact < x.need ? ' · ne servono ' + x.need : '') + '</span></li>';
-      }).join('') + '</ul></div>';
+      h += '<div class="reuse"><p><b>CODIGHEL!</b> Queste carte le hai già stampate, <b>esattamente in questa stampa</b>: verifica prima di stampare di nuovo.</p>' +
+        '<p class="sm">Spunta quelle che vuoi usare: le tolgo da dove sono (carte sciolte o mazzo non attivo) e le metto già nel nuovo mazzo.</p><ul>' + ex.map(function (x) {
+          return '<li>' + ck(x, 'exact', 'Usa') + '<span class="qty">' + x.exact + '×</span> ' + esc(x.name) + want(x) + '<span class="sm"> in ' + where(x.exactRows) + (x.exact < x.need ? ' · ne servono ' + x.need : '') + '</span></li>';
+        }).join('') + '</ul><div class="btns"><button class="btn small" data-a="reuse-all">Usa tutte</button><button class="btn small" data-a="reuse-none">Nessuna</button></div></div>';
     }
     if (ot.length) {
-      h += '<div class="reuse alt"><p><b>Stessa carta, stampa diversa.</b> Hai già queste carte ma in un\'altra stampa. Se ti basta puoi riusarle; se vuoi proprio quella della lista vanno stampate (per l\'archivio sono carte diverse).</p><ul>' + ot.map(function (x) {
-        return '<li><span class="qty">' + x.other + '×</span> ' + esc(x.name) + (x.wanted.length === 1 ? '<span class="sm"> nella lista: ' + esc(prLabel(x.wanted[0])) + '</span>' : '') + '<span class="sm"> hai: ' + where(x.otherRows) + '</span></li>';
+      h += '<div class="reuse alt"><p><b>Stessa carta, stampa diversa.</b> Hai già queste carte ma in un\'altra stampa. Se ti basta puoi riusarle (nel mazzo resta la stampa che hai davvero); se vuoi proprio quella della lista vanno stampate (per l\'archivio sono carte diverse).</p><ul>' + ot.map(function (x) {
+        return '<li>' + ck(x, 'other', 'Usa questa stampa') + '<span class="qty">' + x.other + '×</span> ' + esc(x.name) + (x.wanted.length === 1 ? '<span class="sm"> nella lista: ' + esc(prLabel(x.wanted[0])) + '</span>' : '') + '<span class="sm"> hai: ' + where(x.otherRows) + '</span></li>';
       }).join('') + '</ul></div>';
     }
-    return h;
+    return h + (h ? '<p class="hint" id="reuse-sum" role="status">' + reuseSumText() + '</p>' : '');
   }
+  function reuseSumText() {
+    var d = ui.draft; if (!d || !d.parsed) return '';
+    var n = 0, pk = d.reuse || {};
+    C.findReusable(d.parsed.cards, state.decks, state.settings).forEach(function (x) { n += (pk[x.key + '|exact'] ? x.exact : 0) + (pk[x.key + '|other'] ? x.other : 0); });
+    return n ? 'Prenderò ' + plural(n, 'copia', 'copie') + ' da quelle che hai già: non le devi stampare.' : 'Nessuna carta presa: le stamperai tutte.';
+  }
+  function reuseSummary() { var el = $('#reuse-sum'); if (el) el.textContent = reuseSumText(); }
   function importStep2(d) {
     var p = d.parsed;
     return '<header class="vh"><button class="back" data-a="draft-back">← Lista</button><h1>Scegli il commander</h1><p class="sub"><b>' + p.total + '</b> carte (' + p.unique + ' diverse)' + (p.excluded ? ' · ' + p.excluded + ' escluse (sideboard)' : '') + '</p></header>' +
@@ -1098,7 +1154,8 @@
       reuseBanner(p.cards) +
       '<div class="search">' + IC.search + '<input class="input" data-c="cmd-q" type="search" placeholder="Cerca il commander nella lista" autocomplete="off" aria-label="Cerca il commander" value="' + esc(d.cq) + '"></div>' +
       '<div class="pick" id="cmdlist" role="radiogroup" aria-label="Commander">' + cmdListHtml(d) + '</div>' +
-      '<label class="switch"><input type="checkbox" data-c="draft-active"' + (d.active ? ' checked' : '') + '><span class="tr"></span><span>Mazzo attivo (montato adesso)</span></label>' +
+      '<label class="lbl">Stato del mazzo' + statusSelect({ kind: 'deck', status: d.status, active: d.status === 'active' }, 'draft-status') + '</label>' +
+      '<p class="hint" style="margin-top:-4px">' + esc(statusHint({ kind: 'deck', status: d.status, active: d.status === 'active' })) + '</p>' +
       '<div class="btns"><button class="btn primary" data-a="draft-create">Crea mazzo</button></div></section>';
   }
   function draftNext() {
@@ -1120,13 +1177,17 @@
     var kind = d.mode === 'binder' ? 'binder' : 'deck';
     var nd = {
       id: C.uid('d'), name: d.name.trim() || (kind === 'binder' ? 'Carte sciolte' : d.commander || 'Nuovo mazzo'), kind: kind,
-      active: kind === 'deck' && d.active, commander: kind === 'deck' ? (d.commander || null) : null,
-      cards: p.cards, upgrades: [], createdAt: now, updatedAt: now
+      status: kind === 'deck' ? d.status : 'inactive', active: kind === 'deck' && d.status === 'active', commander: kind === 'deck' ? (d.commander || null) : null,
+      cards: C.clone(p.cards), upgrades: [], createdAt: now, updatedAt: now
     };
+    var taken = kind === 'deck' ? C.applyReuse(state.decks, nd, d.reuse, state.settings) : [];
+    taken.forEach(function (x) { touch(x.deckId); });
     state.decks.push(nd); touch(nd.id);
     if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch (e) { /* ignorato */ } }
     ui.view = kind === 'deck' ? 'deck' : 'archive'; ui.deckId = nd.id; ui.deckTab = 'cards'; ui.deckQ = ''; ui.draft = null;
-    toast((kind === 'deck' ? 'Mazzo creato' : 'Carte aggiunte') + ': ' + plural(sum(p.cards), 'carta', 'carte')); window.scrollTo(0, 0); render();
+    var nTaken = taken.reduce(function (t, x) { return t + x.qty; }, 0);
+    toast((kind === 'deck' ? 'Mazzo creato' : 'Carte aggiunte') + ': ' + plural(sum(p.cards), 'carta', 'carte') +
+      (nTaken ? ' · ' + plural(nTaken, 'copia presa', 'copie prese') + ' da carte sciolte e mazzi non attivi, non da stampare' : ''), null, !!nTaken); window.scrollTo(0, 0); render();
   }
 
   /* ---------- Dati ---------- */
@@ -1142,6 +1203,7 @@
   function dataView() {
     var armedReset = armed('reset');
     return '<header class="vh"><h1>Dati</h1><p class="sub">' + esc(storageLabel()) + '</p></header>' +
+      NEWS.panel() +
       '<section class="panel"><h2 class="sect" style="margin:0">Impostazioni</h2>' +
       '<label class="lbl">Tema<select class="select" data-c="theme"><option value="auto"' + (state.settings.theme === 'auto' ? ' selected' : '') + '>Automatico</option><option value="light"' + (state.settings.theme === 'light' ? ' selected' : '') + '>Chiaro</option><option value="dark"' + (state.settings.theme === 'dark' ? ' selected' : '') + '>Scuro</option></select></label>' +
       '<label class="switch"><input type="checkbox" data-c="basics"' + (state.settings.basicsUnlimited ? ' checked' : '') + '><span class="tr"></span><span>Terre base sempre disponibili negli upgrade</span></label>' +
@@ -1214,6 +1276,10 @@
         break;
       case 'draft-mode': ui.draft.mode = el.dataset.v; render(); break;
       case 'draft-next': draftNext(); break;
+      case 'reuse-all':
+        C.findReusable(ui.draft.parsed.cards, state.decks, state.settings).forEach(function (x) { if (x.exact > 0) ui.draft.reuse[x.key + '|exact'] = true; });
+        render(); break;
+      case 'reuse-none': ui.draft.reuse = {}; render(); break;
       case 'draft-back': ui.draft.step = 1; render(); break;
       case 'draft-create': draftCreate(); break;
       case 'dl-json':
@@ -1244,6 +1310,8 @@
       case 'lb-back': IMG.back(); break;
       case 'lb-pick': IMG.pick(el.dataset.s, el.dataset.n); break;
       case 'lb-keep': break;
+      case 'news-open': NEWS.open(); break;
+      case 'news-close': NEWS.close(); break;
       case 'upd-check': UPD.check(); break;
       case 'upd-go': UPD.start(); break;
       case 'upd-reload': UPD.reload(); break;
@@ -1293,11 +1361,13 @@
       case 'fset': ui.fset = t.value; ui.limit = 150; render(); break;
       case 'sort': ui.sort = t.value; render(); break;
       case 'nobasic': ui.nobasic = t.checked; ui.limit = 150; render(); break;
-      case 'active':
+      case 'status':
         d = getDeck(t.dataset.id);
         if (d) {
-          d.active = t.checked; d.updatedAt = Date.now(); touch(d.id);
-          toast(t.checked ? d.name + ' attivo: le sue ' + sum(d.cards) + ' carte risultano in uso.' : d.name + ' non attivo: le sue carte tornano libere.');
+          var st = t.value; d.status = st; d.active = st === 'active'; d.updatedAt = Date.now(); touch(d.id);
+          toast(st === 'active' ? d.name + ' attivo: le sue ' + sum(d.cards) + ' carte risultano in uso.' :
+            st === 'unprinted' ? d.name + ' non ancora stampato: le sue carte non entrano nell\'archivio finché non lo stampi.' :
+              d.name + ' non attivo: le sue carte tornano libere.');
           render();
         } break;
       case 'deck-name': d = getDeck(); if (d && t.value.trim()) { d.name = t.value.trim(); d.updatedAt = Date.now(); touch(d.id); render(); } break;
@@ -1307,7 +1377,8 @@
         var u = d && d.upgrades.filter(function (x) { return x.id === ui.upId; })[0];
         if (u && t.value.trim()) { u.name = t.value.trim(); touch(d.id); render(); } break;
       case 'cmd': ui.draft.commander = t.value || null; break;
-      case 'draft-active': ui.draft.active = t.checked; break;
+      case 'draft-status': ui.draft.status = t.value; render(); break;
+      case 'reuse': ui.draft.reuse[t.dataset.k + '|' + t.dataset.t] = t.checked; reuseSummary(); break;
       case 'draft-file':
         if (t.files && t.files[0]) {
           var f = t.files[0];
