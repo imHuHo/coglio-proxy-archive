@@ -1,5 +1,8 @@
 # Coglio Proxy Archive
 
+**Download:** nella pagina [Releases](https://github.com/imHuHo/coglio-proxy-archive/releases/latest) ci sono lo zip per Windows (estrai tutta la cartella e avvia `Coglio Proxy Archive.exe`) e l'APK per Android.
+Per pubblicare una nuova versione: scheda *Actions* → *Windows app* (e *Android APK*) → *Run workflow* → scrivi il nome della versione, ad esempio `v1.2.0`.
+
 Archivio delle tue carte Magic. Importi le liste dei mazzi in `.txt`, segni quali mazzi sono attivi
 e l'app ti dice quali carte hai, quante sono libere e in quale mazzo sono impegnate.
 
