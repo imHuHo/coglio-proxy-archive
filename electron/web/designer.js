@@ -63,14 +63,14 @@
       dz.designs = (r[0] || []).map(norm).sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
       var all = (r[1] || []).sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
       dz.frames = all.filter(function (f) { return !f.kind || f.kind === 'frame'; });
-      dz.res = all.filter(function (f) { return f.kind === 'font' || f.kind === 'symbols' || f.kind === 'watermarks' || f.kind === 'overlays'; });
+      dz.res = all.filter(function (f) { return f.kind === 'font' || f.kind === 'symbols' || f.kind === 'watermarks' || f.kind === 'overlays' || f.kind === 'walker'; });
       var marker = all.filter(function (f) { return f.id === 'bundle-marker'; })[0];
       return initResources().then(function () { return syncBundle(marker); }).then(function () { dz.loaded = true; dz.loading = null; });
     }, function () { dz.loaded = true; dz.loading = null; });
     return dz.loading;
   }
   /* risorse incluse nell'app (risorse.json: cornici, simboli, font): si caricano una volta per versione, in silenzio */
-  var BUNDLE_VER = 'mse-3';
+  var BUNDLE_VER = 'mse-4';
   function bundleBlob() {
     if (typeof window.CPA_BUNDLE === 'string') return Promise.resolve(new Blob([window.CPA_BUNDLE], { type: 'application/json' }));
     if (window.cpaNet && window.cpaNet.resource) return window.cpaNet.resource('risorse.json').then(function (t) { return t ? new Blob([t], { type: 'application/json' }) : null; }).catch(function () { return null; });
@@ -92,13 +92,17 @@
   /* font e simboli di mana importati dall'utente: si registrano nel browser e nel motore di rendering */
   function initResources() {
     Object.keys(sUrl).forEach(function (k) { if (sUrl[k]) { try { URL.revokeObjectURL(sUrl[k]); } catch (e) { /* già liberato */ } } }); sUrl = {};
-    var fonts = {}, syms = {}, wms = {}, ovs = {}, jobs = [];
+    var fonts = {}, syms = {}, wms = {}, ovs = {}, wk = {}, jobs = [];
     dz.res.forEach(function (rec) {
       if (rec.kind === 'font' && rec.blob && window.FontFace && document.fonts) {
         jobs.push(rec.blob.arrayBuffer().then(function (buf) {
           var ff = new FontFace(rec.family, buf, { style: rec.style === 'italic' ? 'italic' : 'normal', weight: '100 900' });
           return ff.load().then(function () { document.fonts.add(ff); if (rec.role === 'title') fonts.title = true; if (rec.role === 'body' || rec.role === 'bodyItalic') fonts.body = true; });
         }).catch(function () { return null; }));
+      } else if (rec.kind === 'walker' && rec.map) {
+        Object.keys(rec.map).forEach(function (k) {
+          jobs.push(blobImage(rec.map[k]).then(function (r) { wk[k] = r.img; }).catch(function () { return null; }));
+        });
       } else if (rec.kind === 'overlays' && rec.map) {
         Object.keys(rec.map).forEach(function (k) {
           jobs.push(blobImage(rec.map[k]).then(function (r) { var m = rec.meta[k] || {}; ovs[k] = { img: r.img, b: m.b || [0, 0, 745, 1040], erase: m.erase || null }; }).catch(function () { return null; }));
@@ -113,7 +117,7 @@
         });
       }
     });
-    return Promise.all(jobs).then(function () { R.setResources({ fonts: fonts, symbols: syms, watermarks: wms, overlays: ovs }); });
+    return Promise.all(jobs).then(function () { R.setResources({ fonts: fonts, symbols: syms, watermarks: wms, overlays: ovs, walker: wk }); });
   }
   function norm(d) {
     var b = R.defaults(d && d.kind === 'token' ? 'token' : 'card'), o = {};
@@ -372,7 +376,15 @@
             return DB.put('frames', rec);
           });
         });
-        var nsym = 0, nfont = 0, nwm = 0, nov = 0;
+        var nsym = 0, nfont = 0, nwm = 0, nov = 0, nwk = 0;
+        if (data.walker && typeof data.walker === 'object') {
+          chain = chain.then(function () {
+            var map = {}, nw = 0; Object.keys(data.walker).forEach(function (k) { var b = dataUrlToBlob(data.walker[k]); if (b) { map[k] = b; nw++; } });
+            if (!nw) return null; nov += 0; nsym += 0;
+            var rec = { id: 'res-walker', kind: 'walker', map: map, createdAt: Date.now() };
+            dz.res = dz.res.filter(function (x) { return x.id !== rec.id; }); dz.res.push(rec); nwk = nw; return DB.put('frames', rec);
+          });
+        }
         if (Array.isArray(data.overlays) && data.overlays.length) {
           chain = chain.then(function () {
             var map = {}, meta = {};
@@ -406,7 +418,7 @@
             dz.res = dz.res.filter(function (x) { return x.id !== rec.id; }); dz.res.push(rec); nfont++; return DB.put('frames', rec);
           });
         });
-        chain.then(function () { return nsym || nfont || nwm || nov ? initResources() : null; }).then(function () {
+        chain.then(function () { return nsym || nfont || nwm || nov || nwk ? initResources() : null; }).then(function () {
           var parts = [];
           if (n) parts.push(n + (n === 1 ? ' cornice' : ' cornici'));
           if (nsym) parts.push(nsym + ' simboli di mana');
@@ -414,7 +426,7 @@
           if (nwm) parts.push(nwm + ' filigrane');
           if (nov) parts.push(nov + ' extra (corone, stampi, pips…)');
           if (!silent) H.toast(parts.length ? 'Importati: ' + parts.join(', ') + '.' : 'Il pacchetto non contiene niente di utilizzabile.');
-          res(n ? first : (nsym || nfont || nwm || nov ? '*' : null));
+          res(n ? first : (nsym || nfont || nwm || nov || nwk ? '*' : null));
         }, function () { if (!silent) H.toast('Non riesco a salvare le risorse su questo dispositivo.'); res(null); });
     });
   }
@@ -570,7 +582,7 @@
       (d.frameImg ? '<div class="dz-row">' + lbl('Colore del testo', sel('ink', d.ink, [['dark', 'Scuro'], ['light', 'Chiaro']])) + '</div>' : '') +
       '<div class="btns"><label class="btn small filebtn">Importa cornici (PNG o pacchetto)<input type="file" accept="image/png,image/webp,.json,application/json" data-c="dz-framefile" multiple hidden></label>' +
       (d.frameImg ? '<button class="btn small danger" data-a="dz-frame-del">' + (/^auto:/.test(d.frameImg) ? 'Elimina il pacchetto di cornici' : 'Elimina questa cornice') + '</button>' : '') + '</div>' +
-      (dz.res.length ? '<p class="hint">Simboli di mana e font importati: ' + dz.res.map(function (x) { return x.kind === 'symbols' ? 'simboli' : x.kind === 'watermarks' ? 'filigrane' : x.kind === 'overlays' ? 'extra' : 'font ' + (x.role || ''); }).join(', ') + '. <button class="btn small danger" data-a="dz-res-del">Togli simboli, font e filigrane</button></p>' : '') + '<p class="hint">Le cornici importate (PNG tuoi con la zona dell’arte trasparente, oppure un pacchetto .json) restano solo su questo dispositivo. Con «automatica» la cornice segue i colori della carta.</p></section>';
+      (dz.res.length ? '<p class="hint">Simboli di mana e font importati: ' + dz.res.map(function (x) { return x.kind === 'symbols' ? 'simboli' : x.kind === 'watermarks' ? 'filigrane' : x.kind === 'overlays' ? 'extra' : x.kind === 'walker' ? 'planeswalker' : 'font ' + (x.role || ''); }).join(', ') + '. <button class="btn small danger" data-a="dz-res-del">Togli simboli, font e filigrane</button></p>' : '') + '<p class="hint">Le cornici importate (PNG tuoi con la zona dell’arte trasparente, oppure un pacchetto .json) restano solo su questo dispositivo. Con «automatica» la cornice segue i colori della carta.</p></section>';
     /* extra delle cornici importate */
     if (R.hasOverlays() && d.frameImg) {
       var yn = [['', 'No'], ['1', 'Sì']];

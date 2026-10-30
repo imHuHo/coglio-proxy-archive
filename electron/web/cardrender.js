@@ -11,10 +11,10 @@
   var BASE_BODY = "'EB Garamond', 'Palatino Linotype', 'Book Antiqua', Georgia, serif";
   var F_TITLE = BASE_TITLE, F_BODY = BASE_BODY;
   /* risorse importate dall'utente (font e simboli di mana): senza di esse si usano font e simboli disegnati qui */
-  var RES = { symbols: {}, watermarks: {}, overlays: {} };
+  var RES = { symbols: {}, watermarks: {}, overlays: {}, walker: null };
   function setResources(r) {
     r = r || {}; var f = r.fonts || {};
-    RES.symbols = r.symbols || {}; RES.watermarks = r.watermarks || {}; RES.overlays = r.overlays || {};
+    RES.symbols = r.symbols || {}; RES.watermarks = r.watermarks || {}; RES.overlays = r.overlays || {}; RES.walker = r.walker && r.walker.plus ? r.walker : null;
     F_TITLE = f.title ? "'CPA Title', " + BASE_TITLE : BASE_TITLE;
     F_BODY = f.body ? "'CPA Body', " + BASE_BODY : BASE_BODY;
   }
@@ -348,7 +348,11 @@
     if (!L.pt || !String(d.pt || '').trim()) return;
     var r = L.pt, txt = String(d.pt).trim();
     ctx.save();
-    if (L.walker) { /* scudo di lealtà */
+    if (L.walker && user && RES.walker) { /* casella di lealtà vera: nella cornice (Card Conjurer) o disegnata sopra (Magic Set Editor) */
+      if (!(user.walker && user.walker.box)) ctx.drawImage(RES.walker.loyalty, r[0], r[1], r[2], r[3]);
+      var sl = fitLine(ctx, txt, F_TITLE, 700, user.walker && user.walker.box ? Math.round(0.0372 * H) : Math.round(r[3] * 0.48), 18, r[2] * 0.6); ctx.font = '700 ' + sl + 'px ' + F_TITLE; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(txt, r[0] + r[2] / 2, r[1] + r[3] / 2 + 2);
+    } else if (L.walker) { /* scudo di lealtà */
       var cx = r[0] + r[2] / 2, cy = r[1] + r[3] / 2;
       ctx.beginPath(); ctx.moveTo(cx - 52, cy - 32); ctx.lineTo(cx + 52, cy - 32); ctx.lineTo(cx + 52, cy + 12); ctx.lineTo(cx, cy + 46); ctx.lineTo(cx - 52, cy + 12); ctx.closePath();
       ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3; ctx.fillStyle = '#1a1620'; ctx.fill(); ctx.shadowColor = 'transparent';
@@ -386,7 +390,50 @@
     });
     return out;
   }
+  /* planeswalker fedele (misure di Card Conjurer): fasce chiare/scure alternate dentro il riquadro, icone vere di lealtà */
+  var PW_REG = [[0.7467], [0.6953, 0.822], [0.6639, 0.7467, 0.8362], [0.6505, 0.72, 0.7905, 0.861]];
+  var PW_TALL = [[0.72], [0.6391, 0.801], [0.5986, 0.72, 0.8415], [0.5986, 0.6796, 0.7605, 0.8415]];
+  function drawWalkerReal(ctx, d, L, user) {
+    var K = RES.walker, g = user.walker || {}, tall = !!g.tall, ab = parseWalker(d.rules).slice(0, 4), n = ab.length;
+    if (!n) return;
+    var tab = (tall ? PW_TALL : PW_REG)[n - 1], top = (g.top || (tall ? 0.5605 : 0.6239)) * H, bottom = 0.915 * H;
+    var cen = tab.map(function (p) { return (p + 0.0104) * H; }), b = [top];
+    for (var i = 1; i < n; i++) b.push((cen[i - 1] + cen[i]) / 2);
+    b.push(bottom);
+    /* fasce */
+    if (g.stripes !== false) {
+    var off = document.createElement('canvas'); off.width = W; off.height = H; var o = off.getContext('2d');
+    var sx = 0.1167 * W, sw = 0.8094 * W, t = 0.0048 * H;
+    for (i = 0; i < n; i++) {
+      var y0 = i === 0 ? b[0] - 0.1 * H : b[i], y1 = i === n - 1 ? H : b[i + 1];
+      o.globalAlpha = i % 2 ? 0.706 : 0.608; o.fillStyle = i % 2 ? '#a4a4a4' : '#ffffff';
+      o.fillRect(sx, y0 + t, sw, y1 - y0 - 2 * t); o.globalAlpha = 1;
+      if (i < n - 1) o.drawImage(i % 2 ? K.lineEven : K.lineOdd, sx, b[i + 1] - t, sw, 2 * t);
+    }
+    o.globalCompositeOperation = 'destination-in'; o.drawImage(tall && K.maskTall ? K.maskTall : K.mask, 0, 0, W, H);
+    ctx.drawImage(off, 0, 0);
+    }
+    /* testo: una dimensione comune che entra in tutte le righe */
+    var ink = zoneInk(user, 'rules', '#14110f'), gx = g.x || 0.18, gw = g.w || 0.7467;
+    var area = ab.map(function (a, i) { var x = (a.cost ? gx : gx - 0.044) * W, w = (gw + (a.cost ? 0 : 0.044)) * W; return { x: x, w: w, y: b[i], h: b[i + 1] - b[i], toks: tokenize(a.text) }; });
+    var size = 34;
+    for (; size > 15; size--) { if (area.every(function (r) { return layout(ctx, r.toks, r.w, size, F_BODY, false).h <= r.h - 10; })) break; }
+    ctx.save(); shade(ctx, lightInk(ink));
+    area.forEach(function (r) { var lay = layout(ctx, r.toks, r.w, size, F_BODY, false); drawLayout(ctx, lay, r.x, r.y + (r.h - lay.h) / 2, ink, 'left', r.w); });
+    ctx.restore();
+    /* icone di lealtà */
+    ab.forEach(function (a, i) {
+      if (!a.cost) return;
+      var p = tab[i], c = a.cost.replace(/^-/, '\u2212'), plus = c[0] === '+', minus = c[0] === '\u2212' || c[0] === '-';
+      if (plus) ctx.drawImage(K.plus, 0.0294 * W, (p - 0.0258) * H, 0.14 * W, 0.0724 * H);
+      else if (minus) ctx.drawImage(K.minus, 0.028 * W, (p - 0.0153) * H, 0.1414 * W, 0.0705 * H);
+      else ctx.drawImage(K.neutral, 0.028 * W, (p - 0.0153) * H, 0.1414 * W, 0.061 * H);
+      ctx.save(); ctx.fillStyle = '#ffffff'; ctx.font = '700 ' + Math.round(0.0286 * H) + 'px ' + F_TITLE; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText(c, 0.1027 * W, (p + (plus ? 0.0172 : minus ? 0.0181 : 0.0191)) * H); ctx.restore();
+    });
+  }
   function drawWalkerBox(ctx, d, L, pal, user) {
+    if (user && RES.walker) return drawWalkerReal(ctx, d, L, user);
     var r = L.box, ab = parseWalker(d.rules), n = Math.max(1, ab.length);
     var x = r[0], y = r[1], w = r[2], h = r[3];
     /* con una cornice importata il riquadro è già nella cornice: niente pannello, costi a sinistra del testo */
@@ -451,7 +498,7 @@
   /* ---------- carta intera ---------- */
   function render(ctx, d, assets, opt) {
     assets = assets || {}; opt = opt || {};
-    var L = LAYOUT[d.frame] || LAYOUT.classic, pk = paletteKey(d), pal = PAL[pk], user = assets.frameImg ? { ink: d.ink === 'light' ? 'light' : 'dark', pt: !!assets.ptImg, colors: (assets.frameGeo && assets.frameGeo.colors) || null, center: !!(assets.frameGeo && assets.frameGeo.titleAlign === 'center') } : null;
+    var L = LAYOUT[d.frame] || LAYOUT.classic, pk = paletteKey(d), pal = PAL[pk], user = assets.frameImg ? { ink: d.ink === 'light' ? 'light' : 'dark', pt: !!assets.ptImg, colors: (assets.frameGeo && assets.frameGeo.colors) || null, center: !!(assets.frameGeo && assets.frameGeo.titleAlign === 'center'), walker: (assets.frameGeo && assets.frameGeo.walker) || null } : null;
     /* una cornice importata può portare la propria geometria (zona arte, barre, riquadri): sostituisce quella della cornice disegnata */
     if (user && assets.frameGeo) { var G = assets.frameGeo, L2 = {}; Object.keys(L).forEach(function (k) { L2[k] = L[k]; }); ['art', 'title', 'type', 'box', 'pt', 'info'].forEach(function (k) { if (G[k]) L2[k] = G[k]; }); L = L2; }
     var over = !!L.over && !user, square = opt.square || d.corners === 'square';
@@ -513,6 +560,6 @@
   return {
     W: W, H: H, FRAMES: FRAMES, LAYOUT: LAYOUT, PAL: PAL, PAL_ORDER: PAL_ORDER, RARITY: RARITY, defaults: defaults, paletteKey: paletteKey,
     render: render, tokenize: tokenize, costTokens: costTokens, parseWalker: parseWalker, parseSaga: parseSaga, drawSymbol: drawSymbol,
-    F_UI: F_UI, setResources: setResources, hasSymbols: function () { return Object.keys(RES.symbols).length > 0; }, hasOverlays: function () { return Object.keys(RES.overlays).length > 0; }, hasWatermarks: function () { return Object.keys(RES.watermarks).length > 0; }
+    F_UI: F_UI, setResources: setResources, hasSymbols: function () { return Object.keys(RES.symbols).length > 0; }, hasOverlays: function () { return Object.keys(RES.overlays).length > 0; }, hasWalker: function () { return !!RES.walker; }, hasWatermarks: function () { return Object.keys(RES.watermarks).length > 0; }
   };
 });

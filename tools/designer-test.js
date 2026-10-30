@@ -222,7 +222,7 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
 
   /* simboli e font importati (pacchetto solo-risorse) */
   const symPng = 'data:image/png;base64,' + framePng.toString('base64');
-  fs.writeFileSync('/tmp/claude-0/dz/res-test.json', JSON.stringify({ app: 'coglio-frames', version: 1, symbols: { W: symPng, U: symPng, R: symPng, CIRCLE: symPng }, fonts: [{ role: 'title', family: 'CPA Title', style: 'normal', ttf: 'data:font/ttf;base64,AAAA' }], watermarks: [{ key: 'prova', name: 'Filigrana di prova', png: symPng }], overlays: ['U', 'R', 'C'].map(k => ({ key: 'crown:' + k, png: symPng, b: [40, 20, 300, 120] })).concat(['U', 'R', 'C'].map(k => ({ key: 'pips:' + k, png: symPng, b: [57, 598, 35, 35] }))) }));
+  fs.writeFileSync('/tmp/claude-0/dz/res-test.json', JSON.stringify({ app: 'coglio-frames', version: 1, symbols: { W: symPng, U: symPng, R: symPng, CIRCLE: symPng }, fonts: [{ role: 'title', family: 'CPA Title', style: 'normal', ttf: 'data:font/ttf;base64,AAAA' }], watermarks: [{ key: 'prova', name: 'Filigrana di prova', png: symPng }], walker: { plus: symPng, minus: symPng, neutral: symPng, lineOdd: symPng, lineEven: symPng, mask: symPng, maskTall: symPng, loyalty: symPng }, overlays: ['U', 'R', 'C'].map(k => ({ key: 'crown:' + k, png: symPng, b: [40, 20, 300, 120] })).concat(['U', 'R', 'C'].map(k => ({ key: 'pips:' + k, png: symPng, b: [57, 598, 35, 35] }))) }));
   await page.click('[data-a="dz-back"]'); await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
   const full = () => page.evaluate(() => document.getElementById('dz-cv').toDataURL().length + ':' + document.getElementById('dz-cv').toDataURL().slice(-400));
   const beforeS = await full();
@@ -233,6 +233,7 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await page.waitForTimeout(300);
   ok((await full()) !== beforeS, 'i simboli cambiano l\u2019anteprima');
   ok(await page.evaluate(() => CPACard.hasWatermarks()), 'filigrane importate');
+  ok(await page.evaluate(() => CPACard.hasWalker()), 'icone e fasce dei planeswalker importate');
   ok((await page.innerHTML('[data-k="watermark"]')).includes('Filigrana di prova'), 'menu filigrana nell\u2019editor');
   const beforeW = await full();
   await page.selectOption('[data-k="watermark"]', 'prova'); await page.waitForTimeout(400);
@@ -362,6 +363,8 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   /* catalogo cornici */
   packFiles['/packs/index.json'] = JSON.stringify({ app: 'coglio-catalog', version: 1, packs: [{ id: 'tst', name: 'Borderless di prova', category: 'Showcase', n: 2, bytes: 1000 }, { id: 'pw', name: 'Altro pacchetto', category: 'Planeswalker', n: 1, bytes: 1000, layout: 'planeswalker' }] });
   packFiles['/packs/tst/pack.json'] = JSON.stringify({ app: 'coglio-frames', version: 1, groups: [{ id: 'cc-tst', name: 'Borderless di prova' }], frames: ['U', 'C'].map(k => ({ key: k, name: 'Prova ' + k, group: 'cc-tst', ink: 'light', geo: { art: [0, 0, 745, 959], title: [44, 54, 654, 56], type: [44, 589, 654, 56], box: [42, 639, 661, 331], pt: [576, 926, 130, 63], info: [46, 980], colors: { title: 'white', type: 'white', rules: 'white', pt: 'white' } }, png: k + '.webp', pt: null })) });
+  packFiles['/packs/pw/pack.json'] = JSON.stringify({ app: 'coglio-frames', version: 1, groups: [{ id: 'cc-pw', name: 'Altro pacchetto' }], frames: [{ key: 'C', name: 'PW', group: 'cc-pw', ink: 'dark', geo: { art: [50, 105, 645, 485], title: [44, 38, 655, 57], type: [44, 584, 655, 57], box: [112, 633, 600, 334], pt: [586, 926, 132, 63], info: [46, 980], layout: 'planeswalker', walker: { x: 0.18, w: 0.7467, top: 0.6239, tall: false, box: true } }, png: 'C.webp', pt: null }] });
+  packFiles['/packs/pw/C.webp'] = framePng;
   packFiles['/packs/tst/U.webp'] = framePng; packFiles['/packs/tst/C.webp'] = framePng; packFiles['/packs/tst/thumb.webp'] = framePng;
   await page.click('[data-a="dz-catalog"]');
   await page.waitForSelector('.dz-catitem');
@@ -379,7 +382,16 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await page.click('[data-a="dz-frame-pick"][data-v="auto:cc-tst"]'); await page.waitForTimeout(400);
   ok((await full()) !== bc, 'la cornice del catalogo cambia l\u2019anteprima');
   ok(await page.evaluate(() => CPADesigner.state.cur.ink) === 'light', 'il colore del testo segue la cornice');
+  /* pacchetto planeswalker: la carta passa da sola al tipo planeswalker */
+  await page.click('[data-a="dz-back"]'); await page.click('[data-a="dz-catalog"]'); await page.waitForSelector('.dz-catitem'); await page.fill('[data-c="dz-catq"]', ''); await page.waitForSelector('[data-a="dz-cat-add"][data-id="pw"]');
+  await page.click('[data-a="dz-cat-add"][data-id="pw"]'); await page.waitForSelector('[data-a="dz-cat-del"][data-id="pw"]');
+  await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item'); await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
+  await page.click('[data-a="dz-frame-pick"][data-v="auto:cc-pw"]'); await page.waitForTimeout(300);
+  ok(await page.evaluate(() => CPADesigner.state.cur.frame) === 'planeswalker', 'cornice planeswalker: la carta diventa planeswalker');
+  await page.click('[data-a="dz-frame-pick"][data-v="auto:cc-tst"]'); await page.waitForTimeout(200);
+  ok(await page.evaluate(() => CPADesigner.state.cur.frame) === 'classic', 'tornando a una cornice normale la carta torna classica');
   await page.click('[data-a="dz-back"]'); await page.click('[data-a="dz-catalog"]'); await page.waitForSelector('[data-a="dz-cat-del"][data-id="tst"]');
+  await page.click('[data-a="dz-cat-del"][data-id="pw"]');
   await page.click('[data-a="dz-cat-del"][data-id="tst"]');
   await page.waitForFunction(() => CPADesigner.state.frames.every(f => f.group !== 'cc-tst'));
   ok(await page.evaluate(() => CPADesigner.list().every(d => d.frameImg !== 'auto:cc-tst')), 'pacchetto rimosso, i design tornano alla cornice disegnata');

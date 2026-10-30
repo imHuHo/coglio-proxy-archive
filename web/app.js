@@ -268,13 +268,19 @@
       var e = entry(), cur = String(window.CPA_VERSION || '');
       if (!e || hidden || seen() === cur || ui.view === 'builder') return '';
       if (!state.decks.length && !seen()) { mark(); return ''; }
-      return '<div class="news-banner" role="status"><span><b>Codighel!</b> È arrivata la versione ' + esc(cur) + ': ' + esc(e.title) + '.</span>' +
+      var mj = /^\d+\.0\.0$/.test(cur);
+      return '<div class="news-banner' + (mj ? ' major' : '') + '" role="status"><span><b>Codighel!</b> È arrivata la versione ' + esc(cur) + ': ' + esc(e.title) + '.</span>' +
         '<span class="btns"><button class="btn small primary" data-a="news-open">Che novità!</button><button class="btn small" data-a="news-close">Chiudi</button></span></div>';
     }
     function panel() {
       var l = log(); if (!l.length) return '';
       var cur = String(window.CPA_VERSION || ''), first = entry() || l[0];
-      var head = function (e) { return esc(e.v) + (e.date ? ' · ' + esc(e.date) : '') + ' — ' + esc(e.title); };
+      /* aggiornamenti major (x.0.0): titolo bello evidente, giallo acceso */
+      var major = function (e) { return /^\d+\.0\.0$/.test(String(e.v || '')); };
+      var head = function (e) {
+        if (major(e)) return '<span class="news-major"><span class="news-major-tag">Major update</span><span class="news-major-t">' + esc(e.title) + '</span></span><span class="news-major-v">' + esc(e.v) + (e.date ? ' · ' + esc(e.date) : '') + '</span>';
+        return esc(e.v) + (e.date ? ' · ' + esc(e.date) : '') + ' — ' + esc(e.title);
+      };
       return '<section class="panel" id="news"><h2 class="sect" style="margin:0">Codighel! che novità!</h2>' +
         '<div class="news-cur"><h3>' + head(first) + '</h3>' + list(first) + '</div>' +
         l.filter(function (e) { return e !== first; }).map(function (e) { return '<details class="news-old"><summary>' + head(e) + '</summary>' + list(e) + '</details>'; }).join('') +
