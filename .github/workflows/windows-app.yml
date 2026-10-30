@@ -32,6 +32,13 @@ jobs:
           npm init -y
           npm install @electron/packager@20 png-to-ico@2.1.8
           node -e "require('png-to-ico')('../web/icons/icon-256.png').then(b => require('fs').writeFileSync('icon.ico', b))"
+      - name: Scrivi la versione nell'app
+        if: ${{ inputs.tag != '' || startsWith(github.ref, 'refs/tags/v') }}
+        shell: pwsh
+        run: |
+          $v = '${{ inputs.tag || github.ref_name }}'.TrimStart('v')
+          if ($v -notmatch '^\d+\.\d+\.\d+$') { throw "Tag non valido: $v" }
+          foreach ($f in 'web/version.js','electron/web/version.js') { Set-Content -Path $f -Value "window.CPA_VERSION = '$v';" -Encoding utf8 }
       - name: Impacchetta l'app
         shell: pwsh
         working-directory: pk

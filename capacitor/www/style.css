@@ -438,3 +438,10 @@ body.bd-lock { overflow: hidden; }
   .bd-row { grid-template-columns: 34px 58px 1fr auto; }
   .bd-acts { grid-column: auto; padding-left: 0; justify-content: flex-end; }
 }
+
+/* Aggiornamenti */
+.upd-new{margin-top:12px;padding:12px;border:1px solid var(--line,#8884);border-radius:12px}
+.upd-new p{margin:0 0 8px}
+.upd-notes{margin:6px 0 10px}
+.upd-notes pre{white-space:pre-wrap;word-break:break-word;margin:6px 0 0;font:inherit;max-height:180px;overflow:auto}
+#upd-prog{width:100%;height:10px;margin:4px 0}

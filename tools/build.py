@@ -8,7 +8,7 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 web = os.path.join(root, 'web')
 rd = lambda f: open(os.path.join(web, f), encoding='utf-8').read()
 css, core, app = rd('style.css'), rd('core.js'), rd('app.js')
-extra = {n: rd(n) for n in ('pdf.js', 'proxy.js', 'builder.js')}
+extra = {n: rd(n) for n in ('version.js', 'pdf.js', 'proxy.js', 'builder.js')}
 for name, src in [('core.js', core), ('app.js', app)] + list(extra.items()):
     assert '</script' not in src.lower(), name
 fonts = 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap'
@@ -20,6 +20,9 @@ single = f'''<title>Coglio Proxy Archive</title>
 </style>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
+<script>
+{extra['version.js']}
+</script>
 <script>
 {core}
 </script>

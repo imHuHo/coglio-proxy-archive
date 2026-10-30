@@ -39,6 +39,7 @@
     q: '', st: 'all', fdeck: '', fset: '', sort: 'name', nobasic: false, open: {}, limit: 150,
     upQ: '', upSt: 'all', draft: null, confirm: null, backupOut: '', restoreText: '', dataMsg: ''
   };
+  var upd = { st: 'idle', info: null, err: '', prog: null, saved: '' };
   var archCache = null;
   function getArchive() { return archCache || (archCache = C.buildArchive(state.decks)); }
   function getDeck(id) { return state.decks.filter(function (d) { return d.id === (id || ui.deckId); })[0] || null; }
@@ -251,6 +252,122 @@
       try { var a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; document.body.appendChild(a); a.click(); a.remove(); } catch (e2) { /* ignorato */ }
     }
   }
+
+  /* ---------- Aggiornamenti (GitHub Releases) ---------- */
+  var UPD = (function () {
+    var REPO = 'imHuHo/coglio-proxy-archive';
+    function platform() {
+      if (window.cpaNet && typeof window.cpaNet.update === 'function') return 'windows';
+      if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) return 'android';
+      return 'web';
+    }
+    function available() { return !!store && store.kind !== 'claude' && typeof fetch === 'function'; }
+    function current() { return typeof window.CPA_VERSION === 'string' ? window.CPA_VERSION : ''; }
+    function parse(v) {
+      var m = /^v?(\d+)\.(\d+)\.(\d+)/.exec(String(v || '').trim());
+      return m ? [+m[1], +m[2], +m[3]] : null;
+    }
+    /* >0 se a è più recente di b; null se una delle due non è una versione */
+    function cmp(a, b) {
+      var x = parse(a), y = parse(b);
+      if (!x || !y) return null;
+      for (var i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i] ? 1 : -1;
+      return 0;
+    }
+    function pick(rel, plat) {
+      var assets = (rel && rel.assets) || [], re = plat === 'windows' ? /-Windows\.zip$/i : plat === 'android' ? /\.apk$/i : null;
+      if (!re) return null;
+      for (var i = 0; i < assets.length; i++) {
+        var a = assets[i];
+        if (a && typeof a.name === 'string' && re.test(a.name) && typeof a.browser_download_url === 'string' && a.browser_download_url.indexOf('https://github.com/' + REPO + '/') === 0) {
+          return { name: a.name, url: a.browser_download_url, size: a.size || 0 };
+        }
+      }
+      return null;
+    }
+    function mb(n) { return n >= 1048576 ? (n / 1048576).toFixed(n >= 10485760 ? 0 : 1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+    function check() {
+      if (upd.st === 'checking' || upd.st === 'downloading') return;
+      upd.st = 'checking'; upd.err = ''; upd.saved = ''; render();
+      var ctl = typeof AbortController === 'function' ? new AbortController() : null;
+      var t = setTimeout(function () { if (ctl) ctl.abort(); }, 15000);
+      fetch('https://api.github.com/repos/' + REPO + '/releases/latest', { headers: { Accept: 'application/vnd.github+json' }, signal: ctl ? ctl.signal : undefined })
+        .then(function (r) {
+          if (r.status === 404) return null;
+          if (!r.ok) throw new Error('http' + r.status);
+          return r.json();
+        })
+        .then(function (rel) {
+          clearTimeout(t);
+          if (!rel) { upd.st = 'none'; upd.info = null; return; }
+          var plat = platform(), c = cmp(rel.tag_name, current());
+          upd.info = { tag: String(rel.tag_name || ''), page: typeof rel.html_url === 'string' ? rel.html_url : '', body: String(rel.body || '').slice(0, 1200), asset: pick(rel, plat) };
+          /* versione installata sconosciuta: si propone comunque l'ultima, ma senza dire che è "nuova" */
+          upd.st = c === 0 || c === -1 ? 'latest' : 'available';
+        })
+        .catch(function (e) {
+          clearTimeout(t); upd.st = 'error'; upd.info = null;
+          upd.err = e && e.name === 'AbortError' ? 'GitHub non risponde: riprova tra poco.' : 'Non riesco a contattare GitHub. Controlla la connessione e riprova.';
+        })
+        .then(function () { render(); });
+    }
+    function start() {
+      var a = upd.info && upd.info.asset, plat = platform();
+      if (!a) { if (upd.info && upd.info.page) openExternal(upd.info.page); return; }
+      if (plat === 'windows') {
+        upd.st = 'downloading'; upd.prog = { received: 0, total: a.size || 0 }; upd.err = ''; render();
+        if (typeof window.cpaNet.onUpdateProgress === 'function') {
+          window.cpaNet.onUpdateProgress(function (p) { upd.prog = p; paintProgress(); });
+        }
+        window.cpaNet.update(a.url).then(function (r) {
+          if (r && r.ok) { upd.st = 'downloaded'; upd.saved = r.path || ''; }
+          else { upd.st = 'error'; upd.err = r && r.error === 'busy' ? 'Scarico già in corso.' : r && (r.error === 'incomplete' || r.error === 'network' || r.error === 'timeout') ? 'Scarico interrotto: riprova.' : 'Scarico non riuscito (' + ((r && (r.error || r.status)) || 'errore') + ').'; }
+          render();
+        }, function () { upd.st = 'error'; upd.err = 'Scarico non riuscito: riprova.'; render(); });
+      } else {
+        openExternal(a.url);
+        upd.st = 'opened'; render();
+      }
+    }
+    function paintProgress() {
+      var p = upd.prog, el = document.getElementById('upd-prog'), tx = document.getElementById('upd-prog-t');
+      if (!el || !p) return;
+      var pct = p.total ? Math.min(100, Math.round(p.received * 100 / p.total)) : 0;
+      el.value = pct; if (tx) tx.textContent = mb(p.received) + (p.total ? ' di ' + mb(p.total) + ' · ' + pct + '%' : '');
+    }
+    function panel() {
+      var plat = platform(), cur = current(), i = upd.info, h = '<section class="panel" id="upd"><h2 class="sect" style="margin:0">Aggiornamenti</h2>';
+      h += '<p class="hint">Versione installata: <strong>' + (cur ? esc(cur) : 'non nota') + '</strong>' + (plat === 'web' ? ' · versione web' : '') + '</p>';
+      if (!available()) {
+        return h + '<p class="hint">Qui dentro non posso controllare GitHub. Nell\'app per Windows, nell\'APK e nella versione web il pulsante funziona.</p></section>';
+      }
+      var busy = upd.st === 'checking' || upd.st === 'downloading';
+      h += '<div class="btns"><button class="btn" data-a="upd-check"' + (busy ? ' disabled' : '') + '>' + (upd.st === 'checking' ? 'Controllo…' : 'Verifica aggiornamenti') + '</button></div>';
+      if (upd.st === 'none') h += '<p class="hint" role="status">Non ci sono ancora versioni pubblicate su GitHub.</p>';
+      if (upd.st === 'error') h += '<p class="err" role="status">' + esc(upd.err) + '</p>';
+      if (i && (upd.st === 'latest')) h += '<p class="hint" role="status">Hai già l\'ultima versione (' + esc(i.tag) + ').</p>';
+      if (i && (upd.st === 'available' || upd.st === 'downloading' || upd.st === 'downloaded' || upd.st === 'opened' || (upd.st === 'error' && i.asset))) {
+        var known = !!parse(cur);
+        h += '<div class="upd-new"><p role="status"><strong>' + (known ? 'Nuova versione disponibile: ' : 'Ultima versione: ') + esc(i.tag) + '</strong>' + (i.asset && i.asset.size ? ' · ' + mb(i.asset.size) : '') + '</p>';
+        if (i.body) h += '<details class="upd-notes"><summary>Novità</summary><pre class="hint">' + esc(i.body) + '</pre></details>';
+        if (upd.st === 'downloading') {
+          h += '<progress id="upd-prog" max="100" value="0" aria-label="Avanzamento scarico"></progress><p class="hint" id="upd-prog-t" role="status"></p>';
+        } else if (upd.st === 'downloaded') {
+          h += '<p class="hint" role="status">Scaricato in <strong>Download</strong>' + (upd.saved ? ' (' + esc(upd.saved.split(/[\\/]/).pop()) + ')' : '') + '. Per installarlo: chiudi questa app, estrai lo zip (anche sopra la vecchia cartella) e avvia di nuovo Coglio Proxy Archive. I tuoi dati restano al loro posto.</p>';
+          h += '<div class="btns"><button class="btn" data-a="upd-quit">Chiudi l\'app</button></div>';
+        } else if (upd.st === 'opened') {
+          h += '<p class="hint" role="status">' + (plat === 'android' ? 'Ho aperto il download: quando finisce, tocca il file .apk per installarlo sopra la versione attuale (i dati restano).' : 'Ho aperto il download.') + '</p>';
+        } else if (i.asset) {
+          h += '<div class="btns"><button class="btn primary" data-a="upd-go">' + (plat === 'android' ? 'Scarica l\'APK' : 'Scarica e prepara l\'aggiornamento') + '</button></div>';
+        } else {
+          h += '<p class="hint">' + (plat === 'web' ? 'La versione web si aggiorna da sola: chiudi e riapri l\'app dopo la pubblicazione. I programmi per Windows e Android si scaricano dalla pagina della versione.' : 'Per questo dispositivo non c\'è un file pronto in questa versione.') + '</p>' + (i.page ? '<div class="btns"><button class="btn" data-a="upd-go">Apri la pagina della versione</button></div>' : '');
+        }
+        h += '</div>';
+      }
+      return h + '</section>';
+    }
+    return { check: check, start: start, panel: panel, cmp: cmp, pick: pick, platform: platform };
+  })();
   function saveBracket(deck, b) { deck.bracket = b; deck.updatedAt = Date.now(); touch(deck.id); render(); }
 
   /* ---------- Bracket (Commander Spellbook) ---------- */
@@ -1029,6 +1146,7 @@
       '<label class="lbl">Oppure scegli il file<input class="input" type="file" data-c="restore-file" accept=".json,application/json"></label>' +
       (ui.dataMsg ? '<p class="' + (ui.dataMsg.indexOf('Errore') === 0 ? 'err' : 'hint') + '" role="status">' + esc(ui.dataMsg) + '</p>' : '') +
       '<div class="btns"><button class="btn" data-a="restore-json">Ripristina (sostituisce tutto)</button></div></section>' +
+      UPD.panel() +
       '<section class="panel"><h2 class="sect" style="margin:0">Zona rischiosa</h2><div class="btns"><button class="btn danger' + (armedReset ? ' armed' : '') + '" data-a="reset-all" data-cf="1">' + (armedReset ? 'Conferma: cancella tutto' : 'Cancella tutti i dati') + '</button></div></section>' +
       '<p class="hint" style="margin-top:18px">Coglio Proxy Archive · le carte vengono riconosciute per nome: collezione e numero servono solo a ritrovare la stampa. Immagini e dati delle carte: Scryfall. Le carte Magic sono © Wizards of the Coast.</p>';
   }
@@ -1117,6 +1235,9 @@
       case 'lb-back': IMG.back(); break;
       case 'lb-pick': IMG.pick(el.dataset.s, el.dataset.n); break;
       case 'lb-keep': break;
+      case 'upd-check': UPD.check(); break;
+      case 'upd-go': UPD.start(); break;
+      case 'upd-quit': if (window.cpaNet && window.cpaNet.quit) window.cpaNet.quit(); else toast('Chiudi la finestra per uscire.'); break;
       case 'img-clear': IMG.clear(); toast('Immagini salvate cancellate: le riscarico quando servono.'); render(); break;
       case 'reset-all':
         confirmThen('reset', function () { mutate('Tutti i dati cancellati.', function () { state.decks = []; }); render(); }); break;
@@ -1192,6 +1313,7 @@
 
   /* Funzioni che la schermata di stampa (builder.js) può usare. */
   window.CPAHost = {
+    cmpVersion: UPD.cmp,
     esc: esc, toast: toast, download: download, getDeck: getDeck, ui: ui, render: render,
     available: function () { return !!store && store.kind !== 'claude' && typeof fetch === 'function'; }
   };

@@ -1,5 +1,6 @@
 const { app, BrowserWindow, shell, ipcMain, net, clipboard } = require('electron');
 const path = require('path');
+const updater = require('./updater');
 
 const BRACKET_URL = 'https://backend.commanderspellbook.com/estimate-bracket/';
 
@@ -31,6 +32,22 @@ ipcMain.handle('cpa:copy', (_event, text) => {
   if (typeof text !== 'string' || text.length > 1000000) return false;
   try { clipboard.writeText(text); return true; } catch (e) { return false; }
 });
+
+/* Aggiornamento: scarica lo zip della nuova versione nella cartella Download e la mostra; poi si chiude l'app, si estrae e si avvia la nuova. */
+let updating = false;
+ipcMain.handle('cpa:update', async (event, url) => {
+  if (updating) return { ok: false, error: 'busy' };
+  if (!updater.validUrl(url)) return { ok: false, error: 'bad-url' };
+  updating = true;
+  try {
+    const r = await updater.download((u, i) => net.fetch(u, i), url, app.getPath('downloads'),
+      (p) => { try { event.sender.send('cpa:update-progress', p); } catch (e) { /* finestra chiusa */ } }, AbortSignal.timeout(15 * 60 * 1000));
+    if (r.ok) shell.showItemInFolder(r.path);
+    return r;
+  } catch (e) { return { ok: false, error: 'network' }; } finally { updating = false; }
+});
+
+ipcMain.handle('cpa:quit', () => { app.quit(); return true; });
 
 function createWindow() {
   const win = new BrowserWindow({
