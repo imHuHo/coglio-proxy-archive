@@ -22,7 +22,10 @@
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <script src="core.js"></script>
+<script src="pdf.js"></script>
+<script src="proxy.js"></script>
 <script src="app.js"></script>
+<script src="builder.js"></script>
 <script>
 if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });

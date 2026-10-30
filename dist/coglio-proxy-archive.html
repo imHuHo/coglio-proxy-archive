@@ -373,6 +373,70 @@ button.bk-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 2p
 .up-row .sm.alt { color: var(--part); }
 .reuse + .reuse { margin-top: 10px; }
 
+/* ---------- Proxy Builder ---------- */
+.bd-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.bd-head h2, .panel > h2 { margin: 0; font: 700 16px var(--body); }
+.bd-head .cnt { font: 500 12px var(--mono); color: var(--muted); margin-left: 6px; }
+.bd-opts { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.chk { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.chk input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+.bd-ta { min-height: 140px; font: 13px/1.45 var(--mono); resize: vertical; text-transform: none; letter-spacing: 0; }
+.bd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px 12px; }
+.sub2 { font-size: 11px; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); }
+input.col { padding: 2px; height: 40px; min-width: 0; }
+.bd-list { display: grid; gap: 4px; max-height: 520px; overflow: auto; margin: 0 -4px; padding: 0 4px; }
+.bd-row { display: grid; grid-template-columns: 34px 58px 1fr; gap: 6px 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.bd-row.off { opacity: .4; }
+.bd-th { width: 34px; height: 47px; border-radius: 4px; background: var(--surface2); border: 1px solid var(--line); overflow: hidden; display: block; }
+.bd-th img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bd-q { width: 58px; padding: 6px 4px; text-align: center; font-family: var(--mono); min-height: 36px; }
+.bd-nm { min-width: 0; display: grid; gap: 2px; }
+.bd-nm b { font-size: 14px; overflow-wrap: anywhere; }
+.bd-nm small { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.bd-st { font-size: 11.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--surface2); color: var(--muted); }
+.bd-st.err { background: var(--busy-bg); color: var(--busy); }
+.bd-st.warn { background: var(--part-bg); color: var(--part); }
+.bd-st.info, .bd-st.own { background: var(--accent-soft); color: var(--accent); }
+.bd-acts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; padding-left: 44px; }
+label.btn { cursor: pointer; }
+.bd-pick { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; background: var(--surface2); border-radius: 10px; margin: 4px 0; max-height: 300px; overflow: auto; }
+.bd-p { display: grid; gap: 2px; justify-items: center; width: 74px; padding: 4px; border: 2px solid transparent; border-radius: 8px; background: none; color: var(--fg); font: 600 10.5px var(--mono); cursor: pointer; }
+.bd-p img { width: 66px; height: 92px; object-fit: cover; border-radius: 4px; background: var(--line); }
+.bd-p:hover, .bd-p.on { border-color: var(--accent); }
+.bd-cols { display: grid; gap: 0; }
+.bd-form, .bd-side { min-width: 0; }
+.bd-warn { background: var(--part-bg); color: var(--part); border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 600; margin-bottom: 14px; }
+.bd-warn p { margin: 2px 0; }
+.bd-go { gap: 10px; }
+.bd-go .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.bd-report { background: var(--surface2); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+.bd-report p { margin: 4px 0 0; }
+.bd-report p.err { color: var(--busy); } .bd-report p.warn { color: var(--part); } .bd-report p.ok { color: var(--free); }
+.bd-pre { display: flex; gap: 8px; }
+.bd-pre .input { flex: 1; min-width: 0; }
+.bd-names { display: flex; flex-wrap: wrap; gap: 6px; }
+.bd-pn { display: inline-flex; align-items: center; }
+.bd-pn .x { background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; padding: 0 6px; }
+.pv-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.pv-wrap { display: flex; justify-content: center; }
+.pv { position: relative; width: 100%; max-width: 380px; background: #fff; border: 1px solid var(--line); box-shadow: 0 2px 10px #0002; overflow: hidden; }
+.pv-cell { position: absolute; }
+.pv-cell.bl { outline: 1px dashed #e4572e88; outline-offset: -1px; }
+.pv-card { position: absolute; background: #222; border-radius: 3.2%; overflow: hidden; }
+.pv-card.none { background: #e4e4e4; }
+.pv-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pv-ph { position: absolute; inset: 0; display: grid; place-items: center; font: 600 8px var(--body); color: #666; text-align: center; padding: 2px; overflow: hidden; }
+.pv-rot { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-90deg); }
+.pv-rot img { width: 100%; height: 100%; object-fit: cover; }
+.pv-list { padding: 8%; font: 8px/1.5 var(--mono); color: #222; columns: 2; }
+.pv-list div { break-inside: avoid; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (min-width: 1060px) {
+  .bd-cols { grid-template-columns: minmax(0, 1fr) 420px; gap: 18px; align-items: start; }
+  .bd-side { position: sticky; top: 16px; }
+  .bd-row { grid-template-columns: 34px 58px 1fr auto; }
+  .bd-acts { grid-column: auto; padding-left: 0; justify-content: flex-end; }
+}
+
 </style>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
@@ -932,6 +996,874 @@ button.bk-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 2p
 
 </script>
 <script>
+/* Coglio Proxy Builder - motore PDF e impaginazione (nessun accesso al DOM, nessuna dipendenza).
+ * Scrive il PDF a mano: i JPEG vengono incorporati cosi' come sono (filtro DCTDecode, nessuna ricompressione),
+ * guide, angoli e abbondanza sono vettoriali. Usato dall'app e dai test Node. */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.CPAPdf = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var MM = 72 / 25.4;
+  function pt(mm) { return mm * MM; }
+  function n3(x) {
+    if (!isFinite(x)) return '0';
+    var s = (Math.round(x * 1000) / 1000).toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+    return s === '-0' ? '0' : s;
+  }
+
+  var PAPERS = {
+    a4: { label: 'A4', w: 210, h: 297 },
+    letter: { label: 'Letter', w: 215.9, h: 279.4 },
+    a3: { label: 'A3', w: 297, h: 420 },
+    a5: { label: 'A5', w: 148, h: 210 },
+    legal: { label: 'Legal', w: 215.9, h: 355.6 },
+    tabloid: { label: 'Tabloid', w: 279.4, h: 431.8 },
+    custom: { label: 'Personalizzata', w: 210, h: 297 }
+  };
+  var CARD_SIZES = {
+    mtg: { label: 'Magic 63 × 88 mm', w: 63, h: 88 },
+    poker: { label: 'Poker 63,5 × 88,9 mm', w: 63.5, h: 88.9 },
+    bridge: { label: 'Bridge 57 × 89 mm', w: 57, h: 89 },
+    mini: { label: 'Mini 41 × 63 mm', w: 41, h: 63 },
+    tarot: { label: 'Tarocchi 70 × 120 mm', w: 70, h: 120 },
+    custom: { label: 'Personalizzata', w: 63, h: 88 }
+  };
+
+  var DEFAULTS = {
+    paper: 'a4', pageW: 210, pageH: 297, orientation: 'portrait',
+    card: 'mtg', cardW: 63, cardH: 88, cornerR: 3,
+    rotateCards: false,
+    bleed: 0,            // mm di abbondanza attorno alla carta
+    imageBleed: 0,       // mm di abbondanza gia' presenti nelle immagini (di norma 0; utile per file propri)
+    fill: 'auto',        // colore dell'abbondanza: auto | black | white | #rrggbb
+    corners: 'keep',     // angoli arrotondati: keep (come l'immagine) | black | white
+    fit: 'auto',         // immagini non in proporzione: auto | cover | contain | stretch
+    cols: 0, rows: 0,    // 0 = quante ne entrano
+    gapX: 0, gapY: 0, margin: 3,
+    offsetX: 0, offsetY: 0, // spostamento stampante (mm): + destra / + giu'
+    backOffsetX: 0, backOffsetY: 0,
+    guides: 'crop',      // none | crop | lines
+    guideColor: '#000000', guideWidth: 0.1, guideLength: 3, guideDash: false,
+    reg: 'none',         // segni di registrazione per plotter: none | silhouette | four
+    duplex: 'none',      // none (i retro sono carte a se') | long | short
+    interleave: true,    // fronte e retro alternati (stampa fronte-retro automatica)
+    decklist: false,
+    pageRange: ''
+  };
+
+  function num(v, d, lo, hi) {
+    v = parseFloat(String(v).replace(',', '.'));
+    if (!isFinite(v)) v = d;
+    if (lo != null && v < lo) v = lo;
+    if (hi != null && v > hi) v = hi;
+    return v;
+  }
+  function pick(v, list, d) { return list.indexOf(v) >= 0 ? v : d; }
+  function color(c, d) {
+    c = String(c == null ? '' : c).trim().toLowerCase();
+    if (c === 'black') return '#000000';
+    if (c === 'white') return '#ffffff';
+    var m = /^#([0-9a-f]{3})$/.exec(c);
+    if (m) return '#' + m[1].split('').map(function (x) { return x + x; }).join('');
+    return /^#[0-9a-f]{6}$/.test(c) ? c : d;
+  }
+
+  /* Valori di ingresso (anche stringhe del modulo) -> opzioni valide e limitate. */
+  function normalize(opts) {
+    var i = opts || {}, o = {}, k;
+    for (k in DEFAULTS) o[k] = DEFAULTS[k];
+    for (k in i) if (i[k] !== undefined && i[k] !== null) o[k] = i[k];
+    o.paper = PAPERS[o.paper] ? o.paper : 'a4';
+    if (o.paper !== 'custom') { o.pageW = PAPERS[o.paper].w; o.pageH = PAPERS[o.paper].h; }
+    o.pageW = num(o.pageW, 210, 50, 1500); o.pageH = num(o.pageH, 297, 50, 1500);
+    o.orientation = pick(o.orientation, ['portrait', 'landscape'], 'portrait');
+    o.card = CARD_SIZES[o.card] ? o.card : 'mtg';
+    if (o.card !== 'custom') { o.cardW = CARD_SIZES[o.card].w; o.cardH = CARD_SIZES[o.card].h; }
+    o.cardW = num(o.cardW, 63, 10, 400); o.cardH = num(o.cardH, 88, 10, 400);
+    o.cornerR = num(o.cornerR, 3, 0, Math.min(o.cardW, o.cardH) / 2);
+    o.rotateCards = !!o.rotateCards;
+    o.bleed = num(o.bleed, 0, 0, 20); o.imageBleed = num(o.imageBleed, 0, 0, 20);
+    o.fill = (o.fill === 'auto') ? 'auto' : color(o.fill, 'auto');
+    o.corners = pick(o.corners, ['keep', 'black', 'white'], 'keep');
+    o.fit = pick(o.fit, ['auto', 'cover', 'contain', 'stretch'], 'auto');
+    o.cols = Math.floor(num(o.cols, 0, 0, 50)); o.rows = Math.floor(num(o.rows, 0, 0, 50));
+    o.gapX = num(o.gapX, 0, 0, 100); o.gapY = num(o.gapY, 0, 0, 100); o.margin = num(o.margin, 3, 0, 100);
+    o.offsetX = num(o.offsetX, 0, -50, 50); o.offsetY = num(o.offsetY, 0, -50, 50);
+    o.backOffsetX = num(o.backOffsetX, 0, -50, 50); o.backOffsetY = num(o.backOffsetY, 0, -50, 50);
+    o.guides = pick(o.guides, ['none', 'crop', 'lines'], 'crop');
+    o.guideColor = color(o.guideColor, '#000000');
+    o.guideWidth = num(o.guideWidth, 0.1, 0.02, 2); o.guideLength = num(o.guideLength, 3, 0.5, 30);
+    o.guideDash = !!o.guideDash;
+    o.reg = pick(o.reg, ['none', 'silhouette', 'four'], 'none');
+    o.duplex = pick(o.duplex, ['none', 'long', 'short'], 'none');
+    o.interleave = o.interleave !== false;
+    o.decklist = !!o.decklist;
+    o.pageRange = String(o.pageRange || '');
+    return o;
+  }
+
+  /* "1-3, 5" -> [1,2,3,5] entro n pagine; vuoto = tutte; pezzi non validi ignorati. */
+  function parseRange(str, n) {
+    var s = String(str == null ? '' : str).trim(), all = [], i;
+    for (i = 1; i <= n; i++) all.push(i);
+    if (!s) return all;
+    var seen = {}, out = [];
+    s.split(/[,;\s]+/).forEach(function (tok) {
+      if (!tok) return;
+      var m = /^(\d+)?\s*-\s*(\d+)?$/.exec(tok), a, b;
+      if (m && (m[1] || m[2])) { a = m[1] ? +m[1] : 1; b = m[2] ? +m[2] : n; }
+      else if (/^\d+$/.test(tok)) { a = b = +tok; }
+      else return;
+      if (a > b) { var t = a; a = b; b = t; }
+      for (var p = Math.max(1, a); p <= Math.min(n, b); p++) if (!seen[p]) { seen[p] = 1; out.push(p); }
+    });
+    return out.sort(function (x, y) { return x - y; });
+  }
+
+  /* ---------- geometria della griglia (mm, y dall'alto) ---------- */
+  function geometry(opts) {
+    var o = normalize(opts);
+    var landscape = o.orientation === 'landscape';
+    var pageW = landscape ? Math.max(o.pageW, o.pageH) : Math.min(o.pageW, o.pageH);
+    var pageH = landscape ? Math.min(o.pageW, o.pageH) : Math.max(o.pageW, o.pageH);
+    var cellW = o.cardW + 2 * o.bleed, cellH = o.cardH + 2 * o.bleed;
+    var pcw = o.rotateCards ? cellH : cellW, pch = o.rotateCards ? cellW : cellH;
+    var cols = o.cols || Math.max(1, Math.floor((pageW - 2 * o.margin + o.gapX) / (pcw + o.gapX) + 1e-9));
+    var rows = o.rows || Math.max(1, Math.floor((pageH - 2 * o.margin + o.gapY) / (pch + o.gapY) + 1e-9));
+    var gridW = cols * pcw + (cols - 1) * o.gapX, gridH = rows * pch + (rows - 1) * o.gapY;
+    var warnings = [];
+    var x0 = (pageW - gridW) / 2 + o.offsetX, y0 = (pageH - gridH) / 2 + o.offsetY;
+    if (gridW > pageW + 1e-6 || gridH > pageH + 1e-6) {
+      warnings.push('La griglia (' + n3(gridW) + ' × ' + n3(gridH) + ' mm) è più grande della pagina (' + n3(pageW) + ' × ' + n3(pageH) + ' mm): riduci colonne, righe o spazi.');
+    } else if (x0 < -1e-6 || y0 < -1e-6 || x0 + gridW > pageW + 1e-6 || y0 + gridH > pageH + 1e-6) {
+      warnings.push('Con lo spostamento impostato alcune carte escono dal bordo della pagina.');
+    }
+    var regSpace = o.reg === 'none' ? null : regMarks(o, pageW, pageH);
+    if (regSpace) {
+      var clr = 5; // zona libera attorno ai segni, che il sensore del plotter deve vedere pulita
+      var hit = regSpace.some(function (m) { return m.boxes.some(function (b) { return !(b.x + b.w + clr <= x0 || b.x - clr >= x0 + gridW || b.y + b.h + clr <= y0 || b.y - clr >= y0 + gridH); }); });
+      if (hit) warnings.push('I segni di registrazione sono troppo vicini alle carte (serve ~5 mm liberi): riduci la griglia (ad esempio 3 × 2) o l’abbondanza, oppure aumenta il margine.');
+    }
+    return {
+      pageW: pageW, pageH: pageH, landscape: landscape, cols: cols, rows: rows, perPage: cols * rows,
+      cellW: cellW, cellH: cellH, pcw: pcw, pch: pch, gridW: gridW, gridH: gridH, x0: x0, y0: y0, warnings: warnings
+    };
+  }
+  function slotAt(g, o, c, r, dx, dy) {
+    var x = g.x0 + c * (g.pcw + o.gapX) + (dx || 0), y = g.y0 + r * (g.pch + o.gapY) + (dy || 0);
+    return { c: c, r: r, x: x, y: y, w: g.pcw, h: g.pch, tx: x + o.bleed, ty: y + o.bleed, tw: g.pcw - 2 * o.bleed, th: g.pch - 2 * o.bleed };
+  }
+  /* Posizione del retro in stampa fronte-retro: specchiato rispetto al lato su cui si gira il foglio. */
+  function mirror(c, r, g, o) {
+    var flipCols = (o.duplex === 'long') !== g.landscape;
+    return flipCols ? { c: g.cols - 1 - c, r: r } : { c: c, r: g.rows - 1 - r };
+  }
+
+  /* Segni di registrazione tipici dei plotter da taglio (Silhouette): angoli a L da 0,5 mm, bracci da 10 mm, a 10 mm dal bordo. */
+  function regMarks(o, W, H) {
+    var inset = 10, leg = 10, th = 0.5, pos = [['tl', inset, inset, 1, 1], ['tr', W - inset, inset, -1, 1], ['bl', inset, H - inset, 1, -1], ['br', W - inset, H - inset, -1, -1]];
+    var list = o.reg === 'silhouette' ? pos.slice(0, 3) : pos;
+    return list.map(function (p) {
+      var x = p[1], y = p[2], sx = p[3], sy = p[4];
+      return {
+        id: p[0], x: x, y: y, sx: sx, sy: sy, leg: leg, th: th,
+        boxes: [
+          { x: Math.min(x, x + sx * leg), y: y - th / 2, w: leg, h: th },
+          { x: x - th / 2, y: Math.min(y, y + sy * leg), w: th, h: leg }
+        ]
+      };
+    });
+  }
+
+  /* ---------- elenco carte -> pagine ---------- */
+  function expand(items, o) {
+    var out = [];
+    (items || []).forEach(function (it) {
+      var q = Math.max(0, Math.floor(it.qty == null ? 1 : it.qty));
+      for (var k = 0; k < q; k++) {
+        out.push({ name: it.name, set: it.set, cn: it.cn, img: it.front || null, backImg: (o.duplex !== 'none' && it.back) ? it.back : null, face: 'front' });
+        if (o.duplex === 'none' && it.back) out.push({ name: it.backName || it.name, set: it.set, cn: it.cn, img: it.back, backImg: null, face: 'back' });
+      }
+    });
+    return out;
+  }
+
+  function listLines(items) {
+    return (items || []).filter(function (it) { return (it.qty == null ? 1 : it.qty) > 0; }).map(function (it) {
+      var q = it.qty == null ? 1 : it.qty;
+      return q + 'x ' + it.name + (it.set ? '  (' + String(it.set).toUpperCase() + (it.cn ? ' ' + it.cn : '') + ')' : '');
+    });
+  }
+
+  function makePlan(opts, items) {
+    var o = normalize(opts), g = geometry(o), cards = expand(items, o), pages = [], i, j;
+    var sheets = Math.ceil(cards.length / g.perPage);
+    var fronts = [], backs = [];
+    for (i = 0; i < sheets; i++) {
+      var chunk = cards.slice(i * g.perPage, (i + 1) * g.perPage), fs = [], bs = [];
+      for (j = 0; j < chunk.length; j++) {
+        var c = j % g.cols, r = Math.floor(j / g.cols), s = slotAt(g, o, c, r, 0, 0);
+        s.card = chunk[j]; fs.push(s);
+        if (chunk[j].backImg) {
+          var m = mirror(c, r, g, o), b = slotAt(g, o, m.c, m.r, o.backOffsetX, o.backOffsetY);
+          b.card = { name: chunk[j].name, img: chunk[j].backImg, face: 'back' }; bs.push(b);
+        }
+      }
+      fronts.push({ kind: 'front', sheet: i + 1, slots: fs });
+      backs.push(bs.length ? { kind: 'back', sheet: i + 1, slots: bs } : null);
+    }
+    if (o.interleave) {
+      for (i = 0; i < sheets; i++) { pages.push(fronts[i]); if (backs[i]) pages.push(backs[i]); }
+    } else {
+      fronts.forEach(function (p) { pages.push(p); });
+      backs.forEach(function (p) { if (p) pages.push(p); });
+    }
+    if (o.decklist) {
+      var lines = listLines(items), perCol = Math.max(1, Math.floor((g.pageH - 40) / 5)), perPage = perCol * 2;
+      for (i = 0; i === 0 || i * perPage < lines.length; i++) pages.push({ kind: 'list', part: i + 1, lines: lines.slice(i * perPage, (i + 1) * perPage), perCol: perCol });
+    }
+    pages.forEach(function (p, k) { p.n = k + 1; });
+    return {
+      opts: o, geom: g, pages: pages, warnings: g.warnings.slice(),
+      counts: { cards: cards.length, sheets: sheets, pages: pages.length, backs: backs.filter(Boolean).length }
+    };
+  }
+  function selectPages(plan, range) {
+    var idx = parseRange(range, plan.pages.length);
+    return idx.map(function (n) { return plan.pages[n - 1]; });
+  }
+
+  /* ---------- JPEG ---------- */
+  function parseJpeg(b) {
+    if (!(b && b.length > 4 && b[0] === 0xFF && b[1] === 0xD8)) throw new Error('Non è un JPEG');
+    var i = 2, adobe = false;
+    while (i + 3 < b.length) {
+      if (b[i] !== 0xFF) { i++; continue; }
+      var m = b[i + 1];
+      if (m === 0xFF) { i++; continue; }
+      if (m === 0xD8 || m === 0x01 || (m >= 0xD0 && m <= 0xD7)) { i += 2; continue; }
+      if (m === 0xD9) break;
+      var len = (b[i + 2] << 8) | b[i + 3];
+      if (m === 0xEE && len >= 14 && b[i + 4] === 0x41 && b[i + 5] === 0x64 && b[i + 6] === 0x6F && b[i + 7] === 0x62 && b[i + 8] === 0x65) adobe = true;
+      if (m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC) {
+        if (m > 0xC2) throw new Error('JPEG non supportato (tipo ' + m.toString(16) + ')');
+        var comps = b[i + 9];
+        if ([1, 3, 4].indexOf(comps) < 0 || b[i + 4] !== 8) throw new Error('JPEG non supportato');
+        return { bytes: b, height: (b[i + 5] << 8) | b[i + 6], width: (b[i + 7] << 8) | b[i + 8], comps: comps, adobe: adobe, progressive: m === 0xC2 };
+      }
+      i += 2 + len;
+    }
+    throw new Error('JPEG non valido');
+  }
+
+  /* ---------- testo (Helvetica, WinAnsi) ---------- */
+  var HW = '278 278 355 556 556 889 667 191 333 333 389 584 278 333 278 278 556 556 556 556 556 556 556 556 556 556 278 278 584 584 584 556 1015 667 667 722 722 667 611 778 722 278 500 667 556 833 722 778 667 778 722 667 611 722 667 944 667 667 611 278 278 278 469 556 333 556 556 500 556 556 278 556 556 222 222 500 222 833 556 556 556 556 333 500 278 556 500 722 500 500 500 334 260 334 584'.split(' ');
+  var CP1252 = { 8364: 128, 8218: 130, 402: 131, 8222: 132, 8230: 133, 8224: 134, 8225: 135, 710: 136, 8240: 137, 352: 138, 8249: 139, 338: 140, 381: 142, 8216: 145, 8217: 146, 8220: 147, 8221: 148, 8226: 149, 8211: 150, 8212: 151, 732: 152, 8482: 153, 353: 154, 8250: 155, 339: 156, 382: 158, 376: 159 };
+  function encByte(code) {
+    if (code >= 32 && code < 127) return code;
+    if (code >= 160 && code <= 255) return code;
+    if (CP1252[code]) return CP1252[code];
+    return 63;
+  }
+  function pdfText(s) {
+    var out = '';
+    String(s).replace(/[\r\n\t]+/g, ' ').split('').forEach(function (ch) {
+      var b = encByte(ch.charCodeAt(0));
+      if (b === 40 || b === 41 || b === 92) out += '\\' + String.fromCharCode(b);
+      else if (b > 126) out += '\\' + ('00' + b.toString(8)).slice(-3);
+      else out += String.fromCharCode(b);
+    });
+    return out;
+  }
+  function textWidth(s, size) {
+    var w = 0;
+    String(s).split('').forEach(function (ch) {
+      var c = ch.charCodeAt(0);
+      if (c < 32 || c > 126) { c = ch.normalize ? ch.normalize('NFD').charCodeAt(0) : 63; }
+      w += (c >= 32 && c <= 126) ? +HW[c - 32] : 556;
+    });
+    return w * size / 1000;
+  }
+  function fitText(s, size, maxPt) {
+    s = String(s);
+    if (textWidth(s, size) <= maxPt) return s;
+    while (s.length > 1 && textWidth(s + '...', size) > maxPt) s = s.slice(0, -1);
+    return s + '...';
+  }
+
+  /* ---------- scrittura PDF ---------- */
+  function latin1(s) {
+    var u = new Uint8Array(s.length);
+    for (var i = 0; i < s.length; i++) u[i] = s.charCodeAt(i) & 255;
+    return u;
+  }
+  function Writer() { this.objs = []; }
+  Writer.prototype.alloc = function () { this.objs.push(null); return this.objs.length; };
+  Writer.prototype.set = function (id, parts) { this.objs[id - 1] = Array.isArray(parts) ? parts : [parts]; };
+  Writer.prototype.add = function (parts) { var id = this.alloc(); this.set(id, parts); return id; };
+  Writer.prototype.bytes = function (rootId, infoId) {
+    var chunks = [], len = 0, offs = [], self = this;
+    function push(x) { var u = typeof x === 'string' ? latin1(x) : x; chunks.push(u); len += u.length; }
+    push('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+    this.objs.forEach(function (parts, i) {
+      offs[i] = len;
+      push((i + 1) + ' 0 obj\n');
+      (parts || ['null']).forEach(push);
+      push('\nendobj\n');
+    });
+    var x = len, n = this.objs.length + 1, xr = 'xref\n0 ' + n + '\n0000000000 65535 f \n';
+    offs.forEach(function (o) { xr += ('0000000000' + o).slice(-10) + ' 00000 n \n'; });
+    xr += 'trailer\n<< /Size ' + n + ' /Root ' + rootId + ' 0 R' + (infoId ? ' /Info ' + infoId + ' 0 R' : '') + ' >>\nstartxref\n' + x + '\n%%EOF\n';
+    push(xr);
+    var out = new Uint8Array(len), p = 0;
+    chunks.forEach(function (c) { out.set(c, p); p += c.length; });
+    return out;
+  };
+
+  function rgb(hex) {
+    var h = String(hex).replace('#', '');
+    return [parseInt(h.slice(0, 2), 16) / 255, parseInt(h.slice(2, 4), 16) / 255, parseInt(h.slice(4, 6), 16) / 255];
+  }
+  function fillOp(hex) { var c = rgb(hex); return n3(c[0]) + ' ' + n3(c[1]) + ' ' + n3(c[2]) + ' rg'; }
+  function strokeOp(hex) { var c = rgb(hex); return n3(c[0]) + ' ' + n3(c[1]) + ' ' + n3(c[2]) + ' RG'; }
+
+  /* Costruttore di contenuti di pagina: coordinate in mm, y dall'alto, convertite in punti. */
+  function Canvas(H) { this.H = H; this.ops = []; }
+  Canvas.prototype.raw = function (s) { this.ops.push(s); };
+  Canvas.prototype.Y = function (y) { return n3(pt(this.H - y)); };
+  Canvas.prototype.line = function (x1, y1, x2, y2) { this.ops.push(n3(pt(x1)) + ' ' + this.Y(y1) + ' m ' + n3(pt(x2)) + ' ' + this.Y(y2) + ' l S'); };
+  Canvas.prototype.rect = function (x, y, w, h, mode) { this.ops.push(n3(pt(x)) + ' ' + this.Y(y + h) + ' ' + n3(pt(w)) + ' ' + n3(pt(h)) + ' re ' + (mode || 'S')); };
+  Canvas.prototype.style = function (hex, widthMm, dash) {
+    this.ops.push(strokeOp(hex) + ' ' + n3(pt(widthMm)) + ' w' + (dash ? ' [' + n3(pt(1)) + ' ' + n3(pt(0.8)) + '] 0 d' : ' [] 0 d'));
+  };
+  Canvas.prototype.text = function (s, x, y, size, bold, hex) {
+    this.ops.push('BT ' + (hex ? fillOp(hex) + ' ' : '0 g ') + '/' + (bold ? 'F2' : 'F1') + ' ' + n3(size) + ' Tf ' + n3(pt(x)) + ' ' + this.Y(y) + ' Td (' + pdfText(s) + ') Tj ET');
+  };
+
+  /* Un angolo "tra il quadrato e l'arco" (mm, coordinate locali con y verso l'alto). */
+  function cornerPatch(x, y, r, sx, sy) {
+    var k = 0.5523 * r, P = function (a, b) { return n3(pt(a)) + ' ' + n3(pt(b)); };
+    var x1 = x + sx * r, y1 = y + sy * r;
+    return P(x, y) + ' m ' + P(x1, y) + ' l ' +
+      P(x1 - sx * k, y) + ' ' + P(x, y1 - sy * k) + ' ' + P(x, y1) + ' c h f';
+  }
+
+  function resolveFill(o, img) {
+    if (o.fill !== 'auto') return o.fill;
+    var b = img && img.border;
+    if (b === 'white') return '#ffffff';
+    if (b && /^#[0-9a-f]{6}$/i.test(b)) return b.toLowerCase();
+    return '#000000';
+  }
+
+  /* Disegna una carta nella sua cella. */
+  function drawCard(cv, o, g, s, imgName) {
+    var card = s.card, img = card.img, lw = g.cellW, lh = g.cellH, rot = o.rotateCards;
+    var X = pt(s.x), Y = pt(g.pageH - (s.y + s.h));
+    cv.raw('q');
+    if (rot) cv.raw('0 1 -1 0 ' + n3(X + pt(s.w)) + ' ' + n3(Y) + ' cm');
+    else cv.raw('1 0 0 1 ' + n3(X) + ' ' + n3(Y) + ' cm');
+    var fill = resolveFill(o, img);
+    if (o.bleed > 0 || !img) { cv.raw(fillOp(img ? fill : '#f4f4f4')); cv.raw('0 0 ' + n3(pt(lw)) + ' ' + n3(pt(lh)) + ' re f'); }
+    cv.raw('0 0 ' + n3(pt(lw)) + ' ' + n3(pt(lh)) + ' re W n');
+    if (img) {
+      var ib = img.bleed != null ? img.bleed : o.imageBleed, bw = o.cardW + 2 * ib, bh = o.cardH + 2 * ib, iw = bw, ih = bh;
+      var ar = img.width / img.height, br = bw / bh, mode = o.fit;
+      if (mode === 'auto') mode = Math.abs(ar / br - 1) < 0.01 ? 'stretch' : 'cover';
+      if (mode === 'cover') { if (ar > br) iw = bh * ar; else ih = bw / ar; }
+      else if (mode === 'contain') { if (ar > br) ih = bw / ar; else iw = bh * ar; }
+      cv.raw(n3(pt(iw)) + ' 0 0 ' + n3(pt(ih)) + ' ' + n3(pt((lw - iw) / 2)) + ' ' + n3(pt((lh - ih) / 2)) + ' cm');
+      cv.raw('/' + imgName(img) + ' Do');
+    } else {
+      var tx = pt(o.bleed) + 6, ty = pt(lh) / 2;
+      cv.raw('BT 0.35 g /F2 9 Tf ' + n3(tx) + ' ' + n3(ty) + ' Td (' + pdfText(fitText(card.name || '', 9, pt(o.cardW) - 12)) + ') Tj ET');
+      cv.raw('BT 0.5 g /F1 7 Tf ' + n3(tx) + ' ' + n3(ty - 11) + ' Td (' + pdfText('immagine non trovata') + ') Tj ET');
+      cv.raw('0.6 G 0.5 w ' + n3(pt(o.bleed)) + ' ' + n3(pt(o.bleed)) + ' ' + n3(pt(o.cardW)) + ' ' + n3(pt(o.cardH)) + ' re S');
+    }
+    cv.raw('Q');
+  }
+
+  /* Angoli arrotondati ripassati sopra l'immagine (di solito neri su carte con bordo bianco). */
+  function drawCornerPatches(cv, o, g, s) {
+    var rot = o.rotateCards, X = pt(s.x), Y = pt(g.pageH - (s.y + s.h));
+    cv.raw('q');
+    if (rot) cv.raw('0 1 -1 0 ' + n3(X + pt(s.w)) + ' ' + n3(Y) + ' cm'); else cv.raw('1 0 0 1 ' + n3(X) + ' ' + n3(Y) + ' cm');
+    var r = o.cornerR, b = o.bleed, w = o.cardW, h = o.cardH;
+    cv.raw(fillOp(o.corners === 'white' ? '#ffffff' : '#000000'));
+    cv.raw(cornerPatch(b, b, r, 1, 1)); cv.raw(cornerPatch(b + w, b, r, -1, 1));
+    cv.raw(cornerPatch(b, b + h, r, 1, -1)); cv.raw(cornerPatch(b + w, b + h, r, -1, -1));
+    cv.raw('Q');
+  }
+
+  /* Intervalli [a,b] di [0,len] non coperti dagli intervalli dati. */
+  function freeIntervals(len, covered) {
+    var cs = covered.slice().sort(function (p, q) { return p[0] - q[0]; }), out = [], cur = 0;
+    cs.forEach(function (c) { if (c[0] > cur + 0.01) out.push([cur, c[0]]); cur = Math.max(cur, c[1]); });
+    if (cur < len - 0.01) out.push([cur, len]);
+    return out;
+  }
+
+  function drawGuides(cv, o, g, slots) {
+    if (o.guides === 'none' || !slots.length) return;
+    cv.raw('q');
+    cv.style(o.guideColor, o.guideWidth, o.guideDash);
+    var L = o.guideLength, b = o.bleed;
+    if (o.guides === 'crop') {
+      slots.forEach(function (s) {
+        [[s.tx, s.ty, -1, -1], [s.tx + s.tw, s.ty, 1, -1], [s.tx, s.ty + s.th, -1, 1], [s.tx + s.tw, s.ty + s.th, 1, 1]].forEach(function (c) {
+          cv.line(c[0] + c[2] * b, c[1], c[0] + c[2] * (b + L), c[1]);
+          cv.line(c[0], c[1] + c[3] * b, c[0], c[1] + c[3] * (b + L));
+        });
+      });
+    } else {
+      var xs = {}, ys = {}, cellsY = [], cellsX = [];
+      slots.forEach(function (s) {
+        xs[n3(s.tx)] = s.tx; xs[n3(s.tx + s.tw)] = s.tx + s.tw; ys[n3(s.ty)] = s.ty; ys[n3(s.ty + s.th)] = s.ty + s.th;
+        cellsY.push([s.y, s.y + s.h]); cellsX.push([s.x, s.x + s.w]);
+      });
+      Object.keys(xs).forEach(function (k) {
+        freeIntervals(g.pageH, cellsY).forEach(function (iv) { cv.line(xs[k], iv[0], xs[k], iv[1]); });
+      });
+      Object.keys(ys).forEach(function (k) {
+        freeIntervals(g.pageW, cellsX).forEach(function (iv) { cv.line(iv[0], ys[k], iv[1], ys[k]); });
+      });
+    }
+    cv.raw('Q');
+  }
+
+  function drawReg(cv, o, g) {
+    if (o.reg === 'none') return;
+    cv.raw('q 0 G 0 g'); cv.style('#000000', 0.5, false);
+    regMarks(o, g.pageW, g.pageH).forEach(function (m) {
+      cv.line(m.x, m.y, m.x + m.sx * m.leg, m.y); cv.line(m.x, m.y, m.x, m.y + m.sy * m.leg);
+    });
+    cv.raw('Q');
+  }
+
+  function drawList(cv, pg, g) {
+    cv.text(pg.part === 1 ? 'Lista carte' : 'Lista carte (continua)', 15, 20, 16, true);
+    var perCol = pg.perCol, colW = (g.pageW - 30) / 2;
+    pg.lines.forEach(function (ln, i) {
+      var col = Math.floor(i / perCol), row = i % perCol;
+      cv.text(fitText(ln, 9, pt(colW - 4)), 15 + col * colW, 32 + row * 5, 9, false);
+    });
+  }
+
+  function drawTestSheet(cv, o, g, plan, side) {
+    var W = g.pageW, H = g.pageH, i;
+    cv.raw('q'); cv.style('#000000', 0.2, false);
+    cv.rect(0.1, 0.1, W - 0.2, H - 0.2, 'S');
+    // righelli: tacche ogni mm, piu' lunghe ogni 5 e 10
+    for (i = 1; i * 1 < W; i++) {
+      var tl = i % 10 === 0 ? 5 : (i % 5 === 0 ? 3.5 : 1.8);
+      cv.line(i, 0, i, tl); cv.line(i, H, i, H - tl);
+    }
+    for (i = 1; i * 1 < H; i++) {
+      var tl2 = i % 10 === 0 ? 5 : (i % 5 === 0 ? 3.5 : 1.8);
+      cv.line(0, i, tl2, i); cv.line(W, i, W - tl2, i);
+    }
+    for (i = 10; i < W - 6; i += 10) cv.text(String(i / 10), i - 0.8, 9, 6, false);
+    for (i = 10; i < H - 6; i += 10) cv.text(String(i / 10), 7, i + 0.8, 6, false);
+    // croce al centro e barra da 100 mm
+    cv.style('#000000', 0.15, false);
+    cv.line(W / 2 - 8, H / 2, W / 2 + 8, H / 2); cv.line(W / 2, H / 2 - 8, W / 2, H / 2 + 8);
+    var by = Math.max(25, g.y0 / 2 + 8);
+    if (W >= 130) { cv.style('#000000', 0.3, false); cv.line(W / 2 - 50, by, W / 2 + 50, by); cv.line(W / 2 - 50, by - 2, W / 2 - 50, by + 2); cv.line(W / 2 + 50, by - 2, W / 2 + 50, by + 2); cv.text('100 mm', W / 2 - 6, by - 3, 8, true); }
+    // griglia: contorni delle carte (e della abbondanza)
+    cv.style('#000000', 0.15, false);
+    var slots = [], c, r;
+    for (r = 0; r < g.rows; r++) for (c = 0; c < g.cols; c++) {
+      var m = side === 'back' ? mirror(c, r, g, o) : { c: c, r: r };
+      slots.push(slotAt(g, o, m.c, m.r, side === 'back' ? o.backOffsetX : 0, side === 'back' ? o.backOffsetY : 0));
+    }
+    slots.forEach(function (s, k) {
+      cv.style('#000000', 0.15, true); if (o.bleed > 0) cv.rect(s.x, s.y, s.w, s.h, 'S');
+      cv.style('#000000', 0.25, false); cv.rect(s.tx, s.ty, s.tw, s.th, 'S');
+      cv.text(String(k + 1), s.tx + 2, s.ty + 6, 9, true);
+    });
+    drawGuides(cv, o, g, slots);
+    drawReg(cv, o, g);
+    var ty = Math.max(14, Math.min(g.y0 - 4, 20));
+    cv.text((side === 'back' ? 'RETRO' : 'FRONTE') + ' - pagina di prova', 14, ty, 9, true);
+    var info = 'Carta ' + n3(o.cardW) + ' x ' + n3(o.cardH) + ' mm - abbondanza ' + n3(o.bleed) + ' mm - ' + g.cols + ' x ' + g.rows + ' - ' + (g.landscape ? 'orizzontale' : 'verticale');
+    cv.text(info, 14, H - 10, 7, false);
+    cv.text('Stampa al 100% (non "adatta alla pagina"): la barra deve misurare 100 mm.', 14, H - 6.5, 7, false);
+    cv.raw('Q');
+  }
+
+  /* ---------- costruzione del PDF ---------- */
+  function renderDoc(plan, pagesToDraw, drawer) {
+    var o = plan.opts, g = plan.geom, w = new Writer();
+    var root = w.alloc(), pages = w.alloc(), f1 = w.alloc(), f2 = w.alloc(), info = w.alloc();
+    w.set(f1, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+    w.set(f2, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+    w.set(info, '<< /Title (' + pdfText('Coglio Proxy Builder') + ') /Producer (Coglio Proxy Archive) >>');
+    var imgIds = (typeof Map === 'function') ? new Map() : null, imgCount = 0, kids = [];
+    function registerImage(img, used) {
+      var rec = imgIds.get(img);
+      if (!rec) {
+        var cs = img.comps === 1 ? '/DeviceGray' : (img.comps === 4 ? '/DeviceCMYK' : '/DeviceRGB');
+        var dec = (img.comps === 4 && img.adobe) ? ' /Decode [1 0 1 0 1 0 1 0]' : '';
+        var id = w.add(['<< /Type /XObject /Subtype /Image /Width ' + img.width + ' /Height ' + img.height + ' /ColorSpace ' + cs + dec +
+          ' /BitsPerComponent 8 /Filter /DCTDecode /Length ' + img.bytes.length + ' >>\nstream\n', img.bytes, '\nendstream']);
+        rec = { id: id, name: 'Im' + (++imgCount) };
+        imgIds.set(img, rec);
+      }
+      used[rec.name] = rec.id;
+      return rec.name;
+    }
+    pagesToDraw.forEach(function (pg) {
+      var H = g.pageH, cv = new Canvas(H), used = {};
+      drawer(cv, pg, function (img) { return registerImage(img, used); });
+      var content = cv.ops.join('\n'), cid = w.add(['<< /Length ' + content.length + ' >>\nstream\n', content, '\nendstream']);
+      var xo = Object.keys(used).map(function (k) { return '/' + k + ' ' + used[k] + ' 0 R'; }).join(' ');
+      var pid = w.add('<< /Type /Page /Parent ' + pages + ' 0 R /MediaBox [0 0 ' + n3(pt(g.pageW)) + ' ' + n3(pt(g.pageH)) + '] /Resources << /Font << /F1 ' + f1 + ' 0 R /F2 ' + f2 + ' 0 R >>' +
+        (xo ? ' /XObject << ' + xo + ' >>' : '') + ' >> /Contents ' + cid + ' 0 R >>');
+      kids.push(pid + ' 0 R');
+    });
+    w.set(pages, '<< /Type /Pages /Count ' + kids.length + ' /Kids [' + kids.join(' ') + '] >>');
+    w.set(root, '<< /Type /Catalog /Pages ' + pages + ' 0 R >>');
+    return w.bytes(root, info);
+  }
+
+  function build(opts, items) {
+    var plan = makePlan(opts, items), o = plan.opts, g = plan.geom;
+    var sel = selectPages(plan, o.pageRange);
+    var bytes = renderDoc(plan, sel, function (cv, pg, imgName) {
+      if (pg.kind === 'list') { drawList(cv, pg, g); return; }
+      drawGuides(cv, o, g, pg.slots);
+      if (pg.kind === 'front') drawReg(cv, o, g);
+      pg.slots.forEach(function (s) {
+        drawCard(cv, o, g, s, imgName);
+        if (o.corners !== 'keep' && s.card.img && s.card.img.cornerPatch !== false && o.cornerR > 0) drawCornerPatches(cv, o, g, s);
+      });
+    });
+    return { bytes: bytes, pages: sel.length, totalPages: plan.pages.length, plan: plan };
+  }
+
+  /* Pagina di prova (fronte e, con la stampa fronte-retro, anche retro) con le stesse impostazioni. */
+  function buildTest(opts) {
+    var plan = makePlan(opts, []), o = plan.opts, g = plan.geom;
+    var pgs = [{ kind: 'test', side: 'front' }];
+    if (o.duplex !== 'none') pgs.push({ kind: 'test', side: 'back' });
+    var bytes = renderDoc(plan, pgs, function (cv, pg) { drawTestSheet(cv, o, g, plan, pg.side); });
+    return { bytes: bytes, pages: pgs.length, plan: plan };
+  }
+
+  return {
+    PAPERS: PAPERS, CARD_SIZES: CARD_SIZES, DEFAULTS: DEFAULTS,
+    normalize: normalize, parseRange: parseRange, geometry: geometry, makePlan: makePlan, selectPages: selectPages,
+    parseJpeg: parseJpeg, build: build, buildTest: buildTest, textWidth: textWidth, pdfText: pdfText, mirror: mirror, regMarks: regMarks
+  };
+});
+
+</script>
+<script>
+/* Coglio Proxy Builder - risoluzione delle carte e caricamento delle immagini (Scryfall).
+ * Nessun accesso al DOM salvo le funzioni per i file caricati (solo nel browser). `fetch` e le pause sono iniettabili: cosi' si prova in Node. */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.CPAProxy = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var API = 'https://api.scryfall.com';
+  var BORDERS = { black: '#000000', white: '#ffffff', borderless: '#000000', silver: '#c9ccd1', gold: '#c8a951' };
+
+  function lc(s) { return String(s == null ? '' : s).toLowerCase(); }
+
+  /* Facce stampabili di una carta di Scryfall: una sola, oppure fronte e retro per le carte a doppia faccia. */
+  function faces(card, quality) {
+    var q = quality || 'large', u = card && card.image_uris, fs = (card && card.card_faces) || [], out = [];
+    if (!card || card.image_status === 'missing') return out;
+    if (u && u[q]) return [{ name: card.name, url: u[q] }];
+    fs.forEach(function (f) { if (f.image_uris && f.image_uris[q]) out.push({ name: f.name || card.name, url: f.image_uris[q] }); });
+    return out.slice(0, 2);
+  }
+  function tokenParts(card) {
+    return ((card && card.all_parts) || []).filter(function (p) { return p.component === 'token' && p.uri; });
+  }
+  function borderOf(card) { return BORDERS[card && card.border_color] || '#000000'; }
+
+  function create(env) {
+    env = env || {};
+    var doFetch = env.fetch || (typeof fetch === 'function' ? function (u, i) { return fetch(u, i); } : null);
+    var imgFetch = env.imageFetch || doFetch;
+    var keyOf = env.keyOf || lc;
+    var wait = env.wait || function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+    var gap = env.gap != null ? env.gap : 110;
+    var gate = Promise.resolve(), coolUntil = 0, noCollection = false, imgCache = {};
+    var self = {};
+
+    function gated(fn) { var p = gate.then(fn); gate = p.then(function () { return wait(gap); }, function () { return wait(gap); }); return p; }
+    function check(r) {
+      if (r.status === 429) { coolUntil = Date.now() + 60000; var e429 = new Error('Scryfall chiede una pausa (429)'); e429.status = 429; throw e429; }
+      if (r.status === 404) return null;
+      if (!r.ok) { var e = new Error('http ' + r.status); e.status = r.status; throw e; }
+      return r.json();
+    }
+    function waitCool() { var w = coolUntil - Date.now(); return w > 0 ? wait(w + 50) : Promise.resolve(); }
+    function post(ids) {
+      return waitCool().then(function () {
+        return gated(function () { return doFetch(API + '/cards/collection', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify({ identifiers: ids }) }); });
+      }).then(check);
+    }
+    function getJson(urlOrPath) {
+      var u = urlOrPath.indexOf('http') === 0 ? urlOrPath : API + urlOrPath;
+      return waitCool().then(function () { return gated(function () { return doFetch(u, { headers: { Accept: 'application/json' } }); }); }).then(check);
+    }
+
+    function nameIs(card, name) {
+      var k = keyOf(name);
+      if (keyOf(card.name || '') === k) return true;
+      return (card.card_faces || []).some(function (f) { return keyOf(f.name || '') === k; });
+    }
+    function matches(card, r) {
+      if (r.set && r.cn) return card.set === lc(r.set) && lc(card.collector_number) === lc(r.cn) && nameIs(card, r.name);
+      if (r.set) return card.set === lc(r.set) && nameIs(card, r.name);
+      return nameIs(card, r.name);
+    }
+    function ident(r) {
+      if (r.set && r.cn) return { set: lc(r.set), collector_number: String(r.cn) };
+      if (r.set) return { name: r.name, set: lc(r.set) };
+      return { name: r.name };
+    }
+    function variants(r) {
+      var v = [];
+      if (r.set && r.cn) v.push({ k: r.k, name: r.name, set: r.set, cn: r.cn });
+      if (r.set) v.push({ k: r.k, name: r.name, set: r.set, cn: '' });
+      v.push({ k: r.k, name: r.name, set: '', cn: '' });
+      return v;
+    }
+    function collect(recs, found) {
+      var chunks = [];
+      for (var i = 0; i < recs.length; i += 75) chunks.push(recs.slice(i, i + 75));
+      return chunks.reduce(function (p, chunk) {
+        return p.then(function () {
+          return post(chunk.map(ident)).then(function (res) {
+            ((res && res.data) || []).forEach(function (card) {
+              chunk.forEach(function (r) { if (!found[r.k] && matches(card, r)) found[r.k] = card; });
+            });
+          });
+        });
+      }, Promise.resolve());
+    }
+    function stages(recs, found, i) {
+      if (i > 2) return Promise.resolve();
+      var vs = recs.filter(function (r) { return !found[r.k]; }).map(function (r) { return variants(r)[i]; }).filter(Boolean);
+      return (vs.length ? collect(vs, found) : Promise.resolve()).then(function () { return stages(recs, found, i + 1); });
+    }
+    function single(r) {
+      var enc = encodeURIComponent, seq = [];
+      if (r.set && r.cn) seq.push('/cards/' + enc(lc(r.set)) + '/' + enc(r.cn));
+      if (r.set) seq.push('/cards/named?exact=' + enc(r.name) + '&set=' + enc(lc(r.set)));
+      seq.push('/cards/named?exact=' + enc(r.name));
+      seq.push('/cards/named?fuzzy=' + enc(r.name));
+      return seq.reduce(function (p, path, i) {
+        return p.then(function (card) {
+          if (card) return card;
+          return getJson(path).then(function (c) { return c && (i === seq.length - 1 || nameIs(c, r.name)) ? c : null; });
+        });
+      }, Promise.resolve(null));
+    }
+    function singles(recs, found) {
+      return recs.reduce(function (p, r) {
+        return p.then(function () { return single(r).then(function (c) { if (c) found[r.k] = c; }); });
+      }, Promise.resolve());
+    }
+
+    /* entries: [{name,set,cn}] -> {key: carta Scryfall}. Le non trovate non compaiono. */
+    self.keyFor = function (e) {
+      var set = lc(e.set);
+      return keyOf(e.name) + '|' + set + '|' + (set ? lc(e.cn) : '');
+    };
+    self.resolve = function (entries, progress) {
+      var recs = [], seen = {}, found = {};
+      entries.forEach(function (e) {
+        var k = self.keyFor(e);
+        if (!seen[k]) { seen[k] = 1; recs.push({ k: k, name: e.name, set: e.set || '', cn: e.set ? (e.cn || '') : '' }); }
+      });
+      var p = noCollection ? singles(recs, found) : stages(recs, found, 0).catch(function (err) {
+        if (err && err.status) throw err;
+        noCollection = true; return singles(recs.filter(function (r) { return !found[r.k]; }), found);
+      });
+      return p.then(function () {
+        var rest = recs.filter(function (r) { return !found[r.k]; });
+        if (progress) progress({ phase: 'cards', found: Object.keys(found).length, total: recs.length });
+        return singles(rest.slice(0, 40), found);
+      }).then(function () { if (progress) progress({ phase: 'cards', found: Object.keys(found).length, total: recs.length }); return found; });
+    };
+    self.fetchCard = function (uri) { return getJson(uri); };
+
+    /* Stampe disponibili di una carta (per scegliere un'altra illustrazione). */
+    self.printings = function (name) {
+      return getJson('/cards/search?q=' + encodeURIComponent('!"' + String(name).replace(/"/g, '') + '"') + '&unique=prints&order=released&dir=desc').then(function (res) {
+        return ((res && res.data) || []).filter(function (c) { return faces(c).length; }).map(function (c) {
+          return { set: c.set, setName: c.set_name, cn: c.collector_number, released: c.released_at, card: c };
+        });
+      });
+    };
+
+    /* ----- immagini ----- */
+    self.loadImage = function (url, parse) {
+      if (imgCache[url]) return imgCache[url];
+      var p = imgFetch(url).then(function (r) {
+        if (!r.ok) throw new Error('immagine http ' + r.status);
+        return r.arrayBuffer();
+      }).then(function (buf) { return parse(new Uint8Array(buf)); });
+      imgCache[url] = p;
+      p.catch(function () { delete imgCache[url]; });
+      return p;
+    };
+    self.clearImages = function () { imgCache = {}; };
+
+    function pool(tasks, n, step) {
+      var i = 0, active = 0, done = 0;
+      return new Promise(function (resolve) {
+        if (!tasks.length) return resolve();
+        function next() {
+          while (active < n && i < tasks.length) {
+            active++;
+            tasks[i++]().then(function () {}, function () {}).then(function () {
+              active--; done++; if (step) step(done, tasks.length);
+              if (done === tasks.length) resolve(); else next();
+            });
+          }
+        }
+        next();
+      });
+    }
+
+    /* entries: [{name,qty,set,cn, card?, front?, back?, token?}] -> {items (per il motore PDF), report}.
+       "front"/"back" gia' pronti (file propri) hanno la precedenza; "card" gia' risolta evita la ricerca. */
+    self.prepare = function (entries, opt, progress) {
+      opt = opt || {};
+      var parse = opt.parse, quality = opt.quality || 'large', report = { missing: [], substituted: [], tokens: 0, failed: [] };
+      var need = entries.filter(function (e) { return !e.card && !e.front && !e.nf; });
+      return self.resolve(need, progress).then(function (found) {
+        entries.forEach(function (e) { if (!e.card && !e.front && !e.nf) e.card = found[self.keyFor(e)] || null; });
+        if (!opt.tokens) return [];
+        var wanted = {}, list = [];
+        entries.forEach(function (e) { tokenParts(e.card).forEach(function (t) { if (!wanted[t.id]) { wanted[t.id] = 1; list.push(t); } }); });
+        var out = [];
+        return list.reduce(function (p, t) {
+          return p.then(function () {
+            if (entries.some(function (e) { return e.card && e.card.id === t.id; })) return;
+            return self.fetchCard(t.uri).then(function (c) { if (c && faces(c, quality).length) out.push({ name: c.name, qty: 1, set: c.set, cn: c.collector_number, card: c, token: true }); }).catch(function () {});
+          });
+        }, Promise.resolve()).then(function () { return out; });
+      }).then(function (tokens) {
+        report.tokens = tokens.length;
+        var all = entries.concat(tokens), urls = {}, tasks = [];
+        all.forEach(function (e) { if (!e.front) faces(e.card, quality).forEach(function (f) { urls[f.url] = 1; }); });
+        var keys = Object.keys(urls), loaded = {};
+        keys.forEach(function (u) {
+          tasks.push(function () {
+            return self.loadImage(u, parse).then(function (img) { loaded[u] = img; }, function () { report.failed.push(u); });
+          });
+        });
+        return pool(tasks, opt.concurrency || 4, function (d, t) { if (progress) progress({ phase: 'images', done: d, total: t }); }).then(function () {
+          var items = all.map(function (e) {
+            if (e.front) return { name: e.name, qty: e.qty, set: e.set, cn: e.cn, front: e.front, back: e.back || null, backName: e.backName };
+            var fs = e.card ? faces(e.card, quality) : [], f0 = fs[0] && loaded[fs[0].url], f1 = fs[1] && loaded[fs[1].url];
+            if (!e.card) report.missing.push(e.name);
+            else if (!f0) report.missing.push(e.name);
+            else if (e.set && (e.card.set !== lc(e.set) || (e.cn && lc(e.card.collector_number) !== lc(e.cn)))) report.substituted.push({ name: e.name, asked: e.set.toUpperCase() + (e.cn ? ' ' + e.cn : ''), got: e.card.set.toUpperCase() + ' ' + e.card.collector_number });
+            if (f0) f0.border = borderOf(e.card);
+            if (f1) f1.border = borderOf(e.card);
+            return {
+              name: e.name, qty: e.qty, set: e.card ? e.card.set : e.set, cn: e.card ? e.card.collector_number : e.cn,
+              front: f0 || null, back: f1 || null, backName: fs[1] ? fs[1].name : ''
+            };
+          });
+          return { items: items, report: report };
+        });
+      });
+    };
+    return self;
+  }
+
+  /* ----- file propri (solo nel browser) ----- */
+  function sampleBorder(canvasCtx, w, h) {
+    var ins = Math.max(2, Math.round(Math.min(w, h) * 0.01)), r = 0, g = 0, b = 0, n = 0, i;
+    function px(x, y) { var d = canvasCtx.getImageData(Math.max(0, Math.min(w - 1, x)), Math.max(0, Math.min(h - 1, y)), 1, 1).data; r += d[0]; g += d[1]; b += d[2]; n++; }
+    for (i = 1; i < 12; i++) {
+      var fx = Math.round(w * i / 12), fy = Math.round(h * i / 12);
+      px(fx, ins); px(fx, h - 1 - ins); px(ins, fy); px(w - 1 - ins, fy);
+    }
+    function hx(v) { return ('0' + Math.round(v / n).toString(16)).slice(-2); }
+    return '#' + hx(r) + hx(g) + hx(b);
+  }
+  /* File scelto dall'utente -> immagine pronta per il motore PDF (JPEG diretto, altrimenti ricodificato ad alta qualita'). */
+  function fromFile(file, parseJpeg) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        try {
+          var c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+          var ctx = c.getContext('2d', { willReadFrequently: true });
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(im, 0, 0);
+          var border = sampleBorder(ctx, c.width, c.height);
+          var done = function (bytes) {
+            URL.revokeObjectURL(url);
+            try { var img = parseJpeg(bytes); img.border = border; img.cornerPatch = false; img.custom = true; resolve(img); } catch (e) { reject(e); }
+          };
+          var isJpeg = /jpe?g/i.test(file.type) || /\.jpe?g$/i.test(file.name || '');
+          if (isJpeg) { file.arrayBuffer().then(function (b) { var u8 = new Uint8Array(b); try { parseJpeg(u8); done(u8); } catch (e) { c.toBlob(function (bl) { bl.arrayBuffer().then(function (bb) { done(new Uint8Array(bb)); }); }, 'image/jpeg', 0.95); } }); }
+          else c.toBlob(function (bl) { if (!bl) { URL.revokeObjectURL(url); reject(new Error('conversione non riuscita')); return; } bl.arrayBuffer().then(function (bb) { done(new Uint8Array(bb)); }); }, 'image/jpeg', 0.95);
+        } catch (e) { URL.revokeObjectURL(url); reject(e); }
+      };
+      im.onerror = function () { URL.revokeObjectURL(url); reject(new Error('file non leggibile come immagine')); };
+      im.src = url;
+    });
+  }
+
+
+  /* ----- ZIP senza compressione (le immagini sono gia' JPEG) ----- */
+  var CRC = null;
+  function crc32(u8) {
+    if (!CRC) { CRC = []; for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; CRC[n] = c >>> 0; } }
+    var crc = 0xFFFFFFFF;
+    for (var i = 0; i < u8.length; i++) crc = CRC[(crc ^ u8[i]) & 255] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+  function utf8(s) {
+    if (typeof TextEncoder === 'function') return new TextEncoder().encode(s);
+    var e = unescape(encodeURIComponent(s)), u = new Uint8Array(e.length);
+    for (var i = 0; i < e.length; i++) u[i] = e.charCodeAt(i);
+    return u;
+  }
+  function zip(files) {
+    var parts = [], central = [], off = 0, d = new Date();
+    var dt = ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)) & 0xFFFF;
+    var dd = (((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()) & 0xFFFF;
+    function w16(a, v) { a.push(v & 255, (v >> 8) & 255); }
+    function w32(a, v) { a.push(v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >>> 24) & 255); }
+    files.forEach(function (f) {
+      var name = utf8(f.name), crc = crc32(f.bytes), h = [], c = [];
+      w32(h, 0x04034b50); w16(h, 20); w16(h, 0x0800); w16(h, 0); w16(h, dt); w16(h, dd); w32(h, crc); w32(h, f.bytes.length); w32(h, f.bytes.length); w16(h, name.length); w16(h, 0);
+      parts.push(new Uint8Array(h), name, f.bytes);
+      w32(c, 0x02014b50); w16(c, 20); w16(c, 20); w16(c, 0x0800); w16(c, 0); w16(c, dt); w16(c, dd); w32(c, crc); w32(c, f.bytes.length); w32(c, f.bytes.length);
+      w16(c, name.length); w16(c, 0); w16(c, 0); w16(c, 0); w16(c, 0); w32(c, 0); w32(c, off);
+      central.push(new Uint8Array(c), name);
+      off += h.length + name.length + f.bytes.length;
+    });
+    var csize = 0; central.forEach(function (x) { csize += x.length; });
+    var e = []; w32(e, 0x06054b50); w16(e, 0); w16(e, 0); w16(e, files.length); w16(e, files.length); w32(e, csize); w32(e, off); w16(e, 0);
+    var all = parts.concat(central, [new Uint8Array(e)]), len = 0, p = 0;
+    all.forEach(function (x) { len += x.length; });
+    var out = new Uint8Array(len);
+    all.forEach(function (x) { out.set(x, p); p += x.length; });
+    return out;
+  }
+
+  return { create: create, zip: zip, crc32: crc32, faces: faces, tokenParts: tokenParts, borderOf: borderOf, fromFile: fromFile, sampleBorder: sampleBorder, API: API };
+});
+
+</script>
+<script>
 /* Coglio Proxy Archive - interfaccia e salvataggio */
 (function () {
   'use strict';
@@ -955,6 +1887,7 @@ button.bk-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 2p
     archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"/></svg>',
     decks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="13" height="17" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h9"/></svg>',
     import: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
+    builder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="7" y="13" width="10" height="8" rx="1"/></svg>',
     data: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>',
     search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
   };
@@ -1573,7 +2506,7 @@ button.bk-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 2p
   })();
 
   /* ---------- Struttura generale ---------- */
-  var NAV = [['archive', 'Archivio'], ['decks', 'Mazzi'], ['import', 'Importa'], ['data', 'Dati']];
+  var NAV = [['archive', 'Archivio'], ['decks', 'Mazzi'], ['import', 'Importa'], ['builder', 'Stampa'], ['data', 'Dati']];
   function navBtn(v, label) {
     var cur = ui.view === v || (v === 'decks' && (ui.view === 'deck' || ui.view === 'upgrade'));
     return '<button class="nav" data-a="nav" data-v="' + v + '"' + (cur ? ' aria-current="page"' : '') + '>' + IC[v] + '<span>' + label + '</span></button>';
@@ -1594,11 +2527,13 @@ button.bk-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 2p
       case 'deck': return deckView();
       case 'upgrade': return upgradeView();
       case 'import': return importView();
+      case 'builder': return window.CPABuilder ? window.CPABuilder.html() : decksView();
       case 'data': return dataView();
       default: return archiveView();
     }
   }
   function go(v) {
+    if (v === 'builder' && window.CPABuilder) { ui.confirm = null; window.CPABuilder.open(null); return; }
     ui.view = v; ui.confirm = null;
     if (v === 'import' && !(ui.draft && ui.draft.step === 1 && ui.draft.mode !== 'upgrade')) ui.draft = newDraft('deck');
     window.scrollTo(0, 0); render();
@@ -1731,7 +2666,7 @@ button.bk-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 2p
       '<section class="panel"><label class="lbl">Nome<input class="input" data-c="deck-name" value="' + esc(d.name) + '"></label>' +
       (d.kind === 'deck' ? '<label class="lbl">Commander<select class="select" data-c="deck-cmd">' + cmdOpts + '</select></label><div>' + switchHtml(d) +
         '<p class="hint" style="margin-top:6px">' + (d.active ? 'Le carte di questo mazzo risultano in uso.' : 'Mazzo smontato: le sue carte risultano libere.') + '</p></div>' : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
-      '<div class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="copy-deck">Copia lista .txt</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina') + '</button></div></section>' + tabs + body;
+      '<div class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="make-pdf" data-id="' + esc(d.id) + '">Crea PDF</button><button class="btn small" data-a="copy-deck">Copia lista .txt</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina') + '</button></div></section>' + tabs + body;
   }
   function updateDeckList() {
     var el = $('#dlist'); var d = getDeck(); if (!el || !d) return;
@@ -1973,6 +2908,7 @@ button.bk-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 2p
     var el = e.target.closest('[data-a]'); if (!el) return;
     var a = el.dataset.a, id = el.dataset.id;
     if (!el.dataset.cf) ui.confirm = null;
+    if (a.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.click(a, el); return; }
     var deck;
     switch (a) {
       case 'nav': go(el.dataset.v); break;
@@ -1989,6 +2925,7 @@ button.bk-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 2p
           var d = getDeck(id); mutate('Mazzo eliminato: ' + (d ? d.name : ''), function () { state.decks = state.decks.filter(function (x) { return x.id !== id; }); });
           ui.view = 'decks'; render();
         }); break;
+      case 'make-pdf': if (window.CPABuilder) window.CPABuilder.open(id); break;
       case 'copy-deck': deck = getDeck(); if (deck) copyText(C.exportText(deck)).then(function (ok) { toast(ok ? 'Lista copiata negli appunti.' : 'Copia non riuscita.'); }); break;
       case 'new-up': ui.draft = newDraft('upgrade', ui.deckId); ui.view = 'import'; window.scrollTo(0, 0); render(); break;
       case 'up-st': ui.upSt = el.dataset.v; render(); break;
@@ -2070,6 +3007,7 @@ button.bk-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 2p
 
   document.addEventListener('input', function (e) {
     var c = e.target.dataset && e.target.dataset.c; if (!c) return;
+    if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.input(c, e.target); return; }
     if (c === 'q') { ui.q = e.target.value; ui.limit = 150; updateArchiveList(); }
     else if (c === 'upq') { ui.upQ = e.target.value; updateUpgradeCols(); }
     else if (c === 'deckq') { ui.deckQ = e.target.value; updateDeckList(); }
@@ -2081,6 +3019,7 @@ button.bk-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 2p
 
   document.addEventListener('change', function (e) {
     var t = e.target, c = t.dataset && t.dataset.c; if (!c) return;
+    if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.change(c, t); return; }
     var d;
     switch (c) {
       case 'fdeck': ui.fdeck = t.value; ui.limit = 150; render(); break;
@@ -2115,6 +3054,12 @@ button.bk-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 2p
     }
   });
 
+  /* Funzioni che la schermata di stampa (builder.js) può usare. */
+  window.CPAHost = {
+    esc: esc, toast: toast, download: download, getDeck: getDeck, ui: ui, render: render,
+    available: function () { return !!store && store.kind !== 'claude' && typeof fetch === 'function'; }
+  };
+
   /* ---------- Avvio ---------- */
   function boot() {
     APP.innerHTML = '<p class="sub" style="padding:40px 16px">Carico l\'archivio…</p>';
@@ -2131,6 +3076,416 @@ button.bk-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 2p
     }).catch(function () { store = makeMemoryStore(); render(); });
   }
   boot();
+})();
+
+</script>
+<script>
+/* Coglio Proxy Builder - schermata per creare il PDF stampabile.
+ * Usa il motore (pdf.js), la ricerca carte/immagini (proxy.js) e le funzioni che app.js mette in window.CPAHost. */
+(function () {
+  'use strict';
+  var H = window.CPAHost, P = window.CPAPdf, X = window.CPAProxy, C = window.Core;
+  if (!H || !P || !X) return;
+  var LS = 'cpa:bd:v1';
+  var esc = H.esc;
+  var bd = null, resolver = null, seq = 0, runId = 0;
+
+  /* ---------- stato e preferenze ---------- */
+  function fresh() {
+    return { source: 'paste', deckId: null, deckName: '', text: '', entries: [], opts: JSON.parse(JSON.stringify(P.DEFAULTS)), upBleed: '0',
+      tokens: false, nobasic: false, busy: '', progress: '', page: 1, report: null, picker: null, pickList: null, presets: {}, presetName: '', msg: '' };
+  }
+  function prefs() { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch (e) { return {}; } }
+  function savePrefs() {
+    try { localStorage.setItem(LS, JSON.stringify({ opts: bd.opts, upBleed: bd.upBleed, tokens: bd.tokens, nobasic: bd.nobasic, presets: bd.presets })); } catch (e) { /* ignorato */ }
+  }
+  function init() {
+    if (bd) return;
+    bd = fresh();
+    var p = prefs();
+    if (p.opts && typeof p.opts === 'object') for (var k in bd.opts) if (p.opts[k] !== undefined) bd.opts[k] = p.opts[k];
+    if (p.upBleed != null) bd.upBleed = String(p.upBleed);
+    bd.tokens = !!p.tokens; bd.nobasic = !!p.nobasic;
+    if (p.presets && typeof p.presets === 'object') bd.presets = p.presets;
+  }
+  function getResolver() {
+    if (!resolver) resolver = X.create({
+      fetch: function (u, i) { return fetch(u, i); }, keyOf: C.keyOf,
+      /* le immagini sono binarie: su Android si usa il fetch originale della pagina, non quello nativo che le passerebbe come testo */
+      imageFetch: function (u) { return (window.CapacitorWebFetch || window.fetch).call(window, u); },
+      gap: window.CPA_API_GAP != null ? window.CPA_API_GAP : 110
+    });
+    return resolver;
+  }
+  function available() { return H.available(); }
+
+  /* ---------- carte ---------- */
+  function mkEntry(c) { return { id: ++seq, name: c.name, qty: c.qty == null ? 1 : c.qty, set: c.set || '', cn: c.cn || '', card: null, nf: false }; }
+  function inc(e) { return e.qty > 0 && !(bd.nobasic && C.isBasic(e.name)); }
+  function entryById(id) { return bd.entries.filter(function (e) { return String(e.id) === String(id); })[0]; }
+  function total() { return bd.entries.filter(inc).reduce(function (t, e) { return t + e.qty; }, 0); }
+
+  function open(deckId) {
+    init();
+    var d = deckId && H.getDeck(deckId);
+    if (d) {
+      bd.source = 'deck'; bd.deckId = d.id; bd.deckName = d.name;
+      bd.entries = d.cards.map(mkEntry);
+      bd.page = 1; bd.report = null; bd.picker = null; bd.msg = '';
+    } else {
+      bd.source = 'paste'; bd.deckId = null; bd.deckName = '';
+      if (bd.report) bd.report = null;
+    }
+    H.ui.view = 'builder'; window.scrollTo(0, 0); H.render();
+    if (available()) resolveAll();
+  }
+
+  function resolveAll() {
+    var todo = bd.entries.filter(function (e) { return !e.card && !e.nf && !e.custom; });
+    if (!todo.length || bd.busy) return;
+    var my = ++runId;
+    bd.busy = 'resolve'; bd.progress = 'Cerco le carte su Scryfall…';
+    softRender();
+    getResolver().resolve(todo, function (p) {
+      if (my === runId) bd.progress = 'Cerco le carte: ' + p.found + ' / ' + p.total;
+      var el = document.getElementById('bd-prog'); if (el) el.textContent = bd.progress;
+    }).then(function (found) {
+      todo.forEach(function (e) { var c = found[getResolver().keyFor(e)]; if (c) e.card = c; else e.nf = true; });
+      bd.busy = ''; bd.progress = '';
+      var nf = todo.filter(function (e) { return e.nf; }).length;
+      if (nf) H.toast(nf === 1 ? 'Una carta non è stata trovata su Scryfall.' : nf + ' carte non sono state trovate su Scryfall.');
+      softRender();
+    }, function (err) {
+      bd.busy = ''; bd.progress = '';
+      H.toast('Non riesco a contattare Scryfall' + (err && err.status ? ' (errore ' + err.status + ')' : '') + ': controlla la connessione e riprova.', null, true);
+      softRender();
+    });
+  }
+  function softRender() { if (H.ui.view === 'builder') H.render(); }
+
+  function readList() {
+    var r = C.parseList(bd.text || '');
+    if (!r.cards.length) { H.toast('Non trovo carte nel testo: incolla una lista con quantità e nome (es. «1 Sol Ring»).'); return; }
+    var keep = bd.entries.filter(function (e) { return e.custom; });
+    bd.entries = r.cards.map(mkEntry).concat(keep);
+    bd.page = 1; bd.report = null; bd.picker = null;
+    H.toast('Lista letta: ' + r.total + (r.total === 1 ? ' carta' : ' carte') + (r.excluded ? ' (' + r.excluded + ' del sideboard escluse)' : '') + '.');
+    H.render(); resolveAll();
+  }
+
+  /* ---------- stampe alternative ---------- */
+  function openPicker(e) {
+    if (bd.picker === e.id) { bd.picker = null; bd.pickList = null; H.render(); return; }
+    bd.picker = e.id; bd.pickList = 'load'; H.render();
+    var my = e.id;
+    getResolver().printings(e.card && e.card.name ? e.card.name.split(' // ')[0] : e.name).then(function (list) {
+      if (bd.picker !== my) return;
+      bd.pickList = list; H.render();
+    }, function () { if (bd.picker === my) { bd.pickList = []; H.toast('Non riesco a caricare le stampe di questa carta.'); H.render(); } });
+  }
+  function pickPrint(e, i) {
+    var it = Array.isArray(bd.pickList) && bd.pickList[i]; if (!it) return;
+    e.card = it.card; e.set = it.set; e.cn = it.cn; e.nf = false;
+    bd.picker = null; bd.pickList = null; H.render();
+  }
+
+  /* ---------- file propri ---------- */
+  function ownFile(e, file, side) {
+    X.fromFile(file, P.parseJpeg).then(function (img) {
+      var thumb = null; try { thumb = URL.createObjectURL(file); } catch (er) { thumb = null; }
+      if (side === 'back') { e.customBack = img; e.thumbBack = thumb; } else { e.custom = img; e.thumb = thumb; e.nf = false; }
+      H.render();
+    }, function (err) { H.toast('«' + file.name + '»: ' + (err && err.message ? err.message : 'immagine non leggibile') + '.'); });
+  }
+  function addOwn(files) {
+    var list = [].slice.call(files || []), pending = list.length;
+    if (!pending) return;
+    list.forEach(function (f) {
+      X.fromFile(f, P.parseJpeg).then(function (img) {
+        var e = mkEntry({ name: f.name.replace(/\.[^.]+$/, ''), qty: 1 });
+        e.custom = img; try { e.thumb = URL.createObjectURL(f); } catch (er) { e.thumb = null; }
+        bd.entries.push(e);
+      }, function (err) { H.toast('«' + f.name + '»: ' + (err && err.message ? err.message : 'immagine non leggibile') + '.'); })
+        .then(function () { if (--pending === 0) H.render(); });
+    });
+  }
+
+  /* ---------- generazione ---------- */
+  function jobEntries() {
+    var up = parseFloat(String(bd.upBleed).replace(',', '.')) || 0;
+    return bd.entries.filter(inc).map(function (e) {
+      var o = { name: e.name, qty: e.qty, set: e.set, cn: e.cn, card: e.card, nf: e.nf };
+      if (e.custom) { e.custom.bleed = up; o.front = e.custom; }
+      if (e.customBack) { e.customBack.bleed = up; o.back = e.customBack; o.backName = e.name + ' (retro)'; }
+      return o;
+    });
+  }
+  function prepareJob(label) {
+    if (!available()) { H.toast('Il builder ha bisogno di internet per scaricare le immagini: non funziona dentro Claude.'); return Promise.reject(new Error('na')); }
+    var ents = jobEntries();
+    if (!ents.length) { H.toast('Non ci sono carte da stampare.'); return Promise.reject(new Error('empty')); }
+    bd.busy = 'gen'; bd.report = null; bd.progress = label; softRender();
+    return getResolver().prepare(ents, { parse: P.parseJpeg, tokens: bd.tokens }, function (p) {
+      bd.progress = p.phase === 'cards' ? 'Cerco le carte: ' + p.found + ' / ' + p.total : 'Scarico le immagini: ' + p.done + ' / ' + p.total;
+      var el = document.getElementById('bd-prog'); if (el) el.textContent = bd.progress;
+    }).then(function (res) {
+      ents.forEach(function (o, i) { /* ricorda le carte trovate per non cercarle di nuovo */
+        var e = bd.entries.filter(inc)[i]; if (e && !e.card && o.card) e.card = o.card; else if (e && !e.card && !o.front && !e.custom) e.nf = true;
+      });
+      return res;
+    });
+  }
+  function fileName(ext) {
+    var base = (bd.source === 'deck' && bd.deckName ? bd.deckName : 'proxy').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'proxy';
+    return base + ext;
+  }
+  function describe(res, extra) {
+    var rp = res.report, out = [];
+    if (rp.missing.length) out.push({ k: 'err', t: plural(rp.missing.length, 'carta senza immagine', 'carte senza immagine') + ' (nel PDF c’è un riquadro vuoto): ' + rp.missing.join(', ') + '.' });
+    if (rp.substituted.length) out.push({ k: 'warn', t: plural(rp.substituted.length, 'stampa non disponibile, ne ho usata un’altra', 'stampe non disponibili, ne ho usate altre') + ': ' + rp.substituted.map(function (s) { return s.name + ' (' + s.asked + ' → ' + s.got + ')'; }).join(', ') + '.' });
+    if (rp.tokens) out.push({ k: 'ok', t: plural(rp.tokens, 'gettone aggiunto', 'gettoni aggiunti') + '.' });
+    if (rp.failed.length) out.push({ k: 'err', t: plural(rp.failed.length, 'immagine non scaricata', 'immagini non scaricate') + '.' });
+    return out.concat(extra || []);
+  }
+  function plural(n, a, b) { return n + ' ' + (n === 1 ? a : b); }
+  function finish(msg, items) { bd.busy = ''; bd.progress = ''; bd.report = { msg: msg, items: items || [] }; softRender(); }
+  function fail(err) {
+    if (err && (err.message === 'na' || err.message === 'empty')) { bd.busy = ''; bd.progress = ''; softRender(); return; }
+    bd.busy = ''; bd.progress = '';
+    H.toast('Qualcosa non ha funzionato' + (err && err.status ? ' (errore ' + err.status + ')' : '') + ': controlla la connessione e riprova.' + (err && err.message && !err.status ? ' (' + err.message + ')' : ''), null, true);
+    softRender();
+  }
+
+  function generate() {
+    if (bd.busy) return;
+    prepareJob('Preparo il PDF…').then(function (res) {
+      bd.progress = 'Impagino…'; var out;
+      try { out = P.build(bd.opts, res.items); } catch (e) { return fail(e); }
+      return H.download(fileName('.pdf'), out.bytes, 'application/pdf').then(function (ok) {
+        var mb = (out.bytes.length / 1048576).toFixed(1).replace('.', ',');
+        finish(ok === false ? 'Non sono riuscito a salvare il file.' : 'PDF creato: ' + plural(out.pages, 'pagina', 'pagine') + (out.pages !== out.totalPages ? ' (su ' + out.totalPages + ')' : '') + ', ' + mb + ' MB' + (ok === 'declined' ? ' (download annullato)' : '') + '.', describe(res));
+      });
+    }).catch(fail);
+  }
+  function zipImages() {
+    if (bd.busy) return;
+    prepareJob('Scarico le immagini…').then(function (res) {
+      var files = [], used = {};
+      function nm(base, ext) { var n = base.replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'carta', k = n, i = 2; while (used[k.toLowerCase()]) k = n + ' (' + (i++) + ')'; used[k.toLowerCase()] = 1; return k + ext; }
+      res.items.forEach(function (it, i) {
+        var pre = ('00' + (i + 1)).slice(-3) + ' ';
+        if (it.front) files.push({ name: nm(pre + it.name + (it.qty > 1 ? ' x' + it.qty : ''), '.jpg'), bytes: it.front.bytes });
+        if (it.back) files.push({ name: nm(pre + (it.backName || it.name + ' retro'), '.jpg'), bytes: it.back.bytes });
+      });
+      if (!files.length) { finish('Nessuna immagine da salvare.', describe(res)); return; }
+      return H.download(fileName(' - immagini.zip'), X.zip(files), 'application/zip').then(function (ok) {
+        finish(ok === false ? 'Non sono riuscito a salvare il file.' : 'Immagini salvate: ' + plural(files.length, 'file', 'file') + ' (.zip).', describe(res));
+      });
+    }).catch(fail);
+  }
+  function testPage() {
+    var out;
+    try { out = P.buildTest(bd.opts); } catch (e) { H.toast('Impossibile creare la pagina di prova.'); return; }
+    H.download('pagina di prova.pdf', out.bytes, 'application/pdf').then(function (ok) { if (ok !== false) H.toast('Pagina di prova creata: stampala al 100% e controlla la barra da 100 mm.'); });
+  }
+
+  /* ---------- anteprima ---------- */
+  function planNow() {
+    var items = bd.entries.filter(inc).map(function (e) {
+      var fs = e.card ? X.faces(e.card, 'small') : [];
+      var front = e.custom ? { thumb: e.thumb || '' } : (e.nf ? null : { thumb: fs[0] ? fs[0].url : '' });
+      var back = e.customBack ? { thumb: e.thumbBack || '' } : (fs[1] ? { thumb: fs[1].url } : null);
+      return { name: e.name, qty: e.qty, set: e.set, cn: e.cn, front: front, back: back, backName: fs[1] ? fs[1].name : '' };
+    });
+    return P.makePlan(bd.opts, items);
+  }
+  function pct(v, t) { return (Math.round(v / t * 10000) / 100) + '%'; }
+  function previewHtml(plan) {
+    var g = plan.geom, o = plan.opts;
+    if (!plan.pages.length) return '<p class="hint">Aggiungi delle carte per vedere l’anteprima.</p>';
+    if (bd.page > plan.pages.length) bd.page = plan.pages.length;
+    if (bd.page < 1) bd.page = 1;
+    var pg = plan.pages[bd.page - 1], inner = '';
+    if (pg.kind === 'list') {
+      inner = '<div class="pv-list">' + pg.lines.map(function (l) { return '<div>' + esc(l) + '</div>'; }).join('') + '</div>';
+    } else {
+      pg.slots.forEach(function (s) {
+        var img = s.card.img, th = img && img.thumb, rot = o.rotateCards;
+        var tr = 'left:' + pct(s.tx - s.x, s.w) + ';top:' + pct(s.ty - s.y, s.h) + ';width:' + pct(s.tw, s.w) + ';height:' + pct(s.th, s.h);
+        var face = th ? '<img src="' + esc(th) + '" alt="" loading="lazy">' : '<span class="pv-ph">' + (img ? '' : esc(s.card.name || '')) + '</span>';
+        if (rot) face = '<div class="pv-rot" style="width:' + pct(g.pch, g.pcw) + ';height:' + pct(g.pcw, g.pch) + '">' + face + '</div>';
+        inner += '<div class="pv-cell' + (o.bleed > 0 ? ' bl' : '') + '" style="left:' + pct(s.x, g.pageW) + ';top:' + pct(s.y, g.pageH) + ';width:' + pct(s.w, g.pageW) + ';height:' + pct(s.h, g.pageH) + '"><div class="pv-card' + (img && img.thumb !== undefined ? '' : ' none') + (rot ? ' r' : '') + '" style="' + tr + '">' + face + '</div></div>';
+      });
+    }
+    var nav = '<div class="pv-nav"><button class="btn small" data-a="bd-page" data-v="-1"' + (bd.page <= 1 ? ' disabled' : '') + '>←</button><span>Pagina ' + bd.page + ' di ' + plan.pages.length + ' · ' +
+      (pg.kind === 'back' ? 'retro' : pg.kind === 'list' ? 'lista carte' : 'fronte') + '</span><button class="btn small" data-a="bd-page" data-v="1"' + (bd.page >= plan.pages.length ? ' disabled' : '') + '>→</button></div>';
+    return nav + '<div class="pv-wrap"><div class="pv" style="aspect-ratio:' + g.pageW + '/' + g.pageH + '">' + inner + '</div></div>';
+  }
+
+  /* ---------- campi del modulo ---------- */
+  function val(k) { var v = bd.opts[k]; return v == null ? '' : v; }
+  function num(k, label, step, hint, up) {
+    return '<label class="lbl">' + label + '<input class="input" type="text" inputmode="decimal" data-c="' + (up ? 'bd-up' : 'bd-opt') + '" data-k="' + k + '" value="' + esc(up ? bd.upBleed : val(k)) + '"' + (step ? ' placeholder="' + step + '"' : '') + '>' + (hint ? '<span class="sub2">' + hint + '</span>' : '') + '</label>';
+  }
+  function sel(k, label, opts) {
+    return '<label class="lbl">' + label + '<select class="select" data-c="bd-opt" data-k="' + k + '">' + opts.map(function (o) {
+      return '<option value="' + esc(o[0]) + '"' + (String(val(k)) === String(o[0]) ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+    }).join('') + '</select></label>';
+  }
+  function chk(k, label, on, c) {
+    return '<label class="chk"><input type="checkbox" data-c="' + (c || 'bd-opt') + '" data-k="' + k + '"' + (on ? ' checked' : '') + '><span>' + label + '</span></label>';
+  }
+  function papers() { return Object.keys(P.PAPERS).map(function (k) { return [k, P.PAPERS[k].label + (k !== 'custom' ? ' (' + P.PAPERS[k].w + ' × ' + P.PAPERS[k].h + ' mm)' : '')]; }); }
+  function cardSizes() { return Object.keys(P.CARD_SIZES).map(function (k) { return [k, P.CARD_SIZES[k].label]; }); }
+
+  function rowHtml(e) {
+    var fs = e.card ? X.faces(e.card, 'small') : [], th = e.custom ? e.thumb : (fs[0] && fs[0].url), st = '', cls = '';
+    if (e.custom) { st = 'immagine tua'; cls = 'own'; }
+    else if (e.nf) { st = 'non trovata'; cls = 'err'; }
+    else if (e.card) {
+      var diff = e.set && (e.card.set !== String(e.set).toLowerCase() || (e.cn && String(e.card.collector_number).toLowerCase() !== String(e.cn).toLowerCase()));
+      if (diff) { st = 'stampa diversa: ' + e.card.set.toUpperCase() + ' ' + e.card.collector_number; cls = 'warn'; }
+      else if (fs.length === 2) { st = 'doppia faccia'; cls = 'info'; }
+      else if (e.card.image_status === 'missing') { st = 'senza immagine'; cls = 'err'; }
+    }
+    var tag = e.card ? e.card.set.toUpperCase() + ' ' + e.card.collector_number : (e.set ? e.set + (e.cn ? ' ' + e.cn : '') : '');
+    var h = '<div class="bd-row' + (inc(e) ? '' : ' off') + '"><span class="bd-th">' + (th ? '<img src="' + esc(th) + '" alt="" loading="lazy">' : '') + '</span>' +
+      '<input class="input bd-q" type="number" min="0" max="99" inputmode="numeric" data-c="bd-qty" data-id="' + e.id + '" value="' + e.qty + '" aria-label="Quantità di ' + esc(e.name) + '">' +
+      '<span class="bd-nm"><b>' + esc(e.name) + '</b><small>' + (tag ? '<span class="tag">' + esc(tag) + '</span>' : '') + (st ? '<span class="bd-st ' + cls + '">' + esc(st) + '</span>' : '') + '</small></span>' +
+      '<span class="bd-acts">' +
+      (e.card && !e.custom ? '<button class="btn small" data-a="bd-prints" data-id="' + e.id + '" aria-label="Scegli un’altra stampa di ' + esc(e.name) + '">Stampa…</button>' : '') +
+      '<label class="btn small">' + (e.custom ? 'Cambia' : 'Tua immagine') + '<input type="file" accept="image/*" hidden data-c="bd-file" data-id="' + e.id + '" data-side="front"></label>' +
+      (e.custom ? '<label class="btn small">' + (e.customBack ? 'Cambia retro' : 'Retro') + '<input type="file" accept="image/*" hidden data-c="bd-file" data-id="' + e.id + '" data-side="back"></label>' : '') +
+      '<button class="btn small danger" data-a="bd-del" data-id="' + e.id + '" aria-label="Togli ' + esc(e.name) + '">×</button></span></div>';
+    if (bd.picker === e.id) {
+      h += '<div class="bd-pick">' + (bd.pickList === 'load' ? '<span class="hint">Carico le stampe…</span>' :
+        (Array.isArray(bd.pickList) && bd.pickList.length ? bd.pickList.slice(0, 80).map(function (it, i) {
+          var f = X.faces(it.card, 'small')[0];
+          return '<button class="bd-p' + (e.card && e.card.id === it.card.id ? ' on' : '') + '" data-a="bd-pick" data-id="' + e.id + '" data-n="' + i + '" title="' + esc(it.setName + ' · ' + it.released) + '"><img src="' + esc(f ? f.url : '') + '" alt="" loading="lazy"><span>' + esc(it.set.toUpperCase() + ' ' + it.cn) + '</span></button>';
+        }).join('') : '<span class="hint">Nessuna altra stampa trovata.</span>')) + '</div>';
+    }
+    return h;
+  }
+
+  function html() {
+    init();
+    var plan = planNow(), o = plan.opts, g = plan.geom, busy = !!bd.busy;
+    var title = bd.source === 'deck' ? 'Crea PDF · ' + esc(bd.deckName) : 'Coglio Proxy Builder';
+    var cards = bd.entries.filter(inc), rows = bd.entries.map(rowHtml).join('');
+    var sourceBox = bd.source === 'deck' ? '' :
+      '<section class="panel"><label class="lbl">Lista di carte<textarea class="input bd-ta" rows="7" data-c="bd-text" placeholder="1 Sol Ring&#10;1 Command Tower (C21) 263&#10;4 Lightning Bolt" spellcheck="false">' + esc(bd.text) + '</textarea></label>' +
+      '<div class="btns"><button class="btn primary" data-a="bd-read"' + (busy ? ' disabled' : '') + '>Leggi la lista</button>' +
+      '<label class="btn">Apri un file .txt<input type="file" accept=".txt,.dec,text/plain" hidden data-c="bd-listfile"></label>' +
+      '<label class="btn">Aggiungi tue immagini<input type="file" accept="image/*" multiple hidden data-c="bd-addfiles"></label></div>' +
+      '<p class="hint">Qui non si salva niente nell’archivio: incolla una lista qualsiasi (anche di altri programmi) e ottieni il PDF.</p></section>';
+    var list = '<section class="panel"><div class="bd-head"><h2>Carte <span class="cnt">' + total() + '</span></h2><div class="bd-opts">' +
+      chk('nobasic', 'Escludi le terre base', bd.nobasic, 'bd-top') + chk('tokens', 'Aggiungi i gettoni', bd.tokens, 'bd-top') + '</div></div>' +
+      (bd.source === 'deck' ? '<div class="btns"><label class="btn small">Aggiungi tue immagini<input type="file" accept="image/*" multiple hidden data-c="bd-addfiles"></label></div>' : '') +
+      '<div class="bd-list">' + (rows || '<p class="hint">Nessuna carta: incolla una lista e premi «Leggi la lista».</p>') + '</div></section>';
+
+    var page = '<section class="panel"><h2>Foglio e carte</h2><div class="bd-grid">' +
+      sel('paper', 'Carta', papers()) + sel('orientation', 'Orientamento', [['portrait', 'Verticale'], ['landscape', 'Orizzontale']]) +
+      (o.paper === 'custom' ? num('pageW', 'Larghezza foglio (mm)') + num('pageH', 'Altezza foglio (mm)') : '') +
+      sel('card', 'Misura carta', cardSizes()) + (o.card === 'custom' ? num('cardW', 'Larghezza carta (mm)') + num('cardH', 'Altezza carta (mm)') : '') +
+      num('cols', 'Colonne', 'auto', '0 = quante ne entrano') + num('rows', 'Righe', 'auto', '0 = quante ne entrano') +
+      num('gapX', 'Spazio orizzontale (mm)') + num('gapY', 'Spazio verticale (mm)') + num('margin', 'Margine minimo (mm)', '', 'per il calcolo automatico') +
+      '</div>' + chk('rotateCards', 'Ruota le carte di 90°', o.rotateCards) +
+      '<p class="hint">Griglia: <b>' + g.cols + ' × ' + g.rows + '</b> (' + g.perPage + ' per foglio) · carta ' + o.cardW + ' × ' + o.cardH + ' mm</p></section>';
+
+    var cut = '<section class="panel"><h2>Taglio</h2><div class="bd-grid">' +
+      num('bleed', 'Abbondanza (mm)', '', 'bordo extra attorno alla carta') +
+      sel('fill', 'Colore abbondanza', [['auto', 'Come il bordo della carta'], ['#000000', 'Nero'], ['#ffffff', 'Bianco']]) +
+      sel('corners', 'Angoli arrotondati', [['keep', 'Come l’immagine'], ['black', 'Riempi di nero'], ['white', 'Riempi di bianco']]) +
+      sel('guides', 'Guide di taglio', [['crop', 'Segni agli angoli'], ['lines', 'Linee tra le carte'], ['none', 'Nessuna']]) +
+      (o.guides !== 'none' ? num('guideLength', 'Lunghezza segni (mm)') + num('guideWidth', 'Spessore (mm)') +
+        '<label class="lbl">Colore guide<input class="input col" type="color" data-c="bd-opt" data-k="guideColor" value="' + esc(o.guideColor) + '"></label>' : '') +
+      sel('reg', 'Segni per plotter', [['none', 'Nessuno'], ['silhouette', 'Silhouette (3 angoli)'], ['four', 'Quattro angoli']]) +
+      num('uploadBleed', 'Abbondanza già nei tuoi file (mm)', '', '', true) +
+      '</div>' + (o.guides !== 'none' ? chk('guideDash', 'Guide tratteggiate', o.guideDash) : '') +
+      '</section>';
+
+    var prn = '<section class="panel"><h2>Stampa</h2><div class="bd-grid">' +
+      num('offsetX', 'Sposta a destra (mm)', '', 'per correggere la stampante') + num('offsetY', 'Sposta in basso (mm)') +
+      sel('duplex', 'Retro delle carte doppie', [['none', 'Come carta a parte'], ['long', 'Fronte-retro, bordo lungo'], ['short', 'Fronte-retro, bordo corto']]) +
+      (o.duplex !== 'none' ? num('backOffsetX', 'Retro: sposta a destra (mm)') + num('backOffsetY', 'Retro: sposta in basso (mm)') : '') +
+      num('pageRange', 'Pagine da stampare', 'tutte', 'es. 1-3, 5') +
+      '</div>' + (o.duplex !== 'none' ? chk('interleave', 'Alterna fronte e retro (stampa fronte-retro automatica)', o.interleave) : '') +
+      chk('decklist', 'Aggiungi una pagina con la lista delle carte', o.decklist) +
+      '<div class="btns"><button class="btn small" data-a="bd-test">Scarica la pagina di prova</button></div>' +
+      '<p class="hint">Stampa sempre al 100% («dimensioni reali»), mai «adatta alla pagina». La pagina di prova ha un righello e una barra da 100 mm per controllarlo.</p></section>';
+
+    var names = Object.keys(bd.presets).sort();
+    var pre = '<section class="panel"><h2>Impostazioni salvate</h2><div class="bd-pre"><input class="input" data-c="bd-pname" placeholder="Nome (es. A4 con taglio a mano)" value="' + esc(bd.presetName) + '"><button class="btn small" data-a="bd-psave">Salva</button></div>' +
+      (names.length ? '<div class="bd-names">' + names.map(function (n) { return '<span class="bd-pn"><button class="chip" data-a="bd-pload" data-n="' + esc(n) + '">' + esc(n) + '</button><button class="x" data-a="bd-pdel" data-n="' + esc(n) + '" aria-label="Elimina ' + esc(n) + '">×</button></span>'; }).join('') + '</div>' : '') +
+      '<div class="btns"><button class="btn small" data-a="bd-reset">Ripristina le impostazioni iniziali</button></div></section>';
+
+    var warn = plan.warnings.length ? '<div class="bd-warn">' + plan.warnings.map(function (w) { return '<p>' + esc(w) + '</p>'; }).join('') + '</div>' : '';
+    var rep = bd.report ? '<div class="bd-report"><b>' + esc(bd.report.msg) + '</b>' + bd.report.items.map(function (i) { return '<p class="' + i.k + '">' + esc(i.t) + '</p>'; }).join('') + '</div>' : '';
+    var na = available() ? '' : '<div class="bd-warn"><p>Il builder scarica le immagini da Scryfall e dentro Claude non può farlo: usa l’app per Windows, per Android o la versione web.</p></div>';
+
+    var main = '<section class="panel bd-go"><div><b>' + plural(total(), 'carta', 'carte') + ' · ' + plural(plan.counts.pages, 'pagina', 'pagine') + '</b><span class="hint"> ' +
+      (plan.counts.backs ? 'con ' + plural(plan.counts.backs, 'pagina di retro', 'pagine di retro') + ' · ' : '') + o.pageW + ' × ' + o.pageH + ' mm</span></div>' + warn +
+      '<div class="btns"><button class="btn primary" data-a="bd-go"' + (busy || !cards.length || !available() ? ' disabled' : '') + '>Genera il PDF</button>' +
+      '<button class="btn" data-a="bd-zip"' + (busy || !cards.length || !available() ? ' disabled' : '') + '>Scarica le immagini (.zip)</button></div>' +
+      '<p class="hint" id="bd-prog" role="status">' + esc(bd.progress) + '</p>' + rep + '</section>';
+
+    var back = bd.source === 'deck' ? '<button class="back" data-a="open-deck" data-id="' + esc(bd.deckId) + '">← Mazzo</button>' : '';
+    return '<header class="vh">' + back + '<h1>' + title + '</h1></header>' + na + sourceBox + list +
+      '<div class="bd-cols"><div class="bd-form">' + page + cut + prn + pre + '</div><div class="bd-side"><section class="panel"><h2>Anteprima</h2>' + previewHtml(plan) +
+      '<p class="hint">Anteprima indicativa: le guide e l’abbondanza vere sono nel PDF.</p></section>' + main + '</div></div>' +
+      '<p class="hint" style="margin-top:18px">Le immagini sono quelle di Scryfall, senza ritocchi (nome dell’artista e copyright restano visibili) e senza filigrana. Stampa solo per uso personale: le carte Magic sono © Wizards of the Coast.</p>';
+  }
+
+  /* ---------- eventi (inoltrati da app.js) ---------- */
+  function click(a, el) {
+    init();
+    var e = el.dataset.id ? entryById(el.dataset.id) : null;
+    switch (a) {
+      case 'bd-read': readList(); break;
+      case 'bd-go': generate(); break;
+      case 'bd-zip': zipImages(); break;
+      case 'bd-test': testPage(); break;
+      case 'bd-page': bd.page += parseInt(el.dataset.v, 10) || 0; H.render(); break;
+      case 'bd-del': if (e) { bd.entries.splice(bd.entries.indexOf(e), 1); if (bd.picker === e.id) bd.picker = null; H.render(); } break;
+      case 'bd-prints': if (e) openPicker(e); break;
+      case 'bd-pick': if (e) pickPrint(e, parseInt(el.dataset.n, 10)); break;
+      case 'bd-psave':
+        var nm = (bd.presetName || '').trim();
+        if (!nm) { H.toast('Dai un nome alle impostazioni per salvarle.'); break; }
+        bd.presets[nm] = { opts: JSON.parse(JSON.stringify(bd.opts)), upBleed: bd.upBleed };
+        savePrefs(); H.toast('Impostazioni «' + nm + '» salvate.'); H.render(); break;
+      case 'bd-pload':
+        var pr = bd.presets[el.dataset.n];
+        if (pr) { for (var k in P.DEFAULTS) bd.opts[k] = pr.opts && pr.opts[k] !== undefined ? pr.opts[k] : P.DEFAULTS[k]; bd.upBleed = String(pr.upBleed || '0'); bd.presetName = el.dataset.n; savePrefs(); H.render(); }
+        break;
+      case 'bd-pdel': delete bd.presets[el.dataset.n]; savePrefs(); H.render(); break;
+      case 'bd-reset': bd.opts = JSON.parse(JSON.stringify(P.DEFAULTS)); bd.upBleed = '0'; savePrefs(); H.render(); break;
+    }
+  }
+  function input(c, el) {
+    init();
+    if (c === 'bd-text') bd.text = el.value;
+    else if (c === 'bd-pname') bd.presetName = el.value;
+    else if (c === 'bd-opt') bd.opts[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value;
+    else if (c === 'bd-up') bd.upBleed = el.value;
+  }
+  function change(c, el) {
+    init();
+    var e = el.dataset.id ? entryById(el.dataset.id) : null;
+    switch (c) {
+      case 'bd-opt': bd.opts[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value; savePrefs(); H.render(); break;
+      case 'bd-up': bd.upBleed = el.value; savePrefs(); H.render(); break;
+      case 'bd-top': bd[el.dataset.k] = el.checked; savePrefs(); H.render(); break;
+      case 'bd-qty': if (e) { var q = parseInt(el.value, 10); e.qty = isFinite(q) && q > 0 ? Math.min(q, 99) : 0; H.render(); } break;
+      case 'bd-file': if (e && el.files && el.files[0]) ownFile(e, el.files[0], el.dataset.side); break;
+      case 'bd-addfiles': addOwn(el.files); break;
+      case 'bd-listfile':
+        if (el.files && el.files[0]) { var r = new FileReader(); r.onload = function () { bd.text = String(r.result || ''); H.render(); readList(); }; r.readAsText(el.files[0]); }
+        break;
+    }
+  }
+
+  window.CPABuilder = { open: open, html: html, click: click, input: input, change: change, state: function () { init(); return bd; } };
 })();
 
 </script>

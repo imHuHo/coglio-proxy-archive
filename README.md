@@ -45,6 +45,17 @@ e l'app ti dice quali carte hai, quante sono libere e in quale mazzo sono impegn
   la stampa voluta è già libera o se hai solo un'altra stampa, e applicando l'upgrade si prendono dalle sciolte solo copie con la stampa esatta
   (la vecchia stampa torna tra le sciolte). Se nella lista non è indicata la collezione, qualsiasi stampa va bene; per le terre base la stampa non conta
   finché sono considerate illimitate.
+- **Coglio Proxy Builder (scheda «Stampa»).** Crea il PDF da stampare, partendo da un mazzo dell'archivio (pulsante **Crea PDF** nel mazzo, con la stampa
+  esatta salvata) oppure da una **lista incollata** (qualsiasi formato; non viene salvata nell'archivio). Le immagini sono quelle di Scryfall in qualità
+  «large» (672 × 936 px, ~270 dpi a 63 mm), incorporate nel PDF **senza ricompressione** e **senza filigrana** né ritocchi. Opzioni:
+  carta A4 / Letter / A3 / A5 / Legal / Tabloid / personalizzata, verticale o orizzontale; misura carta (Magic 63 × 88, Poker, Bridge, Mini, Tarocchi, personalizzata)
+  e rotazione di 90°; colonne e righe (automatiche o fisse), spazi, margine; **abbondanza** (bleed) con colore automatico (il bordo della carta), nero o bianco;
+  angoli arrotondati riempiti di nero/bianco; guide di taglio (segni agli angoli o linee tra le carte, colore, spessore, lunghezza, tratteggio);
+  **segni di registrazione** per plotter (Silhouette a 3 angoli o a 4); spostamento della stampante (X/Y, e a parte per il retro); **fronte-retro** (bordo lungo o corto,
+  pagine alternate o prima i fronti poi i retro; le carte doppie hanno il vero retro, le altre niente); gettoni collegati; terre base escluse; scelta di un'altra
+  stampa per ogni carta; **immagini proprie** (JPG diretti, PNG/WebP convertiti ad alta qualità) con eventuale abbondanza già presente; intervallo di pagine;
+  pagina con la lista; **pagina di prova** con righello e barra da 100 mm; impostazioni con nome salvate sul dispositivo; scarico di tutte le immagini in `.zip`.
+  Serve internet (le immagini arrivano da Scryfall) e non funziona dentro Claude.
 - **Backup** in JSON (scarica, copia, ripristina). Ogni azione distruttiva ha *Annulla*.
 
 ### Come vengono contate le carte
@@ -89,13 +100,15 @@ Apri `web/index.html` con Chrome o Edge: funziona anche da file locale (senza mo
 ## Struttura
 ```
 web/        l'app (HTML, CSS, JS senza dipendenze) = PWA
+            core.js (archivio) · pdf.js (motore PDF) · proxy.js (Scryfall e immagini) · builder.js (schermata Stampa) · app.js
 electron/   wrapper Windows
 capacitor/  wrapper Android/iOS
-tools/      test (node tools/test.js, node tools/ui-smoke.js), build.py, make_icons.py
+tools/      test (test.js, pdf-test.js, proxy-test.js, ui-smoke.js, builder-smoke.js, img-smoke.js), build.py, make_icons.py
 dist/       coglio-proxy-archive.html = pagina unica
 ```
 Tutti i dati restano sul dispositivo (IndexedDB del browser). Nessun account, nessun server.
 
 ## Note
-- I test in `tools/` (`test.js`, `ui-smoke.js`, `img-smoke.js`) leggono alcune liste di mazzi da `tools/fixtures/`, che non sono nel repository: servono liste tue per provarli.
+- `pdf-test.js` e `proxy-test.js` girano con solo Node (il primo, se ci sono `python3` con Pillow, `pdfinfo`, `qpdf` e `pdftoppm`, controlla anche i PDF con strumenti esterni e confronta i pixel); `ui-smoke.js`, `builder-smoke.js` e `img-smoke.js` usano jsdom (`node tools/builder-smoke.js <percorso-di-jsdom>`).
+- `test.js`, `ui-smoke.js` e `img-smoke.js` leggono alcune liste di mazzi da `tools/fixtures/`, che non sono nel repository: servono liste tue per provarli.
 - Progetto non ufficiale, non affiliato né approvato da Wizards of the Coast. Immagini e dati delle carte: [Scryfall](https://scryfall.com). Magic: The Gathering è un marchio di Wizards of the Coast.

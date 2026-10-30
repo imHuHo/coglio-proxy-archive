@@ -21,6 +21,7 @@
     archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"/></svg>',
     decks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="13" height="17" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h9"/></svg>',
     import: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
+    builder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="7" y="13" width="10" height="8" rx="1"/></svg>',
     data: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>',
     search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
   };
@@ -639,7 +640,7 @@
   })();
 
   /* ---------- Struttura generale ---------- */
-  var NAV = [['archive', 'Archivio'], ['decks', 'Mazzi'], ['import', 'Importa'], ['data', 'Dati']];
+  var NAV = [['archive', 'Archivio'], ['decks', 'Mazzi'], ['import', 'Importa'], ['builder', 'Stampa'], ['data', 'Dati']];
   function navBtn(v, label) {
     var cur = ui.view === v || (v === 'decks' && (ui.view === 'deck' || ui.view === 'upgrade'));
     return '<button class="nav" data-a="nav" data-v="' + v + '"' + (cur ? ' aria-current="page"' : '') + '>' + IC[v] + '<span>' + label + '</span></button>';
@@ -660,11 +661,13 @@
       case 'deck': return deckView();
       case 'upgrade': return upgradeView();
       case 'import': return importView();
+      case 'builder': return window.CPABuilder ? window.CPABuilder.html() : decksView();
       case 'data': return dataView();
       default: return archiveView();
     }
   }
   function go(v) {
+    if (v === 'builder' && window.CPABuilder) { ui.confirm = null; window.CPABuilder.open(null); return; }
     ui.view = v; ui.confirm = null;
     if (v === 'import' && !(ui.draft && ui.draft.step === 1 && ui.draft.mode !== 'upgrade')) ui.draft = newDraft('deck');
     window.scrollTo(0, 0); render();
@@ -797,7 +800,7 @@
       '<section class="panel"><label class="lbl">Nome<input class="input" data-c="deck-name" value="' + esc(d.name) + '"></label>' +
       (d.kind === 'deck' ? '<label class="lbl">Commander<select class="select" data-c="deck-cmd">' + cmdOpts + '</select></label><div>' + switchHtml(d) +
         '<p class="hint" style="margin-top:6px">' + (d.active ? 'Le carte di questo mazzo risultano in uso.' : 'Mazzo smontato: le sue carte risultano libere.') + '</p></div>' : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
-      '<div class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="copy-deck">Copia lista .txt</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina') + '</button></div></section>' + tabs + body;
+      '<div class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="make-pdf" data-id="' + esc(d.id) + '">Crea PDF</button><button class="btn small" data-a="copy-deck">Copia lista .txt</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina') + '</button></div></section>' + tabs + body;
   }
   function updateDeckList() {
     var el = $('#dlist'); var d = getDeck(); if (!el || !d) return;
@@ -1039,6 +1042,7 @@
     var el = e.target.closest('[data-a]'); if (!el) return;
     var a = el.dataset.a, id = el.dataset.id;
     if (!el.dataset.cf) ui.confirm = null;
+    if (a.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.click(a, el); return; }
     var deck;
     switch (a) {
       case 'nav': go(el.dataset.v); break;
@@ -1055,6 +1059,7 @@
           var d = getDeck(id); mutate('Mazzo eliminato: ' + (d ? d.name : ''), function () { state.decks = state.decks.filter(function (x) { return x.id !== id; }); });
           ui.view = 'decks'; render();
         }); break;
+      case 'make-pdf': if (window.CPABuilder) window.CPABuilder.open(id); break;
       case 'copy-deck': deck = getDeck(); if (deck) copyText(C.exportText(deck)).then(function (ok) { toast(ok ? 'Lista copiata negli appunti.' : 'Copia non riuscita.'); }); break;
       case 'new-up': ui.draft = newDraft('upgrade', ui.deckId); ui.view = 'import'; window.scrollTo(0, 0); render(); break;
       case 'up-st': ui.upSt = el.dataset.v; render(); break;
@@ -1136,6 +1141,7 @@
 
   document.addEventListener('input', function (e) {
     var c = e.target.dataset && e.target.dataset.c; if (!c) return;
+    if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.input(c, e.target); return; }
     if (c === 'q') { ui.q = e.target.value; ui.limit = 150; updateArchiveList(); }
     else if (c === 'upq') { ui.upQ = e.target.value; updateUpgradeCols(); }
     else if (c === 'deckq') { ui.deckQ = e.target.value; updateDeckList(); }
@@ -1147,6 +1153,7 @@
 
   document.addEventListener('change', function (e) {
     var t = e.target, c = t.dataset && t.dataset.c; if (!c) return;
+    if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.change(c, t); return; }
     var d;
     switch (c) {
       case 'fdeck': ui.fdeck = t.value; ui.limit = 150; render(); break;
@@ -1180,6 +1187,12 @@
       case 'images': state.settings.images = t.checked; touchSettings(); render(); break;
     }
   });
+
+  /* Funzioni che la schermata di stampa (builder.js) può usare. */
+  window.CPAHost = {
+    esc: esc, toast: toast, download: download, getDeck: getDeck, ui: ui, render: render,
+    available: function () { return !!store && store.kind !== 'claude' && typeof fetch === 'function'; }
+  };
 
   /* ---------- Avvio ---------- */
   function boot() {
