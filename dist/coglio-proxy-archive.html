@@ -503,6 +503,25 @@ body.bd-lock { overflow: hidden; }
   .dz-prev { position: sticky; top: 16px; }
 }
 
+/* Designer: griglia delle cornici e costo di mana a pulsanti */
+.dz-ftiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; max-height: 380px; overflow-y: auto; padding: 2px; }
+.dz-ftile { display: flex; flex-direction: column; gap: 4px; padding: 5px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); cursor: pointer; text-align: center; color: var(--fg); font: inherit; }
+.dz-ftile[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.dz-ftimg { display: block; aspect-ratio: 745 / 1040; border-radius: 6px; overflow: hidden; background: linear-gradient(150deg, #b8484e, #3e4fa3); }
+.dz-ftimg img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.dz-fdraw { display: flex; height: 100%; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; background: repeating-linear-gradient(135deg, #2a2733 0 8px, #34303f 8px 16px); }
+.dz-ftname { font-size: 11px; line-height: 1.2; color: var(--muted); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.dz-manas { display: flex; flex-wrap: wrap; gap: 6px; }
+.dz-mana { display: inline-flex; align-items: center; gap: 4px; border: 1.5px solid var(--line); border-radius: 999px; padding: 2px 4px 2px 2px; background: var(--surface); }
+.dz-mana.on { border-color: var(--fg); }
+.dz-mbtn { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 2px 8px 2px 2px; cursor: pointer; font: 600 13px var(--font, inherit); color: var(--fg); }
+.dz-msym { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font: 700 13px var(--mono); color: #111; box-shadow: 0 1px 2px rgba(0,0,0,.35); flex: none; }
+img.dz-msym { box-shadow: none; }
+.dz-mW { background: #f8f3d6; } .dz-mU { background: #b3cee8; } .dz-mB { background: #b6aca7; } .dz-mR { background: #eb9f82; } .dz-mG { background: #9fc496; } .dz-mN { background: #cfcac6; }
+.dz-mstep { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg); cursor: pointer; font: 700 15px var(--mono); color: var(--fg); padding: 0; line-height: 1; }
+.dz-mana b { min-width: 14px; text-align: center; font: 700 13px var(--mono); }
+.linkbtn { border: 0; background: none; padding: 6px 0 0; color: var(--accent); font: 600 12.5px inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+
 </style>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
@@ -517,7 +536,9 @@ window.CPA_CHANGELOG = [
   { v: '3.1.0', date: '30 ottobre 2026', title: 'Catalogo cornici, cartelle e altro', items: [
     { t: 'Nuove cornici', d: 'Nyx (Theros), Terre M15, Neve (Kaldheim), Devoid (Zendikar) e Miracle: le trovi nel menu «Cornice importata», con scelta automatica sui colori.' },
     { t: 'Catalogo cornici', d: 'Nel Designer c\'è «Catalogo cornici»: 174 pacchetti con 1273 cornici estratte da Card Conjurer (borderless con testo trasparente, extended art, full art, Universes Beyond, showcase, promo, token, planeswalker, saghe, bifronte…). Le aggiungi con un tocco e si scaricano da internet solo quelle che scegli; poi le trovi nel menu «Cornice importata».' },
-    { t: 'Scegli la stampa', d: 'Quando parti da una carta esistente, un menu ti fa scegliere la stampa (il set): cambia arte, collezione, numero, rarità, artista e testo di colore, e il testo della carta resta quello che hai scritto.' },
+    { t: 'Cornici a colpo d\'occhio', d: 'Nell\'editor le cornici non sono più un menu di testo: c\'è una griglia di anteprime, una per stile, già nel colore della carta. Restano solo le versioni automatiche, che cambiano da sole quando cambi i colori.' },
+    { t: 'Costo di mana a pulsanti', d: 'Tocchi bianco, blu, nero, rosso, verde o incolore per aggiungerli; accanto compaiono − e + per regolare quanti. I colori della carta seguono il costo. X, ibridi e phyrexiani si scrivono ancora a mano con «Scrivi il costo a mano».' },
+    { t: 'Scegli la stampa', d: 'Quando parti da una carta esistente, un menu ti fa scegliere la stampa (il set): cambia arte, collezione, numero, rarità, artista e testo di flavour, e il testo della carta resta quello che hai scritto.' },
     { t: 'Cartelle nel Designer', d: 'Raggruppi i tuoi design in cartelle (per mazzo, per cube, per uso…): le crei, rinomini ed elimini dalla lista, e sposti ogni carta dal suo menu «Cartella». Eliminando una cartella i design restano, senza cartella.' },
     { t: 'Elimina dalla lista', d: 'Ogni design ha il pulsante «Elimina» direttamente nella lista, con una conferma, senza dover entrare nella modifica.' },
     { t: 'Un solo «Nuova carta»', d: 'Tolti «Nuovo token» e «Alter di una carta»: sono già dentro «Nuova carta» (cornice token, e «Parti da una carta esistente»).' },
@@ -4643,7 +4664,7 @@ window.CPA_CHANGELOG = [
   })();
 
   /* ---------- stato ---------- */
-  var dz = { loaded: false, loading: null, designs: [], frames: [], res: [], folders: [], folder: '*', fEdit: null, fText: '', fConfirm: false, itemConfirm: '', prints: { list: [], busy: false, msg: '' }, view: 'list', cur: null, artImg: null, frameImgs: {}, search: { q: '', busy: false, msg: '' }, focus: 'name',
+  var dz = { costOpen: false, loaded: false, loading: null, designs: [], frames: [], res: [], folders: [], folder: '*', fEdit: null, fText: '', fConfirm: false, itemConfirm: '', prints: { list: [], busy: false, msg: '' }, view: 'list', cur: null, artImg: null, frameImgs: {}, search: { q: '', busy: false, msg: '' }, focus: 'name',
     bind: null, picker: null, confirm: '', msg: '' };
   var artCache = {}, thumbTimer = null, drawTimer = null, saveTimer = null;
 
@@ -4694,6 +4715,7 @@ window.CPA_CHANGELOG = [
   }
   /* font e simboli di mana importati dall'utente: si registrano nel browser e nel motore di rendering */
   function initResources() {
+    Object.keys(sUrl).forEach(function (k) { if (sUrl[k]) { try { URL.revokeObjectURL(sUrl[k]); } catch (e) { /* già liberato */ } } }); sUrl = {};
     var fonts = {}, syms = {}, wms = {}, ovs = {}, jobs = [];
     dz.res.forEach(function (rec) {
       if (rec.kind === 'font' && rec.blob && window.FontFace && document.fonts) {
@@ -4863,6 +4885,82 @@ window.CPA_CHANGELOG = [
     if (!rec || !rec.names) return null;
     return [['', 'Nessuna']].concat(Object.keys(rec.names).map(function (k) { return [k, rec.names[k]]; }));
   }
+  /* ---------- scelta della cornice: griglia di anteprime nel colore attuale della carta ---------- */
+  var fUrl = {};
+  function frameUrl(f) { if (!f || !f.blob) return ''; if (!fUrl[f.id]) { try { fUrl[f.id] = URL.createObjectURL(f.blob); } catch (e) { return ''; } } return fUrl[f.id]; }
+  function forgetUrl(id) { if (fUrl[id]) { try { URL.revokeObjectURL(fUrl[id]); } catch (e) { /* già liberato */ } delete fUrl[id]; } }
+  function frameTiles(d) {
+    var pk = R.paletteKey(d), seen = {}, tiles = [];
+    dz.frames.forEach(function (f) {
+      if (f.group) {
+        if (seen[f.group]) return; seen[f.group] = 1;
+        var list = dz.frames.filter(function (x) { return x.group === f.group; });
+        var pick = list.filter(function (x) { return x.key === pk; })[0] || list.filter(function (x) { return x.key === 'C'; })[0] || list[0];
+        tiles.push({ id: 'auto:' + f.group, name: f.groupName || f.group, f: pick });
+      } else tiles.push({ id: f.id, name: f.name, f: f });
+    });
+    function tile(id, name, f) {
+      var url = f ? frameUrl(f) : '';
+      return '<button class="dz-ftile" data-a="dz-frame-pick" data-v="' + esc(id) + '" aria-pressed="' + ((d.frameImg || '') === id) + '" title="' + esc(name) + '">' +
+        '<span class="dz-ftimg">' + (url ? '<img src="' + url + '" alt="" loading="lazy">' : '<span class="dz-fdraw">Disegnata</span>') + '</span><span class="dz-ftname">' + esc(name) + '</span></button>';
+    }
+    return '<div class="dz-ftiles" role="group" aria-label="Cornici">' + tile('', 'Cornice disegnata', null) + tiles.map(function (t) { return tile(t.id, t.name, t.f); }).join('') + '</div>';
+  }
+  function pickFrame(d, v) {
+    d.frameImg = v || '';
+    var fsel = dz.frames.filter(function (f) { return f.id === fid(d); })[0];
+    if (fsel) {
+      d.ink = fsel.ink === 'light' ? 'light' : 'dark';
+      var lay = fsel.geo && fsel.geo.layout;
+      if (lay && R.LAYOUT[lay]) d.frame = lay; else if (d.frame === 'planeswalker' || d.frame === 'saga') d.frame = 'classic';
+    }
+    saveSoon(); H.render();
+  }
+
+  /* ---------- costo di mana a pulsanti ---------- */
+  var MANA = [['W', 'Bianco'], ['U', 'Blu'], ['B', 'Nero'], ['R', 'Rosso'], ['G', 'Verde'], ['N', 'Incolore']];
+  function parseCost(str) {
+    var o = { N: 0, X: 0, W: 0, U: 0, B: 0, R: 0, G: 0, pre: [], post: [] };
+    (String(str || '').match(/\{[^}]+\}/g) || []).forEach(function (t) {
+      var v = t.slice(1, -1).toUpperCase();
+      if (/^\d+$/.test(v)) o.N += parseInt(v, 10);
+      else if (v === 'X') o.X++;
+      else if (/^[WUBRG]$/.test(v)) o[v]++;
+      else if (v === 'C' || v === 'S') o.pre.push('{' + v + '}');
+      else o.post.push(t);
+    });
+    return o;
+  }
+  function buildCost(o) {
+    var s = ''; for (var i = 0; i < o.X; i++) s += '{X}';
+    if (o.N) s += '{' + o.N + '}';
+    s += o.pre.join('') + o.post.join('');
+    'WUBRG'.split('').forEach(function (k) { for (var j = 0; j < o[k]; j++) s += '{' + k + '}'; });
+    return s;
+  }
+  var sUrl = {};
+  function symUrl(k) {
+    if (sUrl[k] !== undefined) return sUrl[k];
+    var rec = dz.res.filter(function (x) { return x.kind === 'symbols'; })[0], b = rec && rec.map && rec.map[k];
+    try { sUrl[k] = b ? URL.createObjectURL(b) : ''; } catch (e) { sUrl[k] = ''; }
+    return sUrl[k];
+  }
+  function manaInner(d) {
+    var o = parseCost(d.cost);
+    return MANA.map(function (m) {
+      var k = m[0], n = o[k], url = k === 'N' ? '' : symUrl(k);
+      var sym = url ? '<img class="dz-msym" src="' + url + '" alt="">' : '<span class="dz-msym dz-m' + k + '">' + (k === 'N' ? (n || '1') : k) + '</span>';
+      return '<span class="dz-mana' + (n ? ' on' : '') + '">' +
+        '<button class="dz-mbtn" data-a="dz-mana" data-v="' + k + '" data-k="+" aria-pressed="' + !!n + '" title="Aggiungi ' + m[1].toLowerCase() + '">' + sym + '<span>' + m[1] + '</span></button>' +
+        (n ? '<button class="dz-mstep" data-a="dz-mana" data-v="' + k + '" data-k="-" aria-label="Togli ' + m[1].toLowerCase() + '">\u2212</button><b>' + n + '</b><button class="dz-mstep" data-a="dz-mana" data-v="' + k + '" data-k="+" aria-label="Aggiungi ' + m[1].toLowerCase() + '">+</button>' : '') + '</span>';
+    }).join('');
+  }
+  function costHtml(d) {
+    var o = parseCost(d.cost), special = o.X || o.pre.length || o.post.length;
+    return '<div class="lbl"><span class="lbl-t">Costo di mana</span><div class="dz-manas" id="dz-mana">' + manaInner(d) + '</div>' +
+      ((dz.costOpen || special) ? inp('cost', d.cost, '{X}{2}{W/U}{G/P}') + '<p class="hint">Scrivi qui X, ibridi ({W/U}), phyrexiani ({G/P}) e {C}: i pulsanti tengono il resto.</p>' :
+        '<button class="linkbtn" data-a="dz-costopen">Scrivi il costo a mano (X, ibridi, phyrexiani\u2026)</button>') + '</div>';
+  }
   function frameOptions(d) {
     var groups = {}, h = '';
     dz.frames.forEach(function (f) { if (f.group) groups[f.group] = f.groupName || f.group; });
@@ -4893,7 +4991,7 @@ window.CPA_CHANGELOG = [
             var grp = String(f.group || 'pack'), key = String(f.key || '');
             var old = dz.frames.filter(function (x) { return x.group === grp && x.key === key; })[0];
             var rec = { id: old ? old.id : uid('f'), name: String(f.name || 'Cornice'), group: grp, groupName: names[grp] || grp, key: key, ink: f.ink === 'light' ? 'light' : 'dark', geo: f.geo || null, blob: blob, ptBlob: dataUrlToBlob(f.pt) || null, createdAt: Date.now() };
-            if (old) { dz.frames = dz.frames.filter(function (x) { return x !== old; }); delete dz.frameImgs[old.id]; }
+            if (old) { dz.frames = dz.frames.filter(function (x) { return x !== old; }); delete dz.frameImgs[old.id]; forgetUrl(old.id); }
             dz.frames.push(rec); n++; if (!first) first = grp;
             return DB.put('frames', rec);
           });
@@ -4993,7 +5091,7 @@ window.CPA_CHANGELOG = [
     var gone = dz.frames.filter(function (f) { return f.group === g; }).map(function (f) { return f.id; });
     dz.designs.forEach(function (x) { if (x.frameImg === 'auto:' + g || gone.indexOf(x.frameImg) >= 0) { x.frameImg = ''; DB.put('designs', clone(x)); } });
     dz.frames = dz.frames.filter(function (f) { return gone.indexOf(f.id) < 0; });
-    gone.forEach(function (id) { delete dz.frameImgs[id]; DB.del('frames', id); });
+    gone.forEach(function (id) { delete dz.frameImgs[id]; forgetUrl(id); DB.del('frames', id); });
   }
   function catalogHtml() {
     var h = '<header class="vh"><button class="back" data-a="dz-back">\u2190 I miei design</button><h1>Catalogo cornici</h1><p class="sub">Cornici estratte da Card Conjurer: aggiungi quelle che ti servono e le trovi nel menu \u00abCornice importata\u00bb dell\u2019editor, con scelta automatica sui colori.</p></header>';
@@ -5024,7 +5122,7 @@ window.CPA_CHANGELOG = [
       var cur = -1; P.list.forEach(function (c, i) { if (cur < 0 && String(c.set || '').toUpperCase() === d.set && String(c.collector_number || '') === d.num) cur = i; });
       return '<label class="lbl">Stampa (' + P.list.length + ')<select class="select" data-c="dz-print">' + (cur < 0 ? '<option value="" selected>\u2014 scegli una stampa \u2014</option>' : '') +
         P.list.map(function (c, i) { return '<option value="' + i + '"' + (i === cur ? ' selected' : '') + '>' + esc(printLabel(c)) + '</option>'; }).join('') + '</select></label>' +
-        '<p class="hint">Cambia arte, collezione, numero, rarit\u00e0, artista e testo di colore con quelli della stampa scelta.</p>';
+        '<p class="hint">Cambia arte, collezione, numero, rarit\u00e0, artista e testo di flavour con quelli della stampa scelta.</p>';
     }
     if (d.alterOf && net) return '<div class="btns"><button class="btn small" data-a="dz-prints"' + (P.busy ? ' disabled' : '') + '>' + (P.busy ? 'Cerco le stampe\u2026' : 'Scegli la stampa') + '</button></div>' + (P.msg ? '<p class="hint" role="status">' + esc(P.msg) + '</p>' : '');
     return '';
@@ -5092,8 +5190,8 @@ window.CPA_CHANGELOG = [
       '<div class="chips" aria-label="Colore">' + chip('dz-set', 'palette', 'auto', 'Auto (dai colori)', d.palette === 'auto') + R.PAL_ORDER.map(function (k) { return chip('dz-set', 'palette', k, R.PAL[k].name, d.palette === k); }).join('') + '</div>' +
       '<div class="dz-row">' + lbl('Bordo', sel('border', d.border, [['black', 'Nero'], ['white', 'Bianco'], ['silver', 'Argento'], ['gold', 'Oro']])) +
       lbl('Angoli', sel('corners', d.corners, [['round', 'Arrotondati'], ['square', 'Quadrati']])) + '</div>' +
-      '<div class="dz-row">' + lbl('Cornice importata', '<select class="select" data-c="dz-frameimg"><option value="">Nessuna (uso la cornice disegnata)</option>' + frameOptions(d) + '</select>') +
-      (d.frameImg ? lbl('Colore del testo', sel('ink', d.ink, [['dark', 'Scuro'], ['light', 'Chiaro']])) : '') + '</div>' +
+      '<div class="lbl"><span class="lbl-t">Cornice (segue i colori della carta)</span>' + frameTiles(d) + '</div>' +
+      (d.frameImg ? '<div class="dz-row">' + lbl('Colore del testo', sel('ink', d.ink, [['dark', 'Scuro'], ['light', 'Chiaro']])) + '</div>' : '') +
       '<div class="btns"><label class="btn small filebtn">Importa cornici (PNG o pacchetto)<input type="file" accept="image/png,image/webp,.json,application/json" data-c="dz-framefile" multiple hidden></label>' +
       (d.frameImg ? '<button class="btn small danger" data-a="dz-frame-del">' + (/^auto:/.test(d.frameImg) ? 'Elimina il pacchetto di cornici' : 'Elimina questa cornice') + '</button>' : '') + '</div>' +
       (dz.res.length ? '<p class="hint">Simboli di mana e font importati: ' + dz.res.map(function (x) { return x.kind === 'symbols' ? 'simboli' : x.kind === 'watermarks' ? 'filigrane' : x.kind === 'overlays' ? 'extra' : 'font ' + (x.role || ''); }).join(', ') + '. <button class="btn small danger" data-a="dz-res-del">Togli simboli, font e filigrane</button></p>' : '') + '<p class="hint">Le cornici importate (PNG tuoi con la zona dell’arte trasparente, oppure un pacchetto .json) restano solo su questo dispositivo. Con «automatica» la cornice segue i colori della carta.</p></section>';
@@ -5112,12 +5210,12 @@ window.CPA_CHANGELOG = [
     var cm = R.paletteKey(d);
     h += '<section class="panel"><h2 class="sect" style="margin:0">Testo</h2>' +
       lbl('Nome', inp('name', d.name, 'Nome della carta')) +
-      (L && L.noCost ? '' : lbl('Costo di mana', inp('cost', d.cost, '{2}{U}{U}'))) +
+      (L && L.noCost ? '' : costHtml(d)) +
       lbl('Tipo', inp('type', d.type, 'Creature — Wizard')) +
       '<label class="lbl">' + (L && L.walker ? 'Abilità (una per riga: «+1: testo», «−2: testo»)' : L && L.saga ? 'Capitoli (una riga per capitolo: «I — testo»)' : 'Testo delle regole') + '<textarea class="textarea dz-ta" data-c="dz-f" data-k="rules" rows="6">' + esc(d.rules) + '</textarea></label>' +
       '<div class="dz-syms" aria-label="Inserisci simbolo">' + SYMS.map(function (s) { return '<button class="chip small" data-a="dz-sym" data-v="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div>' +
       (wmOptions() ? lbl('Filigrana nella casella di testo', sel('watermark', d.watermark, wmOptions())) : '') +
-      (L && (L.walker || L.saga) ? '' : '<label class="lbl">Testo di colore (corsivo)<textarea class="textarea dz-ta" data-c="dz-f" data-k="flavor" rows="2">' + esc(d.flavor) + '</textarea></label>') +
+      (L && (L.walker || L.saga) ? '' : '<label class="lbl">Testo di flavour (corsivo)<textarea class="textarea dz-ta" data-c="dz-f" data-k="flavor" rows="2">' + esc(d.flavor) + '</textarea></label>') +
       '<div class="dz-row">' + (usesPT(d) ? lbl(L.walker ? 'Lealtà' : 'Forza/Costituzione', inp('pt', d.pt, L.walker ? '4' : '2/3')) : '') + lbl('Rarità', sel('rarity', d.rarity, [['common', 'Comune'], ['uncommon', 'Non comune'], ['rare', 'Rara'], ['mythic', 'Mitica']])) + '</div>' +
       '<div class="dz-row">' + lbl('Collezione', inp('set', d.set, 'CST')) + lbl('Numero', inp('num', d.num, '001')) + lbl('Artista', inp('artist', d.artist, 'Nome')) + '</div>' +
       '<div><span class="lbl-t">Colori della carta</span><div class="chips">' + 'WUBRG'.split('').map(function (c) { return chip('dz-col', 'colors', c, {W: 'Bianco', U: 'Blu', B: 'Nero', R: 'Rosso', G: 'Verde'}[c], cs.indexOf(c) >= 0); }).join('') + '</div><p class="hint">Decidono il colore della cornice quando è su «Auto» (ora: ' + esc(R.PAL[cm].name) + ').</p></div></section>';
@@ -5318,6 +5416,15 @@ window.CPA_CHANGELOG = [
     var d = dz.cur, id = el.getAttribute('data-id'), k = el.getAttribute('data-k'), v = el.getAttribute('data-v');
     switch (a) {
       case 'dz-new': create(k); break;
+      case 'dz-frame-pick': if (d) pickFrame(d, v); break;
+      case 'dz-costopen': dz.costOpen = true; H.render(); setTimeout(function () { var el2 = document.querySelector('[data-c="dz-f"][data-k="cost"]'); if (el2) el2.focus(); }, 0); break;
+      case 'dz-mana':
+        if (d) {
+          var mo = parseCost(d.cost); mo[v] = Math.max(0, Math.min(v === 'N' ? 20 : 9, (mo[v] || 0) + (k === '-' ? -1 : 1)));
+          d.cost = buildCost(mo);
+          var cc = 'WUBRG'.split('').filter(function (x) { return new RegExp('\\{[^}]*' + x + '[^}]*\\}').test(d.cost.toUpperCase()); }).join('');
+          d.colors = cc; saveSoon(); H.render();
+        } break;
       case 'dz-catalog': dz.view = 'catalog'; dz.cur = null; window.scrollTo(0, 0); H.render(); break;
       case 'dz-cat-retry': cat.msg = ''; cat.list = null; H.render(); break;
       case 'dz-cat-c': cat.c = String(v == null ? '' : v); H.render(); break;
@@ -5369,7 +5476,7 @@ window.CPA_CHANGELOG = [
           var cur = d.frameImg, auto = /^auto:(.+)$/.exec(cur), gone = auto ? dz.frames.filter(function (f) { return f.group === auto[1]; }).map(function (f) { return f.id; }) : [cur];
           dz.designs.forEach(function (x) { if (x.frameImg === cur || gone.indexOf(x.frameImg) >= 0) { x.frameImg = ''; if (x !== d) DB.put('designs', clone(x)); } });
           dz.frames = dz.frames.filter(function (f) { return gone.indexOf(f.id) < 0; });
-          gone.forEach(function (g) { delete dz.frameImgs[g]; DB.del('frames', g); });
+          gone.forEach(function (g) { delete dz.frameImgs[g]; forgetUrl(g); DB.del('frames', g); });
           saveNow(); H.render();
         } break;
       case 'dz-export-one': if (d) { saveNow(); exportDesigns([d], fname(d, '.coglio-design.json')); } break;
@@ -5411,7 +5518,7 @@ window.CPA_CHANGELOG = [
   }
   function input(c, el) {
     var d = dz.cur;
-    if (c === 'dz-f' && d) { d[el.getAttribute('data-k')] = el.value; schedulePreview(); saveSoon(); if (el.getAttribute('data-k') === 'name') { var h1 = document.querySelector('.vh h1'); if (h1) h1.textContent = el.value || 'Senza nome'; } }
+    if (c === 'dz-f' && d) { d[el.getAttribute('data-k')] = el.value; schedulePreview(); saveSoon(); if (el.getAttribute('data-k') === 'cost') { var mm = document.getElementById('dz-mana'); if (mm) mm.innerHTML = manaInner(d); } if (el.getAttribute('data-k') === 'name') { var h1 = document.querySelector('.vh h1'); if (h1) h1.textContent = el.value || 'Senza nome'; } }
     else if (c === 'dz-art' && d) { d.art[el.getAttribute('data-k')] = parseFloat(el.value) || 0; schedulePreview(); saveSoon(); }
     else if (c === 'dz-q') dz.search.q = el.value;
     else if (c === 'dz-ftext') dz.fText = el.value;

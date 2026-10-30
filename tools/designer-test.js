@@ -83,6 +83,16 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await page.waitForSelector('#dz-cv');
   const blank = await px();
   await page.fill('[data-c="dz-f"][data-k="name"]', 'Mago di Prova');
+  /* costo a pulsanti: incolore 1, blu 2 */
+  ok(await page.evaluate(() => CPADesigner.state.cur.cost) === '{1}{U}', 'costo di partenza');
+  await page.click('[data-a="dz-mana"][data-v="N"][data-k="+"].dz-mstep');
+  await page.click('[data-a="dz-mana"][data-v="N"][data-k="-"]');
+  await page.click('.dz-mana.on [data-a="dz-mana"][data-v="U"][data-k="+"].dz-mstep');
+  await page.click('[data-a="dz-mana"][data-v="W"][data-k="+"]');
+  await page.click('.dz-mana.on [data-a="dz-mana"][data-v="W"][data-k="-"]');
+  ok(await page.evaluate(() => CPADesigner.state.cur.cost) === '{1}{U}{U}', 'costo composto con i pulsanti: ' + await page.evaluate(() => CPADesigner.state.cur.cost));
+  ok(await page.evaluate(() => CPADesigner.state.cur.colors) === 'U', 'i colori seguono il costo');
+  await page.click('[data-a="dz-costopen"]');
   await page.fill('[data-c="dz-f"][data-k="cost"]', '{1}{U}{U}');
   await page.fill('[data-c="dz-f"][data-k="type"]', 'Creature — Wizard');
   await page.fill('[data-c="dz-f"][data-k="rules"]', 'Flying\n{T}: Draw a card, then discard a card.');
@@ -185,7 +195,7 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await page.waitForFunction(() => /cornice-verde/.test(document.body.innerHTML));
   await page.waitForTimeout(300);
   const afterF = await px(); ok(afterF.s !== beforeF.s, 'cornice importata applicata');
-  ok(await page.locator('[data-c="dz-frameimg"]').inputValue() !== '', 'cornice selezionata');
+  ok(await page.evaluate(() => CPADesigner.state.cur.frameImg) !== '', 'cornice selezionata');
 
   /* pacchetto di cornici: scelta automatica dai colori */
   const pack = { app: 'coglio-frames', version: 1, groups: [{ id: 'tst', name: 'Prova' }], frames: ['U', 'C'].map((k, i) => ({ key: k, name: 'Prova ' + k, group: 'tst', ink: 'dark', geo: { art: [56, 116, 631, 463], title: [45, 52, 654, 59], type: [45, 583, 654, 58], box: [55, 646, 634, 313], pt: [568, 920, 140, 81], info: [46, 984], panel: 'rgba(255,255,255,0.9)' },
@@ -194,8 +204,9 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await page.click('[data-a="dz-back"]'); await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
   await page.setInputFiles('[data-c="dz-framefile"]', '/tmp/claude-0/dz/pack-test.json');
   await page.waitForFunction(() => /Importati: 2 cornici/.test(document.body.innerText));
-  ok(await page.inputValue('[data-c="dz-frameimg"]') === 'auto:tst', 'dopo il pacchetto la cornice è «automatica»');
-  ok(/Prova — automatica/.test(await page.innerHTML('[data-c="dz-frameimg"]')), 'opzione automatica nel menu');
+  ok(await page.evaluate(() => CPADesigner.state.cur.frameImg) === 'auto:tst', 'dopo il pacchetto la cornice è «automatica»');
+  ok(await page.locator('[data-a="dz-frame-pick"][data-v="auto:tst"] img').count() === 1, 'anteprima del pacchetto nella griglia');
+  ok(await page.locator('[data-a="dz-frame-pick"]').count() === 3, 'nella griglia solo le automatiche (più disegnata e PNG singola)');
   await page.waitForTimeout(300);
   const autoA = await px();
   await page.evaluate(() => { const d = CPADesigner.state.cur; d.colors = 'R'; });
@@ -207,7 +218,7 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   ok(true, 'pacchetto non valido rifiutato');
   await page.click('[data-a="dz-frame-del"]');
   await page.waitForFunction(() => CPADesigner.state.frames.every(f => f.group !== 'tst'));
-  ok(await page.inputValue('[data-c="dz-frameimg"]') === '', 'pacchetto eliminato, torna la cornice disegnata');
+  ok(await page.evaluate(() => CPADesigner.state.cur.frameImg) === '', 'pacchetto eliminato, torna la cornice disegnata');
 
   /* simboli e font importati (pacchetto solo-risorse) */
   const symPng = 'data:image/png;base64,' + framePng.toString('base64');
@@ -309,7 +320,7 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   ok(await page.evaluate(() => CPACard.hasSymbols()), 'simboli inclusi attivi');
   ok(!/Importati/.test(await text()), 'caricamento incluso silenzioso');
   await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
-  await page.selectOption('[data-c="dz-frameimg"]', 'auto:bnd');
+  await page.click('[data-a="dz-frame-pick"][data-v="auto:bnd"]');
   await page.click('[data-a="dz-frame-del"]');
   await page.waitForFunction(() => CPADesigner.state.frames.every(f => f.group !== 'bnd'));
   await page.click('[data-a="dz-back"]');
@@ -363,9 +374,9 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   ok(true, 'pacchetto del catalogo aggiunto');
   await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item');
   await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
-  ok((await page.innerHTML('[data-c="dz-frameimg"]')).includes('auto:cc-tst'), 'il pacchetto compare nel menu delle cornici');
+  ok(await page.locator('[data-a="dz-frame-pick"][data-v="auto:cc-tst"]').count() === 1, 'il pacchetto compare nella griglia delle cornici');
   const bc = await full();
-  await page.selectOption('[data-c="dz-frameimg"]', 'auto:cc-tst'); await page.waitForTimeout(400);
+  await page.click('[data-a="dz-frame-pick"][data-v="auto:cc-tst"]'); await page.waitForTimeout(400);
   ok((await full()) !== bc, 'la cornice del catalogo cambia l\u2019anteprima');
   ok(await page.evaluate(() => CPADesigner.state.cur.ink) === 'light', 'il colore del testo segue la cornice');
   await page.click('[data-a="dz-back"]'); await page.click('[data-a="dz-catalog"]'); await page.waitForSelector('[data-a="dz-cat-del"][data-id="tst"]');
