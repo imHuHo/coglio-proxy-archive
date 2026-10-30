@@ -70,7 +70,7 @@
     return dz.loading;
   }
   /* risorse incluse nell'app (risorse.json: cornici, simboli, font): si caricano una volta per versione, in silenzio */
-  var BUNDLE_VER = 'mse-4';
+  var BUNDLE_VER = 'mse-5';
   function bundleBlob() {
     if (typeof window.CPA_BUNDLE === 'string') return Promise.resolve(new Blob([window.CPA_BUNDLE], { type: 'application/json' }));
     if (window.cpaNet && window.cpaNet.resource) return window.cpaNet.resource('risorse.json').then(function (t) { return t ? new Blob([t], { type: 'application/json' }) : null; }).catch(function () { return null; });
@@ -97,7 +97,7 @@
       if (rec.kind === 'font' && rec.blob && window.FontFace && document.fonts) {
         jobs.push(rec.blob.arrayBuffer().then(function (buf) {
           var ff = new FontFace(rec.family, buf, { style: rec.style === 'italic' ? 'italic' : 'normal', weight: '100 900' });
-          return ff.load().then(function () { document.fonts.add(ff); if (rec.role === 'title') fonts.title = true; if (rec.role === 'body' || rec.role === 'bodyItalic') fonts.body = true; });
+          return ff.load().then(function () { document.fonts.add(ff); if (rec.role === 'title') fonts.title = true; if (rec.role === 'info') fonts.info = true; if (rec.role === 'body' || rec.role === 'bodyItalic') fonts.body = true; });
         }).catch(function () { return null; }));
       } else if (rec.kind === 'walker' && rec.map) {
         Object.keys(rec.map).forEach(function (k) {
@@ -215,7 +215,7 @@
     if (!fontsP) {
       var f = document.fonts;
       fontsP = !f || !f.load ? Promise.resolve() : Promise.race([
-        Promise.all(['700 24px Cinzel', '600 24px Cinzel', '400 24px "EB Garamond"', 'italic 400 24px "EB Garamond"', '700 24px "EB Garamond"', '600 24px Manrope'].map(function (x) { return f.load(x).catch(function () { return null; }); })),
+        Promise.all(['700 24px Cinzel', '600 24px Cinzel', '700 24px \'CPA Title\'', '400 24px \'CPA Body\'', 'italic 400 24px \'CPA Body\'', '400 24px \'CPA Info\'', '400 24px "EB Garamond"', 'italic 400 24px "EB Garamond"', '700 24px "EB Garamond"', '600 24px Manrope'].map(function (x) { return f.load(x).catch(function () { return null; }); })),
         new Promise(function (r) { setTimeout(r, 4000); })]);
     }
     return fontsP;
@@ -699,6 +699,25 @@
     var n = 0; (H.decks() || []).forEach(function (dk) { if (dk.cards.some(function (c) { return c.design === id; })) n++; }); return n;
   }
 
+  /* i due colori di una carta bicolore, nell'ordine in cui compaiono nel costo (altrimenti l'ordine WUBRG) */
+  function pairOf(d) {
+    var cs = String(d.colors || '').toUpperCase().replace(/[^WUBRG]/g, '').split('').filter(function (c, i, a) { return a.indexOf(c) === i; });
+    if (cs.length !== 2) return '';
+    var seen = [], re = /\{([^}]*)\}/g, m;
+    while ((m = re.exec(String(d.cost || '').toUpperCase()))) m[1].split('/').forEach(function (x) { if (cs.indexOf(x) >= 0 && seen.indexOf(x) < 0) seen.push(x); });
+    cs.forEach(function (c) { if (seen.indexOf(c) < 0) seen.push(c); });
+    return seen.slice(0, 2).join('');
+  }
+  function biHtml(d) {
+    var pr = pairOf(d), mode = d.mix ? 'both' : d.cmix ? 'crown' : 'none', nm = { W: 'bianco', U: 'blu', B: 'nero', R: 'rosso', G: 'verde' };
+    var h = '';
+    if (pr) {
+      h += '<div class="lbl"><span class="lbl-t">Carta a due colori (' + nm[pr[0]] + ' e ' + nm[pr[1]] + ')</span><div class="chips" aria-label="Cornice a due colori">' +
+        chip('dz-bi', 'k', 'none', 'Normale (dorata)', mode === 'none') + chip('dz-bi', 'k', 'crown', 'Solo la corona a due colori', mode === 'crown') + chip('dz-bi', 'k', 'both', 'Cornice e corona a due colori', mode === 'both') + '</div>' +
+        '<p class="hint">La parte a due colori sfuma da sinistra a destra' + (R.hasOverlays() ? '; la corona si attiva in \u00abExtra della cornice\u00bb' : '') + '.</p></div>';
+    }
+    return h + '<details class="dz-adv"' + (!pr && (d.mix || d.cmix) ? ' open' : '') + '><summary>' + (pr ? 'Scegli i colori a mano' : 'Cornice a due colori a mano') + '</summary>' + mixRow('Cornice a due colori (sfumata)', 'mix', d.mix) + '</details>';
+  }
   var MIXC = [['', '\u2014'], ['W', 'Bianco'], ['U', 'Blu'], ['B', 'Nero'], ['R', 'Rosso'], ['G', 'Verde']];
   function mixRow(title, k, v) {
     var m = R.mixOf(v) || '', a = m[0] || '', b = m[1] || '';
@@ -727,7 +746,7 @@
     /* cornice */
     h += '<section class="panel"><h2 class="sect" style="margin:0">Cornice</h2><div class="chips">' + R.FRAMES.map(function (f) { return chip('dz-set', 'frame', f.id, f.name, d.frame === f.id); }).join('') + '</div>' +
       '<div class="chips" aria-label="Colore">' + chip('dz-set', 'palette', 'auto', 'Auto (dai colori)', d.palette === 'auto') + R.PAL_ORDER.map(function (k) { return chip('dz-set', 'palette', k, R.PAL[k].name, d.palette === k); }).join('') + '</div>' +
-      mixRow('Cornice a due colori (sfumata)', 'mix', d.mix) +
+      biHtml(d) +
       '<div class="dz-row">' + lbl('Bordo', sel('border', d.border, [['black', 'Nero'], ['white', 'Bianco'], ['silver', 'Argento'], ['gold', 'Oro']])) +
       lbl('Angoli', sel('corners', d.corners, [['round', 'Arrotondati'], ['square', 'Quadrati']])) + '</div>' +
       '<div class="lbl"><span class="lbl-t">Cornice (segue i colori della carta)</span>' + frameTiles(d) + '</div>' +
@@ -1060,6 +1079,13 @@
       case 'dz-unbind': unbind(el.getAttribute('data-deck'), el.getAttribute('data-name')); H.render(); break;
       case 'dz-pick-close': dz.picker = null; H.render(); break;
       case 'dz-flip': flip(); break;
+      case 'dz-bi':
+        if (d) {
+          var pr2 = pairOf(d); if (!pr2 && v !== 'none') break;
+          d.mix = v === 'both' ? pr2 : ''; d.cmix = v === 'both' || v === 'crown' ? pr2 : '';
+          if (v !== 'none' && !d.crown && /\blegendary\b/i.test(d.type || '') && R.hasOverlays()) d.crown = 'legend';
+          saveSoon(); H.render();
+        } break;
       case 'dz-back-del': removeBack(); break;
       case 'dz-dlg-yes': dlgYes(); break;
       case 'dz-dlg-no': if (dz.dlg && !dz.dlg.busy) { dz.dlg = null; H.render(); } break;

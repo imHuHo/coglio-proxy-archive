@@ -530,3 +530,5 @@ img.dz-msym { box-shadow: none; }
 
 .dz-prgrid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); max-height: 440px; margin-top: 6px; }
 .dz-prgrid .dz-ftimg { aspect-ratio: 488 / 680; background: var(--bg); }
+.dz-adv { margin-top: 8px; }
+.dz-adv summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 4px 0; }

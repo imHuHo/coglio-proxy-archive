@@ -3,6 +3,8 @@
 window.CPA_CHANGELOG = [
   { v: '3.3.0', date: '31 ottobre 2026', title: 'Bicolore e carte bifronte', items: [
     { t: 'Cornici e corone a due colori', d: 'Nel Designer puoi mescolare due colori nella cornice (e, con le cornici importate, anche nella corona): il secondo compare da destra con una sfumatura, come nei bicolori di Card Conjurer, anche sul riquadro di forza e costituzione. Le carte con costo ibrido, ad esempio {W/U}, lo prendono da sole.' },
+    { t: 'Scegli come mescolare i colori', d: 'Con una carta a due colori scegli tra: normale (dorata), solo la corona a due colori, oppure cornice e corona a due colori. L\'ordine dei colori segue il costo di mana, e puoi sceglierli a mano.' },
+    { t: 'Font delle carte vere', d: 'Titolo, tipo e forza/costituzione ora usano Beleren, il font dei titoli di Magic (prima era Relay); numero di collezione e artista usano Gotham, come sulle carte stampate. Il testo delle regole resta in MPlantin.' },
     { t: 'Tasto Trasforma', d: 'Ogni design può avere un retro: il tasto «Trasforma» nell\'editor gira la carta e ti fa modificare l\'altra faccia. Importando una carta bifronte da Scryfall (trasformabile o modale) il retro arriva già con testo, arte e cornice del retro. Nel Builder il retro si stampa come retro della carta.' },
   ] },
   { v: '3.2.1', date: '30 ottobre 2026', title: 'Token nel Builder', items: [

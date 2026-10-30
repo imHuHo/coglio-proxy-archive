@@ -455,9 +455,20 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   /* due colori */
   await page.evaluate(() => { const d = CPADesigner.state.cur; d.mix = 'BR'; d.cmix = 'BR'; d.crown = 'legend'; });
   ok(await page.evaluate(() => CPACard.mixOf('BR') === 'BR' && CPACard.mixOf('BB') === null && CPACard.paletteKey({ mix: 'RG', colors: 'W' }) === 'R'), 'la cornice a due colori usa il colore di sinistra come base');
+  await page.evaluate(() => { document.querySelector('.dz-adv').open = true; });
   await page.selectOption('[data-c="dz-mix"][data-k="mix"][data-side="0"]', 'W'); await page.selectOption('[data-c="dz-mix"][data-k="mix"][data-side="1"]', 'U');
   ok(await page.evaluate(() => CPADesigner.state.cur.mix) === 'WU', 'i selettori impostano la cornice a due colori');
   await page.selectOption('[data-c="dz-mix"][data-k="mix"][data-side="1"]', ''); ok(await page.evaluate(() => CPADesigner.state.cur.mix) === '', 'togliendo un colore la cornice torna normale');
+  /* scelta: nessuna / solo corona / cornice e corona */
+  await page.evaluate(() => { const d = CPADesigner.state.cur; d.colors = 'UR'; d.cost = '{R}{U}'; d.mix = ''; d.cmix = ''; d.type = 'Legendary Creature \u2014 Wizard'; });
+  await page.click('[data-a="dz-set"][data-k="palette"][data-v="auto"]');
+  ok(await page.locator('[data-a="dz-bi"]').count() === 3, 'carta a due colori: tre scelte');
+  await page.click('[data-a="dz-bi"][data-v="crown"]');
+  ok(await page.evaluate(() => { const d = CPADesigner.state.cur; return d.cmix === 'RU' && d.mix === '' && d.crown === 'legend'; }), 'solo corona: cornice normale, corona a due colori (ordine del costo)');
+  await page.click('[data-a="dz-bi"][data-v="both"]');
+  ok(await page.evaluate(() => { const d = CPADesigner.state.cur; return d.cmix === 'RU' && d.mix === 'RU'; }), 'cornice e corona a due colori');
+  await page.click('[data-a="dz-bi"][data-v="none"]');
+  ok(await page.evaluate(() => { const d = CPADesigner.state.cur; return d.cmix === '' && d.mix === ''; }), 'nessuno dei due: cornice dorata');
   const hy = await page.evaluate(() => CPADesigner.wantFrame({ frame: '2015', layout: 'normal', type_line: 'Creature', set: 'x', border_color: 'black', mana_cost: '{W/U}{W/U}', colors: ['W', 'U'] }).mix);
   ok(hy === 'WU', 'una carta ibrida prende la cornice a due colori');
   await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item');

@@ -9,7 +9,7 @@
   var W = 745, H = 1040;
   var BASE_TITLE = "Cinzel, 'Palatino Linotype', 'Book Antiqua', Georgia, serif";
   var BASE_BODY = "'EB Garamond', 'Palatino Linotype', 'Book Antiqua', Georgia, serif";
-  var F_TITLE = BASE_TITLE, F_BODY = BASE_BODY;
+  var F_TITLE = BASE_TITLE, F_BODY = BASE_BODY, F_INFO = "Manrope, 'Segoe UI', Arial, sans-serif";
   /* risorse importate dall'utente (font e simboli di mana): senza di esse si usano font e simboli disegnati qui */
   var RES = { symbols: {}, watermarks: {}, overlays: {}, walker: null };
   function setResources(r) {
@@ -17,6 +17,7 @@
     RES.symbols = r.symbols || {}; RES.watermarks = r.watermarks || {}; RES.overlays = r.overlays || {}; RES.walker = r.walker && r.walker.plus ? r.walker : null;
     F_TITLE = f.title ? "'CPA Title', " + BASE_TITLE : BASE_TITLE;
     F_BODY = f.body ? "'CPA Body', " + BASE_BODY : BASE_BODY;
+    F_INFO = f.info ? "'CPA Info', Manrope, 'Segoe UI', Arial, sans-serif" : "Manrope, 'Segoe UI', Arial, sans-serif";
   }
   var F_UI = "Manrope, 'Segoe UI', Arial, sans-serif";
 
@@ -392,9 +393,9 @@
     ctx.fillStyle = ink; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
     var a = [String(d.num || '').trim(), String(d.set || '').trim().toUpperCase()].filter(Boolean).join(' · ');
     if (onDark) { ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4; }
-    ctx.font = '600 19px ' + F_UI; ctx.fillText(a, L.info[0], L.info[1] + 9);
+    ctx.font = '500 19px ' + F_INFO; ctx.fillText(a, L.info[0], L.info[1] + 9);
     var art = String(d.artist || '').trim();
-    if (art) { ctx.font = '500 18px ' + F_UI; var x0 = L.info[0] + ctx.measureText(a).width + (a ? 18 : 0); ctx.fillText('Illus. ' + art, x0, L.info[1] + 9); }
+    if (art) { ctx.font = '500 18px ' + F_INFO; var x0 = L.info[0] + ctx.measureText(a).width + (a ? 18 : 0); ctx.fillText('Illus. ' + art, x0, L.info[1] + 9); }
     ctx.shadowColor = 'transparent';
   }
 
