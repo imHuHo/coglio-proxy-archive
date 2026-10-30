@@ -220,6 +220,30 @@ const text = () => d.body.textContent.replace(/\s+/g, ' ');
   clickA('up-st', '[data-v="all"]');
   clickA('back-deck'); clickA('del-deck'); clickA('del-deck');
 
+  // --- avvisi: spariscono da soli, hanno la × ; la copia precede l'apertura del sito ---
+  w.CPA_TOAST_SCALE = 0.03;   // 6 s → 0,18 s ; 14 s → 0,42 s
+  clickA('nav', '[data-v="data"]');
+  clickA('copy-json'); await sleep(40);
+  ok(!$('#toast').hidden && $('#toast .tx'), 'avviso mostrato, con la × per chiuderlo');
+  await sleep(300);
+  ok($('#toast').hidden, 'avviso semplice sparisce da solo');
+  clickA('copy-json'); await sleep(40);
+  click($('#toast .tx')); ok($('#toast').hidden, 'la × chiude subito l\'avviso');
+  const order = [];
+  w.cpaNet = { copy: async t => { order.push('copy'); clip = t; return true; } };
+  w.open = u => { order.push('open'); opened.push(u); return {}; };
+  w.fetch = async () => { throw new w.TypeError('Failed to fetch'); };
+  clickA('nav', '[data-v="decks"]'); clickA('open-deck');
+  clickA('bracket'); await sleep(40); clickA('bk-web'); await sleep(40);
+  ok(order.join() === 'copy,open' && clip.startsWith('Commander\n1 Kaalia'), 'bracket: prima la copia (tramite il programma), poi l\'apertura del sito');
+  ok(!$('#toast').hidden && $('#toast').textContent.includes('copiata'), 'avviso lungo mostrato');
+  await sleep(150); ok(!$('#toast').hidden, 'avviso lungo ancora visibile dopo il tempo breve');
+  await sleep(500); ok($('#toast').hidden, 'anche l\'avviso lungo sparisce da solo');
+  w.cpaNet = { copy: async () => false }; clip = null;
+  clickA('bk-web'); await sleep(60);
+  ok(clip.startsWith('Commander') && !$('#toast').textContent.includes('non riuscita'), 'se la copia del programma fallisce si prova quella del browser');
+  clickA('bk-close'); delete w.fetch; delete w.cpaNet; w.CPA_TOAST_SCALE = 1;
+
   await sleep(500);
   ok(errors.length === 0, 'nessun errore JS: ' + errors.join(' | '));
   console.log('UI OK, ' + n + ' controlli passati');

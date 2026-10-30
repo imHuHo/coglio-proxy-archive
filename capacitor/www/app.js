@@ -180,11 +180,14 @@
 
   /* ---------- Avvisi e annulla ---------- */
   var toastTimer;
+  /* Ogni avviso sparisce da solo: 6 secondi, 8 se c'è «Annulla», 14 per i messaggi lunghi (sticky). C'è sempre anche la × per chiuderlo. */
+  function hideToast() { clearTimeout(toastTimer); TOAST.hidden = true; TOAST._undo = null; }
   function toast(msg, undo, sticky) {
-    TOAST.innerHTML = '<span>' + esc(msg) + '</span>' + (undo ? '<button data-a="undo">Annulla</button>' : '');
+    TOAST.innerHTML = '<span>' + esc(msg) + '</span><span class="tbtns">' + (undo ? '<button data-a="undo">Annulla</button>' : '') +
+      '<button data-a="toast-close" class="tx" aria-label="Chiudi avviso">×</button></span>';
     TOAST._undo = undo || null; TOAST.hidden = false;
     clearTimeout(toastTimer);
-    if (!sticky) toastTimer = setTimeout(function () { TOAST.hidden = true; }, 8000);
+    toastTimer = setTimeout(hideToast, (undo ? 8000 : sticky ? 14000 : 6000) * (window.CPA_TOAST_SCALE || 1));
   }
   function mutate(msg, fn) {
     var prev = JSON.stringify(state), prevIds = state.decks.map(function (d) { return d.id; });
@@ -207,10 +210,17 @@
         document.body.appendChild(ta); ta.select(); var ok = document.execCommand('copy'); ta.remove(); return ok;
       } catch (e) { return false; }
     };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallback(); });
+    var web = function () {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallback(); });
+      }
+      return Promise.resolve(fallback());
+    };
+    /* nell'app Windows gli appunti li scrive il programma: funziona anche se la finestra non ha il focus */
+    if (window.cpaNet && typeof window.cpaNet.copy === 'function') {
+      return window.cpaNet.copy(text).then(function (ok) { return ok === true ? true : web(); }, function () { return web(); });
     }
-    return Promise.resolve(fallback());
+    return web();
   }
   /* Dentro Claude il download passa dalla capability "downloads"; altrove è un normale download del browser. */
   function download(name, text, type) {
@@ -317,8 +327,10 @@
       });
     }
     function web(deck) {
+      /* prima si avvia la copia (la finestra ha ancora il focus), poi si apre il sito: tutto dentro lo stesso clic */
+      var copied = copyText(C.bracketText(deck));
       openExternal(WEB);
-      copyText(C.bracketText(deck)).then(function (ok) {
+      copied.then(function (ok) {
         toast(ok ? 'Lista di «' + deck.name + '» copiata. Nella pagina del bracket incollala e premi «Check my bracket».'
           : 'Copia automatica non riuscita: usa «Copia lista .txt» nel mazzo e incollala su commanderbracket.app/bracket.', null, true);
       });
@@ -1030,7 +1042,8 @@
     var deck;
     switch (a) {
       case 'nav': go(el.dataset.v); break;
-      case 'undo': if (TOAST._undo) { TOAST._undo(); TOAST.hidden = true; } break;
+      case 'undo': if (TOAST._undo) { var uf = TOAST._undo; hideToast(); uf(); } break;
+      case 'toast-close': hideToast(); break;
       case 'st': ui.st = el.dataset.v; ui.limit = 150; render(); break;
       case 'more': ui.limit += 150; updateArchiveList(); break;
       case 'toggle-card': ui.open[el.dataset.k] = !ui.open[el.dataset.k]; updateArchiveList(); break;

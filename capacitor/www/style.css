@@ -251,6 +251,9 @@ a { color: var(--accent); }
   box-shadow: 0 8px 28px #0005;
 }
 #toast button { border: 0; background: none; color: var(--accent); font-weight: 800; padding: 4px 6px; }
+#toast .tbtns { display: flex; align-items: center; gap: 2px; flex: none; }
+#toast button.tx { font-size: 20px; line-height: 1; padding: 2px 8px; text-decoration: none; opacity: .75; }
+#toast button.tx:hover { opacity: 1; }
 :root:not([data-theme="light"]) #toast button { color: var(--accent-fg); text-decoration: underline; }
 @media (min-width: 860px) { #toast { bottom: 24px; } }
 @media (max-width: 480px) {

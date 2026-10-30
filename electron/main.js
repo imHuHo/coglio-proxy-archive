@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, ipcMain, net } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, net, clipboard } = require('electron');
 const path = require('path');
 
 const BRACKET_URL = 'https://backend.commanderspellbook.com/estimate-bracket/';
@@ -24,6 +24,12 @@ ipcMain.handle('cpa:bracket', async (_event, payload) => {
   } catch (e) {
     return { ok: false, error: e && e.name === 'TimeoutError' ? 'timeout' : 'network' };
   }
+});
+
+/* Appunti scritti dal programma: funziona anche quando la finestra ha perso il focus (ad esempio dopo aver aperto il browser). */
+ipcMain.handle('cpa:copy', (_event, text) => {
+  if (typeof text !== 'string' || text.length > 1000000) return false;
+  try { clipboard.writeText(text); return true; } catch (e) { return false; }
 });
 
 function createWindow() {
