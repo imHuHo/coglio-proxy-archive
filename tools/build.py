@@ -48,6 +48,12 @@ single = f'''<title>Coglio Proxy Archive</title>
 {extra['designer.js']}
 </script>
 '''
+bundle = os.path.join(web, 'risorse.json')
+if os.path.exists(bundle):  # nella pagina unica non c'è un file da scaricare: le risorse stanno dentro
+    import json
+    tag = '<script>\n' + extra['designer.js']
+    assert tag in single
+    single = single.replace(tag, '<script>window.CPA_BUNDLE = ' + json.dumps(open(bundle, encoding='utf-8').read()).replace('</', '<\\/') + ';</script>\n' + tag, 1)
 os.makedirs(os.path.join(root, 'dist'), exist_ok=True)
 open(os.path.join(root, 'dist', 'coglio-proxy-archive.html'), 'w', encoding='utf-8').write(single)
 for dest in ('electron/web', 'capacitor/www'):

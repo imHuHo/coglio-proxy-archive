@@ -6,9 +6,11 @@ const WEB = path.join(__dirname, '..', 'web');
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/json' };
 let n = 0; const ok = (c, m) => { n++; assert.ok(c, m); };
 
+let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipendere dai file veri */
 (async () => {
   const srv = http.createServer((q, r) => {
     let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html';
+    if (p === '/risorse.json') { if (bundleBody) { r.writeHead(200, { 'Content-Type': 'application/json' }); return r.end(bundleBody); } r.writeHead(404); return r.end(); }
     const f = path.join(WEB, p);
     if (!f.startsWith(WEB) || !fs.existsSync(f)) { r.writeHead(404); return r.end(); }
     r.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream' }); r.end(fs.readFileSync(f));
@@ -264,6 +266,21 @@ let n = 0; const ok = (c, m) => { n++; assert.ok(c, m); };
   await page.click('[data-a="dz-del"]');
   await page.waitForSelector('.dz-item');
   ok(await page.locator('.dz-item').count() === 3, 'design eliminato');
+
+  /* risorse incluse nell'app: si caricano da sole, una volta */
+  const bpng = 'data:image/png;base64,' + framePng.toString('base64');
+  bundleBody = JSON.stringify({ app: 'coglio-frames', version: 1, groups: [{ id: 'bnd', name: 'Inclusa' }], frames: [{ key: 'U', name: 'Inclusa U', group: 'bnd', ink: 'dark', geo: null, png: bpng }], symbols: { U: bpng } });
+  await go(); await nav('designer'); await page.waitForSelector('.dz-item');
+  ok(await page.evaluate(() => CPADesigner.state.frames.filter(f => f.group === 'bnd').length) === 1, 'cornici incluse caricate da sole');
+  ok(await page.evaluate(() => CPACard.hasSymbols()), 'simboli inclusi attivi');
+  ok(!/Importati/.test(await text()), 'caricamento incluso silenzioso');
+  await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
+  await page.selectOption('[data-c="dz-frameimg"]', 'auto:bnd');
+  await page.click('[data-a="dz-frame-del"]');
+  await page.waitForFunction(() => CPADesigner.state.frames.every(f => f.group !== 'bnd'));
+  await page.click('[data-a="dz-back"]');
+  await go(); await nav('designer'); await page.waitForSelector('.dz-item');
+  ok(await page.evaluate(() => CPADesigner.state.frames.filter(f => f.group === 'bnd').length) === 0, 'tolte dall\u2019utente, non tornano al riavvio');
 
   /* mobile: sei voci nel menu in basso */
   await page.setViewportSize({ width: 390, height: 800 });

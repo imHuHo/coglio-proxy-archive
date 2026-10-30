@@ -25,7 +25,7 @@ e l'app ti dice quali carte hai, quante sono libere e in quale mazzo sono impegn
   Quando importi un nuovo mazzo l'app mostra **«CODIGHEL! Queste carte le hai già stampate, verifica prima di stampare nuovamente»**
   con le carte della lista che hai già tra le sciolte (e, a parte, quelle libere in mazzi non attivi).
 - **Designer (3.0)**: crea proxy personalizzate (carte tue, token, cornici speciali, alter di carte Scryfall) con anteprima in tempo reale.
-  Cornici, simboli e grafica sono **disegnati da zero nel codice** (nessuna immagine o font di Wizards inclusi); puoi importare **le tue cornici PNG**,
+  Cornici, simboli e grafica di base sono disegnati nel codice; in più l'app include `web/risorse.json` (44 cornici in 5 stili, simboli di mana e font, importati da Magic Set Editor) che si carica da solo al primo avvio — per ritirarlo basta togliere il file e rifare `python3 tools/build.py`. Puoi importare anche **le tue cornici PNG**,
   che restano solo nel dispositivo (anche come pacchetto `.json` con più cornici, una per colore, e geometria dei testi: `{app:'coglio-frames', groups, frames:[{key,name,group,ink,geo,png,pt}], symbols:{W:dataURL,…}, fonts:[{role,family,style,ttf}]}` — simboli di mana e font opzionali; con «automatica» la cornice segue i colori). Un design si aggiunge a un mazzo come carta nuova o sostituisce una carta esistente (nel PDF si stampa il design).
   Design e arte stanno in un database a parte (IndexedDB `coglio-designer`) e si esportano in `.json` con l'arte incorporata. Il motore è `web/cardrender.js`, l'interfaccia `web/designer.js`.
 - **Immagini delle carte**: ogni carta ha la sua miniatura (presa da [Scryfall](https://scryfall.com) in base a nome e collezione, con il numero

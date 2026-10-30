@@ -54,9 +54,29 @@
       var all = (r[1] || []).sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
       dz.frames = all.filter(function (f) { return !f.kind || f.kind === 'frame'; });
       dz.res = all.filter(function (f) { return f.kind === 'font' || f.kind === 'symbols'; });
-      return initResources().then(function () { dz.loaded = true; dz.loading = null; });
+      var marker = all.filter(function (f) { return f.id === 'bundle-marker'; })[0];
+      return initResources().then(function () { return syncBundle(marker); }).then(function () { dz.loaded = true; dz.loading = null; });
     }, function () { dz.loaded = true; dz.loading = null; });
     return dz.loading;
+  }
+  /* risorse incluse nell'app (risorse.json: cornici, simboli, font): si caricano una volta per versione, in silenzio */
+  var BUNDLE_VER = 'mse-1';
+  function bundleBlob() {
+    if (typeof window.CPA_BUNDLE === 'string') return Promise.resolve(new Blob([window.CPA_BUNDLE], { type: 'application/json' }));
+    if (typeof fetch !== 'function') return Promise.resolve(null);
+    return fetch('risorse.json').then(function (r) { return r.ok ? r.blob() : null; }).catch(function () { return null; });
+  }
+  function syncBundle(marker) {
+    if (marker && marker.ver === BUNDLE_VER) return Promise.resolve();
+    return bundleBlob().then(function (b) {
+      if (!b || !b.size) return null;
+      b.name = 'risorse.json';
+      return importPack(b, true).then(function (g) {
+        if (!g) return null;
+        dz.frameImgs = {};
+        return DB.put('frames', { id: 'bundle-marker', kind: 'marker', ver: BUNDLE_VER, createdAt: Date.now() });
+      });
+    }).catch(function () { return null; });
   }
   /* font e simboli di mana importati dall'utente: si registrano nel browser e nel motore di rendering */
   function initResources() {
@@ -221,14 +241,14 @@
     return h + dz.frames.map(function (f) { return '<option value="' + esc(f.id) + '"' + (d.frameImg === f.id ? ' selected' : '') + '>' + esc(f.name) + '</option>'; }).join('');
   }
   /* pacchetto di cornici (.json): { app: 'coglio-frames', groups: [{id,name}], frames: [{key,name,group,ink,geo,png,pt}] } */
-  function importPack(file) {
+  function importPack(file, silent) {
     return new Promise(function (res) {
       var r = new FileReader();
       r.onerror = function () { res(null); };
       r.onload = function () {
         var data; try { data = JSON.parse(String(r.result)); } catch (e) { data = null; }
         if (data && data.app === 'coglio-frames' && !Array.isArray(data.frames)) data.frames = [];
-        if (!data || data.app !== 'coglio-frames') { H.toast('«' + file.name + '»: non è un pacchetto di cornici di Coglio.'); return res(null); }
+        if (!data || data.app !== 'coglio-frames') { if (!silent) H.toast('«' + file.name + '»: non è un pacchetto di cornici di Coglio.'); return res(null); }
         var names = {}; (data.groups || []).forEach(function (g) { names[g.id] = g.name; });
         var chain = Promise.resolve(), n = 0, first = '';
         data.frames.forEach(function (f) {
@@ -263,9 +283,9 @@
           if (n) parts.push(n + (n === 1 ? ' cornice' : ' cornici'));
           if (nsym) parts.push(nsym + ' simboli di mana');
           if (nfont) parts.push(nfont + (nfont === 1 ? ' font' : ' font'));
-          H.toast(parts.length ? 'Importati: ' + parts.join(', ') + '.' : 'Il pacchetto non contiene niente di utilizzabile.');
+          if (!silent) H.toast(parts.length ? 'Importati: ' + parts.join(', ') + '.' : 'Il pacchetto non contiene niente di utilizzabile.');
           res(n ? first : (nsym || nfont ? '*' : null));
-        }, function () { H.toast('Non riesco a salvare le risorse su questo dispositivo.'); res(null); });
+        }, function () { if (!silent) H.toast('Non riesco a salvare le risorse su questo dispositivo.'); res(null); });
       };
       r.readAsText(file);
     });
