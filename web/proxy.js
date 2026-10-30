@@ -133,6 +133,20 @@
       }).then(function () { if (progress) progress({ phase: 'cards', found: Object.keys(found).length, total: recs.length }); return found; });
     };
     self.fetchCard = function (uri) { return getJson(uri); };
+    /* Carte complete dai riferimenti di Scryfall (all_parts): a gruppi di 75 con /cards/collection, altrimenti una per una. */
+    self.cardsByParts = function (parts) {
+      var out = [], chunks = [], i;
+      for (i = 0; i < parts.length; i += 75) chunks.push(parts.slice(i, i + 75));
+      function order(list) { var ix = {}; parts.forEach(function (t, n) { ix[t.id] = n; }); return list.sort(function (a, b) { return (ix[a.id] == null ? 1e9 : ix[a.id]) - (ix[b.id] == null ? 1e9 : ix[b.id]); }); }
+      var viaPost = noCollection ? Promise.reject(new Error('nocoll')) : chunks.reduce(function (p, ch) {
+        return p.then(function () { return post(ch.map(function (t) { return { id: t.id }; })).then(function (res) { ((res && res.data) || []).forEach(function (c) { out.push(c); }); }); });
+      }, Promise.resolve());
+      return viaPost.then(function () { return order(out); }, function (err) {
+        if (err && err.status) throw err;
+        noCollection = true; out = [];
+        return parts.reduce(function (p, t) { return p.then(function () { return getJson(t.uri).then(function (c) { if (c) out.push(c); }, function (e) { if (e && e.status === 429) throw e; }); }); }, Promise.resolve()).then(function () { return order(out); });
+      });
+    };
 
     /* Stampe disponibili di una carta (per scegliere un'altra illustrazione). */
     self.printings = function (name) {

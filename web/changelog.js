@@ -1,6 +1,9 @@
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '3.2.1', date: '30 ottobre 2026', title: 'Token nel Builder', items: [
+    { t: 'Token del mazzo', d: 'Nel Builder, spuntando «Aggiungi i token», i token collegati alle carte del mazzo compaiono in un elenco a parte, con anteprima, e finiscono nel PDF e nell\'anteprima. Senza doppioni: una copia ciascuno, ma cambi la quantità (0 = non stamparlo) o scegli un\'altra stampa. Valgono anche per le carte con un design del Designer.' },
+  ] },
   { v: '3.1.0', date: '30 ottobre 2026', title: 'Catalogo cornici, cartelle e altro', items: [
     { t: 'Nuove cornici', d: 'Nyx (Theros), Terre M15, Neve (Kaldheim), Devoid (Zendikar) e Miracle: le trovi nel menu «Cornice importata», con scelta automatica sui colori.' },
     { t: 'Catalogo cornici', d: 'Nel Designer c\'è «Catalogo cornici»: 174 pacchetti con 1273 cornici estratte da Card Conjurer (borderless con testo trasparente, extended art, full art, Universes Beyond, showcase, promo, token, planeswalker, saghe, bifronte…). Le aggiungi con un tocco e si scaricano da internet solo quelle che scegli; poi le trovi nel menu «Cornice importata».' },

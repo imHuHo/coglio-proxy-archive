@@ -19,9 +19,13 @@ const DB = [mk('Sol Ring', 'c21', '263'), mk('Sol Ring', 'cmm', '400'), mk('Sol 
   mk('Delver of Secrets // Insectile Aberration', 'isd', '51', { image_uris: undefined, card_faces: [
     { name: 'Delver of Secrets', image_uris: { small: 'https://cards.scryfall.io/small/d1.jpg', normal: 'https://cards.scryfall.io/normal/d1.jpg', large: 'https://cards.scryfall.io/large/d1.jpg' } },
     { name: 'Insectile Aberration', image_uris: { small: 'https://cards.scryfall.io/small/d2.jpg', normal: 'https://cards.scryfall.io/normal/d2.jpg', large: 'https://cards.scryfall.io/large/d2.jpg' } }] })];
+const tk = (id, name, set, extra) => mk(name, set, id, Object.assign({ id: id, type_line: 'Token Creature \u2014 ' + name, colors: ['W'], power: '1', toughness: '1', oracle_text: '' }, extra || {}));
+DB.push(tk('tokcat1', 'Cat', 'tw1'), tk('tokcat2', 'Cat', 'tw2'), tk('toktre', 'Treasure', 'twt', { type_line: 'Token Artifact \u2014 Treasure', colors: [], power: undefined, toughness: undefined, oracle_text: 'T, Sacrifice: add one mana of any color.' }));
+const part = (id, name) => ({ id, component: 'token', name, uri: 'https://api.scryfall.com/cards/' + id });
+DB.push(mk('Cat Maker', 'tst', '1', { all_parts: [part('tokcat1', 'Cat'), part('toktre', 'Treasure')] }), mk('Treasure Cat Maker', 'tst', '2', { all_parts: [part('tokcat2', 'Cat'), part('toktre', 'Treasure')] }));
 const K = s => s.toLowerCase();
 const has = (c, nm) => K(c.name) === K(nm) || (c.card_faces || []).some(f => K(f.name) === K(nm));
-const find = i => i.collector_number ? DB.find(c => c.set === i.set && c.collector_number === i.collector_number) :
+const find = i => i.id ? DB.find(c => c.id === i.id) : i.collector_number ? DB.find(c => c.set === i.set && c.collector_number === i.collector_number) :
   (i.set ? DB.find(c => c.set === i.set && has(c, i.name)) : (DB.find(c => has(c, i.name)) || (/unknown/i.test(i.name) ? null : mk(i.name, 'gen', String(i.name.length)))));
 const resp = (j, s) => ({ ok: !s || s < 300, status: s || 200, json: async () => j, arrayBuffer: async () => TINY.buffer.slice(TINY.byteOffset, TINY.byteOffset + TINY.length) });
 w.fetch = async (u, init) => {
@@ -132,6 +136,23 @@ const blobBytes = b => new Promise(r => { const fr = new w.FileReader(); fr.onlo
   ok($('[data-a="open-deck"]'), 'torna al mazzo');
   blobs.length = 0; ok(await waitFor(() => !$('#bd-prog').textContent), 'ricerca del mazzo finita'); clickA('bd-go');
   ok(await waitFor(() => blobs.length > 0), 'PDF dal mazzo');
+
+  // --- token del mazzo ---
+  clickA('nav', '[data-v="builder"]');
+  type('[data-c="bd-text"]', '1 Cat Maker\n1 Treasure Cat Maker\n1 Sol Ring'); clickA('bd-read');
+  ok(await waitFor(() => !$('#bd-prog').textContent && $$('.bd-st.err').length === 0), 'lista dei creatori di token letta');
+  ok(!$('#bd-tok'), 'senza la spunta non c\u2019\u00e8 l\u2019elenco dei token');
+  change('[data-c="bd-top"][data-k="tokens"]', true);
+  ok(await waitFor(() => $$('#bd-tok .bd-row').length === 2), 'due token senza doppioni: ' + $$('#bd-tok .bd-row').length);
+  ok(/token di Cat Maker, Treasure Cat Maker/.test($('#bd-tok').textContent), 'ogni token dice da quali carte arriva');
+  ok(/Treasure/.test($('#bd-tok').textContent) && $$('#bd-tok .bd-row .bd-q').length === 2, 'quantit\u00e0 modificabile per ogni token');
+  ok(text().includes('5 carte (di cui 2 token)'), 'le carte del mazzo e i token sono nell\u2019anteprima: ' + (text().match(/(\d+) cart[ae] ·/) || [])[0]);
+  const tq = $$('#bd-tok .bd-q')[1]; tq.value = '0'; tq.dispatchEvent(new w.Event('change', { bubbles: true }));
+  ok(text().includes('4 carte (di cui 1 token)') && $$('#bd-tok .bd-row.off').length === 1, 'quantit\u00e0 0: il token non si stampa');
+  blobs.length = 0; clickA('bd-go');
+  ok(await waitFor(() => blobs.length > 0 && /token aggiunto/.test(text())), 'PDF con i token: ' + (text().match(/\d+ token aggiunt\w/) || [])[0]);
+  change('[data-c="bd-top"][data-k="tokens"]', false);
+  ok(!$('#bd-tok') && text().includes('3 carte'), 'tolta la spunta, i token spariscono');
   ok(errors.length === 0, 'nessun errore JS: ' + errors.join(' | '));
   console.log('BUILDER OK, ' + n + ' controlli passati');
 })().catch(e => { console.error(e); process.exit(1); });

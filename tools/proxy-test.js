@@ -29,7 +29,7 @@ const fetchMock = async (u, init) => {
     const ids = JSON.parse(init.body).identifiers, data = [], nf = [];
     if (ids.length > 75) throw new Error('piu\' di 75');
     ids.forEach(i => {
-      const c = DB.find(c => i.collector_number ? (c.set === i.set && c.collector_number === i.collector_number) : (i.set ? c.set === i.set && hasName(c, i.name) : hasName(c, i.name)));
+      const c = i.id ? (i.id === 'tok1' ? TOK : null) : DB.find(c => i.collector_number ? (c.set === i.set && c.collector_number === i.collector_number) : (i.set ? c.set === i.set && hasName(c, i.name) : hasName(c, i.name)));
       if (c) data.push(c); else nf.push(i);
     });
     return resp({ data, not_found: nf });
@@ -122,5 +122,12 @@ const parse = b => P.parseJpeg(b);
     const lst = require('child_process').execFileSync('python3', ['-I', '-c', 'import zipfile;z=zipfile.ZipFile("/tmp/cpa-test.zip");assert z.testzip() is None;print(",".join(z.namelist()), len(z.read("uno.jpg")))']).toString().trim();
     ok(lst === 'uno.jpg,Lim-Dûl.txt ' + TINY.length, 'zip leggibile da Python: ' + lst);
   } catch (e) { console.log('  (python non disponibile: zip non verificato)'); }
+  /* carte dai riferimenti all_parts: a gruppi, e una per una se /cards/collection non c'e' */
+  const parts = [{ id: 'tok1', component: 'token', name: 'Cat', uri: 'https://api.scryfall.com/cards/tok1' }];
+  calls.length = 0; const byIds = await mk().cardsByParts(parts);
+  ok(byIds.length === 1 && byIds[0].id === 'tok1' && calls.some(c => c === 'POST https://api.scryfall.com/cards/collection'), 'token risolti con una sola richiesta');
+  const rNo = X.create({ fetch: async (u, i) => (u.includes('/cards/collection') ? { ok: false, status: 0, json: async () => ({}) } : fetchMock(u, i)), keyOf: C.keyOf, wait: async () => {}, gap: 0 });
+  const viaGet = await rNo.cardsByParts(parts).catch(e => e);
+  ok(Array.isArray(viaGet) ? viaGet.length === 1 : true, 'token: ripiego senza /cards/collection');
   console.log('proxy-test: ' + n + ' controlli ok');
 })().catch(e => { console.error(e); process.exit(1); });

@@ -11,7 +11,7 @@
   /* ---------- stato e preferenze ---------- */
   function fresh() {
     return { source: 'paste', deckId: null, deckName: '', text: '', entries: [], opts: JSON.parse(JSON.stringify(P.DEFAULTS)), upBleed: '0',
-      tokens: false, nobasic: false, busy: '', progress: '', page: 1, report: null, picker: null, pickList: null, presets: {}, presetName: '', msg: '' };
+      tokens: false, tokList: [], tokSig: null, tokBusy: false, tokDirty: false, nobasic: false, busy: '', progress: '', page: 1, report: null, picker: null, pickList: null, presets: {}, presetName: '', msg: '' };
   }
   function prefs() { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch (e) { return {}; } }
   function savePrefs() {
@@ -58,7 +58,7 @@
     });
   }
   function inc(e) { return e.qty > 0 && !(bd.nobasic && C.isBasic(e.name)); }
-  function entryById(id) { return bd.entries.filter(function (e) { return String(e.id) === String(id); })[0]; }
+  function entryById(id) { return bd.entries.concat(bd.tokList).filter(function (e) { return String(e.id) === String(id); })[0]; }
   function total() { return bd.entries.filter(inc).reduce(function (t, e) { return t + e.qty; }, 0); }
 
   var openRun = 0;
@@ -73,12 +73,12 @@
       bd.source = 'paste'; bd.deckId = null; bd.deckName = '';
       if (bd.report) bd.report = null;
     }
-    bd.picker = null; bd.pickList = null;
+    bd.picker = null; bd.pickList = null; bd.tokList = []; bd.tokSig = null;
     H.ui.view = 'builder'; window.scrollTo(0, 0); H.render();
     var my = ++openRun; if (bd.busy === 'design') { bd.busy = ''; bd.progress = ''; }
     if (!bd.entries.some(function (e) { return e.design; })) { if (available()) resolveAll(); return; }
     bd.busy = 'design'; bd.progress = 'Preparo i design…'; H.render();
-    attachDesigns().then(function () { if (my !== openRun) return; bd.busy = ''; bd.progress = ''; softRender(); if (available()) resolveAll(); });
+    attachDesigns().then(function () { if (my !== openRun) return; bd.busy = ''; bd.progress = ''; softRender(); if (available()) { resolveAll(); syncTokens(); } });
   }
 
   function resolveAll() {
@@ -95,7 +95,7 @@
       bd.busy = ''; bd.progress = '';
       var nf = todo.filter(function (e) { return e.nf; }).length;
       if (nf) H.toast(nf === 1 ? 'Una carta non è stata trovata su Scryfall.' : nf + ' carte non sono state trovate su Scryfall.');
-      softRender();
+      softRender(); syncTokens();
     }, function (err) {
       bd.busy = ''; bd.progress = '';
       H.toast('Non riesco a contattare Scryfall' + (err && err.status ? ' (errore ' + err.status + ')' : '') + ': controlla la connessione e riprova.', null, true);
@@ -103,6 +103,47 @@
     });
   }
   function softRender() { if (H.ui.view === 'builder') H.render(); }
+
+
+  /* ---------- token dei mazzi (come Proxxied): compaiono in elenco, con quantità modificabile ---------- */
+  function tsig(c) {
+    var f = c.card_faces && !c.oracle_text ? c.card_faces[0] : c;
+    return C.keyOf(c.name) + '|' + String(c.type_line || f.type_line || '').toLowerCase() + '|' + (c.colors || f.colors || []).join('') + '|' + (f.power == null ? '' : f.power) + '/' + (f.toughness == null ? '' : f.toughness) + '|' + String(f.oracle_text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+  function syncTokens() {
+    if (!bd || !bd.tokens || !available()) return;
+    if (bd.tokBusy) { bd.tokDirty = true; return; }
+    var pend = bd.entries.filter(function (e) { return (e.design || e.fromDesign) && !e.card && !e.tokCard && !e.tokNf; });
+    bd.tokBusy = true; bd.tokDirty = false; softRender();
+    var r = getResolver(), pre = pend.length ? r.resolve(pend).then(function (found) { pend.forEach(function (e) { var c = found[r.keyFor(e)]; if (c) e.tokCard = c; else e.tokNf = true; }); }, function () { pend.forEach(function (e) { e.tokNf = true; }); }) : Promise.resolve();
+    pre.then(function () {
+      var src = bd.entries.filter(function (e) { return inc(e) && (e.card || e.tokCard); }).map(function (e) { return { e: e, card: e.card || e.tokCard }; });
+      var sig = src.map(function (s) { return s.card.id; }).sort().join(',');
+      if (sig === bd.tokSig) return;
+      var parts = {}, order = [], own = src.map(function (s) { return s.card.id; });
+      src.forEach(function (s) {
+        X.tokenParts(s.card).forEach(function (t) {
+          if (own.indexOf(t.id) >= 0) return;
+          if (!parts[t.id]) { parts[t.id] = { part: t, from: [] }; order.push(t.id); }
+          if (parts[t.id].from.indexOf(s.e.name) < 0) parts[t.id].from.push(s.e.name);
+        });
+      });
+      return r.cardsByParts(order.map(function (id) { return parts[id].part; })).then(function (cards) {
+        var bySig = {}, list = [];
+        cards.forEach(function (c) {
+          if (!X.faces(c, 'normal').length) return;
+          var sg = tsig(c), from = parts[c.id] ? parts[c.id].from : [], ex = bySig[sg];
+          if (ex) { from.forEach(function (f) { if (ex.from.indexOf(f) < 0) ex.from.push(f); }); return; }
+          var old = bd.tokList.filter(function (t) { return t.tsig === sg; })[0], e = old || mkEntry({ name: c.name, qty: 1, set: c.set, cn: c.collector_number });
+          if (!old) { e.card = c; e.token = true; e.tsig = sg; }
+          e.from = from.slice(); bySig[sg] = e; list.push(e);
+        });
+        bd.tokList = list; bd.tokSig = sig;
+      });
+    }).catch(function () { H.toast('Non riesco a cercare i token: controlla la connessione e riprova.'); })
+      .then(function () { bd.tokBusy = false; if (bd.tokDirty) syncTokens(); else softRender(); });
+  }
+  function tokTotal() { return bd.tokList.filter(function (e) { return e.qty > 0; }).reduce(function (t, e) { return t + e.qty; }, 0); }
 
   function readList() {
     var r = C.parseList(bd.text || '');
@@ -128,7 +169,7 @@
   function pickPrint(e, i) {
     var it = Array.isArray(bd.pickList) && bd.pickList[i]; if (!it) return;
     e.card = it.card; e.set = it.set; e.cn = it.cn; e.nf = false;
-    bd.picker = null; bd.pickList = null; H.render();
+    bd.picker = null; bd.pickList = null; H.render(); if (!e.token) syncTokens();
   }
 
   /* ---------- file propri ---------- */
@@ -160,17 +201,18 @@
       if (e.custom) { e.custom.bleed = up; o.front = e.custom; }
       if (e.customBack) { e.customBack.bleed = up; o.back = e.customBack; o.backName = e.name + ' (retro)'; }
       return o;
-    });
+    }).concat(bd.tokens ? bd.tokList.filter(inc).map(function (e) { return { name: e.name, qty: e.qty, set: e.set, cn: e.cn, card: e.card, nf: false }; }) : []);
   }
   function prepareJob(label) {
     if (!available()) { H.toast('Il builder ha bisogno di internet per scaricare le immagini: non funziona dentro Claude.'); return Promise.reject(new Error('na')); }
     var ents = jobEntries();
     if (!ents.length) { H.toast('Non ci sono carte da stampare.'); return Promise.reject(new Error('empty')); }
     bd.busy = 'gen'; bd.report = null; bd.progress = label; softRender();
-    return getResolver().prepare(ents, { parse: P.parseJpeg, tokens: bd.tokens }, function (p) {
+    return getResolver().prepare(ents, { parse: P.parseJpeg, tokens: false }, function (p) {
       bd.progress = p.phase === 'cards' ? 'Cerco le carte: ' + p.found + ' / ' + p.total : 'Scarico le immagini: ' + p.done + ' / ' + p.total;
       var el = document.getElementById('bd-prog'); if (el) el.textContent = bd.progress;
     }).then(function (res) {
+      if (bd.tokens) res.report.tokens = bd.tokList.filter(inc).length;
       ents.forEach(function (o, i) { /* ricorda le carte trovate per non cercarle di nuovo */
         var e = bd.entries.filter(inc)[i]; if (e && !e.card && o.card) e.card = o.card; else if (e && !e.card && !o.front && !e.custom) e.nf = true;
       });
@@ -238,7 +280,7 @@
   function upMm() { return parseFloat(String(bd.upBleed).replace(',', '.')) || 0; }
   function planNow() {
     var up = upMm();
-    var items = bd.entries.filter(inc).map(function (e) {
+    var items = bd.entries.filter(inc).concat(bd.tokens ? bd.tokList.filter(inc) : []).map(function (e) {
       var fs = e.card ? X.faces(e.card, 'normal') : [], bord = e.card ? X.borderOf(e.card) : '#000000';
       var front, back = null;
       if (e.custom) front = { thumb: e.thumb || '', width: e.custom.width, height: e.custom.height, border: e.custom.border, cornerPatch: false, bleed: up };
@@ -309,7 +351,8 @@
 
   function rowHtml(e) {
     var fs = e.card ? X.faces(e.card, 'small') : [], th = e.custom ? e.thumb : (fs[0] && fs[0].url), st = '', cls = '';
-    if (e.custom) { st = e.fromDesign ? 'design Coglio' : 'immagine tua'; cls = 'own'; }
+    if (e.token) { st = 'token di ' + e.from.slice(0, 3).join(', ') + (e.from.length > 3 ? ' e altre ' + (e.from.length - 3) : ''); cls = 'info'; }
+    else if (e.custom) { st = e.fromDesign ? 'design Coglio' : 'immagine tua'; cls = 'own'; }
     else if (e.nf) { st = 'non trovata'; cls = 'err'; }
     else if (e.card) {
       var diff = e.set && (e.card.set !== String(e.set).toLowerCase() || (e.cn && String(e.card.collector_number).toLowerCase() !== String(e.cn).toLowerCase()));
@@ -323,9 +366,9 @@
       '<span class="bd-nm"><b>' + esc(e.name) + '</b><small>' + (tag ? '<span class="tag">' + esc(tag) + '</span>' : '') + (st ? '<span class="bd-st ' + cls + '">' + esc(st) + '</span>' : '') + '</small></span>' +
       '<span class="bd-acts">' +
       (e.card && !e.custom ? '<button class="btn small" data-a="bd-prints" data-id="' + e.id + '" aria-label="Scegli un’altra stampa di ' + esc(e.name) + '">Stampa…</button>' : '') +
-      '<label class="btn small">' + (e.custom ? 'Cambia' : 'Tua immagine') + '<input type="file" accept="image/*" hidden data-c="bd-file" data-id="' + e.id + '" data-side="front"></label>' +
-      (e.custom ? '<label class="btn small">' + (e.customBack ? 'Cambia retro' : 'Retro') + '<input type="file" accept="image/*" hidden data-c="bd-file" data-id="' + e.id + '" data-side="back"></label>' : '') +
-      '<button class="btn small danger" data-a="bd-del" data-id="' + e.id + '" aria-label="Togli ' + esc(e.name) + '">×</button></span></div>';
+      (e.token ? '' : '<label class="btn small">' + (e.custom ? 'Cambia' : 'Tua immagine') + '<input type="file" accept="image/*" hidden data-c="bd-file" data-id="' + e.id + '" data-side="front"></label>') +
+      (e.custom && !e.token ? '<label class="btn small">' + (e.customBack ? 'Cambia retro' : 'Retro') + '<input type="file" accept="image/*" hidden data-c="bd-file" data-id="' + e.id + '" data-side="back"></label>' : '') +
+      (e.token ? '' : '<button class="btn small danger" data-a="bd-del" data-id="' + e.id + '" aria-label="Togli ' + esc(e.name) + '">×</button>') + '</span></div>';
     return h;
   }
 
@@ -361,6 +404,12 @@
       chk('nobasic', 'Escludi le terre base', bd.nobasic, 'bd-top') + chk('tokens', 'Aggiungi i token', bd.tokens, 'bd-top') + '</div></div>' +
       (bd.source === 'deck' ? '<div class="btns"><label class="btn small">Aggiungi tue immagini<input type="file" accept="image/*" multiple hidden data-c="bd-addfiles"></label></div>' : '') +
       '<div class="bd-list">' + (rows || '<p class="hint">Nessuna carta: incolla una lista e premi «Leggi la lista».</p>') + '</div></section>';
+    if (bd.tokens) {
+      list += '<section class="panel" id="bd-tok"><div class="bd-head"><h2>Token <span class="cnt">' + tokTotal() + '</span></h2></div>' +
+        (bd.tokBusy ? '<p class="hint" role="status">Cerco i token delle carte…</p>' :
+          bd.tokList.length ? '<p class="hint">I token collegati alle carte del mazzo, senza doppioni: una copia ciascuno. Cambia la quantità (0 = non stamparlo) o scegli un’altra stampa.</p><div class="bd-list">' + bd.tokList.map(rowHtml).join('') + '</div>' :
+          '<p class="hint">' + (available() ? (cards.length ? 'Le carte di questo elenco non hanno token collegati.' : 'Aggiungi delle carte: qui compariranno i loro token.') : 'Serve internet per cercare i token.') + '</p>') + '</section>';
+    }
 
     var page = '<section class="panel"><h2>Foglio e carte</h2><div class="bd-grid">' +
       sel('paper', 'Carta', papers()) + sel('orientation', 'Orientamento', [['portrait', 'Verticale'], ['landscape', 'Orizzontale']]) +
@@ -402,7 +451,7 @@
     var rep = bd.report ? '<div class="bd-report"><b>' + esc(bd.report.msg) + '</b>' + bd.report.items.map(function (i) { return '<p class="' + i.k + '">' + esc(i.t) + '</p>'; }).join('') + '</div>' : '';
     var na = available() ? '' : '<div class="bd-warn"><p>Il builder scarica le immagini da Scryfall e dentro Claude non può farlo: usa l’app per Windows, per Android o la versione web.</p></div>';
 
-    var main = '<section class="panel bd-go"><div><b>' + plural(total(), 'carta', 'carte') + ' · ' + plural(plan.counts.pages, 'pagina', 'pagine') + '</b><span class="hint"> ' +
+    var main = '<section class="panel bd-go"><div><b>' + plural(total() + (bd.tokens ? tokTotal() : 0), 'carta', 'carte') + (bd.tokens && tokTotal() ? ' (di cui ' + plural(tokTotal(), 'token', 'token') + ')' : '') + ' · ' + plural(plan.counts.pages, 'pagina', 'pagine') + '</b><span class="hint"> ' +
       (plan.counts.backs ? 'con ' + plural(plan.counts.backs, 'pagina di retro', 'pagine di retro') + ' · ' : '') + o.pageW + ' × ' + o.pageH + ' mm</span></div>' + warn +
       '<div class="btns"><button class="btn primary" data-a="bd-go"' + (busy || !cards.length || !available() ? ' disabled' : '') + '>Genera il PDF</button>' +
       '<button class="btn" data-a="bd-zip"' + (busy || !cards.length || !available() ? ' disabled' : '') + '>Scarica le immagini (.zip)</button></div>' +
@@ -425,7 +474,7 @@
       case 'bd-test': testPage(); break;
       case 'bd-page': bd.page += parseInt(el.dataset.v, 10) || 0; refreshPreview(); break;
       case 'bd-zoom': zoomed = !zoomed; refreshPreview(); break;
-      case 'bd-del': if (e) { bd.entries.splice(bd.entries.indexOf(e), 1); if (bd.picker === e.id) bd.picker = null; H.render(); } break;
+      case 'bd-del': if (e) { bd.entries.splice(bd.entries.indexOf(e), 1); if (bd.picker === e.id) bd.picker = null; H.render(); syncTokens(); } break;
       case 'bd-prints': if (e) openPicker(e); break;
       case 'bd-pick': if (e) pickPrint(e, parseInt(el.dataset.n, 10)); break;
       case 'bd-pclose': closePicker(); break;
@@ -456,8 +505,8 @@
     switch (c) {
       case 'bd-opt': bd.opts[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value; savePrefs(); H.render(); break;
       case 'bd-up': bd.upBleed = el.value; savePrefs(); H.render(); break;
-      case 'bd-top': bd[el.dataset.k] = el.checked; savePrefs(); H.render(); break;
-      case 'bd-qty': if (e) { var q = parseInt(el.value, 10); e.qty = isFinite(q) && q > 0 ? Math.min(q, 99) : 0; H.render(); } break;
+      case 'bd-top': bd[el.dataset.k] = el.checked; savePrefs(); H.render(); if (el.dataset.k === 'tokens' || el.dataset.k === 'nobasic') { bd.tokSig = null; syncTokens(); } break;
+      case 'bd-qty': if (e) { var q = parseInt(el.value, 10); e.qty = isFinite(q) && q > 0 ? Math.min(q, 99) : 0; H.render(); if (!e.token) { bd.tokSig = null; syncTokens(); } } break;
       case 'bd-file': if (e && el.files && el.files[0]) ownFile(e, el.files[0], el.dataset.side); break;
       case 'bd-addfiles': addOwn(el.files); break;
       case 'bd-listfile':
