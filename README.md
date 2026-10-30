@@ -31,11 +31,14 @@ e l'app ti dice quali carte hai, quante sono libere e in quale mazzo sono impegn
   Nell'archivio, dove la stessa carta può stare in più mazzi, la miniatura in cima alla riga è la stampa del mazzo attivo (o quella con più copie): le altre sono nel dettaglio.
   Gli indirizzi trovati restano salvati sul dispositivo, quindi ogni carta si cerca una volta sola. Si spengono dalla scheda *Dati*.
   Funzionano nell'app Windows, nell'APK e nella versione web installata; **non** dentro la pagina di anteprima di Claude, che blocca i siti esterni.
-- **Verifica bracket**: il tasto giallo sui mazzi calcola il bracket con l'API pubblica di [Commander Spellbook](https://commanderspellbook.com)
-  e mostra fascia stimata, Game Changer, distruzione di terre di massa, turni extra e combo trovate. Nell'app Windows la richiesta
-  parte dal programma (`electron/preload.js` + `main.js`), su Android da una chiamata nativa (`CapacitorHttp`). Nel browser quel sito
-  blocca le richieste da altre pagine (CORS): lì il pannello propone «copia la lista e apri [commanderbracket.app](https://commanderbracket.app/bracket)».
-  Per il calcolo la lista del mazzo viene inviata a Commander Spellbook. È una stima: il bracket vero si decide al tavolo.
+- **Verifica bracket**: il tasto giallo sui mazzi calcola il bracket (2, 3 o 4) con le regole di Wizards e i dati dell'API pubblica di
+  [Commander Spellbook](https://commanderspellbook.com): Game Changer, distruzione di terre di massa, turni extra, combo, carte bandite.
+  Il pannello spiega *perché* esce quel numero. Il numero resta salvato nel mazzo e compare in un box colorato accanto al titolo
+  (1 blu, 2 verde, 3 giallo, 4 arancione, 5 rosso, ✕ carte bandite); se poi cambi la lista, il box diventa tratteggiato finché non ricalcoli.
+  **Non misura la velocità di gioco** e non calcola 1 e 5 (cEDH): se il tuo riferimento (ad esempio commanderbracket.app) dà un altro
+  numero, lo imposti a mano dal pannello. Nell'app Windows la richiesta parte dal programma (`electron/preload.js` + `main.js`), su Android da una
+  chiamata nativa (`CapacitorHttp`); nel browser Commander Spellbook blocca le richieste da altre pagine (CORS) e il pannello propone
+  «copia la lista e apri [commanderbracket.app](https://commanderbracket.app/bracket)». Per il calcolo la lista viene inviata a Commander Spellbook.
 - **Backup** in JSON (scarica, copia, ripristina). Ogni azione distruttiva ha *Annulla*.
 
 ### Come vengono contate le carte

@@ -332,7 +332,7 @@ a { color: var(--accent); }
 .bk-head strong { overflow-wrap: anywhere; }
 .bk-score { display: flex; gap: 14px; align-items: center; }
 .bk-score p { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
-.bk-num { display: grid; place-items: center; min-width: 96px; padding: 10px 12px; border-radius: 14px; background: #f6c93a; color: #2a2100; }
+.bk-num { display: grid; place-items: center; min-width: 96px; padding: 10px 12px; border-radius: 14px; background: #f6c93a; color: #1d1d1d; }
 .bk-num small { font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; }
 .bk-num b { font: 800 30px/1.1 var(--display, inherit); }
 .bk-chip { display: inline-block; font-weight: 800; font-size: 12px; padding: 3px 10px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--line); }
@@ -347,6 +347,19 @@ a { color: var(--accent); }
 .bk-foot { margin: 0; font-size: 11.5px; color: var(--muted); }
 .bk-bar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 .bk-box p { margin: 0; }
+
+/* numero del bracket: un colore per fascia */
+.bk-badge, .bk-num { --b: #8a8fa6; }
+.b1 { --b: #5aa9ff; } .b2 { --b: #43c59e; } .b3 { --b: #f6c93a; } .b4 { --b: #ff9a3c; } .b5 { --b: #ef5b5b; } .b0 { --b: #8a8fa6; }
+.bk-num { background: var(--b); }
+.bk-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding: 0 7px; margin-left: 8px; vertical-align: middle;
+  border-radius: 8px; background: var(--b); color: #1d1d1d; font: 800 14px/1 var(--display); border: 0; box-shadow: inset 0 0 0 1px #0002; }
+button.bk-badge { margin: 0; cursor: pointer; width: 34px; height: 34px; font-size: 16px; }
+button.bk-badge:hover { filter: brightness(1.08); }
+button.bk-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.bk-badge.stale { opacity: .5; box-shadow: inset 0 0 0 2px #0006; background-image: repeating-linear-gradient(135deg, transparent 0 4px, #ffffff55 4px 6px); }
+.bk-set { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.bk-set span { flex: 1 1 100%; }
 
 </style>
 <div id="app"></div>
@@ -630,11 +643,51 @@ a { color: var(--accent); }
       if (!cs.length || seenC[key]) return; seenC[key] = 1;
       combos.push({ cards: cs, result: res, tag: cb.bracketTag || '', twoCard: !!r.definitelyTwoCard, fast: typeof r.speed === 'number' ? r.speed : null });
     });
-    return {
+    var out = {
       tag: tag, range: info.range, name: info.name, note: info.note,
       gameChangers: names('gameChanger'), massLandDenial: names('massLandDenial'), extraTurns: names('extraTurn'), banned: names('banned'),
       combos: combos, unknown: unknown
     };
+    var b = bracketNumber(out); out.n = b.n; out.reasons = b.reasons;
+    return out;
+  }
+
+  /* Bracket secondo le regole pubbliche di Wizards: ogni elemento mette un minimo, vale il più alto.
+     Game Changer 1–3 → 3, 4 o più → 4; distruzione di terre di massa → 4; 3 o più turni extra → 4;
+     combo a due carte rapida → 4, tardiva → 3. 1 e 5 (cEDH) dipendono dalla velocità di gioco e non si calcolano:
+     il minimo è 2. n = 0 se nel mazzo c'è una carta bandita. */
+  function bracketNumber(sum) {
+    var n = 2, why = [];
+    var up = function (v, msg) { if (v > n) { n = v; why = [msg]; } else if (v === n && v > 2) why.push(msg); };
+    var gc = sum.gameChangers.length;
+    if (gc >= 4) up(4, gc + ' Game Changer (da 4 in su il minimo è 4)');
+    else if (gc >= 1) up(3, plural1(gc, 'Game Changer', 'Game Changer') + ' (il minimo è 3)');
+    if (sum.massLandDenial.length) up(4, 'distruzione di terre di massa: ' + sum.massLandDenial.join(', '));
+    if (sum.extraTurns.length >= 3) up(4, sum.extraTurns.length + ' turni extra');
+    sum.combos.forEach(function (c) {
+      if (c.tag === 'R') up(4, 'combo rapida: ' + c.cards.join(' + '));
+      else if (c.tag === 'S' || c.tag === 'P') up(3, 'combo: ' + c.cards.join(' + '));
+    });
+    if (sum.tag === 'R') up(4, 'stima di Commander Spellbook: Ruthless');
+    else if (sum.tag === 'S' || sum.tag === 'P') up(3, 'stima di Commander Spellbook: ' + (sum.tag === 'S' ? 'Spicy' : 'Powerful'));
+    if (sum.banned.length) return { n: 0, reasons: ['carte bandite: ' + sum.banned.join(', ')] };
+    if (!why.length) why.push('nessun elemento che alzi il bracket');
+    return { n: n, reasons: why };
+  }
+  function plural1(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+
+  /* Impronta della lista: serve a capire se il bracket salvato è stato calcolato su un mazzo poi cambiato. */
+  function deckSig(deck) {
+    var t = (deck.commander || '') + '\n' + deck.cards.slice().sort(function (a, b) { return a.name.localeCompare(b.name, 'en'); })
+      .map(function (c) { return c.qty + ' ' + c.name; }).join('\n'), h = 5381;
+    for (var i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36);
+  }
+  function sanitizeBracket(b) {
+    if (!b || typeof b !== 'object') return null;
+    var n = parseInt(b.n, 10);
+    if (!(n >= 0 && n <= 5)) return null;
+    return { n: n, sig: String(b.sig || ''), at: +b.at || 0, manual: !!b.manual };
   }
 
   function diffText(deck, upgrade, diff) {
@@ -753,6 +806,7 @@ a { color: var(--accent); }
       kind: d.kind === 'binder' ? 'binder' : 'deck',
       active: d.kind === 'binder' ? false : !!d.active,
       commander: d.commander ? String(d.commander) : null,
+      bracket: sanitizeBracket(d.bracket),
       cards: sanitizeCards(d.cards),
       upgrades: (Array.isArray(d.upgrades) ? d.upgrades : []).map(function (u) {
         return {
@@ -772,7 +826,7 @@ a { color: var(--accent); }
   return {
     keyOf: keyOf, searchNorm: searchNorm, isBasic: isBasic, uid: uid,
     parseList: parseList, buildArchive: buildArchive, diffUpgrade: diffUpgrade,
-    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, clone: cloneJ, exportText: exportText, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, diffText: diffText,
+    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, clone: cloneJ, exportText: exportText, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, bracketNumber: bracketNumber, deckSig: deckSig, diffText: diffText,
     sanitizeDeck: sanitizeDeck, sanitizeSettings: sanitizeSettings, inUse: inUse
   };
 });
@@ -1021,6 +1075,8 @@ a { color: var(--accent); }
       try { var a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; document.body.appendChild(a); a.click(); a.remove(); } catch (e2) { /* ignorato */ }
     }
   }
+  function saveBracket(deck, b) { deck.bracket = b; deck.updatedAt = Date.now(); touch(deck.id); render(); }
+
   /* ---------- Bracket (Commander Spellbook) ---------- */
   /* Il calcolo usa l'API pubblica di Commander Spellbook. Nell'app Windows la richiesta parte dal programma (cpaNet),
      su Android da una chiamata nativa; nel browser può essere bloccata (CORS) e allora resta «copia e apri il sito». */
@@ -1065,13 +1121,15 @@ a { color: var(--accent); }
       var unk = sum.unknown.length ? '<div class="bk-sec"><h4>Carte non riconosciute <span>' + sum.unknown.length + '</span></h4><p>' + sum.unknown.slice(0, 12).map(esc).join(' · ') + (sum.unknown.length > 12 ? ' · … e altre ' + (sum.unknown.length - 12) : '') +
         '<br><small>Non contano nella stima: controlla il nome.</small></p></div>' : '';
       shell(deck,
-        '<div class="bk-score"><div class="bk-num"><small>Bracket stimato</small><b>' + esc(sum.range) + '</b></div>' +
-        '<div><span class="bk-chip t-' + esc(sum.tag.toLowerCase()) + '">' + esc(sum.name) + '</span><p>' + esc(sum.note) + '</p></div></div>' + warn +
+        '<div class="bk-score"><div class="bk-num b' + sum.n + '"><small>Bracket stimato</small><b>' + (sum.n || '✕') + '</b></div>' +
+        '<div><span class="bk-chip t-' + esc(sum.tag.toLowerCase()) + '">Spellbook: ' + esc(sum.name) + '</span><p>Perché: ' + sum.reasons.map(esc).join('; ') + '.</p></div></div>' + warn +
         list('Game Changer', sum.gameChangers) + list('Distruzione di terre di massa', sum.massLandDenial) + list('Turni extra', sum.extraTurns) +
         (combos ? '<div class="bk-sec"><h4>Combo trovate <span>' + sum.combos.length + '</span></h4><ul>' + combos + '</ul></div>' : '') + unk +
         (!sum.gameChangers.length && !sum.massLandDenial.length && !sum.extraTurns.length && !sum.combos.length && !sum.banned.length ? '<p class="bk-none">Nessun Game Changer, turno extra, distruzione di terre o combo trovati.</p>' : '') +
-        '<p class="bk-foot">Stima di Commander Spellbook: il bracket 1 e il 5 (cEDH) dipendono da come giocate, e il bracket vero lo decidete al tavolo. La lista del mazzo viene inviata a Commander Spellbook per il calcolo.</p>' +
-        '<div class="bk-bar">' + webBtn() + '</div>');
+        '<p class="bk-foot">Calcolo basato sulle regole di Wizards e sui dati di Commander Spellbook. Non misura la velocità di gioco (che può alzare il bracket), e 1 e 5 (cEDH) non si calcolano: se commanderbracket.app dice altro, imposta il suo numero a mano. La lista del mazzo viene inviata a Commander Spellbook per il calcolo.</p>' +
+        '<div class="bk-set"><span>Se il tuo riferimento dice altro, imposta a mano:</span>' + [1, 2, 3, 4, 5].map(function (k) {
+          return '<button class="bk-badge b' + k + '" data-a="bk-set" data-n="' + k + '" aria-label="Imposta bracket ' + k + '">' + k + '</button>';
+        }).join('') + '</div><div class="bk-bar">' + webBtn() + '</div>');
     }
     function fail(deck, why) {
       shell(deck, '<p class="lb-warn">' + (why === 'cors' ? 'Da questo browser il calcolo non è disponibile: il sito di Commander Spellbook non permette richieste da altre pagine.' :
@@ -1084,7 +1142,9 @@ a { color: var(--accent); }
       var native = !!window.cpaNet;
       call(payload).then(function (j) {
         if (my !== run || !box) return;
-        show(deck, C.bracketSummary(j, payload));
+        var sum = C.bracketSummary(j, payload);
+        saveBracket(deck, { n: sum.n, sig: C.deckSig(deck), at: Date.now(), manual: false });
+        show(deck, sum);
       }, function (e) {
         if (my !== run || !box) return;
         var m = e && e.message;
@@ -1098,7 +1158,12 @@ a { color: var(--accent); }
           : 'Copia automatica non riuscita: usa «Copia lista .txt» nel mazzo e incollala su commanderbracket.app/bracket.', null, true);
       });
     }
-    return { available: available, start: start, web: web, close: close, isOpen: isOpen };
+    function set(n) {
+      if (!last) return;
+      saveBracket(last, { n: n, sig: C.deckSig(last), at: Date.now(), manual: true });
+      toast('Bracket di «' + last.name + '» impostato a ' + n + '.');
+    }
+    return { available: available, start: start, web: web, close: close, isOpen: isOpen, set: set };
   })();
 
   function applyTheme() {
@@ -1511,10 +1576,17 @@ a { color: var(--accent); }
   function deckCard(d) {
     var on = d.kind === 'deck' && d.active;
     var meta = d.kind === 'deck' ? (d.commander ? 'Commander: ' + esc(d.commander) : 'Nessun commander scelto') : 'Carte sciolte, sempre disponibili';
-    return '<article class="deckcard' + (on ? ' is-on' : '') + '"><div class="top"><div><h2>' + esc(d.name) + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + '</div></div>' +
+    return '<article class="deckcard' + (on ? ' is-on' : '') + '"><div class="top"><div><h2>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + '</div></div>' +
       (d.kind === 'deck' ? switchHtml(d) : '') + '</div><div class="foot"><span>' +
       (d.upgrades.length ? '<span class="pill info">' + plural(d.upgrades.length, 'upgrade', 'upgrade') + '</span>' : '<span class="hint">Nessun upgrade</span>') +
       '</span><span class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="open-deck" data-id="' + esc(d.id) + '">Apri</button></span></div></article>';
+  }
+  function bracketBadge(d) {
+    var b = d.bracket; if (!b) return '';
+    var stale = !b.manual && b.sig !== C.deckSig(d);
+    var txt = b.n ? b.n : '✕';
+    return '<span class="bk-badge b' + b.n + (stale ? ' stale' : '') + '" title="' + esc(b.n ? 'Bracket ' + b.n : 'Contiene carte bandite') +
+      (b.manual ? ' (impostato a mano)' : stale ? ' (calcolato prima delle ultime modifiche al mazzo: ricalcola)' : '') + '" aria-label="' + esc(b.n ? 'Bracket ' + b.n : 'Carte bandite') + '">' + txt + '</span>';
   }
   function bracketBtn(d) {
     return '<button class="btn small bracket" data-a="bracket" data-id="' + esc(d.id) + '" title="Calcola il bracket del mazzo">Verifica bracket</button>';
@@ -1544,7 +1616,7 @@ a { color: var(--accent); }
     } else {
       body = '<div class="search" style="margin-bottom:10px">' + IC.search + '<input class="input" data-c="deckq" type="search" placeholder="Cerca nelle carte del mazzo" autocomplete="off" aria-label="Cerca nel mazzo" value="' + esc(ui.deckQ) + '"></div><div class="list" id="dlist"></div>';
     }
-    return '<header class="vh"><button class="back" data-a="nav" data-v="decks">← Mazzi</button><h1>' + esc(d.name) + '</h1></header>' +
+    return '<header class="vh"><button class="back" data-a="nav" data-v="decks">← Mazzi</button><h1>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h1></header>' +
       '<section class="panel"><label class="lbl">Nome<input class="input" data-c="deck-name" value="' + esc(d.name) + '"></label>' +
       (d.kind === 'deck' ? '<label class="lbl">Commander<select class="select" data-c="deck-cmd">' + cmdOpts + '</select></label><div>' + switchHtml(d) +
         '<p class="hint" style="margin-top:6px">' + (d.active ? 'Le carte di questo mazzo risultano in uso.' : 'Mazzo smontato: le sue carte risultano libere.') + '</p></div>' : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
@@ -1830,6 +1902,7 @@ a { color: var(--accent); }
         deck = getDeck(id) || getDeck();
         if (deck) BK.web(deck);
         break;
+      case 'bk-set': BK.set(parseInt(el.dataset.n, 10)); break;
       case 'bk-close': BK.close(); break;
       case 'bk-keep': break;
       case 'lb-close': IMG.close(); break;

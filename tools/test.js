@@ -162,12 +162,33 @@ function sum(cards) { return cards.reduce((t, c) => t + c.qty, 0); }
   const pl2 = { commanders: [{ card: 'Kaalia of the Vast', quantity: 1 }], main: [{ card: 'Sol Ring', quantity: 1 }, { card: 'Island', quantity: 3 }, { card: 'Nonexistent Cardzz', quantity: 1 }, { card: 'Fire // Ice', quantity: 1 }] };
   resp.cards.push(card('Fire // Ice'));
   const sm = C.bracketSummary(resp, pl2);
-  ok(sm.tag === 'R' && sm.range === '4+' && sm.name === 'Ruthless', 'bracketSummary: tag R → 4+');
+  ok(sm.tag === 'R' && sm.n === 4 && sm.name === 'Ruthless', 'bracketSummary: tag R → bracket 4');
   ok(sm.gameChangers.join() === 'Demonic Tutor,Rhystic Study' && sm.massLandDenial.join() === 'Armageddon' && sm.extraTurns.join() === 'Time Warp' && sm.banned.length === 0, 'bracketSummary: elenchi per categoria');
   ok(sm.combos.length === 1 && sm.combos[0].twoCard && sm.combos[0].result[0] === 'Target opponent loses the game', 'bracketSummary: combo deduplicate');
   ok(sm.unknown.join() === 'Nonexistent Cardzz', 'bracketSummary: carte non riconosciute (le doppie facce no)');
   ok(C.bracketSummary({ bracketTag: 'B', cards: [card('Mana Crypt', { banned: true })], combos: [] }).banned[0] === 'Mana Crypt', 'bracketSummary: bandite');
   ok(C.bracketSummary({}).range === '?' && C.bracketSummary(null).combos.length === 0, 'bracketSummary: risposta vuota senza errori');
+}
+
+// 12. numero del bracket dalle regole
+{
+  const base = { tag: 'E', gameChangers: [], massLandDenial: [], extraTurns: [], banned: [], combos: [] };
+  const N = o => C.bracketNumber(Object.assign({}, base, o)).n;
+  const cb = (tag, cards) => ({ cards: cards || ['A', 'B'], result: [], tag, twoCard: true });
+  ok(N({}) === 2, 'bracket: nessun elemento → 2');
+  ok(N({ gameChangers: ['x'] }) === 3 && N({ gameChangers: ['x', 'y', 'z'] }) === 3, 'bracket: 1–3 Game Changer → 3');
+  ok(N({ gameChangers: ['a', 'b', 'c', 'd'] }) === 4, 'bracket: 4+ Game Changer → 4');
+  ok(N({ massLandDenial: ['Armageddon'] }) === 4, 'bracket: distruzione di terre → 4');
+  ok(N({ extraTurns: ['a', 'b'] }) === 2 && N({ extraTurns: ['a', 'b', 'c'] }) === 4, 'bracket: 3+ turni extra → 4');
+  ok(N({ combos: [cb('S')] }) === 3 && N({ combos: [cb('R')] }) === 4 && N({ combos: [cb('C')] }) === 2, 'bracket: combo tardiva 3, rapida 4');
+  ok(N({ tag: 'R' }) === 4 && N({ tag: 'P' }) === 3 && N({ tag: 'C' }) === 2, 'bracket: non scende sotto la stima di Spellbook');
+  ok(N({ banned: ['Mana Crypt'], gameChangers: ['x'] }) === 0, 'bracket: carta bandita → 0');
+  ok(C.bracketNumber(Object.assign({}, base, { massLandDenial: ['Armageddon'], gameChangers: ['x'] })).reasons[0].includes('Armageddon'), 'bracket: il motivo principale è il minimo più alto');
+  const d = mk('b3', 'P', 'deck', true, [{ name: 'Sol Ring', qty: 1, set: '', cn: '' }, { name: 'Island', qty: 2, set: '', cn: '' }]);
+  const s1 = C.deckSig(d); d.cards[0].qty = 2;
+  ok(s1 !== C.deckSig(d) && C.deckSig(d) === C.deckSig(JSON.parse(JSON.stringify(d))), 'deckSig: cambia con le carte, stabile altrimenti');
+  const sd = C.sanitizeDeck(Object.assign(JSON.parse(JSON.stringify(d)), { bracket: { n: 3, sig: 'abc', at: 5, manual: true } }));
+  ok(sd.bracket.n === 3 && sd.bracket.manual === true && C.sanitizeDeck(Object.assign({}, d, { bracket: { n: 9 } })).bracket === null && C.sanitizeDeck(d).bracket === null, 'sanitizeDeck: bracket valido tenuto, non valido scartato');
 }
 
 console.log('OK, ' + n + ' controlli passati');

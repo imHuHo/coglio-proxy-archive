@@ -276,11 +276,51 @@
       if (!cs.length || seenC[key]) return; seenC[key] = 1;
       combos.push({ cards: cs, result: res, tag: cb.bracketTag || '', twoCard: !!r.definitelyTwoCard, fast: typeof r.speed === 'number' ? r.speed : null });
     });
-    return {
+    var out = {
       tag: tag, range: info.range, name: info.name, note: info.note,
       gameChangers: names('gameChanger'), massLandDenial: names('massLandDenial'), extraTurns: names('extraTurn'), banned: names('banned'),
       combos: combos, unknown: unknown
     };
+    var b = bracketNumber(out); out.n = b.n; out.reasons = b.reasons;
+    return out;
+  }
+
+  /* Bracket secondo le regole pubbliche di Wizards: ogni elemento mette un minimo, vale il più alto.
+     Game Changer 1–3 → 3, 4 o più → 4; distruzione di terre di massa → 4; 3 o più turni extra → 4;
+     combo a due carte rapida → 4, tardiva → 3. 1 e 5 (cEDH) dipendono dalla velocità di gioco e non si calcolano:
+     il minimo è 2. n = 0 se nel mazzo c'è una carta bandita. */
+  function bracketNumber(sum) {
+    var n = 2, why = [];
+    var up = function (v, msg) { if (v > n) { n = v; why = [msg]; } else if (v === n && v > 2) why.push(msg); };
+    var gc = sum.gameChangers.length;
+    if (gc >= 4) up(4, gc + ' Game Changer (da 4 in su il minimo è 4)');
+    else if (gc >= 1) up(3, plural1(gc, 'Game Changer', 'Game Changer') + ' (il minimo è 3)');
+    if (sum.massLandDenial.length) up(4, 'distruzione di terre di massa: ' + sum.massLandDenial.join(', '));
+    if (sum.extraTurns.length >= 3) up(4, sum.extraTurns.length + ' turni extra');
+    sum.combos.forEach(function (c) {
+      if (c.tag === 'R') up(4, 'combo rapida: ' + c.cards.join(' + '));
+      else if (c.tag === 'S' || c.tag === 'P') up(3, 'combo: ' + c.cards.join(' + '));
+    });
+    if (sum.tag === 'R') up(4, 'stima di Commander Spellbook: Ruthless');
+    else if (sum.tag === 'S' || sum.tag === 'P') up(3, 'stima di Commander Spellbook: ' + (sum.tag === 'S' ? 'Spicy' : 'Powerful'));
+    if (sum.banned.length) return { n: 0, reasons: ['carte bandite: ' + sum.banned.join(', ')] };
+    if (!why.length) why.push('nessun elemento che alzi il bracket');
+    return { n: n, reasons: why };
+  }
+  function plural1(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+
+  /* Impronta della lista: serve a capire se il bracket salvato è stato calcolato su un mazzo poi cambiato. */
+  function deckSig(deck) {
+    var t = (deck.commander || '') + '\n' + deck.cards.slice().sort(function (a, b) { return a.name.localeCompare(b.name, 'en'); })
+      .map(function (c) { return c.qty + ' ' + c.name; }).join('\n'), h = 5381;
+    for (var i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36);
+  }
+  function sanitizeBracket(b) {
+    if (!b || typeof b !== 'object') return null;
+    var n = parseInt(b.n, 10);
+    if (!(n >= 0 && n <= 5)) return null;
+    return { n: n, sig: String(b.sig || ''), at: +b.at || 0, manual: !!b.manual };
   }
 
   function diffText(deck, upgrade, diff) {
@@ -399,6 +439,7 @@
       kind: d.kind === 'binder' ? 'binder' : 'deck',
       active: d.kind === 'binder' ? false : !!d.active,
       commander: d.commander ? String(d.commander) : null,
+      bracket: sanitizeBracket(d.bracket),
       cards: sanitizeCards(d.cards),
       upgrades: (Array.isArray(d.upgrades) ? d.upgrades : []).map(function (u) {
         return {
@@ -418,7 +459,7 @@
   return {
     keyOf: keyOf, searchNorm: searchNorm, isBasic: isBasic, uid: uid,
     parseList: parseList, buildArchive: buildArchive, diffUpgrade: diffUpgrade,
-    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, clone: cloneJ, exportText: exportText, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, diffText: diffText,
+    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, clone: cloneJ, exportText: exportText, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, bracketNumber: bracketNumber, deckSig: deckSig, diffText: diffText,
     sanitizeDeck: sanitizeDeck, sanitizeSettings: sanitizeSettings, inUse: inUse
   };
 });

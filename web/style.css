@@ -328,7 +328,7 @@ a { color: var(--accent); }
 .bk-head strong { overflow-wrap: anywhere; }
 .bk-score { display: flex; gap: 14px; align-items: center; }
 .bk-score p { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
-.bk-num { display: grid; place-items: center; min-width: 96px; padding: 10px 12px; border-radius: 14px; background: #f6c93a; color: #2a2100; }
+.bk-num { display: grid; place-items: center; min-width: 96px; padding: 10px 12px; border-radius: 14px; background: #f6c93a; color: #1d1d1d; }
 .bk-num small { font-weight: 700; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; }
 .bk-num b { font: 800 30px/1.1 var(--display, inherit); }
 .bk-chip { display: inline-block; font-weight: 800; font-size: 12px; padding: 3px 10px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--line); }
@@ -343,3 +343,16 @@ a { color: var(--accent); }
 .bk-foot { margin: 0; font-size: 11.5px; color: var(--muted); }
 .bk-bar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 .bk-box p { margin: 0; }
+
+/* numero del bracket: un colore per fascia */
+.bk-badge, .bk-num { --b: #8a8fa6; }
+.b1 { --b: #5aa9ff; } .b2 { --b: #43c59e; } .b3 { --b: #f6c93a; } .b4 { --b: #ff9a3c; } .b5 { --b: #ef5b5b; } .b0 { --b: #8a8fa6; }
+.bk-num { background: var(--b); }
+.bk-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding: 0 7px; margin-left: 8px; vertical-align: middle;
+  border-radius: 8px; background: var(--b); color: #1d1d1d; font: 800 14px/1 var(--display); border: 0; box-shadow: inset 0 0 0 1px #0002; }
+button.bk-badge { margin: 0; cursor: pointer; width: 34px; height: 34px; font-size: 16px; }
+button.bk-badge:hover { filter: brightness(1.08); }
+button.bk-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.bk-badge.stale { opacity: .5; box-shadow: inset 0 0 0 2px #0006; background-image: repeating-linear-gradient(135deg, transparent 0 4px, #ffffff55 4px 6px); }
+.bk-set { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.bk-set span { flex: 1 1 100%; }
