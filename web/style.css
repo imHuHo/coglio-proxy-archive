@@ -527,3 +527,6 @@ img.dz-msym { box-shadow: none; }
 .news-old summary .news-major-t { font-size: 18px; }
 .news-banner.major { background: linear-gradient(100deg, #fff200, #ffc400); border-color: #e0a800; color: #1d1600; }
 .news-banner.major b { color: #1d1600; }
+
+.dz-prgrid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); max-height: 440px; margin-top: 6px; }
+.dz-prgrid .dz-ftimg { aspect-ratio: 488 / 680; background: var(--bg); }

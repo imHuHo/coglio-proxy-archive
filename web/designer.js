@@ -240,9 +240,9 @@
   }
 
   /* ---------- schermata ---------- */
-  function open() { H.ui.view = 'designer'; dz.view = 'list'; dz.cur = null; dz.picker = null; window.scrollTo(0, 0); load().then(function () { H.render(); }); H.render(); }
+  function open() { H.ui.view = 'designer'; dz.view = 'list'; dz.cur = null; dz.picker = null; dz.dlg = null; window.scrollTo(0, 0); load().then(function () { H.render(); }); H.render(); }
   function editDesign(d) {
-    dz.cur = d; dz.view = 'edit'; dz.artImg = null; dz.confirm = ''; dz.search = { q: d.alterOf || '', busy: false, msg: '' }; dz.prints = { list: [], busy: false, msg: '' };
+    dz.cur = d; dz.view = 'edit'; dz.artImg = null; dz.confirm = ''; dz.search = { q: d.alterOf || '', busy: false, msg: '' }; dz.prints = { list: [], busy: false, msg: '' }; dz.dlg = null;
     artImage(d.art.id).then(function (a) { if (dz.cur === d) { dz.artImg = a; schedulePreview(); } });
     window.scrollTo(0, 0); H.render();
   }
@@ -445,18 +445,19 @@
     return next();
   }
   function loadCatalog() {
-    if (cat.busy || cat.list) return;
+    if (cat.list) return Promise.resolve();
+    if (cat.busy) return cat.p || Promise.resolve();
     cat.busy = true; cat.msg = '';
-    fetchFrom('packs/index.json').then(function (x) { return x.r.json().then(function (j) { cat.list = Array.isArray(j && j.packs) ? j.packs : []; cat.base = x.base; }); })
+    return cat.p = fetchFrom('packs/index.json').then(function (x) { return x.r.json().then(function (j) { cat.list = Array.isArray(j && j.packs) ? j.packs : []; cat.base = x.base; }); })
       .catch(function () { cat.msg = 'Non riesco a scaricare il catalogo: serve internet (lo scarica dalla versione web su GitHub Pages).'; })
       .then(function () { cat.busy = false; if (dz.view === 'catalog') H.render(); });
   }
   function installed(id) { return dz.frames.some(function (f) { return f.group === 'cc-' + id; }); }
   function installPack(e) {
-    if (!e || cat.inst[e.id]) return;
+    if (!e || cat.inst[e.id]) return Promise.resolve(false);
     var base = cat.base + 'packs/' + e.id + '/', pk = null, done = 0, total = 0;
     cat.inst[e.id] = '\u2026'; H.render();
-    wfetch(base + 'pack.json').then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); }).then(function (j) {
+    return wfetch(base + 'pack.json').then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); }).then(function (j) {
       pk = j; var jobs = [];
       (pk.frames || []).forEach(function (f) { ['png', 'pt'].forEach(function (k) { if (f[k] && typeof f[k] === 'string' && !/^data:/.test(f[k])) jobs.push([f, k]); }); });
       total = jobs.length;
@@ -472,8 +473,8 @@
       return chain;
     }).then(function () { return importData(pk, true, e.name); }).then(function (g) {
       delete cat.inst[e.id]; dz.frameImgs = {};
-      H.toast(g ? 'Aggiunto «' + e.name + '»: lo trovi nel menu «Cornice importata».' : 'Il pacchetto «' + e.name + '» non contiene cornici utilizzabili.'); H.render();
-    }).catch(function () { delete cat.inst[e.id]; H.toast('Non riesco a scaricare «' + e.name + '»: controlla la connessione e riprova.'); H.render(); });
+      H.toast(g ? 'Aggiunto «' + e.name + '»: lo trovi nel menu «Cornice importata».' : 'Il pacchetto «' + e.name + '» non contiene cornici utilizzabili.'); H.render(); return !!g;
+    }).catch(function () { delete cat.inst[e.id]; H.toast('Non riesco a scaricare «' + e.name + '»: controlla la connessione e riprova.'); H.render(); return false; });
   }
   function dropGroup(g) {
     var gone = dz.frames.filter(function (f) { return f.group === g; }).map(function (f) { return f.id; });
@@ -503,14 +504,102 @@
     }).join('') + '</div>';
     return h;
   }
+
+  /* ---------- cornice «esatta» della carta di partenza (e della stampa scelta) ---------- */
+  var OLDSETS = ['lea', 'leb', '2ed', '3ed', 'arn', 'atq', 'leg', 'drk', 'fem', 'ice'];
+  var UBSETS = ['ltr', 'ltc', 'who', 'whc', '40k', 'pip', 'acr', 'acc', 'fin', 'fic', 'tla', 'tle', 'spm', 'spe'];
+  var SHOWSET = { sta: ['MysticalArchive', 'Mystical Archive'], wot: ['EnchantingTales', 'Enchanting Tales'], khm: ['Kaldheim-2', 'Kaldheim'], dmu: ['DMUStainedGlass', 'Stained Glass'], otp: ['BreakingNews', 'Breaking News'], pip: ['Pipboy', 'Pip-Boy'], who: ['TARDIS', 'TARDIS'], big: ['Vault', 'Vault'], cmr: ['CommanderLegends', 'Commander Legends'], dbl: ['DoubleFeature', 'Double Feature'] };
+  function cand(b, id, name) { return { b: b, id: id, name: name }; }
+  /* che cornice ha la carta di Scryfall? Restituisce { c: cornice, crown, holo, list } oppure null se non serve (token...) */
+  function wantFrame(c) {
+    var f0 = c.card_faces && !c.image_uris ? c.card_faces[0] : c, fx = c.frame_effects || [], pt = c.promo_types || [];
+    function has(e) { return fx.indexOf(e) >= 0; }
+    var tl = String(f0.type_line || c.type_line || ''), fr = String(c.frame || '2015'), lay = String(c.layout || ''), set = String(c.set || '').toLowerCase();
+    var bord = c.border_color === 'borderless', ext = has('extendedart'), full = !!c.full_art;
+    if (lay === 'token' || lay === 'double_faced_token' || lay === 'emblem' || /\btoken\b/i.test(tl) && !/creature|artifact/i.test(tl)) return null;
+    var out, isPW = /planeswalker/i.test(tl), isSaga = /\bsaga\b/i.test(tl), isLand = /\bland\b/i.test(tl), snow = /\bsnow\b/i.test(tl);
+    var tf = lay === 'transform' || lay === 'double_faced_token', mdfc = lay === 'modal_dfc', back = false;
+    if (fr === '1993') out = OLDSETS.indexOf(set) >= 0 ? cand('', 'ABU', 'Alpha/Beta/Unlimited') : cand('', 'Fourth', 'Fourth Edition');
+    else if (fr === '1997') out = cand('', 'SeventhButFifth', 'Fifth Edition');
+    else if (fr === 'future') out = cand('', 'FutureRegular', 'Future Shifted');
+    else if (fr === '2003' && has('colorshifted')) out = cand('', 'Colorshifted', 'Colorshifted (Planar Chaos)');
+    else if (fr === '2003') out = cand('m8', '8th', '8th Edition');
+    else if (isPW) out = has('compleated') ? cand('', 'PlaneswalkerCompleated', 'Compleated') : bord ? cand('', 'PlaneswalkerBorderless', 'Borderless — Planeswalker') : ext ? cand('', 'PlaneswalkerBoxTopper', 'Extended Art — Planeswalker') : mdfc ? cand('', 'PlaneswalkerMDFC', 'MDFC') : tf ? cand('', 'PlaneswalkerTransformFront', 'Transform (Front) — Planeswalker') : cand('pw', 'PlaneswalkerRegular', 'Planeswalker');
+    else if (isSaga) out = has('nyxtouched') ? cand('', 'SagaNyx', 'Saghe (Nyx)') : tf ? cand('', 'SagaDFC', 'Sagas (Front)') : cand('', 'SagaRegular', 'Saghe');
+    else if (lay === 'adventure') out = cand('', 'Adventure', 'Adventures (Eldraine)');
+    else if (lay === 'split') out = /\bfuse\b/i.test(String(c.oracle_text || '')) ? cand('', 'Fuse', 'Fuse Cards') : cand('', 'Split', 'Split Cards');
+    else if (lay === 'flip') out = cand('', 'Flip', 'Flip (Kamigawa)');
+    else if (lay === 'aftermath') out = cand('', 'Aftermath', 'Aftermath (Amonkhet)');
+    else if (lay === 'prototype') out = ext ? cand('', 'PrototypeExtended', 'Prototype (Extended Art)') : cand('', 'Prototype', 'Prototype (Brothers’ War)');
+    else if (has('etched')) out = has('nyxtouched') ? cand('', 'EtchedNyx', 'Etched (Nyx)') : snow ? cand('', 'EtchedSnow', 'Etched (Snow)') : cand('', 'Etched', 'Etched');
+    else if (UBSETS.indexOf(set) >= 0 && !isLand) out = full || bord ? cand('', 'UBFull', 'Universes Beyond (Full art)') : ext ? cand('', 'UBExtendedArt', 'Universes Beyond (Extended art)') : cand('', 'UB', 'Universes Beyond');
+    else if (mdfc) out = bord ? cand('', 'ModalBorderless', 'Borderless — Modali') : ext ? cand('', 'ModalExtended', 'Extended Art — Modali') : cand('', 'ModalRegular', 'Regular — Modali');
+    else if (tf) out = bord ? cand('', 'TransformBorderlessFront', 'Borderless (Front)') : ext ? cand('', 'TransformExtendedFront', 'Extended Art (Front)') : cand('', 'M15TransformFront', 'Transform (Front)');
+    else if (isLand && (full || bord)) out = snow ? cand('', 'FullartBasicRoundBottom', 'Fullart Snow Basics') : cand('', 'TextlessBasics', 'Fullart Basics (THB)');
+    else if (isLand && !/\b(?:legendary|artifact|creature)\b/i.test(tl) && /basic/i.test(tl)) out = cand('lands', 'M15Lands', 'Terre M15');
+    else if (has('showcase') && SHOWSET[set]) out = cand('', SHOWSET[set][0], SHOWSET[set][1]);
+    else if (has('showcase')) out = cand('', 'GenericShowcase', 'Borderless — Showcase');
+    else if (bord && full) out = cand('', 'M15ClearTextboxes', 'Fullart');
+    else if (bord) out = cand('', 'Borderless', 'Borderless (Alt)');
+    else if (has('inverted')) out = cand('', 'FNM', 'FNM Promo (Inverted)');
+    else if (ext) out = cand('bt', 'M15BoxTopper', 'Extended Art');
+    else if (has('nyxtouched')) out = cand('nyx', 'M15Nyx', 'Nyx (Theros)');
+    else if (has('miracle')) out = cand('miracle', '', 'Miracle');
+    else if (has('devoid')) out = cand('devoid', '', 'Devoid');
+    else if (snow) out = cand('snow', 'M15Snow', 'Neve (Kaldheim)');
+    else out = cand('m15', 'M15RegularNew', 'M15 moderna');
+    var stamp = String(c.security_stamp || '');
+    return { c: out, crown: has('legendary') && !isPW && !isSaga ? 'legend' : '', holo: stamp === 'oval' ? 'color' : stamp === 'acorn' ? 'acorn' : '',
+      list: pt.indexOf('thelist') >= 0 ? (fr === '2015' ? 'regular' : 'old') : '' };
+  }
+  function candGroup(x) {
+    if (x.b && dz.frames.some(function (f) { return f.group === x.b; })) return x.b;
+    if (x.id && installed(x.id)) return 'cc-' + x.id;
+    return '';
+  }
+  /* imposta la cornice e gli extra della carta presa a modello; se il pacchetto manca chiede se scaricarlo */
+  function applyFrameFor(c) {
+    var d = dz.cur; if (!d || !c) return;
+    var w = wantFrame(c); if (!w) return;
+    d.crown = w.crown; d.holo = w.holo; d.list = w.list;
+    var g = candGroup(w.c);
+    if (g) { dz.dlg = null; pickFrame(d, 'auto:' + g); return; }
+    if (w.c.id) dz.dlg = { d: d, x: w.c, busy: false, msg: '' };
+    saveSoon(); H.render();
+  }
+  function dlgHtml() {
+    var q = dz.dlg;
+    return '<div class="bd-modal" data-a="dz-dlg-no"><div class="bd-mbox" data-a="dz-keep" role="dialog" aria-label="Cornice mancante"><div class="bd-mhead"><strong>Cornice mancante</strong></div>' +
+      '<p>Per essere identica alla carta di riferimento serve la cornice «' + esc(q.x.name) + '», che non è ancora scaricata. Vuoi scaricarla ora?</p>' +
+      (q.msg ? '<p class="hint" role="status">' + esc(q.msg) + '</p>' : '') +
+      '<div class="btns"><button class="btn primary" data-a="dz-dlg-yes"' + (q.busy ? ' disabled' : '') + '>' + (q.busy ? 'Scarico…' : 'Scarica e usa') + '</button><button class="btn" data-a="dz-dlg-no"' + (q.busy ? ' disabled' : '') + '>Tieni la cornice attuale</button></div></div></div>';
+  }
+  function dlgYes() {
+    var q = dz.dlg; if (!q || q.busy) return;
+    q.busy = true; q.msg = ''; H.render();
+    loadCatalog().then(function () {
+      var e = (cat.list || []).filter(function (x) { return x.id === q.x.id; })[0];
+      if (!e) throw new Error('nocat');
+      return installPack(e);
+    }).then(function (ok) {
+      if (dz.dlg !== q) return;
+      if (!ok) throw new Error('fail');
+      dz.dlg = null; if (dz.cur === q.d && candGroup(q.x)) pickFrame(q.d, 'auto:' + candGroup(q.x)); else H.render();
+    }).catch(function () { if (dz.dlg === q) { q.busy = false; q.msg = 'Non riesco a scaricarla: controlla la connessione e riprova.'; H.render(); } });
+  }
   function printLabel(c) { return String(c.set_name || c.set || '').replace(/</g, '') + ' (' + String(c.set || '').toUpperCase() + ') \u00b7 #' + (c.collector_number || '?') + (c.released_at ? ' \u00b7 ' + String(c.released_at).slice(0, 4) : ''); }
   function printsHtml(d, net) {
     var P = dz.prints;
     if (P.list.length) {
       var cur = -1; P.list.forEach(function (c, i) { if (cur < 0 && String(c.set || '').toUpperCase() === d.set && String(c.collector_number || '') === d.num) cur = i; });
-      return '<label class="lbl">Stampa (' + P.list.length + ')<select class="select" data-c="dz-print">' + (cur < 0 ? '<option value="" selected>\u2014 scegli una stampa \u2014</option>' : '') +
-        P.list.map(function (c, i) { return '<option value="' + i + '"' + (i === cur ? ' selected' : '') + '>' + esc(printLabel(c)) + '</option>'; }).join('') + '</select></label>' +
-        '<p class="hint">Cambia arte, collezione, numero, rarit\u00e0, artista e testo di flavour con quelli della stampa scelta.</p>';
+      return '<div class="lbl">Stampa (' + P.list.length + ')<div class="dz-ftiles dz-prgrid" role="group" aria-label="Stampe">' +
+        P.list.map(function (c, i) {
+          var f = c.card_faces && !c.image_uris ? c.card_faces[0] : c, im = f.image_uris || c.image_uris || {}, u = im.small || im.normal || '';
+          return '<button class="dz-ftile" data-a="dz-print-pick" data-id="' + i + '" aria-pressed="' + (i === cur) + '" title="' + esc(printLabel(c)) + '">' +
+            '<span class="dz-ftimg">' + (u ? '<img src="' + esc(u) + '" alt="" loading="lazy">' : '') + '</span>' +
+            '<span class="dz-ftname">' + esc(String(c.set || '').toUpperCase() + ' #' + (c.collector_number || '?') + (c.released_at ? ' \u00b7 ' + String(c.released_at).slice(0, 4) : '')) + '</span></button>';
+        }).join('') + '</div></div>' +
+        '<p class="hint">Cambia arte, cornice, collezione, numero, rarit\u00e0, artista e testo di flavour con quelli della stampa scelta.</p>';
     }
     if (d.alterOf && net) return '<div class="btns"><button class="btn small" data-a="dz-prints"' + (P.busy ? ' disabled' : '') + '>' + (P.busy ? 'Cerco le stampe\u2026' : 'Scegli la stampa') + '</button></div>' + (P.msg ? '<p class="hint" role="status">' + esc(P.msg) + '</p>' : '');
     return '';
@@ -640,7 +729,7 @@
   function html() {
     if (!dz.loaded) load().then(function () { if (H.ui.view === 'designer') H.render(); });
     var body = dz.view === 'edit' && dz.cur ? editHtml() : dz.view === 'catalog' ? catalogHtml() : listHtml();
-    return body + (dz.picker ? pickerHtml() : '');
+    return body + (dz.picker ? pickerHtml() : '') + (dz.dlg ? dlgHtml() : '');
   }
   function pickerHtml() {
     var p = dz.picker;
@@ -702,6 +791,7 @@
     d.set = String(c.set || '').toUpperCase(); d.num = String(c.collector_number || ''); d.rarity = R.RARITY[c.rarity] ? c.rarity : d.rarity;
     d.artist = f.artist || c.artist || ''; d.flavor = f.flavor_text || '';
     dz.search.msg = 'Stampa scelta: ' + printLabel(c) + '.';
+    applyFrameFor(c);
     var art = (f.image_uris || c.image_uris || {}).art_crop;
     if (!art) { saveNow(); H.render(); return; }
     dz.search.busy = true; H.render();
@@ -719,6 +809,7 @@
       d.colors = cols; d.palette = 'auto'; d.frame = frame; d.alterOf = c.name; d.kind = d.kind === 'card' ? 'alter' : d.kind;
       var art = (f.image_uris || c.image_uris || {}).art_crop;
       dz.search.msg = 'Importata: ' + (c.name || name) + '.';
+      applyFrameFor(c);
       dz.prints = { list: [], busy: false, msg: '' }; if (c.prints_search_uri) setTimeout(function () { loadPrints(c.prints_search_uri); }, 0);
       if (!art) { dz.search.busy = false; saveNow(); H.render(); return; }
       return fetchBlob(art).then(function (b) { dz.search.busy = false; return setArt(b); }, function () { dz.search.busy = false; dz.search.msg += ' Il testo è dentro, ma l’arte non si è scaricata: caricane una tua.'; saveNow(); H.render(); });
@@ -872,6 +963,9 @@
       case 'dz-bind': openPicker(el.getAttribute('data-deck'), el.getAttribute('data-name')); break;
       case 'dz-unbind': unbind(el.getAttribute('data-deck'), el.getAttribute('data-name')); H.render(); break;
       case 'dz-pick-close': dz.picker = null; H.render(); break;
+      case 'dz-dlg-yes': dlgYes(); break;
+      case 'dz-dlg-no': if (dz.dlg && !dz.dlg.busy) { dz.dlg = null; H.render(); } break;
+      case 'dz-print-pick': { var pc = dz.prints.list[parseInt(id, 10)]; if (pc && d) applyPrint(pc); break; }
       case 'dz-keep': break;
       case 'dz-pick': if (dz.picker) { var pd = byId(id); if (pd && bindCard(pd, dz.picker.deckId, dz.picker.cardName)) { dz.picker = null; H.render(); } } break;
       case 'dz-pick-new':
@@ -917,7 +1011,6 @@
     var d = dz.cur;
     if (c === 'dz-f' && d) { d[el.getAttribute('data-k')] = el.value; saveSoon(); if (el.tagName === 'SELECT') H.render(); else schedulePreview(); }
     else if (c === 'dz-artfile') { if (el.files && el.files[0]) setArt(el.files[0]); }
-    else if (c === 'dz-print' && d) { var pc = dz.prints.list[parseInt(el.value, 10)]; if (pc) applyPrint(pc); }
     else if (c === 'dz-move') { var md = byId(el.getAttribute('data-id')); if (md) { md.folder = el.value; md.updatedAt = Date.now(); DB.put('designs', clone(md)); H.render(); } }
     else if (c === 'dz-framefile') {
       var files = [].slice.call(el.files || []), last = null, p = Promise.resolve();
@@ -959,6 +1052,6 @@
 
   window.CPADesigner = {
     open: open, html: html, after: after, click: click, input: input, change: change, escape: escape, renderBlob: renderBlob,
-    ready: load, get: byId, list: function () { return dz.designs.slice(); }, openPicker: openPicker, state: dz
+    ready: load, get: byId, list: function () { return dz.designs.slice(); }, openPicker: openPicker, state: dz, wantFrame: wantFrame, applyFrameFor: applyFrameFor
   };
 })();

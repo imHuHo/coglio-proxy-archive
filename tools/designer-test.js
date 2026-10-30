@@ -171,14 +171,21 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await page.waitForSelector('[data-c="dz-art"][data-k="s"]');
   ok(await page.locator('[data-c="dz-art"][data-k="s"]').count() === 1, 'arte importata da Scryfall');
   /* scelta della stampa */
-  await page.waitForSelector('[data-c="dz-print"]');
-  ok(await page.locator('[data-c="dz-print"] option').count() === 2, 'due stampe disponibili');
-  ok((await page.inputValue('[data-c="dz-print"]')) === '0', 'la stampa importata \u00e8 quella selezionata');
-  await page.selectOption('[data-c="dz-print"]', '1');
+  await page.waitForSelector('[data-a="dz-print-pick"]');
+  ok(await page.locator('[data-a="dz-print-pick"]').count() === 2, 'due stampe disponibili');
+  ok(await page.locator('[data-a="dz-print-pick"] img').count() === 2, 'le stampe sono mostrate come immagini');
+  ok(await page.getAttribute('[data-a="dz-print-pick"][data-id="0"]', 'aria-pressed') === 'true', 'la stampa importata \u00e8 quella evidenziata');
+  /* senza il pacchetto M15 la cornice esatta manca: il designer lo dice e chiede */
+  ok(await page.locator('[data-a="dz-dlg-yes"]').count() === 1, 'cornice mancante: dialogo di download');
+  await page.click('.bd-mbox button[data-a="dz-dlg-no"]');
+  ok(await page.locator('[data-a="dz-dlg-yes"]').count() === 0, 'il dialogo si chiude tenendo la cornice attuale');
+  await page.click('[data-a="dz-print-pick"][data-id="1"]');
   await page.waitForFunction(() => /Stampa scelta: Altra Edizione/.test(document.body.innerText));
   ok(await page.evaluate(() => { const d = CPADesigner.state.cur; return d.set === 'XYZ' && d.num === '99' && d.rarity === 'rare' && d.artist === 'Altro Artista' && d.flavor === 'Altro testo.'; }), 'la stampa cambia collezione, numero, rarit\u00e0, artista e testo di colore');
   ok(await page.inputValue('[data-c="dz-f"][data-k="name"]') === 'Lightning Bolt', 'il testo della carta resta');
   await page.waitForTimeout(200);
+  ok(await page.locator('[data-a="dz-dlg-yes"]').count() === 1, 'anche cambiando stampa la cornice mancante viene proposta');
+  await page.click('.bd-mbox button[data-a="dz-dlg-no"]');
 
   /* sostituzione di una carta del mazzo */
   await page.selectOption('[data-c="dz-bcard"]', 'Lightning Bolt');
@@ -361,14 +368,14 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await page.click('[data-a="dz-f-pick"][data-v="*"]');
 
   /* catalogo cornici */
-  packFiles['/packs/index.json'] = JSON.stringify({ app: 'coglio-catalog', version: 1, packs: [{ id: 'tst', name: 'Borderless di prova', category: 'Showcase', n: 2, bytes: 1000 }, { id: 'pw', name: 'Altro pacchetto', category: 'Planeswalker', n: 1, bytes: 1000, layout: 'planeswalker' }] });
+  packFiles['/packs/index.json'] = JSON.stringify({ app: 'coglio-catalog', version: 1, packs: [{ id: 'M15BoxTopper', name: 'Extended Art di prova', category: 'Showcase', n: 1, bytes: 1000 }, { id: 'tst', name: 'Borderless di prova', category: 'Showcase', n: 2, bytes: 1000 }, { id: 'pw', name: 'Altro pacchetto', category: 'Planeswalker', n: 1, bytes: 1000, layout: 'planeswalker' }] });
   packFiles['/packs/tst/pack.json'] = JSON.stringify({ app: 'coglio-frames', version: 1, groups: [{ id: 'cc-tst', name: 'Borderless di prova' }], frames: ['U', 'C'].map(k => ({ key: k, name: 'Prova ' + k, group: 'cc-tst', ink: 'light', geo: { art: [0, 0, 745, 959], title: [44, 54, 654, 56], type: [44, 589, 654, 56], box: [42, 639, 661, 331], pt: [576, 926, 130, 63], info: [46, 980], colors: { title: 'white', type: 'white', rules: 'white', pt: 'white' } }, png: k + '.webp', pt: null })) });
   packFiles['/packs/pw/pack.json'] = JSON.stringify({ app: 'coglio-frames', version: 1, groups: [{ id: 'cc-pw', name: 'Altro pacchetto' }], frames: [{ key: 'C', name: 'PW', group: 'cc-pw', ink: 'dark', geo: { art: [50, 105, 645, 485], title: [44, 38, 655, 57], type: [44, 584, 655, 57], box: [112, 633, 600, 334], pt: [586, 926, 132, 63], info: [46, 980], layout: 'planeswalker', walker: { x: 0.18, w: 0.7467, top: 0.6239, tall: false, box: true } }, png: 'C.webp', pt: null }] });
   packFiles['/packs/pw/C.webp'] = framePng;
   packFiles['/packs/tst/U.webp'] = framePng; packFiles['/packs/tst/C.webp'] = framePng; packFiles['/packs/tst/thumb.webp'] = framePng;
   await page.click('[data-a="dz-catalog"]');
   await page.waitForSelector('.dz-catitem');
-  ok(await page.locator('.dz-catitem').count() === 2, 'catalogo caricato');
+  ok(await page.locator('.dz-catitem').count() === 3, 'catalogo caricato');
   await page.fill('[data-c="dz-catq"]', 'borderless');
   ok(await page.locator('.dz-catitem:not([hidden])').count() === 1, 'la ricerca filtra il catalogo');
   await page.click('[data-a="dz-cat-add"][data-id="tst"]');
@@ -383,7 +390,7 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   ok((await full()) !== bc, 'la cornice del catalogo cambia l\u2019anteprima');
   ok(await page.evaluate(() => CPADesigner.state.cur.ink) === 'light', 'il colore del testo segue la cornice');
   /* pacchetto planeswalker: la carta passa da sola al tipo planeswalker */
-  await page.click('[data-a="dz-back"]'); await page.click('[data-a="dz-catalog"]'); await page.waitForSelector('.dz-catitem'); await page.fill('[data-c="dz-catq"]', ''); await page.waitForSelector('[data-a="dz-cat-add"][data-id="pw"]');
+  await page.click('[data-a="dz-back"]'); await page.click('[data-a="dz-catalog"]'); await page.waitForSelector('.dz-catitem:not([hidden])'); await page.fill('[data-c="dz-catq"]', ''); await page.waitForSelector('[data-a="dz-cat-add"][data-id="pw"]');
   await page.click('[data-a="dz-cat-add"][data-id="pw"]'); await page.waitForSelector('[data-a="dz-cat-del"][data-id="pw"]');
   await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item'); await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
   await page.click('[data-a="dz-frame-pick"][data-v="auto:cc-pw"]'); await page.waitForTimeout(300);
@@ -395,6 +402,27 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await page.click('[data-a="dz-cat-del"][data-id="tst"]');
   await page.waitForFunction(() => CPADesigner.state.frames.every(f => f.group !== 'cc-tst'));
   ok(await page.evaluate(() => CPADesigner.list().every(d => d.frameImg !== 'auto:cc-tst')), 'pacchetto rimosso, i design tornano alla cornice disegnata');
+  await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item');
+
+  /* cornice dedotta dai dati Scryfall + scaricamento su richiesta */
+  packFiles['/packs/M15BoxTopper/pack.json'] = JSON.stringify({ app: 'coglio-frames', version: 1, groups: [{ id: 'cc-M15BoxTopper', name: 'Extended Art di prova' }], frames: [{ key: 'C', name: 'Ext C', group: 'cc-M15BoxTopper', ink: 'dark', geo: null, png: 'C.webp', pt: null }] });
+  packFiles['/packs/M15BoxTopper/C.webp'] = framePng;
+  const w = await page.evaluate(() => {
+    const W = CPADesigner.wantFrame, k = x => { const r = W(Object.assign({ frame: '2015', layout: 'normal', type_line: 'Creature', set: 'xxx', border_color: 'black' }, x)); return r && r.c.id || (r && r.c.b); };
+    return { ext: k({ frame_effects: ['extendedart'] }), old: k({ frame: '1993', set: '4ed' }), abu: k({ frame: '1993', set: 'lea' }), m8: k({ frame: '2003' }), sta: k({ frame_effects: ['showcase'], set: 'sta' }), pw: k({ type_line: 'Legendary Planeswalker — Jace' }),
+      reg: k({}), tok: k({ layout: 'token' }), borl: k({ border_color: 'borderless' }), crown: CPADesigner.wantFrame({ frame: '2015', frame_effects: ['legendary'], type_line: 'Legendary Creature' }).crown };
+  });
+  ok(w.ext === 'M15BoxTopper' && w.old === 'Fourth' && w.abu === 'ABU' && w.m8 === '8th' && w.sta === 'MysticalArchive' && w.pw === 'PlaneswalkerRegular' && w.reg === 'M15RegularNew' && w.tok === null && w.borl === 'Borderless' && w.crown === 'legend', 'la cornice dedotta dai dati della carta: ' + JSON.stringify(w));
+  await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
+  await page.evaluate(() => CPADesigner.applyFrameFor({ frame: '2015', layout: 'normal', type_line: 'Creature', set: 'xxx', border_color: 'black', frame_effects: ['extendedart', 'legendary'] }));
+  await page.waitForSelector('.bd-mbox button[data-a="dz-dlg-yes"]');
+  ok(/Extended Art/.test(await page.locator('.bd-mbox').innerText()), 'il dialogo nomina la cornice mancante');
+  await page.click('.bd-mbox button[data-a="dz-dlg-yes"]');
+  await page.waitForFunction(() => !document.querySelector('.bd-mbox') && CPADesigner.state.cur.frameImg === 'auto:cc-M15BoxTopper');
+  ok(await page.evaluate(() => CPADesigner.state.cur.crown) === 'legend', 'la corona leggendaria segue la carta');
+  ok(true, 'cornice scaricata e applicata dal dialogo');
+  await page.evaluate(() => CPADesigner.applyFrameFor({ frame: '2015', layout: 'normal', type_line: 'Creature', set: 'xxx', border_color: 'black', frame_effects: ['extendedart'] }));
+  ok(await page.evaluate(() => !document.querySelector('.bd-mbox') && CPADesigner.state.cur.frameImg === 'auto:cc-M15BoxTopper'), 'se la cornice c’è già si applica senza chiedere');
   await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item');
 
   /* mobile: sei voci nel menu in basso */
