@@ -11,10 +11,10 @@
   var BASE_BODY = "'EB Garamond', 'Palatino Linotype', 'Book Antiqua', Georgia, serif";
   var F_TITLE = BASE_TITLE, F_BODY = BASE_BODY;
   /* risorse importate dall'utente (font e simboli di mana): senza di esse si usano font e simboli disegnati qui */
-  var RES = { symbols: {}, watermarks: {} };
+  var RES = { symbols: {}, watermarks: {}, overlays: {} };
   function setResources(r) {
     r = r || {}; var f = r.fonts || {};
-    RES.symbols = r.symbols || {}; RES.watermarks = r.watermarks || {};
+    RES.symbols = r.symbols || {}; RES.watermarks = r.watermarks || {}; RES.overlays = r.overlays || {};
     F_TITLE = f.title ? "'CPA Title', " + BASE_TITLE : BASE_TITLE;
     F_BODY = f.body ? "'CPA Body', " + BASE_BODY : BASE_BODY;
   }
@@ -63,7 +63,7 @@
     return {
       id: '', kind: kind || 'card', name: token ? 'Token' : 'Nuova carta', cost: token ? '' : '{1}{U}', type: token ? 'Token Creature — Spirit' : 'Creature — Wizard',
       rules: token ? 'Flying' : 'Flying\n{T}: Draw a card, then discard a card.', flavor: '', pt: token ? '1/1' : '2/3', rarity: 'common', set: 'CST', num: '001', artist: '',
-      watermark: '', frame: DEFAULT_KINDS[kind] || 'classic', colors: token ? 'U' : 'U', palette: 'auto', border: 'black', corners: 'round', alterOf: '',
+      watermark: '', crown: '', inner: '', holo: '', darkpt: '', pips: '', list: '', frame: DEFAULT_KINDS[kind] || 'classic', colors: token ? 'U' : 'U', palette: 'auto', border: 'black', corners: 'round', alterOf: '',
       art: { id: '', x: 0, y: 0, s: 1 }, frameImg: '', ink: 'dark', createdAt: 0, updatedAt: 0
     };
   }
@@ -279,13 +279,24 @@
     var x = r[0] + r[2] - 14 - cw + 1;
     costs.forEach(function (c, i) { drawSymbol(ctx, c, x + i * (sd + 2) + sd / 2, r[1] + r[3] / 2, sd); });
   }
+  /* extra delle cornici importate (corone, stampi, P/C scuro, pips, The List): chiavi in ordine dal basso verso l'alto */
+  function overlaysFor(d, pk) {
+    var o = RES.overlays, keys = [], ex = pk === 'L' || pk === 'C' ? 'A' : pk;
+    if (d.darkpt) keys.push('darkpt:' + (pk === 'L' ? 'C' : pk));
+    if (d.crown === 'legend') keys.push('crown:' + pk); else if (d.crown === 'floating') keys.push('fcrown:' + pk);
+    if (d.inner === 'nyx' || d.inner === 'comp') keys.push('inner:' + d.inner + ':' + ex);
+    if (d.holo === 'color') keys.push('holo:' + pk); else if (d.holo) keys.push('holo:' + d.holo);
+    if (d.pips) { var cs = ('WUBRG').split('').filter(function (c) { return String(d.colors || '').toUpperCase().indexOf(c) >= 0; }).join(''); if (cs) keys.push('pips:' + cs); }
+    if (d.list) keys.push('list:' + d.list);
+    return keys.map(function (k) { return o[k]; }).filter(Boolean);
+  }
   function drawType(ctx, d, L, pal, over, user) {
     var r = L.type, ink = over || (user && user.ink === 'light') ? '#ffffff' : pal.ink;
     var gem = L.walker || L.saga || true;
-    var maxW = r[2] - 40 - (gem ? 52 : 0);
+    var sh = user && d.pips ? 38 : 0, maxW = r[2] - 40 - sh - (gem ? 52 : 0);
     var size = fitLine(ctx, String(d.type || ''), F_TITLE, 700, 30, 15, maxW);
     ctx.font = '700 ' + size + 'px ' + F_TITLE; ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText(String(d.type || ''), r[0] + 20, r[1] + r[3] / 2 + 2);
+    ctx.fillText(String(d.type || ''), r[0] + 20 + sh, r[1] + r[3] / 2 + 2);
     if (gem) setGem(ctx, r[0] + r[2] - 34, r[1] + r[3] / 2, d.rarity, !over);
   }
   function drawRulesBox(ctx, d, L, pal, over, user) {
@@ -334,7 +345,7 @@
       if (!(user && user.pt)) { rr(ctx, r[0], r[1], r[2], r[3], 14); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
       ctx.fillStyle = over ? 'rgba(14,12,18,0.85)' : vgrad(ctx, r[1], r[3], mix(pal.bar, '#ffffff', 0.35), mix(pal.bar, pal.a, 0.3)); ctx.fill(); ctx.shadowColor = 'transparent';
       ctx.lineWidth = 3.5; ctx.strokeStyle = over ? 'rgba(255,255,255,0.45)' : pal.edge; ctx.stroke(); }
-      var s2 = fitLine(ctx, txt, F_TITLE, 700, 38, 18, r[2] - 28); ctx.font = '700 ' + s2 + 'px ' + F_TITLE; ctx.fillStyle = over || (user && user.pt && user.ink === 'light') ? '#fff' : (user && user.pt ? '#14110f' : pal.ink); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      var s2 = fitLine(ctx, txt, F_TITLE, 700, 38, 18, r[2] - 28); ctx.font = '700 ' + s2 + 'px ' + F_TITLE; ctx.fillStyle = over || (user && user.pt && user.ink === 'light') ? '#fff' : (user && user.pt ? (d.darkpt ? '#ffffff' : '#14110f') : pal.ink); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(txt, r[0] + r[2] / 2, r[1] + r[3] / 2 + 2);
     }
     ctx.restore();
@@ -438,9 +449,12 @@
       ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
       var ar = (assets.frameGeo && assets.frameGeo.art) || LAYOUT.classic.art; if (d.frame === 'fullart' || d.frame === 'borderless') ar = [0, 0, W, H];
       if (hasArt) drawArtImage(ctx, assets.art, ar, d.art); else { ctx.fillStyle = '#26222c'; ctx.fillRect(0, 0, W, H); }
-      ctx.drawImage(assets.frameImg, 0, 0, W, H);
+      var ovs = overlaysFor(d, pk), er = ovs.filter(function (o) { return o.erase; })[0];
+      if (er) { var tc = document.createElement('canvas'); tc.width = W; tc.height = H; var tx = tc.getContext('2d'); tx.drawImage(assets.frameImg, 0, 0, W, H); tx.clearRect(er.erase[0], er.erase[1], er.erase[2], er.erase[3]); ctx.drawImage(tc, 0, 0); }
+      else ctx.drawImage(assets.frameImg, 0, 0, W, H);
       if (assets.frameGeo && assets.frameGeo.panel && !L.walker && !L.saga) { var bx = L.box; ctx.fillStyle = assets.frameGeo.panel; ctx.fillRect(bx[0] + 4, bx[1] + 4, bx[2] - 8, bx[3] - 8); }
       if (assets.ptImg && L.pt && String(d.pt || '').trim() && !L.walker) ctx.drawImage(assets.ptImg, 0, 0, W, H);
+      ovs.forEach(function (o) { ctx.drawImage(o.img, o.b[0], o.b[1], o.b[2], o.b[3]); });
       ctx.restore();
     } else if (over) {
       /* arte a tutta carta */
@@ -481,6 +495,6 @@
   return {
     W: W, H: H, FRAMES: FRAMES, LAYOUT: LAYOUT, PAL: PAL, PAL_ORDER: PAL_ORDER, RARITY: RARITY, defaults: defaults, paletteKey: paletteKey,
     render: render, tokenize: tokenize, costTokens: costTokens, parseWalker: parseWalker, parseSaga: parseSaga, drawSymbol: drawSymbol,
-    F_UI: F_UI, setResources: setResources, hasSymbols: function () { return Object.keys(RES.symbols).length > 0; }, hasWatermarks: function () { return Object.keys(RES.watermarks).length > 0; }
+    F_UI: F_UI, setResources: setResources, hasSymbols: function () { return Object.keys(RES.symbols).length > 0; }, hasOverlays: function () { return Object.keys(RES.overlays).length > 0; }, hasWatermarks: function () { return Object.keys(RES.watermarks).length > 0; }
   };
 });

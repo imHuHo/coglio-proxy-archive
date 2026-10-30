@@ -195,7 +195,7 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
 
   /* simboli e font importati (pacchetto solo-risorse) */
   const symPng = 'data:image/png;base64,' + framePng.toString('base64');
-  fs.writeFileSync('/tmp/claude-0/dz/res-test.json', JSON.stringify({ app: 'coglio-frames', version: 1, symbols: { W: symPng, U: symPng, R: symPng, CIRCLE: symPng }, fonts: [{ role: 'title', family: 'CPA Title', style: 'normal', ttf: 'data:font/ttf;base64,AAAA' }], watermarks: [{ key: 'prova', name: 'Filigrana di prova', png: symPng }] }));
+  fs.writeFileSync('/tmp/claude-0/dz/res-test.json', JSON.stringify({ app: 'coglio-frames', version: 1, symbols: { W: symPng, U: symPng, R: symPng, CIRCLE: symPng }, fonts: [{ role: 'title', family: 'CPA Title', style: 'normal', ttf: 'data:font/ttf;base64,AAAA' }], watermarks: [{ key: 'prova', name: 'Filigrana di prova', png: symPng }], overlays: ['U', 'R', 'C'].map(k => ({ key: 'crown:' + k, png: symPng, b: [40, 20, 300, 120] })).concat(['U', 'R', 'C'].map(k => ({ key: 'pips:' + k, png: symPng, b: [57, 598, 35, 35] }))) }));
   await page.click('[data-a="dz-back"]'); await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
   const full = () => page.evaluate(() => document.getElementById('dz-cv').toDataURL().length + ':' + document.getElementById('dz-cv').toDataURL().slice(-400));
   const beforeS = await full();
@@ -215,9 +215,20 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await go(); await nav('designer'); await page.waitForSelector('.dz-item');
   ok(await page.evaluate(() => CPADesigner.state.res.length) >= 1 && await page.evaluate(() => CPACard.hasSymbols()), 'simboli ancora attivi dopo il riavvio');
   await page.locator('[data-a="dz-open"]').first().click(); await page.waitForSelector('#dz-cv');
+  await page.setInputFiles('[data-c="dz-framefile"]', { name: 'cornice-extra.png', mimeType: 'image/png', buffer: framePng });
+  await page.waitForFunction(() => /cornice-extra/.test(document.body.innerHTML)); await page.waitForTimeout(300);
+  ok(await page.evaluate(() => CPACard.hasOverlays()), 'extra delle cornici importati');
+  ok(/extra della cornice/i.test(await text()), 'sezione extra nell\u2019editor');
+  const b4 = await full();
+  await page.selectOption('[data-k="crown"]', 'legend'); await page.waitForTimeout(400);
+  const b5 = await full(); ok(b5 !== b4, 'la corona cambia l\u2019anteprima');
+  await page.selectOption('[data-k="pips"]', '1'); await page.waitForTimeout(400);
+  ok((await full()) !== b5, 'i pips cambiano l\u2019anteprima');
+  ok(await page.evaluate(() => CPADesigner.state.cur.crown === 'legend' && CPADesigner.state.cur.pips === '1'), 'extra salvati nel design');
+  await page.selectOption('[data-k="crown"]', ''); await page.selectOption('[data-k="pips"]', '');
   await page.click('[data-a="dz-res-del"]');
   await page.waitForFunction(() => CPADesigner.state.res.length === 0);
-  ok(await page.evaluate(() => !CPACard.hasSymbols() && !CPACard.hasWatermarks()), 'simboli, font e filigrane tolti');
+  ok(await page.evaluate(() => !CPACard.hasSymbols() && !CPACard.hasWatermarks() && !CPACard.hasOverlays()), 'simboli, font e filigrane tolti');
   await page.click('[data-a="dz-back"]');
 
   /* vista mazzo: etichette Design */

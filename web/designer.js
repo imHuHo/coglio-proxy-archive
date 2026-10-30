@@ -53,14 +53,14 @@
       dz.designs = (r[0] || []).map(norm).sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
       var all = (r[1] || []).sort(function (a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
       dz.frames = all.filter(function (f) { return !f.kind || f.kind === 'frame'; });
-      dz.res = all.filter(function (f) { return f.kind === 'font' || f.kind === 'symbols' || f.kind === 'watermarks'; });
+      dz.res = all.filter(function (f) { return f.kind === 'font' || f.kind === 'symbols' || f.kind === 'watermarks' || f.kind === 'overlays'; });
       var marker = all.filter(function (f) { return f.id === 'bundle-marker'; })[0];
       return initResources().then(function () { return syncBundle(marker); }).then(function () { dz.loaded = true; dz.loading = null; });
     }, function () { dz.loaded = true; dz.loading = null; });
     return dz.loading;
   }
   /* risorse incluse nell'app (risorse.json: cornici, simboli, font): si caricano una volta per versione, in silenzio */
-  var BUNDLE_VER = 'mse-2';
+  var BUNDLE_VER = 'mse-3';
   function bundleBlob() {
     if (typeof window.CPA_BUNDLE === 'string') return Promise.resolve(new Blob([window.CPA_BUNDLE], { type: 'application/json' }));
     if (typeof fetch !== 'function') return Promise.resolve(null);
@@ -80,13 +80,17 @@
   }
   /* font e simboli di mana importati dall'utente: si registrano nel browser e nel motore di rendering */
   function initResources() {
-    var fonts = {}, syms = {}, wms = {}, jobs = [];
+    var fonts = {}, syms = {}, wms = {}, ovs = {}, jobs = [];
     dz.res.forEach(function (rec) {
       if (rec.kind === 'font' && rec.blob && window.FontFace && document.fonts) {
         jobs.push(rec.blob.arrayBuffer().then(function (buf) {
           var ff = new FontFace(rec.family, buf, { style: rec.style === 'italic' ? 'italic' : 'normal', weight: '100 900' });
           return ff.load().then(function () { document.fonts.add(ff); if (rec.role === 'title') fonts.title = true; if (rec.role === 'body' || rec.role === 'bodyItalic') fonts.body = true; });
         }).catch(function () { return null; }));
+      } else if (rec.kind === 'overlays' && rec.map) {
+        Object.keys(rec.map).forEach(function (k) {
+          jobs.push(blobImage(rec.map[k]).then(function (r) { var m = rec.meta[k] || {}; ovs[k] = { img: r.img, b: m.b || [0, 0, 745, 1040], erase: m.erase || null }; }).catch(function () { return null; }));
+        });
       } else if (rec.kind === 'watermarks' && rec.map) {
         Object.keys(rec.map).forEach(function (k) {
           jobs.push(blobImage(rec.map[k]).then(function (r) { wms[k] = r.img; }).catch(function () { return null; }));
@@ -97,7 +101,7 @@
         });
       }
     });
-    return Promise.all(jobs).then(function () { R.setResources({ fonts: fonts, symbols: syms, watermarks: wms }); });
+    return Promise.all(jobs).then(function () { R.setResources({ fonts: fonts, symbols: syms, watermarks: wms, overlays: ovs }); });
   }
   function norm(d) {
     var b = R.defaults(d && d.kind === 'token' ? 'token' : 'card'), o = {};
@@ -111,6 +115,7 @@
     if (!R.RARITY[o.rarity]) o.rarity = 'common';
     o.ink = o.ink === 'light' ? 'light' : 'dark';
     o.frameImg = String(o.frameImg || ''); o.watermark = String(o.watermark || '');
+    ['crown', 'inner', 'holo', 'darkpt', 'pips', 'list'].forEach(function (k) { o[k] = String(o[k] || ''); });
     return o;
   }
   function byId(id) { return dz.designs.filter(function (d) { return d.id === id; })[0] || null; }
@@ -271,7 +276,16 @@
             return DB.put('frames', rec);
           });
         });
-        var nsym = 0, nfont = 0, nwm = 0;
+        var nsym = 0, nfont = 0, nwm = 0, nov = 0;
+        if (Array.isArray(data.overlays) && data.overlays.length) {
+          chain = chain.then(function () {
+            var map = {}, meta = {};
+            data.overlays.forEach(function (o) { var b = dataUrlToBlob(o && o.png); if (b && o.key && Array.isArray(o.b)) { map[String(o.key)] = b; meta[String(o.key)] = { b: o.b.map(Number), erase: Array.isArray(o.erase) ? o.erase.map(Number) : null }; nov++; } });
+            if (!nov) return null;
+            var rec = { id: 'res-overlays', kind: 'overlays', map: map, meta: meta, createdAt: Date.now() };
+            dz.res = dz.res.filter(function (x) { return x.id !== rec.id; }); dz.res.push(rec); return DB.put('frames', rec);
+          });
+        }
         if (Array.isArray(data.watermarks) && data.watermarks.length) {
           chain = chain.then(function () {
             var map = {}, nm = {};
@@ -296,14 +310,15 @@
             dz.res = dz.res.filter(function (x) { return x.id !== rec.id; }); dz.res.push(rec); nfont++; return DB.put('frames', rec);
           });
         });
-        chain.then(function () { return nsym || nfont || nwm ? initResources() : null; }).then(function () {
+        chain.then(function () { return nsym || nfont || nwm || nov ? initResources() : null; }).then(function () {
           var parts = [];
           if (n) parts.push(n + (n === 1 ? ' cornice' : ' cornici'));
           if (nsym) parts.push(nsym + ' simboli di mana');
           if (nfont) parts.push(nfont + ' font');
           if (nwm) parts.push(nwm + ' filigrane');
+          if (nov) parts.push(nov + ' extra (corone, stampi, pips…)');
           if (!silent) H.toast(parts.length ? 'Importati: ' + parts.join(', ') + '.' : 'Il pacchetto non contiene niente di utilizzabile.');
-          res(n ? first : (nsym || nfont || nwm ? '*' : null));
+          res(n ? first : (nsym || nfont || nwm || nov ? '*' : null));
         }, function () { if (!silent) H.toast('Non riesco a salvare le risorse su questo dispositivo.'); res(null); });
       };
       r.readAsText(file);
@@ -357,7 +372,18 @@
       (d.frameImg ? lbl('Colore del testo', sel('ink', d.ink, [['dark', 'Scuro'], ['light', 'Chiaro']])) : '') + '</div>' +
       '<div class="btns"><label class="btn small filebtn">Importa cornici (PNG o pacchetto)<input type="file" accept="image/png,image/webp,.json,application/json" data-c="dz-framefile" multiple hidden></label>' +
       (d.frameImg ? '<button class="btn small danger" data-a="dz-frame-del">' + (/^auto:/.test(d.frameImg) ? 'Elimina il pacchetto di cornici' : 'Elimina questa cornice') + '</button>' : '') + '</div>' +
-      (dz.res.length ? '<p class="hint">Simboli di mana e font importati: ' + dz.res.map(function (x) { return x.kind === 'symbols' ? 'simboli' : x.kind === 'watermarks' ? 'filigrane' : 'font ' + (x.role || ''); }).join(', ') + '. <button class="btn small danger" data-a="dz-res-del">Togli simboli, font e filigrane</button></p>' : '') + '<p class="hint">Le cornici importate (PNG tuoi con la zona dell’arte trasparente, oppure un pacchetto .json) restano solo su questo dispositivo. Con «automatica» la cornice segue i colori della carta.</p></section>';
+      (dz.res.length ? '<p class="hint">Simboli di mana e font importati: ' + dz.res.map(function (x) { return x.kind === 'symbols' ? 'simboli' : x.kind === 'watermarks' ? 'filigrane' : x.kind === 'overlays' ? 'extra' : 'font ' + (x.role || ''); }).join(', ') + '. <button class="btn small danger" data-a="dz-res-del">Togli simboli, font e filigrane</button></p>' : '') + '<p class="hint">Le cornici importate (PNG tuoi con la zona dell’arte trasparente, oppure un pacchetto .json) restano solo su questo dispositivo. Con «automatica» la cornice segue i colori della carta.</p></section>';
+    /* extra delle cornici importate */
+    if (R.hasOverlays() && d.frameImg) {
+      var yn = [['', 'No'], ['1', 'Sì']];
+      h += '<section class="panel"><h2 class="sect" style="margin:0">Extra della cornice</h2>' +
+        '<div class="dz-row">' + lbl('Corona leggendaria', sel('crown', d.crown, [['', 'Nessuna'], ['legend', 'Corona'], ['floating', 'Corona fluttuante']])) +
+        lbl('Corona interna', sel('inner', d.inner, [['', 'Nessuna'], ['nyx', 'Nyx'], ['comp', 'Compagno']])) + '</div>' +
+        '<div class="dz-row">' + lbl('Stampo olografico', sel('holo', d.holo, [['', 'Nessuno'], ['color', 'A colori'], ['plain', 'Semplice'], ['gray', 'Grigio'], ['acorn', 'Ghianda'], ['alchemy', 'Alchemy']])) +
+        lbl('«The List»', sel('list', d.list, [['', 'Nessuno'], ['regular', 'Post-M15'], ['old', 'Pre-M15']])) + '</div>' +
+        '<div class="dz-row">' + lbl('Forza/Costituzione scura', sel('darkpt', d.darkpt, yn)) + lbl('Pips dell\u2019identità di colore', sel('pips', d.pips, yn)) + '</div>' +
+        '<p class="hint">Le corone e gli stampi seguono il colore della carta; i pips usano i colori della carta (qui sopra).</p></section>';
+    }
     /* testo */
     var cm = R.paletteKey(d);
     h += '<section class="panel"><h2 class="sect" style="margin:0">Testo</h2>' +

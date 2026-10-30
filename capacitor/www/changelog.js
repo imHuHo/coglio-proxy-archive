@@ -1,6 +1,10 @@
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '3.1.0', date: '30 ottobre 2026', title: 'Più cornici ed extra', items: [
+    { t: 'Nuove cornici', d: 'Nyx (Theros), Terre M15, Neve (Kaldheim), Devoid (Zendikar) e Miracle: le trovi nel menu «Cornice importata», con scelta automatica sui colori.' },
+    { t: 'Extra della cornice', d: 'Nell\'editor c\'è la sezione «Extra della cornice»: corona leggendaria (normale o fluttuante), corona interna (Nyx o Compagno), stampo olografico, forza/costituzione scura, pips dell\'identità di colore e il timbro «The List».' }
+  ] },
   { v: '3.0.0', date: '30 ottobre 2026', title: 'Coglio Proxy Designer', items: [
     { t: 'Nuova sezione Designer', d: 'Crei proxy personalizzate direttamente nell\'app: carte tue da zero, token, carte con cornici speciali e alter di carte che esistono già. Anteprima in tempo reale mentre scrivi.' },
     { t: 'Cornici disegnate da noi', d: 'Classica, tutta arte, senza bordo, token, planeswalker e saga, in tutti i colori, con bordo nero, bianco, argento o oro e angoli arrotondati o quadrati. Mana, tap e simboli ibridi si scrivono tra graffe: {2}{U}{U}, {T}, {W/U}, {G/P}.' },
