@@ -1,6 +1,11 @@
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '3.3.2', date: '31 ottobre 2026', title: 'La corona giusta per ogni cornice', items: [
+    { t: 'Corona automatica in base alla cornice', d: 'Con le cornici a tutta larghezza (esteso, senza bordo, boxtopper) la corona leggendaria diventa da sola quella fluttuante, senza gambe che scendono sull\'arte. Sulle cornici normali resta quella classica.' },
+    { t: 'Corone fluttuanti per le bifronte', d: 'Le cornici Transform e Modali estese o senza bordo hanno la loro corona fluttuante con il posto per l\'icona di trasformazione. Aggiorna le cornici dal catalogo per averle.' },
+    { t: 'Via la riga sotto il titolo', d: 'Sparito il filo di cornice che restava sotto la corona fluttuante.' },
+  ] },
   { v: '3.3.1', date: '31 ottobre 2026', title: 'Carte più fedeli a Card Conjurer', items: [
     { t: 'Simboli del mana di Card Conjurer', d: 'I simboli (numeri, colori, ibridi, phyrexiani, neve, tap) sono quelli di Card Conjurer: numeri più grandi e pesanti, colori più scuri e ombra in basso a sinistra.' },
     { t: 'Font delle regole giusto', d: 'Il testo delle regole usava una versione più sottile di MPlantin: ora è quella di Card Conjurer, con lo stesso spessore.' },

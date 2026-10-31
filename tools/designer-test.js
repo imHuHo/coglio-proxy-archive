@@ -511,6 +511,16 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   ok(cut.hasCrown, 'la cornice porta la sua corona');
   ok(cut.valley[0] < 40 && cut.valley[1] < 40 && cut.hole[1] > 100, 'corona leggendaria: fuori dal profilo la cornice è ritagliata, dentro la barra resta');
 
+  /* il tipo di corona segue la cornice: a tutta larghezza (esteso, senza bordo) solo la corona fluttuante, mai quella "normale" */
+  const fl = await page.evaluate(async () => {
+    const d = CPADesigner.state.cur; d.frameImg = 'auto:cc-crw'; d.crown = 'legend';
+    const fa = await CPADesigner.assetsFor(d), cr = document.createElement('canvas'); cr.width = 100; cr.height = 100; const cx = cr.getContext('2d'); cx.fillStyle = '#f00'; cx.fillRect(0, 0, 100, 100);
+    const run = (geo) => { const c = document.createElement('canvas'); c.width = 745; c.height = 1040; const x = c.getContext('2d'); CPACard.render(x, d, { art: null, frameImg: fa.frameImg, ptImg: null, frameGeo: geo, crownImg: cr }); const p = x.getImageData(360, 60, 1, 1).data; return p[0] > 200 && p[1] < 60 && p[2] < 60; };
+    const g = (art, f) => Object.assign({}, fa.frameGeo, { art: art, crown: [23, 20, 699, 106] }, f ? { crownF: 1 } : {});
+    return { extFloat: run(g([0, 84, 745, 552], true)), extRegular: run(g([0, 84, 745, 552], false)), regFloat: run(g([57, 117, 631, 461], true)), regRegular: run(Object.assign(g([57, 117, 631, 461], false), { crown: [23, 20, 699, 106] })) };
+  });
+  ok(fl.extFloat && !fl.extRegular && !fl.regFloat && fl.regRegular, 'la corona della cornice segue il tipo: ' + JSON.stringify(fl));
+
   /* mobile: sei voci nel menu in basso */
   await page.setViewportSize({ width: 390, height: 800 });
   const tabs = await page.evaluate(() => { const t = document.querySelector('.tabs'); return { n: t.querySelectorAll('.nav').length, w: t.scrollWidth, cw: t.clientWidth }; });

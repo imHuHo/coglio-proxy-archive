@@ -70,7 +70,7 @@
     return dz.loading;
   }
   /* risorse incluse nell'app (risorse.json: cornici, simboli, font): si caricano una volta per versione, in silenzio */
-  var BUNDLE_VER = 'mse-9';
+  var BUNDLE_VER = 'mse-10';
   function bundleBlob() {
     if (typeof window.CPA_BUNDLE === 'string') return Promise.resolve(new Blob([window.CPA_BUNDLE], { type: 'application/json' }));
     if (window.cpaNet && window.cpaNet.resource) return window.cpaNet.resource('risorse.json').then(function (t) { return t ? new Blob([t], { type: 'application/json' }) : null; }).catch(function () { return null; });
@@ -180,7 +180,7 @@
   }
   /* cornice (e, se la carta è bicolore, anche la seconda) pronta per il disegno */
   function assetsFor(d) {
-    var mx = R.mixOf(d.mix), auto = /^auto:/.test(d.frameImg || ''), cm = d.crown === 'legend' && auto ? (R.mixOf(d.cmix) || [R.paletteKey(d)]) : null;
+    var mx = R.mixOf(d.mix), auto = /^auto:/.test(d.frameImg || ''), cm = d.crown && auto ? (R.mixOf(d.cmix) || [R.paletteKey(d)]) : null;
     /* le cornici bifronte portano la propria corona leggendaria: si prende quella del colore (o dei due colori) scelto per la corona */
     return Promise.all([frameAssets(fid(d)), mx && auto ? frameAssets(fid(d, mx[1])) : null, d.setImg ? artImage(d.setImg) : null, cm ? frameAssets(fid(d, cm[0])) : null, cm && cm[1] ? frameAssets(fid(d, cm[1])) : null]).then(function (r) {
       var base = r[0] ? (r[1] ? { frameImg: r[0].frameImg, ptImg: r[0].ptImg, crownImg: r[0].crownImg, frameGeo: r[0].frameGeo, frameImg2: r[1].frameImg, ptImg2: r[1].ptImg } : r[0]) : null;
@@ -807,13 +807,13 @@
     if (R.hasOverlays() && d.frameImg) {
       var yn = [['', 'No'], ['1', 'Sì']];
       tLook += '<section class="panel"><h3 class="dz-h">Extra della cornice</h3>' +
-        '<div class="dz-row">' + lbl('Corona leggendaria', sel('crown', d.crown, [['', 'Nessuna'], ['legend', 'Corona'], ['floating', 'Corona fluttuante']])) +
+        '<div class="dz-row">' + lbl('Corona leggendaria', sel('crown', d.crown, [['', 'Nessuna'], ['legend', 'Corona (si adatta alla cornice)'], ['floating', 'Corona fluttuante (sempre)']])) +
         lbl('Corona interna', sel('inner', d.inner, [['', 'Nessuna'], ['nyx', 'Nyx'], ['comp', 'Compagno']])) + '</div>' +
         (d.crown ? mixRow('Corona a due colori (sfumata)', 'cmix', d.cmix) : '') +
         '<div class="dz-row">' + lbl('Stampo olografico', sel('holo', d.holo, [['', 'Nessuno'], ['color', 'A colori'], ['plain', 'Semplice'], ['gray', 'Grigio'], ['acorn', 'Ghianda'], ['alchemy', 'Alchemy']])) +
         lbl('«The List»', sel('list', d.list, [['', 'Nessuno'], ['regular', 'Post-M15'], ['old', 'Pre-M15']])) + '</div>' +
         '<div class="dz-row">' + lbl('Forza/Costituzione scura', sel('darkpt', d.darkpt, yn)) + lbl('Pips dell’identità di colore', sel('pips', d.pips, yn)) + '</div>' +
-        '<p class="hint">Le corone e gli stampi seguono il colore della carta; i pips usano i colori della carta.</p></section>';
+        '<p class="hint">Le corone e gli stampi seguono il colore della carta; sulle cornici a tutta larghezza (esteso, senza bordo) la corona diventa da sola quella fluttuante.</p></section>';
     }
     h += tabPanel('aspetto', tLook);
 

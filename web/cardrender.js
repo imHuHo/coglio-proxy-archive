@@ -318,18 +318,22 @@
     var x = r[0] + r[2] - (user ? 9 : 14) - cw + 1;
     costs.forEach(function (c, i) { drawSymbol(ctx, c, x + i * (sd + sp) + sd / 2, r[1] + r[3] / 2, sd); });
   }
+  /* cornice con l'arte a tutta larghezza (esteso, senza bordo, boxtopper): la corona deve essere quella fluttuante */
+  function extendedFrame(g) { var a = g && g.art; return !!(a && a[0] < 20 && a[2] >= 700); }
   /* extra delle cornici importate (corone, stampi, P/C scuro, pips, The List): chiavi in ordine dal basso verso l'alto */
   function overlaysFor(d, pk, assets) {
     var o = RES.overlays, keys = [], ex = pk === 'L' || pk === 'C' ? 'A' : pk, cm = mixOf(d.cmix), ck = cm ? cm[0] : pk, out = [];
     function add(k, mask, cr) { var v = o[k]; if (v) out.push(mask ? { img: v.img, b: v.b, erase: v.erase, mask: true } : v); if (v && cr && !mask) out.crown = v; }
     if (d.darkpt) add('darkpt:' + (pk === 'L' ? 'C' : pk));
     if (d.crown === 'legend' || d.crown === 'floating') {
-      var pre = d.crown === 'legend' ? 'crown:' : 'fcrown:';
-      if (d.crown === 'legend' && assets && assets.crownImg) {
+      /* il tipo di corona segue la cornice: nelle cornici a tutta larghezza (esteso, senza bordo) la corona "normale" finirebbe sull'arte, quindi si usa quella fluttuante */
+      var kind = d.crown === 'legend' && extendedFrame(assets && assets.frameGeo) ? 'floating' : d.crown, pre = kind === 'legend' ? 'crown:' : 'fcrown:';
+      var pf = !!(assets && assets.frameGeo && assets.frameGeo.crownF);
+      if (assets && assets.crownImg && pf === (kind === 'floating')) {
         /* corona propria della cornice (bifronte): sostituisce quella generica */
         var cb = (assets.frameGeo && assets.frameGeo.crown) || [20, 20, 704, 173], c1 = { img: assets.crownImg, b: cb };
-        out.push(c1); out.crown = c1; if (cm && assets.crownImg2) out.push({ img: assets.crownImg2, b: cb, mask: true });
-      } else { add(pre + ck, false, d.crown === 'legend'); if (cm) add(pre + cm[1], true); }
+        out.push(c1); if (kind === 'legend') out.crown = c1; if (cm && assets.crownImg2) out.push({ img: assets.crownImg2, b: cb, mask: true });
+      } else { add(pre + ck, false, kind === 'legend'); if (cm) add(pre + cm[1], true); }
     }
     if (d.inner === 'nyx' || d.inner === 'comp') add('inner:' + d.inner + ':' + ex);
     if (d.holo === 'color') add('holo:' + pk); else if (d.holo) add('holo:' + d.holo);
