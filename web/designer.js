@@ -70,7 +70,7 @@
     return dz.loading;
   }
   /* risorse incluse nell'app (risorse.json: cornici, simboli, font): si caricano una volta per versione, in silenzio */
-  var BUNDLE_VER = 'mse-5';
+  var BUNDLE_VER = 'mse-6';
   function bundleBlob() {
     if (typeof window.CPA_BUNDLE === 'string') return Promise.resolve(new Blob([window.CPA_BUNDLE], { type: 'application/json' }));
     if (window.cpaNet && window.cpaNet.resource) return window.cpaNet.resource('risorse.json').then(function (t) { return t ? new Blob([t], { type: 'application/json' }) : null; }).catch(function () { return null; });

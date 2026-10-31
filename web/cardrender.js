@@ -133,12 +133,12 @@
     var k = String(key).toUpperCase(), r = d / 2;
     var img = RES.symbols[k];
     if (inText && SYMTXT && /^\d+$/.test(k) && RES.symbols.CIRCLE) { /* nel testo, come in Card Conjurer: disco piatto e numero grande */
-      ctx.save(); disc(ctx, cx, cy, r, '#cbc6c9'); ctx.fillStyle = '#16120f'; ctx.font = '500 ' + Math.round(d * (k.length > 1 ? 0.62 : 1.12)) + 'px ' + F_BODY; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k, cx, cy + d * 0.05); ctx.restore(); return;
+      ctx.save(); disc(ctx, cx, cy, r, '#cbc6c9'); ctx.fillStyle = '#16120f'; ctx.strokeStyle = '#16120f'; ctx.lineWidth = d * 0.03; ctx.lineJoin = 'round'; ctx.font = '500 ' + Math.round(d * (k.length > 1 ? 0.62 : 1.22)) + 'px ' + F_BODY; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k, cx, cy + d * 0.05); ctx.strokeText(k, cx, cy + d * 0.05); ctx.restore(); return;
     }
     if (!img && /^\d+$/.test(k) && RES.symbols.CIRCLE) {
       var cir = RES.symbols.CIRCLE, ch = d * 1.08, cw = ch * cir.width / cir.height;
       ctx.save(); ctx.drawImage(cir, cx - cw / 2, cy - ch / 2, cw, ch);
-      ctx.fillStyle = '#14110f'; ctx.font = '700 ' + Math.round(d * (k.length > 1 ? 0.6 : inText ? 1.1 : 0.88)) + 'px ' + F_BODY; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k, cx, cy + d * (inText ? 0.05 : 0.07));
+      ctx.fillStyle = '#14110f'; ctx.font = '700 ' + Math.round(d * (k.length > 1 ? 0.6 : inText ? 1.1 : 0.88)) + 'px ' + F_BODY; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k, cx, cy + d * (inText ? 0.05 : 0.07)); if (SYMTXT) { ctx.strokeStyle = '#14110f'; ctx.lineWidth = d * 0.028; ctx.lineJoin = 'round'; ctx.strokeText(k, cx, cy + d * 0.07); }
       ctx.restore(); return;
     }
     if (img) { var ih = d * 1.08, iw = ih * img.width / img.height; ctx.save(); ctx.drawImage(img, cx - iw / 2, cy - ih / 2, iw, ih); ctx.restore(); return; }
@@ -221,7 +221,7 @@
       var ox = align === 'center' ? x + (boxW - l.w) / 2 : x;
       l.items.forEach(function (it) {
         if (it.t.t === 'sym') drawSymbol(ctx, it.t.s, ox + it.x + it.w / 2 - L.size * 0.02, cy + L.size * 0.5, L.size * (SYMTXT || 0.84), true);
-        else { ctx.font = (it.t.it ? 'italic ' : '') + L.size + 'px ' + L.face; ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(it.t.s, ox + it.x, cy + L.size * 0.82); }
+        else { ctx.font = (it.t.it ? 'italic ' : '') + L.size + 'px ' + L.face; ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(it.t.s, ox + it.x, cy + L.size * 0.82); if (SYMTXT) { ctx.lineWidth = L.size * 0.012; ctx.lineJoin = 'round'; ctx.strokeStyle = ink; ctx.strokeText(it.t.s, ox + it.x, cy + L.size * 0.82); } }
       });
       cy += l.lh + (l.para ? L.gap : 0);
     });
@@ -398,7 +398,7 @@
       ctx.drawImage(wm, x + (w - ww) / 2, y + (h - wh) / 2, ww, wh); ctx.restore();
     }
     var padX = 22, padY = 16, iw = w - padX * 2, ih = h - padY * 2;
-    var f = fit(ctx, tokenize(d.rules), String(d.flavor || '').trim() ? tokenize(d.flavor) : null, iw, ih, L.center ? 34 : user ? 37 : 33, 15, F_BODY, user && !L.center ? 0.94 : 0);
+    var f = fit(ctx, tokenize(d.rules), String(d.flavor || '').trim() ? tokenize(d.flavor) : null, iw, ih, L.center ? 34 : user ? 34.5 : 33, 15, F_BODY, user && !L.center ? 0.985 : 0);
     var top = y + padY + Math.max(0, (ih - f.h) / 2);
     ctx.save(); shade(ctx, !!user && lightInk(ink));
     var align = L.center ? 'center' : 'left', yy = drawLayout(ctx, f.a, x + padX, top, ink, align, iw);
