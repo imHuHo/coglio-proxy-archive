@@ -2,6 +2,7 @@
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
   { v: '3.3.1', date: '31 ottobre 2026', title: 'Carte più fedeli a Card Conjurer', items: [
+    { t: 'Simboli del mana di Card Conjurer', d: 'I simboli (numeri, colori, ibridi, phyrexiani, neve, tap) sono quelli di Card Conjurer: numeri più grandi e pesanti, colori più scuri e ombra in basso a sinistra.' },
     { t: 'Font delle regole giusto', d: 'Il testo delle regole usava una versione più sottile di MPlantin: ora è quella di Card Conjurer, con lo stesso spessore.' },
     { t: 'Testo e simboli come sulle carte vere', d: 'Con le cornici importate titolo, tipo e regole hanno ora le stesse dimensioni e la stessa interlinea di Card Conjurer, quindi il testo va a capo negli stessi punti. I simboli del mana sono più grandi e il «2» (e gli altri numeri) si legge meglio, anche dentro il testo delle regole.' },
     { t: 'Corona leggendaria giusta per le bifronte', d: 'Le cornici Transform e Modali hanno la loro corona dedicata, con il posto per l\'icona di trasformazione, e la striscia di cornice sotto la corona non si vede più. Se hai già scaricato quei pacchetti, nel Catalogo cornici trovi il tasto «Aggiorna».' },

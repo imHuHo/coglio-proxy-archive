@@ -9,7 +9,7 @@
   var W = 745, H = 1040;
   var BASE_TITLE = "Cinzel, 'Palatino Linotype', 'Book Antiqua', Georgia, serif";
   var BASE_BODY = "'EB Garamond', 'Palatino Linotype', 'Book Antiqua', Georgia, serif";
-  var F_TITLE = BASE_TITLE, F_BODY = BASE_BODY, F_INFO = "Manrope, 'Segoe UI', Arial, sans-serif";
+  var F_TITLE = BASE_TITLE, F_BODY = BASE_BODY, F_NUM = BASE_BODY, F_INFO = "Manrope, 'Segoe UI', Arial, sans-serif";
   /* risorse importate dall'utente (font e simboli di mana): senza di esse si usano font e simboli disegnati qui */
   var RES = { symbols: {}, watermarks: {}, overlays: {}, walker: null };
   function setResources(r) {
@@ -17,6 +17,7 @@
     RES.symbols = r.symbols || {}; RES.watermarks = r.watermarks || {}; RES.overlays = r.overlays || {}; RES.walker = r.walker && r.walker.plus ? r.walker : null;
     F_TITLE = f.title ? "'CPA Title', " + BASE_TITLE : BASE_TITLE;
     F_BODY = f.body ? "'CPA Body', " + BASE_BODY : BASE_BODY;
+    F_NUM = f.num ? "'CPA Num', " + F_BODY : F_BODY;
     F_INFO = f.info ? "'CPA Info', Manrope, 'Segoe UI', Arial, sans-serif" : "Manrope, 'Segoe UI', Arial, sans-serif";
   }
   var F_UI = "Manrope, 'Segoe UI', Arial, sans-serif";
@@ -132,16 +133,19 @@
   function drawSymbol(ctx, key, cx, cy, d, inText) {
     var k = String(key).toUpperCase(), r = d / 2;
     var img = RES.symbols[k];
-    if (inText && SYMTXT && /^\d+$/.test(k) && RES.symbols.CIRCLE) { /* nel testo, come in Card Conjurer: disco piatto e numero grande */
-      ctx.save(); disc(ctx, cx, cy, r, '#cbc6c9'); ctx.fillStyle = '#16120f'; ctx.strokeStyle = '#16120f'; ctx.lineWidth = d * 0.03; ctx.lineJoin = 'round'; ctx.font = '500 ' + Math.round(d * (k.length > 1 ? 0.62 : 1.22)) + 'px ' + F_BODY; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k, cx, cy + d * 0.05); ctx.strokeText(k, cx, cy + d * 0.05); ctx.restore(); return;
-    }
     if (!img && /^\d+$/.test(k) && RES.symbols.CIRCLE) {
       var cir = RES.symbols.CIRCLE, ch = d * 1.08, cw = ch * cir.width / cir.height;
       ctx.save(); ctx.drawImage(cir, cx - cw / 2, cy - ch / 2, cw, ch);
-      ctx.fillStyle = '#14110f'; ctx.font = '700 ' + Math.round(d * (k.length > 1 ? 0.6 : inText ? 1.1 : 0.88)) + 'px ' + F_BODY; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k, cx, cy + d * (inText ? 0.05 : 0.07)); if (SYMTXT) { ctx.strokeStyle = '#14110f'; ctx.lineWidth = d * 0.028; ctx.lineJoin = 'round'; ctx.strokeText(k, cx, cy + d * 0.07); }
+      ctx.fillStyle = '#14110f'; ctx.font = '700 ' + Math.round(d * (k.length > 1 ? 0.62 : 1.08)) + 'px ' + F_NUM; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k, cx, cy + d * 0.06);
       ctx.restore(); return;
     }
-    if (img) { var ih = d * 1.08, iw = ih * img.width / img.height; ctx.save(); ctx.drawImage(img, cx - iw / 2, cy - ih / 2, iw, ih); ctx.restore(); return; }
+    if (img) {
+      var ih = d * 1.08, iw = ih * img.width / img.height; ctx.save();
+      if (!inText && /^(\d+|[XYZWUBRGCSTQEP]|CHAOS|INFINITE|[WUBRG]\/[WUBRG]|[WUBRG]\/P)$/.test(k)) { ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 0; ctx.shadowOffsetX = -d * 0.04; ctx.shadowOffsetY = d * 0.075; } /* simboli di Card Conjurer: disco piatto con l'ombra in basso a sinistra, come in Card Conjurer */
+      ctx.drawImage(img, cx - iw / 2, cy - ih / 2, iw, ih);
+      if (/^2\/[WUBRG]$/.test(k)) { ctx.shadowColor = 'transparent'; ctx.fillStyle = '#16120f'; ctx.font = '700 ' + Math.round(d * 0.5) + 'px ' + F_NUM; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('2', cx - d * 0.22, cy - d * 0.2); } /* l'immagine ha solo le due metà: il 2 si scrive sopra */
+      ctx.restore(); return;
+    }
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.arc(cx - r * 0.08, cy + r * 0.1, r, 0, 6.2832); ctx.fill();
     var parts = k.split('/');

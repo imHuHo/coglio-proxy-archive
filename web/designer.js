@@ -70,7 +70,7 @@
     return dz.loading;
   }
   /* risorse incluse nell'app (risorse.json: cornici, simboli, font): si caricano una volta per versione, in silenzio */
-  var BUNDLE_VER = 'mse-6';
+  var BUNDLE_VER = 'mse-9';
   function bundleBlob() {
     if (typeof window.CPA_BUNDLE === 'string') return Promise.resolve(new Blob([window.CPA_BUNDLE], { type: 'application/json' }));
     if (window.cpaNet && window.cpaNet.resource) return window.cpaNet.resource('risorse.json').then(function (t) { return t ? new Blob([t], { type: 'application/json' }) : null; }).catch(function () { return null; });
@@ -97,7 +97,7 @@
       if (rec.kind === 'font' && rec.blob && window.FontFace && document.fonts) {
         jobs.push(rec.blob.arrayBuffer().then(function (buf) {
           var ff = new FontFace(rec.family, buf, { style: rec.style === 'italic' ? 'italic' : 'normal', weight: '100 900' });
-          return ff.load().then(function () { document.fonts.add(ff); if (rec.role === 'title') fonts.title = true; if (rec.role === 'info') fonts.info = true; if (rec.role === 'body' || rec.role === 'bodyItalic') fonts.body = true; });
+          return ff.load().then(function () { document.fonts.add(ff); if (rec.role === 'title') fonts.title = true; if (rec.role === 'info') fonts.info = true; if (rec.role === 'num') fonts.num = true; if (rec.role === 'body' || rec.role === 'bodyItalic') fonts.body = true; });
         }).catch(function () { return null; }));
       } else if (rec.kind === 'walker' && rec.map) {
         Object.keys(rec.map).forEach(function (k) {
@@ -235,7 +235,7 @@
     if (!fontsP) {
       var f = document.fonts;
       fontsP = !f || !f.load ? Promise.resolve() : Promise.race([
-        Promise.all(['700 24px Cinzel', '600 24px Cinzel', '700 24px \'CPA Title\'', '400 24px \'CPA Body\'', 'italic 400 24px \'CPA Body\'', '400 24px \'CPA Info\'', '400 24px "EB Garamond"', 'italic 400 24px "EB Garamond"', '700 24px "EB Garamond"', '600 24px Manrope'].map(function (x) { return f.load(x).catch(function () { return null; }); })),
+        Promise.all(['700 24px Cinzel', '600 24px Cinzel', '700 24px \'CPA Title\'', '400 24px \'CPA Body\'', 'italic 400 24px \'CPA Body\'', '400 24px \'CPA Info\'', '400 24px \'CPA Num\'', '400 24px "EB Garamond"', 'italic 400 24px "EB Garamond"', '700 24px "EB Garamond"', '600 24px Manrope'].map(function (x) { return f.load(x).catch(function () { return null; }); })),
         new Promise(function (r) { setTimeout(r, 4000); })]);
     }
     return fontsP;
