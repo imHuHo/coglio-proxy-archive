@@ -559,3 +559,12 @@ img.dz-msym { box-shadow: none; }
 .dz-field .hint { margin: 0; }
 .dz-ftiles { max-height: 470px; }
 .dz-ftiles.dz-prgrid { max-height: 300px; }
+
+/* tasto «Catalogo cornici»: una vetrina colorata */
+.btn.shop { position: relative; display: inline-flex; align-items: center; gap: 8px; color: #fff; border-color: transparent; font-weight: 700; background: linear-gradient(135deg, #7c3aed 0%, #db2777 55%, #f97316 100%); box-shadow: 0 2px 8px rgba(124, 58, 237, .35); overflow: hidden; }
+.btn.shop::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, .28) 50%, transparent 65%); transform: translateX(-120%); transition: transform .6s ease; pointer-events: none; }
+.btn.shop:hover { filter: brightness(1.06); box-shadow: 0 4px 14px rgba(219, 39, 119, .4); }
+.btn.shop:hover::after { transform: translateX(120%); }
+.btn.shop:active { transform: translateY(1px); }
+.btn.shop .shop-ic { flex: none; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .25)); }
+@media (prefers-reduced-motion: reduce) { .btn.shop::after { transition: none; } }

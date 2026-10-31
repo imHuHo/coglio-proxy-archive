@@ -1,6 +1,12 @@
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '3.3.1', date: '31 ottobre 2026', title: 'Carte più fedeli a Card Conjurer', items: [
+    { t: 'Testo e simboli come sulle carte vere', d: 'Con le cornici importate titolo, tipo e regole hanno ora le stesse dimensioni e la stessa interlinea di Card Conjurer, quindi il testo va a capo negli stessi punti. I simboli del mana sono più grandi e il «2» (e gli altri numeri) si legge meglio, anche dentro il testo delle regole.' },
+    { t: 'Corona leggendaria giusta per le bifronte', d: 'Le cornici Transform e Modali hanno la loro corona dedicata, con il posto per l\'icona di trasformazione, e la striscia di cornice sotto la corona non si vede più. Se hai già scaricato quei pacchetti, nel Catalogo cornici trovi il tasto «Aggiorna».' },
+    { t: 'Info in basso come sulle carte stampate', d: 'Numero e rarità sopra, sigla del set e illustratore (con il pennello) sotto.' },
+    { t: 'Catalogo cornici più simpatico', d: 'Il tasto ha ora una vetrina colorata.' },
+  ] },
   { v: '3.3.0', date: '31 ottobre 2026', title: 'Bicolore e carte bifronte', items: [
     { t: 'Cornici e corone a due colori', d: 'Nel Designer puoi mescolare due colori nella cornice (e, con le cornici importate, anche nella corona): il secondo compare da destra con una sfumatura, come nei bicolori di Card Conjurer, anche sul riquadro di forza e costituzione. Le carte con costo ibrido, ad esempio {W/U}, lo prendono da sole.' },
     { t: 'Scegli come mescolare i colori', d: 'Con una carta a due colori scegli tra: normale (dorata), solo la corona a due colori, oppure cornice e corona a due colori. L\'ordine dei colori segue il costo di mana, e puoi sceglierli a mano.' },

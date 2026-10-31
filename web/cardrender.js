@@ -129,13 +129,16 @@
     ctx.fillText(s, cx, cy + d * 0.04);
   }
   /* d = diametro. key = contenuto fra graffe, es. "2", "U", "W/U", "2/W", "G/P", "T" */
-  function drawSymbol(ctx, key, cx, cy, d) {
+  function drawSymbol(ctx, key, cx, cy, d, inText) {
     var k = String(key).toUpperCase(), r = d / 2;
     var img = RES.symbols[k];
+    if (inText && SYMTXT && /^\d+$/.test(k) && RES.symbols.CIRCLE) { /* nel testo, come in Card Conjurer: disco piatto e numero grande */
+      ctx.save(); disc(ctx, cx, cy, r, '#cbc6c9'); ctx.fillStyle = '#16120f'; ctx.font = '500 ' + Math.round(d * (k.length > 1 ? 0.62 : 1.12)) + 'px ' + F_BODY; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k, cx, cy + d * 0.05); ctx.restore(); return;
+    }
     if (!img && /^\d+$/.test(k) && RES.symbols.CIRCLE) {
       var cir = RES.symbols.CIRCLE, ch = d * 1.08, cw = ch * cir.width / cir.height;
       ctx.save(); ctx.drawImage(cir, cx - cw / 2, cy - ch / 2, cw, ch);
-      ctx.fillStyle = '#14110f'; ctx.font = '700 ' + Math.round(d * (k.length > 1 ? 0.5 : 0.64)) + 'px ' + F_TITLE; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k, cx, cy + d * 0.05);
+      ctx.fillStyle = '#14110f'; ctx.font = '700 ' + Math.round(d * (k.length > 1 ? 0.6 : inText ? 1.1 : 0.88)) + 'px ' + F_BODY; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k, cx, cy + d * (inText ? 0.05 : 0.07));
       ctx.restore(); return;
     }
     if (img) { var ih = d * 1.08, iw = ih * img.width / img.height; ctx.save(); ctx.drawImage(img, cx - iw / 2, cy - ih / 2, iw, ih); ctx.restore(); return; }
@@ -191,15 +194,15 @@
   }
   function wordW(ctx, t, size, face) { ctx.font = (t.it ? 'italic ' : '') + size + 'px ' + face; return ctx.measureText(t.s).width; }
   /* Impagina i paragrafi in larghezza maxW: restituisce {lines:[{items:[{t,x,w}], h}], h} */
-  function layout(ctx, paras, maxW, size, face, forceItalic) {
-    var lines = [], lh = Math.round(size * 1.16), gap = Math.round(size * 0.34), total = 0;
+  function layout(ctx, paras, maxW, size, face, forceItalic, lhk) {
+    var lines = [], lh = Math.round(size * (lhk || 1.16)), gap = Math.round(size * 0.34), total = 0;
     paras.forEach(function (p, pi) {
       var cur = { items: [], x: 0 }, sp = size * 0.26, lastSp = null;
       var push = function (extra) { lines.push({ items: cur.items, w: cur.x, lh: lh, para: extra }); cur = { items: [], x: 0 }; };
       p.forEach(function (t) {
         if (forceItalic) t = { t: t.t, s: t.s, it: true };
         if (t.t === 'sp') { if (cur.items.length) { lastSp = { t: t, x: cur.x, w: sp }; cur.x += sp; } return; }
-        var w = t.t === 'sym' ? size * 0.92 : wordW(ctx, t, size, face);
+        var w = t.t === 'sym' ? size * (SYMTXT ? 0.84 : 0.92) : wordW(ctx, t, size, face);
         if (cur.items.length && cur.x - (lastSp && lastSp.x + lastSp.w === cur.x ? sp : 0) + w > maxW) {
           cur.x -= (lastSp && lastSp.x + lastSp.w === cur.x ? sp : 0); push(false);
         }
@@ -217,7 +220,7 @@
     L.lines.forEach(function (l) {
       var ox = align === 'center' ? x + (boxW - l.w) / 2 : x;
       l.items.forEach(function (it) {
-        if (it.t.t === 'sym') drawSymbol(ctx, it.t.s, ox + it.x + it.w / 2 - L.size * 0.02, cy + L.size * 0.5, L.size * 0.84);
+        if (it.t.t === 'sym') drawSymbol(ctx, it.t.s, ox + it.x + it.w / 2 - L.size * 0.02, cy + L.size * 0.5, L.size * (SYMTXT || 0.84), true);
         else { ctx.font = (it.t.it ? 'italic ' : '') + L.size + 'px ' + L.face; ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(it.t.s, ox + it.x, cy + L.size * 0.82); }
       });
       cy += l.lh + (l.para ? L.gap : 0);
@@ -225,9 +228,9 @@
     return cy;
   }
   /* sceglie la dimensione più grande che entra in box (w x h) */
-  function fit(ctx, rulesParas, flavorParas, w, h, max, min, face) {
+  function fit(ctx, rulesParas, flavorParas, w, h, max, min, face, lhk) {
     for (var s = max; s >= min; s -= 1) {
-      var a = layout(ctx, rulesParas, w, s, face, false), b = flavorParas && flavorParas.length ? layout(ctx, flavorParas, w, s, face, true) : null;
+      var a = layout(ctx, rulesParas, w, s, face, false, lhk), b = flavorParas && flavorParas.length ? layout(ctx, flavorParas, w, s, face, true, lhk) : null;
       var tot = a.h + (b ? b.h + Math.round(s * 0.7) : 0);
       if (tot <= h || s === min) return { a: a, b: b, size: s, h: tot, sep: b ? Math.round(s * 0.7) : 0 };
     }
@@ -270,7 +273,7 @@
     ctx.beginPath(); ctx.moveTo(-9, 0); ctx.lineTo(0, -8); ctx.lineTo(9, 0); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.stroke(); ctx.restore();
   }
   /* simbolo del set caricato dall'utente, al posto della gemma: stessa posizione, proporzioni mantenute, tinta di rarità a richiesta */
-  var SYMIMG = null;
+  var SYMIMG = null, SYMTXT = 0; /* SYMTXT: diametro dei simboli nel testo (frazione del corpo) con le cornici importate, come Card Conjurer */
   function drawCustomSym(ctx, img, cx, cy, d) {
     var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height; if (!iw || !ih) return false;
     var k = Math.min(52 / iw, 42 / ih), w = Math.max(1, Math.round(iw * k)), h = Math.max(1, Math.round(ih * k)), src = img;
@@ -300,31 +303,60 @@
   function shade(ctx, on) { if (on) { ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1.5; } else { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; } }
   function drawTitle(ctx, d, L, pal, over, user) {
     var r = L.title, ink = zoneInk(user, 'title', over || (user && user.ink === 'light') ? '#ffffff' : pal.ink);
-    var costs = L.noCost ? [] : costTokens(d.cost), sd = 34, cw = costs.length * (sd + 2);
+    var costs = L.noCost ? [] : costTokens(d.cost), sd = user ? 37 : 34, sp = user ? 1 : 2, cw = costs.length * (sd + sp);
     var maxW = r[2] - 34 - (cw ? cw + 14 : 0);
-    var name = String(d.name || ''), size = fitLine(ctx, name, F_TITLE, 700, 36, 17, maxW);
+    var name = String(d.name || ''), size = fitLine(ctx, name, F_TITLE, 700, user ? 40 : 36, 17, maxW);
     ctx.font = '700 ' + size + 'px ' + F_TITLE; ctx.fillStyle = ink; ctx.textBaseline = 'middle';
     ctx.save(); shade(ctx, !!user && lightInk(ink));
     if (L.center || (user && user.center)) { ctx.textAlign = 'center'; ctx.fillText(name, r[0] + r[2] / 2, r[1] + r[3] / 2 + 2); }
     else { ctx.textAlign = 'left'; ctx.fillText(name, r[0] + 20, r[1] + r[3] / 2 + 2); }
     ctx.restore();
-    var x = r[0] + r[2] - 14 - cw + 1;
-    costs.forEach(function (c, i) { drawSymbol(ctx, c, x + i * (sd + 2) + sd / 2, r[1] + r[3] / 2, sd); });
+    var x = r[0] + r[2] - (user ? 9 : 14) - cw + 1;
+    costs.forEach(function (c, i) { drawSymbol(ctx, c, x + i * (sd + sp) + sd / 2, r[1] + r[3] / 2, sd); });
   }
   /* extra delle cornici importate (corone, stampi, P/C scuro, pips, The List): chiavi in ordine dal basso verso l'alto */
-  function overlaysFor(d, pk) {
+  function overlaysFor(d, pk, assets) {
     var o = RES.overlays, keys = [], ex = pk === 'L' || pk === 'C' ? 'A' : pk, cm = mixOf(d.cmix), ck = cm ? cm[0] : pk, out = [];
-    function add(k, mask) { var v = o[k]; if (v) out.push(mask ? { img: v.img, b: v.b, erase: v.erase, mask: true } : v); }
+    function add(k, mask, cr) { var v = o[k]; if (v) out.push(mask ? { img: v.img, b: v.b, erase: v.erase, mask: true } : v); if (v && cr && !mask) out.crown = v; }
     if (d.darkpt) add('darkpt:' + (pk === 'L' ? 'C' : pk));
     if (d.crown === 'legend' || d.crown === 'floating') {
       var pre = d.crown === 'legend' ? 'crown:' : 'fcrown:';
-      add(pre + ck); if (cm) add(pre + cm[1], true);
+      if (d.crown === 'legend' && assets && assets.crownImg) {
+        /* corona propria della cornice (bifronte): sostituisce quella generica */
+        var cb = (assets.frameGeo && assets.frameGeo.crown) || [20, 20, 704, 173], c1 = { img: assets.crownImg, b: cb };
+        out.push(c1); out.crown = c1; if (cm && assets.crownImg2) out.push({ img: assets.crownImg2, b: cb, mask: true });
+      } else { add(pre + ck, false, d.crown === 'legend'); if (cm) add(pre + cm[1], true); }
     }
     if (d.inner === 'nyx' || d.inner === 'comp') add('inner:' + d.inner + ':' + ex);
     if (d.holo === 'color') add('holo:' + pk); else if (d.holo) add('holo:' + d.holo);
     if (d.pips) { var cs = ('WUBRG').split('').filter(function (c) { return String(d.colors || '').toUpperCase().indexOf(c) >= 0; }).join(''); if (cs) add('pips:' + cs); }
     if (d.list) add('list:' + d.list);
     return out;
+  }
+  /* La corona leggendaria è un pezzo di cornice: fuori dal suo profilo la cornice sotto non deve vedersi (in Card Conjurer viene ritagliata).
+   * Il profilo si ricava dalla corona stessa: i pixel vuoti raggiungibili dall'esterno, fino al bordo inferiore della barra, vanno cancellati. */
+  function crownCut(v) {
+    if (v.img.cpaCut !== undefined) return v.img.cpaCut;
+    v.img.cpaCut = null;
+    try {
+      var b = v.b, w = b[2], h = b[3], t = document.createElement('canvas'); t.width = w; t.height = h; var x = t.getContext('2d'); x.drawImage(v.img, 0, 0, w, h);
+      var px = x.getImageData(0, 0, w, h).data, end = -1, i, j;
+      for (j = 0; j < h * 0.7; j++) { var f = -1, l = -1, n = 0; for (i = 0; i < w; i++) if (px[(j * w + i) * 4 + 3] > 24) { if (f < 0) f = i; l = i; n++; } if (f >= 0 && l - f > w * 0.8 && n / (l - f + 1) > 0.9) end = j; }
+      if (end < 8) return null;
+      var rows = end + 1, out = new Uint8Array(w * rows), q = [], at = function (xx, yy) { return px[(yy * w + xx) * 4 + 3] <= 24; };
+      for (i = 0; i < w; i++) { if (at(i, 0)) { out[i] = 1; q.push(i); } }
+      for (j = 0; j < rows; j++) { if (at(0, j) && !out[j * w]) { out[j * w] = 1; q.push(j * w); } if (at(w - 1, j) && !out[j * w + w - 1]) { out[j * w + w - 1] = 1; q.push(j * w + w - 1); } }
+      while (q.length) {
+        var c = q.pop(), cx = c % w, cy = (c - cx) / w, nb = [[cx - 1, cy], [cx + 1, cy], [cx, cy - 1], [cx, cy + 1]];
+        for (var k = 0; k < 4; k++) { var nx = nb[k][0], ny = nb[k][1]; if (nx < 0 || ny < 0 || nx >= w || ny >= rows || out[ny * w + nx] || !at(nx, ny)) continue; out[ny * w + nx] = 1; q.push(ny * w + nx); }
+      }
+      var cv = document.createElement('canvas'); cv.width = W; cv.height = H; var cx2 = cv.getContext('2d');
+      cx2.fillStyle = '#000'; cx2.fillRect(0, 0, W, b[1] + rows);
+      var id = cx2.createImageData(w, rows); for (i = 0; i < out.length; i++) id.data[i * 4 + 3] = out[i] ? 255 : 0;
+      cx2.putImageData(id, b[0], b[1]);
+      v.img.cpaCut = cv;
+    } catch (e) { v.img.cpaCut = null; }
+    return v.img.cpaCut;
   }
   /* strato che compare da sinistra a destra: serve per mescolare due cornici o due corone */
   function rightLayer(src, b) {
@@ -340,7 +372,7 @@
     if (!r || r[3] < 10) return;
     var gem = L.walker || L.saga || true;
     var sh = user && d.pips ? 38 : 0, maxW = r[2] - 40 - sh - (gem ? 52 : 0);
-    var size = fitLine(ctx, String(d.type || ''), F_TITLE, 700, 30, 15, maxW);
+    var size = fitLine(ctx, String(d.type || ''), F_TITLE, 700, user ? 34 : 30, 15, maxW);
     ctx.font = '700 ' + size + 'px ' + F_TITLE; ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.save(); shade(ctx, !!user && lightInk(ink)); ctx.fillText(String(d.type || ''), r[0] + 20 + sh, r[1] + r[3] / 2 + 2); ctx.restore();
     if (gem && !(SYMIMG && drawCustomSym(ctx, SYMIMG, r[0] + r[2] - 34, r[1] + r[3] / 2, d))) setGem(ctx, r[0] + r[2] - 34, r[1] + r[3] / 2, d.rarity, !over);
@@ -366,7 +398,7 @@
       ctx.drawImage(wm, x + (w - ww) / 2, y + (h - wh) / 2, ww, wh); ctx.restore();
     }
     var padX = 22, padY = 16, iw = w - padX * 2, ih = h - padY * 2;
-    var f = fit(ctx, tokenize(d.rules), String(d.flavor || '').trim() ? tokenize(d.flavor) : null, iw, ih, L.center ? 34 : 33, 15, F_BODY);
+    var f = fit(ctx, tokenize(d.rules), String(d.flavor || '').trim() ? tokenize(d.flavor) : null, iw, ih, L.center ? 34 : user ? 37 : 33, 15, F_BODY, user && !L.center ? 0.94 : 0);
     var top = y + padY + Math.max(0, (ih - f.h) / 2);
     ctx.save(); shade(ctx, !!user && lightInk(ink));
     var align = L.center ? 'center' : 'left', yy = drawLayout(ctx, f.a, x + padX, top, ink, align, iw);
@@ -402,14 +434,25 @@
     }
     ctx.restore();
   }
+  /* pennello dell'illustratore (come sulle carte vere) */
+  function brush(ctx, x, y, color) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(-0.62); ctx.fillStyle = color;
+    ctx.beginPath(); ctx.moveTo(-8, -1.4); ctx.lineTo(3, -1.4); ctx.lineTo(3, 1.4); ctx.lineTo(-8, 1.4); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(3, -2.8); ctx.quadraticCurveTo(10, -3, 13, 0); ctx.quadraticCurveTo(10, 3, 3, 2.8); ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  /* riga in basso come sulle carte stampate: numero e rarità sopra, sigla del set e illustratore sotto */
   function drawInfo(ctx, d, L, pal, onDark) {
     var ink = onDark ? 'rgba(255,255,255,0.92)' : pal.fg;
     ctx.fillStyle = ink; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-    var a = [String(d.num || '').trim(), String(d.set || '').trim().toUpperCase()].filter(Boolean).join(' · ');
+    var rar = { common: 'C', uncommon: 'U', rare: 'R', mythic: 'M' }[d.rarity] || '', num = String(d.num || '').trim(), set = String(d.set || '').trim().toUpperCase(), art = String(d.artist || '').trim();
+    var x = L.info[0], y = L.info[1];
     if (onDark) { ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4; }
-    ctx.font = '500 19px ' + F_INFO; ctx.fillText(a, L.info[0], L.info[1] + 9);
-    var art = String(d.artist || '').trim();
-    if (art) { ctx.font = '500 18px ' + F_INFO; var x0 = L.info[0] + ctx.measureText(a).width + (a ? 18 : 0); ctx.fillText('Illus. ' + art, x0, L.info[1] + 9); }
+    ctx.font = '500 18px ' + F_INFO;
+    var l1 = [num, rar].filter(Boolean).join('  ');
+    if (l1) ctx.fillText(l1, x, y + 2);
+    var l2 = set; ctx.font = '500 17px ' + F_INFO;
+    if (l2) ctx.fillText(l2, x, y + 21);
+    if (art) { var ax = x + (l2 ? ctx.measureText(l2).width + 14 : 0); brush(ctx, ax + 5, y + 21, ink); ctx.fillText(art, ax + 22, y + 21); }
     ctx.shadowColor = 'transparent';
   }
 
@@ -531,7 +574,7 @@
 
   /* ---------- carta intera ---------- */
   function render(ctx, d, assets, opt) {
-    assets = assets || {}; opt = opt || {}; SYMIMG = assets.setImg || null;
+    assets = assets || {}; opt = opt || {}; SYMIMG = assets.setImg || null; SYMTXT = assets.frameImg ? 0.74 : 0;
     var L = LAYOUT[d.frame] || LAYOUT.classic, pk = paletteKey(d), pal = PAL[pk], user = assets.frameImg ? { ink: d.ink === 'light' ? 'light' : 'dark', pt: !!assets.ptImg, colors: (assets.frameGeo && assets.frameGeo.colors) || null, center: !!(assets.frameGeo && assets.frameGeo.titleAlign === 'center'), walker: (assets.frameGeo && assets.frameGeo.walker) || null } : null;
     /* una cornice importata può portare la propria geometria (zona arte, barre, riquadri): sostituisce quella della cornice disegnata */
     if (user && assets.frameGeo) { var G = assets.frameGeo, L2 = {}; Object.keys(L).forEach(function (k) { L2[k] = L[k]; }); ['art', 'title', 'type', 'box', 'pt', 'info'].forEach(function (k) { if (G[k]) L2[k] = G[k]; }); L = L2; }
@@ -548,8 +591,9 @@
       ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
       var ar = (assets.frameGeo && assets.frameGeo.art) || LAYOUT.classic.art; if (d.frame === 'fullart' || d.frame === 'borderless') ar = [0, 0, W, H];
       if (hasArt) drawArtImage(ctx, assets.art, ar, d.art); else { ctx.fillStyle = '#26222c'; ctx.fillRect(0, 0, W, H); }
-      var ovs = overlaysFor(d, pk), er = ovs.filter(function (o) { return o.erase; })[0], mx = mixOf(d.mix) && assets.frameImg2 ? assets.frameImg2 : null;
-      var piece = function (img) { if (!er) return img; var tc = document.createElement('canvas'); tc.width = W; tc.height = H; var tx = tc.getContext('2d'); tx.drawImage(img, 0, 0, W, H); tx.clearRect(er.erase[0], er.erase[1], er.erase[2], er.erase[3]); return tc; };
+      var ovs = overlaysFor(d, pk, assets), er = ovs.filter(function (o) { return o.erase; })[0], mx = mixOf(d.mix) && assets.frameImg2 ? assets.frameImg2 : null;
+      var cut = ovs.crown && ar[3] < 700 ? crownCut(ovs.crown) : null;
+      var piece = function (img) { if (!er && !cut) return img; var tc = document.createElement('canvas'); tc.width = W; tc.height = H; var tx = tc.getContext('2d'); tx.drawImage(img, 0, 0, W, H); if (er) tx.clearRect(er.erase[0], er.erase[1], er.erase[2], er.erase[3]); if (cut) tx.drawImage(cut, 0, 0); return tc; };
       ctx.drawImage(piece(assets.frameImg), 0, 0, W, H);
       if (mx) ctx.drawImage(rightLayer(piece(mx)), 0, 0);
       if (assets.frameGeo && assets.frameGeo.panel && !L.walker && !L.saga) { var bx = L.box; ctx.fillStyle = assets.frameGeo.panel; ctx.fillRect(bx[0] + 4, bx[1] + 4, bx[2] - 8, bx[3] - 8); }

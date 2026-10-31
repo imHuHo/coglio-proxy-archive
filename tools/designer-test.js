@@ -494,6 +494,23 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   ok(hy === 'WU', 'una carta ibrida prende la cornice a due colori');
   await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item');
 
+  /* corona propria della cornice (bifronte): ritaglia la cornice fuori dal suo profilo e importa rev/corone dal pacchetto */
+  const crownPng = (await mkImg('image/png', 704, 173, 'x.fillStyle="#caa";x.fillRect(0,0,w,40);x.clearRect(0,0,w,8);x.clearRect(300,0,100,12);x.fillRect(0,40,w,12);x.fillRect(0,40,10,100);x.fillRect(w-10,40,10,100);x.clearRect(30,16,w-60,24);x.fillRect(0,40,w,0);'));
+  fs.writeFileSync('/tmp/claude-0/dz/pack-crown.json', JSON.stringify({ app: 'coglio-frames', version: 1, rev: 2, groups: [{ id: 'cc-crw', name: 'Con corona' }], frames: [{ key: 'C', name: 'Corona C', group: 'cc-crw', ink: 'dark', geo: { art: [57, 117, 631, 461], title: [99, 54, 602, 56], type: [44, 589, 658, 56], box: [42, 640, 661, 331], pt: [576, 926, 130, 63], info: [46, 980], crown: [20, 20, 704, 173] }, png: 'data:image/png;base64,' + framePng.toString('base64'), pt: null, crown: 'data:image/png;base64,' + crownPng }] }));
+  await page.click('[data-a="dz-new"][data-k="card"]'); await page.waitForSelector('#dz-cv');
+  await page.setInputFiles('[data-c="dz-framefile"]', '/tmp/claude-0/dz/pack-crown.json').catch(async () => { await page.click('.dz-tab[data-v="aspetto"]'); await page.setInputFiles('[data-c="dz-framefile"]', '/tmp/claude-0/dz/pack-crown.json'); });
+  await page.waitForFunction(() => CPADesigner.state.frames.some(f => f.group === 'cc-crw'));
+  ok(await page.evaluate(() => { const f = CPADesigner.state.frames.filter(x => x.group === 'cc-crw')[0]; return !!f.crownBlob && f.rev === 2; }), 'il pacchetto importato conserva corona e versione');
+  const cut = await page.evaluate(async () => {
+    const d = CPADesigner.state.cur; d.frameImg = 'auto:cc-crw'; d.crown = 'legend'; d.type = 'Legendary Creature';
+    const c = document.createElement('canvas'); c.width = 745; c.height = 1040; const x = c.getContext('2d');
+    const fa = await CPADesigner.assetsFor(d); CPACard.render(x, d, { art: null, frameImg: fa.frameImg, ptImg: fa.ptImg, frameGeo: fa.frameGeo, crownImg: fa.crownImg });
+    const px = (a, b) => Array.from(x.getImageData(a, b, 1, 1).data);
+    return { hasCrown: !!fa.crownImg, valley: px(350, 25), hole: px(320, 48) };
+  });
+  ok(cut.hasCrown, 'la cornice porta la sua corona');
+  ok(cut.valley[0] < 40 && cut.valley[1] < 40 && cut.hole[1] > 100, 'corona leggendaria: fuori dal profilo la cornice è ritagliata, dentro la barra resta');
+
   /* mobile: sei voci nel menu in basso */
   await page.setViewportSize({ width: 390, height: 800 });
   const tabs = await page.evaluate(() => { const t = document.querySelector('.tabs'); return { n: t.querySelectorAll('.nav').length, w: t.scrollWidth, cw: t.clientWidth }; });

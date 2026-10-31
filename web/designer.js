@@ -174,18 +174,21 @@
     if (!id) return Promise.resolve(null);
     if (!dz.frameImgs[id]) dz.frameImgs[id] = DB.get('frames', id).then(function (f) {
       if (!f || !f.blob) return null;
-      return Promise.all([blobImage(f.blob), f.ptBlob ? blobImage(f.ptBlob) : null]).then(function (r) { return { frameImg: r[0].img, ptImg: r[1] ? r[1].img : null, frameGeo: f.geo || null }; });
+      return Promise.all([blobImage(f.blob), f.ptBlob ? blobImage(f.ptBlob) : null, f.crownBlob ? blobImage(f.crownBlob) : null]).then(function (r) { return { frameImg: r[0].img, ptImg: r[1] ? r[1].img : null, crownImg: r[2] ? r[2].img : null, frameGeo: f.geo || null }; });
     }).catch(function () { return null; });
     return dz.frameImgs[id];
   }
   /* cornice (e, se la carta è bicolore, anche la seconda) pronta per il disegno */
   function assetsFor(d) {
-    var mx = R.mixOf(d.mix);
-    return Promise.all([frameAssets(fid(d)), mx && /^auto:/.test(d.frameImg || '') ? frameAssets(fid(d, mx[1])) : null, d.setImg ? artImage(d.setImg) : null]).then(function (r) {
-      var base = r[0] ? (r[1] ? { frameImg: r[0].frameImg, ptImg: r[0].ptImg, frameGeo: r[0].frameGeo, frameImg2: r[1].frameImg, ptImg2: r[1].ptImg } : r[0]) : null;
-      if (!r[2]) return base;
+    var mx = R.mixOf(d.mix), auto = /^auto:/.test(d.frameImg || ''), cm = d.crown === 'legend' && auto ? (R.mixOf(d.cmix) || [R.paletteKey(d)]) : null;
+    /* le cornici bifronte portano la propria corona leggendaria: si prende quella del colore (o dei due colori) scelto per la corona */
+    return Promise.all([frameAssets(fid(d)), mx && auto ? frameAssets(fid(d, mx[1])) : null, d.setImg ? artImage(d.setImg) : null, cm ? frameAssets(fid(d, cm[0])) : null, cm && cm[1] ? frameAssets(fid(d, cm[1])) : null]).then(function (r) {
+      var base = r[0] ? (r[1] ? { frameImg: r[0].frameImg, ptImg: r[0].ptImg, crownImg: r[0].crownImg, frameGeo: r[0].frameGeo, frameImg2: r[1].frameImg, ptImg2: r[1].ptImg } : r[0]) : null;
+      if (!r[2] && !r[3]) return base;
       var o = {}; if (base) Object.keys(base).forEach(function (k) { o[k] = base[k]; });
-      o.setImg = r[2]; return o;
+      if (r[2]) o.setImg = r[2];
+      if (r[3]) { o.crownImg = r[3].crownImg; o.crownImg2 = r[4] ? r[4].crownImg : null; }
+      return o;
     });
   }
   /* ridimensiona (lato lungo max) e converte in JPEG: l'arte occupa meno spazio e il PDF resta leggero */
@@ -237,7 +240,7 @@
     }
     return fontsP;
   }
-  function drawInto(ctx, d, art, fa, opt) { R.render(ctx, d, { art: art, frameImg: fa ? fa.frameImg : null, ptImg: fa ? fa.ptImg : null, frameGeo: fa ? fa.frameGeo : null, frameImg2: fa ? fa.frameImg2 : null, ptImg2: fa ? fa.ptImg2 : null, setImg: fa ? fa.setImg : null }, opt); }
+  function drawInto(ctx, d, art, fa, opt) { R.render(ctx, d, { art: art, frameImg: fa ? fa.frameImg : null, ptImg: fa ? fa.ptImg : null, frameGeo: fa ? fa.frameGeo : null, frameImg2: fa ? fa.frameImg2 : null, ptImg2: fa ? fa.ptImg2 : null, crownImg: fa ? fa.crownImg : null, crownImg2: fa ? fa.crownImg2 : null, setImg: fa ? fa.setImg : null }, opt); }
   function renderBlob(designId, opt) {
     opt = opt || {};
     return load().then(function () {
@@ -422,7 +425,7 @@
           chain = chain.then(function () {
             var grp = String(f.group || 'pack'), key = String(f.key || '');
             var old = dz.frames.filter(function (x) { return x.group === grp && x.key === key; })[0];
-            var rec = { id: old ? old.id : uid('f'), name: String(f.name || 'Cornice'), group: grp, groupName: names[grp] || grp, key: key, ink: f.ink === 'light' ? 'light' : 'dark', geo: f.geo || null, blob: blob, ptBlob: dataUrlToBlob(f.pt) || null, createdAt: Date.now() };
+            var rec = { id: old ? old.id : uid('f'), name: String(f.name || 'Cornice'), group: grp, groupName: names[grp] || grp, key: key, ink: f.ink === 'light' ? 'light' : 'dark', geo: f.geo || null, blob: blob, ptBlob: dataUrlToBlob(f.pt) || null, crownBlob: dataUrlToBlob(f.crown) || null, rev: Number(data.rev) || 1, createdAt: Date.now() };
             if (old) { dz.frames = dz.frames.filter(function (x) { return x !== old; }); delete dz.frameImgs[old.id]; forgetUrl(old.id); }
             dz.frames.push(rec); n++; if (!first) first = grp;
             return DB.put('frames', rec);
@@ -504,6 +507,7 @@
       .catch(function () { cat.msg = 'Non riesco a scaricare il catalogo: serve internet (lo scarica dalla versione web su GitHub Pages).'; })
       .then(function () { cat.busy = false; if (dz.view === 'catalog') H.render(); });
   }
+  function packRev(id) { var f = dz.frames.filter(function (x) { return x.group === 'cc-' + id; })[0]; return f ? f.rev || 1 : 0; }
   function installed(id) { return dz.frames.some(function (f) { return f.group === 'cc-' + id; }); }
   function installPack(e) {
     if (!e || cat.inst[e.id]) return Promise.resolve(false);
@@ -511,7 +515,7 @@
     cat.inst[e.id] = '\u2026'; H.render();
     return wfetch(base + 'pack.json').then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); }).then(function (j) {
       pk = j; var jobs = [];
-      (pk.frames || []).forEach(function (f) { ['png', 'pt'].forEach(function (k) { if (f[k] && typeof f[k] === 'string' && !/^data:/.test(f[k])) jobs.push([f, k]); }); });
+      (pk.frames || []).forEach(function (f) { ['png', 'pt', 'crown'].forEach(function (k) { if (f[k] && typeof f[k] === 'string' && !/^data:/.test(f[k])) jobs.push([f, k]); }); });
       total = jobs.length;
       var chain = Promise.resolve();
       jobs.forEach(function (jb) {
@@ -548,10 +552,10 @@
     var q = cat.q.toLowerCase();
     var shown = cat.list.filter(function (e) { return (!cat.c || (cat.c === '*' ? installed(e.id) : e.category === cat.c)); });
     h += '<div class="dz-grid">' + shown.map(function (e) {
-      var inst = installed(e.id), busy = cat.inst[e.id], s = (e.name + ' ' + e.category + ' ' + e.id).toLowerCase();
+      var inst = installed(e.id), busy = cat.inst[e.id], old = inst && (e.rev || 1) > (packRev(e.id) || 1), s = (e.name + ' ' + e.category + ' ' + e.id).toLowerCase();
       return '<article class="dz-item dz-catitem" data-s="' + esc(s) + '"' + (q && s.indexOf(q) < 0 ? ' hidden' : '') + '><div class="dz-thb"><img class="dz-catth" loading="lazy" alt="" src="' + esc(cat.base + 'packs/' + e.id + '/thumb.webp') + '"></div>' +
         '<div class="dz-meta"><b>' + esc(e.name) + '</b><span>' + esc(e.category) + ' \u00b7 ' + e.n + (e.n === 1 ? ' cornice' : ' cornici') + ' \u00b7 ' + (Math.max(0.1, (e.bytes || 0) / 1048576)).toFixed(1) + ' MB</span>' + (e.layout ? '<span class="pill info">' + (e.layout === 'planeswalker' ? 'planeswalker' : 'saga') + '</span>' : '') + '</div>' +
-        '<div class="btns">' + (inst ? '<span class="pill ok">Aggiunta</span><button class="btn small danger" data-a="dz-cat-del" data-id="' + esc(e.id) + '">Rimuovi</button>' :
+        '<div class="btns">' + (inst ? (old ? '<button class="btn small primary" data-a="dz-cat-add" data-id="' + esc(e.id) + '"' + (busy ? ' disabled' : '') + ' title="Versione nuova: corone dedicate">' + (busy ? 'Scarico ' + busy + '\u2026' : 'Aggiorna') + '</button>' : '<span class="pill ok">Aggiunta</span>') + '<button class="btn small danger" data-a="dz-cat-del" data-id="' + esc(e.id) + '">Rimuovi</button>' :
           '<button class="btn small primary" data-a="dz-cat-add" data-id="' + esc(e.id) + '"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Scarico ' + busy + '\u2026' : 'Aggiungi') + '</button>') + '</div></article>';
     }).join('') + '</div>';
     return h;
@@ -680,7 +684,7 @@
   function listHtml() {
     var h = '<header class="vh"><h1>Designer</h1><p class="sub">Crea proxy personalizzate: carte tue, token, alter di carte esistenti. Poi le leghi a un mazzo e le stampi nel PDF.</p></header>';
     if (!DB.persistent() && dz.loaded) h += '<p class="warn">Qui dentro i design non si salvano sul dispositivo: restano finché la pagina è aperta. Usa l’app per Windows, l’APK o la versione web.</p>';
-    h += '<section class="panel"><div class="btns"><button class="btn primary" data-a="dz-new" data-k="card">Nuova carta</button><button class="btn" data-a="dz-catalog">Catalogo cornici</button></div>' +
+    h += '<section class="panel"><div class="btns"><button class="btn primary" data-a="dz-new" data-k="card">Nuova carta</button><button class="btn shop" data-a="dz-catalog">' + '<svg class="shop-ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.5 5 4.5h14l1.5 5"/><path d="M3.5 9.5a2.6 2.6 0 0 0 5.2 0 2.6 2.6 0 0 0 5.2 0 2.6 2.6 0 0 0 5.2 0 2.6 2.6 0 0 0 1.4-.6"/><path d="M5 12.5V20h14v-7.5"/><path d="M10 20v-4.5h4V20"/></svg>' + '<span>Catalogo cornici</span></button></div>' +
       '<div class="btns"><label class="btn small filebtn">Importa design<input type="file" accept=".json,application/json" data-c="dz-import" hidden></label>' +
       (dz.designs.length ? '<button class="btn small" data-a="dz-export-all">Esporta tutti</button>' : '') + '</div>' +
       (dz.msg ? '<p class="hint" role="status">' + esc(dz.msg) + '</p>' : '') + '</section>';
@@ -797,7 +801,7 @@
     tLook += '<section class="panel"><h3 class="dz-h">Cornice a immagine</h3><div class="lbl"><span class="lbl-t">Segue i colori della carta</span>' + frameTiles(d) + '</div>' +
       (d.frameImg ? '<div class="dz-row">' + lbl('Colore del testo', sel('ink', d.ink, [['dark', 'Scuro'], ['light', 'Chiaro']])) + '</div>' : '') +
       '<div class="btns"><label class="btn small filebtn">Importa cornici…<input type="file" accept="image/png,image/webp,.json,application/json" data-c="dz-framefile" multiple hidden></label>' +
-      '<button class="btn small" data-a="dz-catalog">Catalogo cornici</button>' +
+      '<button class="btn small shop" data-a="dz-catalog">' + '<svg class="shop-ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.5 5 4.5h14l1.5 5"/><path d="M3.5 9.5a2.6 2.6 0 0 0 5.2 0 2.6 2.6 0 0 0 5.2 0 2.6 2.6 0 0 0 5.2 0 2.6 2.6 0 0 0 1.4-.6"/><path d="M5 12.5V20h14v-7.5"/><path d="M10 20v-4.5h4V20"/></svg>' + '<span>Catalogo cornici</span></button>' +
       (d.frameImg ? '<button class="btn small danger" data-a="dz-frame-del">' + (/^auto:/.test(d.frameImg) ? 'Elimina il pacchetto' : 'Elimina questa cornice') + '</button>' : '') + '</div>' +
       (dz.res.length ? '<p class="hint">Risorse caricate: simboli di mana, font, filigrane e grafiche. <button class="linkbtn" data-a="dz-res-del">Rimuovile</button></p>' : '') + '</section>';
     if (R.hasOverlays() && d.frameImg) {
@@ -1234,6 +1238,6 @@
 
   window.CPADesigner = {
     open: open, html: html, after: after, click: click, input: input, change: change, escape: escape, renderBlob: renderBlob,
-    ready: load, get: byId, list: function () { return dz.designs.slice(); }, openPicker: openPicker, state: dz, wantFrame: wantFrame, applyFrameFor: applyFrameFor, flip: flip, hasBack: function (id) { var d = byId(id); return !!(d && d.back); }
+    ready: load, get: byId, list: function () { return dz.designs.slice(); }, openPicker: openPicker, state: dz, assetsFor: assetsFor, wantFrame: wantFrame, applyFrameFor: applyFrameFor, flip: flip, hasBack: function (id) { var d = byId(id); return !!(d && d.back); }
   };
 })();
