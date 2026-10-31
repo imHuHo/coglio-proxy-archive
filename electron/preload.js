@@ -5,6 +5,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('cpaNet', {
   bracket: (payload) => ipcRenderer.invoke('cpa:bracket', payload),
   copy: (text) => ipcRenderer.invoke('cpa:copy', text),
+  image: (url) => ipcRenderer.invoke('cpa:image', url),
   quit: () => ipcRenderer.invoke('cpa:quit'),
   resource: (name) => ipcRenderer.invoke('cpa:resource', name),
   update: (url) => ipcRenderer.invoke('cpa:update', url),

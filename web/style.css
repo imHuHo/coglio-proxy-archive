@@ -568,3 +568,4 @@ img.dz-msym { box-shadow: none; }
 .btn.shop:active { transform: translateY(1px); }
 .btn.shop .shop-ic { flex: none; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .25)); }
 @media (prefers-reduced-motion: reduce) { .btn.shop::after { transition: none; } }
+.dz-arturl { margin-top: 10px; }

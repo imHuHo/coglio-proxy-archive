@@ -1,6 +1,9 @@
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '3.3.3', date: '31 ottobre 2026', title: 'Immagini da un link', items: [
+    { t: 'Cambia immagine con un link', d: 'Nel Designer, nella scheda Arte, puoi incollare l\'indirizzo di un\'immagine e premere «Usa link» (o Invio): l\'app la scarica e la usa come arte. Su Windows e Android funziona con quasi tutti i siti; nel browser dipende dal sito.' },
+  ] },
   { v: '3.3.2', date: '31 ottobre 2026', title: 'La corona giusta per ogni cornice', items: [
     { t: 'Corona automatica in base alla cornice', d: 'Con le cornici a tutta larghezza (esteso, senza bordo, boxtopper) la corona leggendaria diventa da sola quella fluttuante, senza gambe che scendono sull\'arte. Sulle cornici normali resta quella classica.' },
     { t: 'Corone fluttuanti per le bifronte', d: 'Le cornici Transform e Modali estese o senza bordo hanno la loro corona fluttuante con il posto per l\'icona di trasformazione. Aggiorna le cornici dal catalogo per averle.' },

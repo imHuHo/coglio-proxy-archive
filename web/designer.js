@@ -217,6 +217,40 @@
       var id = uid('a'); return DB.put('art', pb, id).then(function () { dropSetImg(d); d.setImg = id; saveNow(); H.render(); });
     }).catch(function (e) { H.toast('Simbolo non caricato: ' + (e && e.message ? e.message : 'file non valido') + '.'); });
   }
+  /* Immagine da un link. Windows: la scarica il programma (nessun blocco CORS); Android: richiesta nativa; browser: fetch normale (il sito deve consentirlo). */
+  function b64Blob(b64, type) { var bin = atob(b64), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Blob([u], { type: type }); }
+  function urlOk(u) { try { var x = new URL(u); return /^https?:$/.test(x.protocol); } catch (e) { return false; } }
+  function fetchImageUrl(u) {
+    var MAX = 25 * 1024 * 1024;
+    function check(b) { if (!b || !b.size) throw new Error('vuota'); if (b.size > MAX) throw new Error('troppo grande'); if (b.type && !/^image\//i.test(b.type)) throw new Error('non è un’immagine'); return b; }
+    if (window.cpaNet && typeof window.cpaNet.image === 'function') {
+      return window.cpaNet.image(u).then(function (r) {
+        if (!r || !r.ok) throw new Error(r && r.error ? r.error : 'rete');
+        return check(new Blob([r.data], { type: r.type || '' }));
+      });
+    }
+    var cap = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp;
+    var web = function () { return (window.CapacitorWebFetch || window.fetch).call(window, u).then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.blob(); }).then(check); };
+    if (cap && typeof cap.request === 'function') {
+      return cap.request({ url: u, method: 'GET', responseType: 'blob', connectTimeout: 15000, readTimeout: 30000 }).then(function (r) {
+        if (!r || r.status < 200 || r.status >= 300 || typeof r.data !== 'string') throw new Error('http ' + (r && r.status));
+        var h = r.headers || {}, ct = h['Content-Type'] || h['content-type'] || '';
+        return check(b64Blob(r.data, String(ct).split(';')[0]));
+      }).catch(function () { return web(); });
+    }
+    return web();
+  }
+  function artFromUrl() {
+    var d = dz.cur, u = String(dz.artUrl || '').trim();
+    if (!d || dz.artBusy) return;
+    if (!urlOk(u)) { dz.artMsg = 'Incolla un link che inizia con http:// o https://.'; H.render(); return; }
+    dz.artBusy = true; dz.artMsg = ''; H.render();
+    fetchImageUrl(u).then(function (b) { return setArt(b, d); }).then(function () { dz.artBusy = false; dz.artUrl = ''; dz.artMsg = ''; H.render(); }).catch(function (e) {
+      dz.artBusy = false;
+      dz.artMsg = 'Non riesco a scaricare quell’immagine (' + (e && e.message ? e.message : 'errore') + '). Controlla che il link porti direttamente a un’immagine; se il sito la blocca, salvala e caricala dal dispositivo.';
+      H.render();
+    });
+  }
   function setArt(blob, target) {
     var d = target || dz.cur; if (!d) return Promise.resolve();
     return shrink(blob, 1800).then(function (jb) {
@@ -820,6 +854,8 @@
     /* --- Arte --- */
     h += tabPanel('arte', '<section class="panel"><div class="btns"><label class="btn small primary filebtn">' + (d.art.id ? 'Cambia immagine' : 'Carica immagine') + '<input type="file" accept="image/*" data-c="dz-artfile" hidden></label>' +
       (d.art.id ? '<button class="btn small" data-a="dz-art-del">Togli</button><button class="btn small" data-a="dz-art-reset">Ricentra</button>' : '') + '</div>' +
+      '<div class="dz-srch dz-arturl"><input class="input" type="url" inputmode="url" data-c="dz-arturl" aria-label="Link dell’immagine" placeholder="Oppure incolla il link di un’immagine (https://…)" value="' + esc(dz.artUrl || '') + '"><button class="btn small" data-a="dz-art-url"' + (dz.artBusy ? ' disabled' : '') + '>' + (dz.artBusy ? 'Scarico…' : 'Usa link') + '</button></div>' +
+      (dz.artMsg ? '<p class="hint" role="status">' + esc(dz.artMsg) + '</p>' : '') +
       (d.art.id ? '<label class="lbl">Zoom' + rng('s', d.art.s, 0.4, 4, 0.01) + '</label><label class="lbl">Sposta in orizzontale' + rng('x', d.art.x, -500, 500, 1) + '</label><label class="lbl">Sposta in verticale' + rng('y', d.art.y, -500, 500, 1) + '</label>' : '<p class="hint">Qualsiasi immagine: viene ridotta e salvata solo su questo dispositivo.</p>') + '</section>');
 
     /* --- Mazzo e file --- */
@@ -1086,6 +1122,7 @@
       case 'dz-png': if (d) { saveNow(); renderBlob(d.id, { type: 'image/png', face: dz.cur === dz.root ? 'front' : 'back' }).then(function (b) { return download(b, fname(d, '.png')); }).then(function (ok) { if (ok === false) H.toast('Download non disponibile qui.'); }, function () { H.toast('Non riesco a creare l’immagine.'); }); } break;
       case 'dz-jpg': if (d) { saveNow(); renderBlob(d.id, { type: 'image/jpeg', square: true, face: dz.cur === dz.root ? 'front' : 'back' }).then(function (b) { return download(b, fname(d, '.jpg')); }).then(function (ok) { if (ok === false) H.toast('Download non disponibile qui.'); }, function () { H.toast('Non riesco a creare l’immagine.'); }); } break;
       case 'dz-art-del': if (d && d.art.id) { var oid = d.art.id; d.art = { id: '', x: 0, y: 0, s: 1 }; dz.artImg = null; DB.del('art', oid); delete artCache[oid]; saveNow(); H.render(); } break;
+      case 'dz-art-url': artFromUrl(); break;
       case 'dz-art-reset': if (d) { d.art.x = 0; d.art.y = 0; d.art.s = 1; saveSoon(); H.render(); } break;
       case 'dz-alter': if (d) alterFrom(dz.search.q || d.name); break;
       case 'dz-prints': if (d && d.alterOf) loadPrints('https://api.scryfall.com/cards/search?order=released&unique=prints&q=' + encodeURIComponent('!"' + d.alterOf + '"')); break;
@@ -1182,6 +1219,7 @@
     if (c === 'dz-f' && d) { d[el.getAttribute('data-k')] = el.value; schedulePreview(); saveSoon(); if (el.getAttribute('data-k') === 'cost') { var mm = document.getElementById('dz-mana'); if (mm) mm.innerHTML = manaInner(d); } if (el.getAttribute('data-k') === 'name') { var h1 = document.querySelector('.vh h1'); if (h1) h1.textContent = el.value || 'Senza nome'; } }
     else if (c === 'dz-art' && d) { d.art[el.getAttribute('data-k')] = parseFloat(el.value) || 0; schedulePreview(); saveSoon(); }
     else if (c === 'dz-q') dz.search.q = el.value;
+    else if (c === 'dz-arturl') dz.artUrl = el.value;
     else if (c === 'dz-ftext') dz.fText = el.value;
     else if (c === 'dz-catq') { cat.q = el.value; var q = cat.q.toLowerCase(); [].forEach.call(document.querySelectorAll('.dz-catitem'), function (it) { it.hidden = !!q && it.getAttribute('data-s').indexOf(q) < 0; }); }
     else if (c === 'dz-bqty' && dz.bind) dz.bind.qty = el.value;
@@ -1232,6 +1270,7 @@
     if (dz.picker) { dz.picker = null; H.render(); return true; }
     return false;
   }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target && e.target.getAttribute && e.target.getAttribute('data-c') === 'dz-arturl') { e.preventDefault(); dz.artUrl = e.target.value; artFromUrl(); } });
   document.addEventListener('focusin', function (e) {
     var t = e.target; if (t && t.getAttribute && t.getAttribute('data-c') === 'dz-f') dz.focus = t.getAttribute('data-k');
   });

@@ -521,6 +521,19 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   });
   ok(fl.extFloat && !fl.extRegular && !fl.regFloat && fl.regRegular, 'la corona della cornice segue il tipo: ' + JSON.stringify(fl));
 
+  /* cambia immagine da un link */
+  await page.click('.dz-tab[data-v="arte"]').catch(() => page.click('[data-a="dz-tab"][data-v="arte"]'));
+  const urlPng = Buffer.from(await mkImg('image/png', 300, 200, 'x.fillStyle="#2a8";x.fillRect(0,0,w,h);'), 'base64');
+  await ctx.route('https://img.test/**', r => r.fulfill(r.request().url().endsWith('page.html') ? { status: 200, contentType: 'text/html', body: '<p>no</p>', headers: { 'access-control-allow-origin': '*' } } : { status: 200, contentType: 'image/png', body: urlPng, headers: { 'access-control-allow-origin': '*' } }));
+  const oldArt = await page.evaluate(() => CPADesigner.state.cur.art.id);
+  await page.fill('[data-c="dz-arturl"]', 'non un link'); await page.click('[data-a="dz-art-url"]');
+  ok((await page.textContent('.hint[role="status"]')).includes('http'), 'link non valido: messaggio chiaro');
+  await page.fill('[data-c="dz-arturl"]', 'https://img.test/page.html'); await page.click('[data-a="dz-art-url"]'); await page.waitForTimeout(500);
+  ok((await page.textContent('.hint[role="status"]')).includes('Non riesco') && await page.evaluate(() => CPADesigner.state.cur.art.id) === oldArt, 'un link che non è un\u2019immagine non cambia l\u2019arte');
+  await page.fill('[data-c="dz-arturl"]', 'https://img.test/arte.png'); await page.press('[data-c="dz-arturl"]', 'Enter'); await page.waitForFunction(o => CPADesigner.state.cur.art.id !== o, oldArt, { timeout: 8000 }).catch(() => {});
+  
+  ok(await page.evaluate(o => CPADesigner.state.cur.art.id !== o && !!CPADesigner.state.cur.art.id, oldArt) && !(await page.$('.hint[role="status"]')), 'immagine presa da un link (invio) e salvata come arte');
+
   /* mobile: sei voci nel menu in basso */
   await page.setViewportSize({ width: 390, height: 800 });
   const tabs = await page.evaluate(() => { const t = document.querySelector('.tabs'); return { n: t.querySelectorAll('.nav').length, w: t.scrollWidth, cw: t.clientWidth }; });
