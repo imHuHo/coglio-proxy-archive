@@ -53,6 +53,8 @@ const fetchMock = async (u, init) => {
   ok(rA.c === 'WUBG' && rA.ci === 'WUBG', 'colori nell\'ordine WUBRG, non in quello di Scryfall');
   const rD = K.compact(DB[9]);
   ok(rD.dfc === 1 && rD.mc === '{U}' && rD.c === 'U' && rD.pw === '1' && /\/\/\s*Creature/.test(rD.t) && /Flying/.test(rD.o), 'compact: carta a due facce');
+  ok(r1.gc === 0 && r1.bn === 0 && K.compact(Object.assign({}, DB[4], { game_changer: true })).gc === 1, 'compact: Game Changer da Scryfall');
+  ok(K.compact(Object.assign({}, DB[4], { legalities: { commander: 'banned' } })).bn === 1 && K.compact(Object.assign({}, DB[4], { legalities: { commander: 'legal' } })).bn === 0, 'compact: carta bandita in Commander');
   ok(K.compact(DB[7]).p === null && K.compact(DB[7]).pf === 3 && K.unitPrice(K.compact(DB[7])) === 3, 'solo foil: vale il prezzo foil');
   ok(K.unitPrice(K.compact(DB[8])) === null, 'senza prezzo');
   ok(JSON.stringify(K.compact(DB[4])).length < 400, 'il riassunto è piccolo');

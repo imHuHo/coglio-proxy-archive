@@ -54,14 +54,17 @@ I colori sono quelli del Coglio (blu denim e giallo banana); i cinque colori del
 - **CODIGHEL che si usa**: nell'avviso dell'importazione si spuntano le carte da riusare; escono dalle sciolte (o dal mazzo non attivo) e restano nel nuovo mazzo, con la stampa posseduta se diversa.
 - **Novità**: la sezione «Codighel! che novità!» in Dati e l'avviso alla prima apertura dopo un aggiornamento leggono `web/changelog.js`. **A ogni release si aggiunge in cima la voce della nuova versione** (e si aggiorna `web/version.js`).
 - **Aggiornamenti**: in *Dati* il pulsante *Verifica aggiornamenti* interroga l'ultima release su GitHub e confronta la versione. Nell'app Windows scarica lo zip nella cartella Download (con barra di avanzamento) e lo mostra; da estrarre sopra la vecchia cartella, i dati stanno in `%APPDATA%` e restano. Su Android apre il download dell'APK; nella versione web rimanda alla pagina della release. La versione installata viene scritta da GitHub Actions a partire dal tag (`web/version.js`).
-- **Verifica bracket**: il tasto giallo sui mazzi calcola il bracket (2, 3 o 4) con le regole di Wizards e i dati dell'API pubblica di
-  [Commander Spellbook](https://commanderspellbook.com): Game Changer, distruzione di terre di massa, turni extra, combo, carte bandite.
-  Il pannello spiega *perché* esce quel numero. Il numero resta salvato nel mazzo e compare in un box colorato accanto al titolo
-  (1 blu, 2 verde, 3 giallo, 4 arancione, 5 rosso, ✕ carte bandite); se poi cambi la lista, il box diventa tratteggiato finché non ricalcoli.
-  **Non misura la velocità di gioco** e non calcola 1 e 5 (cEDH): se il tuo riferimento (ad esempio commanderbracket.app) dà un altro
-  numero, lo imposti a mano dal pannello. Nell'app Windows la richiesta parte dal programma (`electron/preload.js` + `main.js`), su Android da una
-  chiamata nativa (`CapacitorHttp`); nel browser Commander Spellbook blocca le richieste da altre pagine (CORS) e il pannello propone
-  «copia la lista e apri [commanderbracket.app](https://commanderbracket.app/bracket)». Per il calcolo la lista viene inviata a Commander Spellbook.
+- **Verifica bracket**: il tasto giallo sui mazzi apre un report calcolato **in locale** (`web/bracket.js`, senza accesso al DOM) a partire dai dati di
+  Scryfall già scaricati: Game Changer e carte bandite dai campi `game_changer` e `legalities.commander`; turni extra, distruzione di terre di massa,
+  tutor, accelerazione, rimozioni e pescata dal testo delle carte. Il bracket (2, 3 o 4) segue le regole pubbliche di Wizards: vale l'elemento più forte.
+  Il report mostra il perché, «Cosa decide il bracket» con le miniature, la **costanza di pescata** (simulazione di 20.000 mani con seme fisso: stesso
+  mazzo, stessi numeri), la salute del mazzo (conteggi contro 36–38 terre e ~10 carte per ruolo, nessun voto inventato) e i combo. I combo e i turni extra
+  di [Commander Spellbook](https://commanderspellbook.com) si sommano quando raggiungibile (app Windows via `electron/preload.js` + `main.js`, Android via
+  `CapacitorHttp`; nel browser lo blocca il CORS e il report lo dice). Le carte salvate prima di 4.1 non hanno il campo Game Changer: la prima verifica
+  le riscarica. **Non calcola** il «turno di vittoria previsto» né il livello di nemico (modelli proprietari), né 1 e 5 (cEDH): se il tuo riferimento dà un altro numero lo
+  imposti a mano dal pannello. Il numero resta salvato e compare accanto al titolo (1 blu, 2 verde, 3 giallo, 4 arancione, 5 rosso, ✕ carte bandite);
+  se cambi la lista il box diventa tratteggiato. Se non ci sono né dati di Scryfall né Spellbook, il pulsante copia la lista e apre
+  [commanderbracket.app](https://commanderbracket.app/bracket).
 - **Stampe diverse = carte diverse.** Per l'archivio una carta è identificata da nome *e* stampa (collezione + numero). Quando importi un mazzo,
   l'avviso CODIGHEL separa le carte che hai già libere **in quella esatta stampa** da quelle che hai **ma in un'altra stampa** (le puoi riusare, oppure
   stampare quella nuova). Negli upgrade ogni differenza è di tre tipi: *esce*, *entra*, *cambia solo la stampa*; per le carte che entrano si vede se

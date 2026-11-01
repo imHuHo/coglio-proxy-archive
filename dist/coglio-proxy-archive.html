@@ -971,17 +971,65 @@ body.on-deck #toast { bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
 .news-banner.major .btn:not(.primary) { background: rgba(255, 255, 255, .92); color: #1d1600; border-color: #a87c00; box-shadow: 0 2px 0 #a87c00; }
 .news-banner.major .btn:not(.primary):hover:not(:disabled) { background: #fff; }
 
+/* report del bracket in locale */
+.bk-box.wide, .bk .bk-box:has(.bkr-head) { width: min(880px, 100%); }
+.bkr-head { position: relative; display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 14px; overflow: hidden; background: var(--surface2); border: 1px solid var(--line); isolation: isolate; }
+.bkr-head.has-art::before { content: ''; position: absolute; inset: 0; z-index: -2; background: var(--art) center 22% / cover; opacity: .42; }
+.bkr-head.has-art::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, var(--surface2) 8%, transparent 70%); }
+.bkr-vt { display: grid; gap: 6px; min-width: 0; }
+.bkr-vt h3 { margin: 0; font: 800 20px/1.15 var(--display, inherit); overflow-wrap: anywhere; }
+.bkr-vt p { font-size: 13.5px; }
+.bkr-near { color: var(--part, #a85a00); font-weight: 700; }
+.bkr-sec { display: grid; gap: 8px; }
+.bkr-sec > h3 { margin: 0; font: 800 14px var(--display, inherit); text-transform: uppercase; letter-spacing: .05em; padding-bottom: 4px; border-bottom: 2.5px solid #f6c93a; }
+.bkr-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.bkr-tile { display: grid; gap: 6px; align-content: start; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.bkr-tile.has { background: var(--surface2); }
+.bkr-tile.wide { grid-column: 1 / -1; }
+.bkr-th { display: flex; gap: 8px; justify-content: space-between; align-items: baseline; flex-wrap: wrap; }
+.bkr-th h4 { margin: 0; font-size: 13.5px; display: flex; gap: 8px; align-items: baseline; }
+.bkr-th h4 span { font: 700 11px var(--mono); color: var(--muted); }
+.bkr-tag { font-style: normal; font: 700 10.5px var(--mono); padding: 2px 7px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+.bkr-tag.warn { background: #f6c93a; color: #1d1d1d; border-color: #a87c00; }
+.bkr-thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+.bkr-thumbs .th { width: 44px; height: 61px; border-radius: 4px; flex: none; }
+.bkr-tile p { font-size: 12.5px; overflow-wrap: anywhere; }
+.bkr-tile ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; }
+.bkr-none { color: var(--muted); }
+.bkr-draw { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+@media (max-width: 560px) { .bkr-draw { grid-template-columns: repeat(2, 1fr); } }
+.bkr-draw > div { display: grid; gap: 2px; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface2); }
+.bkr-draw b { font: 800 26px/1.1 var(--body); font-variant-numeric: tabular-nums; }
+.bkr-draw span { font-weight: 700; font-size: 12.5px; }
+.bkr-draw small, .bkr-m small { color: var(--muted); font-size: 11.5px; }
+.bkr-health { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+.bkr-m { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface2); align-items: baseline; }
+.bkr-m span { font-weight: 700; font-size: 12.5px; }
+.bkr-m b { font: 800 18px var(--body); font-variant-numeric: tabular-nums; }
+.bkr-m i { grid-column: 1 / -1; height: 8px; border-radius: 99px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; display: block; }
+.bkr-m u { display: block; height: 100%; background: #8a8fa6; text-decoration: none; }
+.bkr-m u.ok { background: #43c59e; }
+.bkr-m u.low { background: #f6c93a; }
+.bkr-m small { grid-column: 1 / -1; }
+@media (max-width: 560px) { .bkr-head { flex-direction: column; align-items: flex-start; } }
+
 </style>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <script>
-window.CPA_VERSION = '4.0.0';
+window.CPA_VERSION = '4.1.0';
 
 </script>
 <script>
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '4.1.0', date: '1 novembre 2026', title: 'Il bracket lo calcoliamo noi', items: [
+    { t: 'Report del bracket completo', d: 'Il tasto «Verifica bracket» ora apre un report con il bracket stimato e il perché, «Cosa decide il bracket» (Game Changer, turni extra, distruzione di terre di massa, tutor, mana veloce, combo, ognuno con le miniature delle carte), la costanza di pescata e la salute del mazzo. Funziona anche da browser e senza internet dopo il primo scaricamento dei dati.' },
+    { t: 'Calcolato in locale', d: 'Game Changer e carte bandite arrivano dai dati di Scryfall già sul dispositivo; turni extra, terre di massa, tutor, accelerazione, rimozioni e pescate si riconoscono dal testo delle carte. I combo restano quelli di Commander Spellbook, dove raggiungibile (app per Windows e Android).' },
+    { t: 'Costanza di pescata', d: 'Simulazione di 20.000 mani del mazzo, sempre con lo stesso seme (stesso mazzo, stessi numeri): mano da tenere, terre iniziali, 3 terre al turno 3, accelerazioni, commander in curva e colori in mano.' },
+    { t: 'Niente numeri inventati', d: 'Non c\'è il «turno di vittoria previsto» né il livello di nemico: sono modelli che non possiamo ricostruire. La salute del mazzo confronta i conteggi con la regola 36–38 terre e circa 10 carte per ruolo, senza dare un voto.' },
+  ] },
   { v: '4.0.0', date: '1 novembre 2026', title: 'Codighel! Ricerca, prezzi e sincronizzazione', items: [
     { t: 'Ricerca avanzata', d: 'La barra dell\'archivio capisce la sintassi di Scryfall (t:creature c:rg mv<=3 o:"draw" r:mythic, or, -, parentesi, /regex/) e accanto c\'è il pannello Filtri: colori di mana, tipo, costo, rarità e testo, che scrivono la ricerca per te. Mazzo, collezione, disponibilità e ordinamento sono lì dentro; si può ordinare anche per costo di mana e per prezzo.' },
     { t: 'Pagina del mazzo, in stile Moxfield', d: 'Il mazzo si apre con un titolo grande su un banner con l\'artwork del commander e la lista a tutta pagina, già divisa per tipo (commander, creature, stregonerie, incantesimi, istantanei, artefatti, terre). Passando il mouse su una carta la vedi grande a lato; su telefono la tocchi. Accanto al nome c\'è l\'icona per cambiare stampa, con il prezzo in euro della stampa tra parentesi. Impostazioni, nome e commander sono sotto «Gestisci».' },
@@ -3083,7 +3131,8 @@ window.CPA_CHANGELOG = [
       r: card.rarity || '',
       o: card.oracle_text != null ? card.oracle_text : fs.map(function (f) { return f.oracle_text || ''; }).join('\n//\n'),
       s: card.set || '', cn: String(card.collector_number || ''),
-      p: num(pr.eur), pf: num(pr.eur_foil), ts: 0
+      p: num(pr.eur), pf: num(pr.eur_foil), ts: 0,
+      gc: card.game_changer ? 1 : 0, bn: card.legalities && card.legalities.commander === 'banned' ? 1 : 0
     };
     var pw = card.power != null ? card.power : f0.power, tg = card.toughness != null ? card.toughness : f0.toughness;
     if (pw != null) r.pw = String(pw);
@@ -3299,6 +3348,152 @@ window.CPA_CHANGELOG = [
   }
 
   return { create: create, compact: compact, unitPrice: unitPrice, eur: eur, memoryStorage: memoryStorage, idbStorage: idbStorage, PRICE_TTL: PRICE_TTL };
+});
+
+</script>
+<script>
+/* Coglio Proxy Archive - calcolatore di bracket in locale (nessun accesso al DOM).
+ * Parte dai dati delle carte già scaricati da Scryfall (cards.js): Game Changer e carte bandite arrivano da Scryfall,
+ * turni extra, distruzione di terre di massa, tutor, accelerazione, rimozioni e pescate si riconoscono dal testo delle carte.
+ * Le regole sono quelle pubbliche di Wizards (il minimo lo mette l'elemento più forte). È una stima: il bracket vero lo decide il tavolo.
+ * La costanza di pescata è una simulazione sul mazzo (20.000 mani, sempre con lo stesso seme: stesso mazzo, stessi numeri). */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.CPABracket = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var BASIC_COLOR = { plains: 'W', island: 'U', swamp: 'B', mountain: 'R', forest: 'G', wastes: 'C' };
+  /* Mana veloce da cEDH (Sol Ring è in quasi ogni mazzo, quindi non conta). */
+  var FAST = ['mana crypt', 'mana vault', 'grim monolith', 'basalt monolith', 'chrome mox', 'mox diamond', 'mox opal', 'mox amber', 'lotus petal', 'jeweled lotus',
+    'black lotus', 'mox pearl', 'mox sapphire', 'mox jet', 'mox ruby', 'mox emerald', 'ancient tomb', 'dark ritual', 'cabal ritual', 'lion\'s eye diamond'];
+  var MLD_NAMES = ['armageddon', 'ravages of war', 'catastrophe', 'devastation', 'ruination', 'jokulhaups', 'obliterate', 'decree of annihilation', 'apocalypse',
+    'wake of destruction', 'impending disaster', 'boom // bust', 'boom', 'sunder', 'cataclysm', 'tectonic break', 'global ruin', 'balancing act'];
+  var RE_MLD = /destroy all (?:nonbasic )?lands|exile all lands|each player sacrifices (?:all|\w+) lands|each player sacrifices all but one land/;
+  var RE_EXTRA = /takes? (?:an )?extra turns?|extra turn after this one|additional turn after this one/;
+  var RE_LANDSEARCH = '(?:(?:a|an|up to \\w+|\\w+) )?(?:basic )?(?:snow )?(?:land|plains|island|swamp|mountain|forest|wastes)s?\\b';
+  var RE_TUTOR = new RegExp('search your library for (?!' + RE_LANDSEARCH + ')');
+  var RE_RAMPSEARCH = new RegExp('search your library for ' + RE_LANDSEARCH);
+  var RE_REMOVAL = /(?:destroy|exile) (?:up to \w+ )?(?:another )?target|counter target|destroy all|exile all|return target [^.]*to (?:its|their) owner's hand|deals? (?:x|\d+) damage to (?:any target|target (?:creature|planeswalker))|target creature gets -|all creatures get -|each creature gets -|sacrifices? (?:a|target) creature/;
+  var RE_DRAW = /\bdraws? (?:a card|one card|two cards|three cards|four cards|x cards|\d+ cards|that many cards|cards equal)|you may draw (?:a|up to|two|x)|look at the top (?:\w+ )?cards? of your library[^.]*into your hand|reveal the top[^.]*into your hand/;
+  var RE_TREASURE = /creates? (?:a|an|one|two|three|x|\d+) (?:tapped )?treasure/;
+
+  function lc(s) { return String(s == null ? '' : s).toLowerCase(); }
+  function front(t) { return lc(t).split('//')[0]; }
+  function uniq(a) { var seen = {}, out = []; a.forEach(function (x) { if (!seen[x]) { seen[x] = 1; out.push(x); } }); return out; }
+
+  /* Che cosa è una carta, a partire dal suo riassunto Scryfall (rec) e dal nome. */
+  function classify(name, rec, isBasic) {
+    var k = lc(name), r = { name: name, land: false, pm: '', cmc: 0, known: !!rec };
+    if (isBasic && isBasic(name)) {
+      r.land = true; r.known = true;
+      var b = k.replace('snow-covered ', ''); r.pm = BASIC_COLOR[b] || '';
+      return r;
+    }
+    if (!rec) return r;
+    var t = front(rec.t), o = lc(rec.o);
+    r.land = /\bland\b/.test(t); r.cmc = rec.v || 0; r.pm = rec.pm || '';
+    r.gc = !!rec.gc; r.banned = !!rec.bn;
+    r.fast = FAST.indexOf(k) >= 0 || FAST.indexOf(lc(String(name).split(' // ')[0])) >= 0;
+    r.mld = MLD_NAMES.indexOf(lc(String(name).split(' // ')[0])) >= 0 || RE_MLD.test(o);
+    r.extra = RE_EXTRA.test(o);
+    if (!r.land) {
+      r.tutor = RE_TUTOR.test(o);
+      r.ramp = !!r.pm || RE_RAMPSEARCH.test(o) || RE_TREASURE.test(o);
+      r.removal = RE_REMOVAL.test(o);
+      r.draw = RE_DRAW.test(o);
+    }
+    return r;
+  }
+
+  function cmdKey(d, keyOf) { return d.commander ? keyOf(d.commander) : ''; }
+
+  /* Analisi di un mazzo. ctx: { rec(card) -> riassunto o null, isBasic(name), keyOf(name) } */
+  function analyze(d, ctx) {
+    var keyOf = ctx.keyOf, ck = cmdKey(d, keyOf), taken = !ck, pool = [], commander = null, missing = [];
+    var lists = { gc: [], mld: [], extra: [], tutors: [], fast: [], banned: [], ramp: [], removal: [], draw: [] };
+    var counts = { total: 0, lands: 0, ramp: 0, removal: 0, draw: 0, tutors: 0, fast: 0, extra: 0 };
+    (d.cards || []).forEach(function (c) {
+      var info = classify(c.name, c.design ? null : ctx.rec(c), ctx.isBasic), q = c.qty;
+      info.design = !!c.design;
+      if (!info.known && !c.design) missing.push(c.name);
+      counts.total += q;
+      if (!taken && keyOf(c.name) === ck) { taken = true; commander = info; q--; }
+      if (info.gc) lists.gc.push(c.name);
+      if (info.mld) lists.mld.push(c.name);
+      if (info.extra) lists.extra.push(c.name);
+      if (info.banned) lists.banned.push(c.name);
+      if (info.tutor) { lists.tutors.push(c.name); counts.tutors += c.qty; }
+      if (info.fast) { lists.fast.push(c.name); counts.fast += c.qty; }
+      if (info.extra) counts.extra += c.qty;
+      if (info.land) counts.lands += c.qty;
+      if (info.ramp) { lists.ramp.push(c.name); counts.ramp += c.qty; }
+      if (info.removal) { lists.removal.push(c.name); counts.removal += c.qty; }
+      if (info.draw) { lists.draw.push(c.name); counts.draw += c.qty; }
+      for (var i = 0; i < q; i++) pool.push(info);
+    });
+    Object.keys(lists).forEach(function (k) { lists[k] = uniq(lists[k]).sort(function (a, b) { return a.localeCompare(b, 'en'); }); });
+    var sum = { tag: '', range: '', name: '', note: '', gameChangers: lists.gc, massLandDenial: lists.mld, extraTurns: lists.extra, banned: lists.banned, combos: [], unknown: [] };
+    return { pool: pool, commander: commander, lists: lists, counts: counts, missing: uniq(missing), sum: sum, hasData: missing.length < Math.max(1, d.cards.length) };
+  }
+
+  /* ----- simulazione delle mani ----- */
+  function rng(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      var t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function draws(an, ci, opt) {
+    opt = opt || {};
+    var pool = an.pool, n = pool.length, trials = opt.trials || 20000;
+    if (n < 15) return null;
+    var rand = rng(opt.seed || 0xC061), idx = []; for (var i = 0; i < n; i++) idx.push(i);
+    var cmc = an.commander ? an.commander.cmc : 0, colors = String(ci || '').replace(/[^WUBRG]/g, '').split('').filter(Boolean);
+    var keep = 0, l3 = 0, r3 = 0, onc = 0, col = 0, landsSum = 0, needN = Math.min(n, 7 + Math.max(cmc, 0));
+    var seen = Math.max(needN, 10);
+    for (var t = 0; t < trials; t++) {
+      for (var j = 0; j < seen; j++) { var k = j + Math.floor(rand() * (n - j)), tmp = idx[j]; idx[j] = idx[k]; idx[k] = tmp; }
+      var lands7 = 0, cheap = false, got = {}, lands10 = 0, ramp10 = 0, src = 0, c, p;
+      for (var m = 0; m < seen; m++) {
+        c = pool[idx[m]];
+        if (m < 7) {
+          if (c.land) lands7++; else if (c.cmc <= 3) cheap = true;
+          for (var z = 0; z < colors.length; z++) if (c.pm.indexOf(colors[z]) >= 0) got[colors[z]] = 1;
+        }
+        if (m < 10) { if (c.land) lands10++; else if (c.ramp) ramp10++; }
+        if (m < needN && (c.land || (c.ramp && c.cmc <= 2))) src++;
+      }
+      landsSum += lands7;
+      if (lands7 >= 2 && lands7 <= 5 && cheap) keep++;
+      if (lands10 >= 3) l3++;
+      if (ramp10 >= 2) r3++;
+      if (cmc > 0 && src >= cmc) onc++;
+      if (colors.every(function (x) { return got[x]; })) col++;
+    }
+    return {
+      keepable: keep / trials, lands3: l3 / trials, ramp3: r3 / trials, onCurve: cmc > 0 ? onc / trials : null,
+      colors: colors.length ? col / trials : null, avgLands: landsSum / trials, trials: trials, cmc: cmc, colorCount: colors.length
+    };
+  }
+
+  /* Rimando un giudizio breve: quanto manca al bracket successivo. */
+  function verdict(n, an) {
+    var gc = an.lists.gc.length, near = [];
+    if (n === 3 && gc === 3) near.push('3 Game Changer: uno in più e sale a 4');
+    if (n <= 3 && an.counts.fast >= 2) near.push(an.counts.fast + ' carte di mana veloce');
+    if (n <= 3 && an.counts.tutors >= 6) near.push(an.counts.tutors + ' tutor');
+    if (n === 2 && an.lists.extra.length >= 2) near.push(an.lists.extra.length + ' turni extra');
+    return near;
+  }
+
+  var HEALTH_REF = { lands: [36, 38], ramp: 10, removal: 10, draw: 10 };
+
+  return { analyze: analyze, classify: classify, draws: draws, verdict: verdict, HEALTH_REF: HEALTH_REF, FAST: FAST, rng: rng };
 });
 
 </script>
@@ -4122,44 +4317,127 @@ window.CPA_SYNC = {
       return arr.length ? '<div class="bk-sec"><h4>' + esc(title) + ' <span>' + arr.length + '</span></h4><p>' + arr.map(esc).join(' · ') + '</p></div>' : '';
     }
     function webBtn() { return '<button class="btn small bracket" data-a="bk-web" data-id="' + esc(last ? last.id : '') + '">Controlla anche su commanderbracket.app</button>'; }
-    function show(deck, sum) {
+    function pc(x) { return x == null ? '—' : Math.round(x * 100) + '%'; }
+    function thumbsOf(deck, names) {
+      return names.slice(0, 8).map(function (nm) {
+        var c = deck.cards.filter(function (x) { return x.name === nm; })[0];
+        return c ? IMG.thumb(c.name, c.set, c.cn) : '';
+      }).join('');
+    }
+    function tile(deck, title, names, tag, tone, note) {
+      var n = names.length;
+      return '<div class="bkr-tile' + (n ? ' has' : '') + '"><div class="bkr-th"><h4>' + esc(title) + ' <span>' + n + '</span></h4>' + (tag ? '<em class="bkr-tag ' + (tone || '') + '">' + esc(tag) + '</em>' : '') + '</div>' +
+        (n ? '<div class="bkr-thumbs">' + thumbsOf(deck, names) + '</div><p>' + names.slice(0, 14).map(esc).join(' · ') + (n > 14 ? ' · … e altre ' + (n - 14) : '') + '</p>' : '<p class="bkr-none">' + esc(note || 'Nessuna.') + '</p>') + '</div>';
+    }
+    function meter(label, val, ref, hint) {
+      var tgt = ref.length ? ref[1] : ref, lo = ref.length ? ref[0] : ref, w = Math.max(3, Math.min(100, Math.round(val / tgt * 100)));
+      return '<div class="bkr-m"><span>' + label + '</span><b>' + val + '</b><i><u class="' + (val >= lo ? 'ok' : 'low') + '" style="width:' + w + '%"></u></i><small>' + hint + '</small></div>';
+    }
+    function show(deck, v) {
+      var an = v.an, sum = v.sum, b = v.b, spell = v.spell, dr = v.dr, H = (window.CPABracket || {}).HEALTH_REF;
+      var cmd = deck.commander ? deck.cards.filter(function (x) { return C.keyOf(x.name) === C.keyOf(deck.commander); })[0] : null;
+      var seed = cmd ? IMG.thumb(cmd.name, cmd.set, cmd.cn).replace('class="th', 'class="th seed') : '';
+      var art = cmd ? IMG.pic(cmd.name, cmd.set, cmd.cn, 'art_crop') : '';
+      var near = an ? window.CPABracket.verdict(b.n, an) : [];
       var combos = sum.combos.map(function (c) {
-        return '<li><b>' + c.cards.map(esc).join(' + ') + '</b>' + (c.result.length ? ' → ' + esc(c.result.join(', ')) : '') +
-          (c.twoCard ? ' <em class="bk-tag">due carte</em>' : '') + '</li>';
+        return '<li><b>' + c.cards.map(esc).join(' + ') + '</b>' + (c.result.length ? ' → ' + esc(c.result.join(', ')) : '') + (c.twoCard ? ' <em class="bk-tag">due carte</em>' : '') + '</li>';
       }).join('');
       var warn = sum.banned.length ? '<p class="lb-warn">Carte bandite in Commander: ' + sum.banned.map(esc).join(', ') + '.</p>' : '';
-      var unk = sum.unknown.length ? '<div class="bk-sec"><h4>Carte non riconosciute <span>' + sum.unknown.length + '</span></h4><p>' + sum.unknown.slice(0, 12).map(esc).join(' · ') + (sum.unknown.length > 12 ? ' · … e altre ' + (sum.unknown.length - 12) : '') +
-        '<br><small>Non contano nella stima: controlla il nome.</small></p></div>' : '';
+      var unk = sum.unknown.length ? '<div class="bk-sec"><h4>Carte non riconosciute da Spellbook <span>' + sum.unknown.length + '</span></h4><p>' + sum.unknown.slice(0, 12).map(esc).join(' · ') + (sum.unknown.length > 12 ? ' · … e altre ' + (sum.unknown.length - 12) : '') + '</p></div>' : '';
+      var gc = sum.gameChangers.length, floor = gc >= 4 ? 'Mettono il minimo a 4' : gc ? 'Mettono il minimo a 3' : '';
+      var cl = an ? an.lists : { tutors: [], fast: [] }, cn = an ? an.counts : {};
+      var spellNote = spell ? '' : (v.spellWhy === 'cors' ? 'Da questo browser Commander Spellbook non è raggiungibile: i combo li controlla l\'app per Windows.' : 'Non ho potuto interrogare Commander Spellbook: i combo non sono stati cercati.');
+      var comboTile = '<div class="bkr-tile wide' + (sum.combos.length ? ' has' : '') + '"><div class="bkr-th"><h4>Combo <span>' + (spell ? sum.combos.length : '—') + '</span></h4>' +
+        (spell ? '<em class="bkr-tag">da Commander Spellbook</em>' : '') + '</div>' +
+        (combos ? '<ul>' + combos + '</ul>' : '<p class="bkr-none">' + esc(spell ? 'Nessun combo trovato.' : spellNote) + '</p>') + '</div>';
+      var draw = dr ? '<section class="bkr-sec"><h3>Costanza di pescata</h3><div class="bkr-draw">' +
+        '<div><b>' + pc(dr.keepable) + '</b><span>Mano di 7 da tenere</span><small>da 2 a 5 terre e una giocata a costo basso</small></div>' +
+        '<div><b>' + dr.avgLands.toFixed(1) + '</b><span>Terre nella mano iniziale</span><small>in media, su ' + an.counts.lands + ' terre</small></div>' +
+        '<div><b>' + pc(dr.lands3) + '</b><span>3 terre al turno 3</span><small>pescando a ogni turno</small></div>' +
+        '<div><b>' + pc(dr.ramp3) + '</b><span>2 accelerazioni al turno 3</span><small>su ' + an.counts.ramp + ' carte che accelerano</small></div>' +
+        '<div><b>' + pc(dr.onCurve) + '</b><span>Commander in curva</span><small>' + (dr.cmc ? 'costo ' + dr.cmc + ', al turno ' + dr.cmc : 'senza costo') + '</small></div>' +
+        '<div><b>' + pc(dr.colors) + '</b><span>Colori del commander in mano</span><small>' + (dr.colorCount ? 'una fonte per ciascuno dei ' + dr.colorCount + ' colori' : 'commander incolore') + '</small></div>' +
+        '</div><p class="bk-foot">Simulazione di ' + dr.trials.toLocaleString('it-IT') + ' mani del tuo mazzo (senza il commander, pescando anche al primo turno). Le carte senza dati contano come giocate generiche.</p></section>' : '';
+      var health = an ? '<section class="bkr-sec"><h3>Salute del mazzo</h3><div class="bkr-health">' +
+        meter('Terre', cn.lands, H.lands, 'riferimento ' + H.lands[0] + '–' + H.lands[1]) + meter('Accelerazione', cn.ramp, H.ramp, 'riferimento ~' + H.ramp) +
+        meter('Rimozioni e contromagie', cn.removal, H.removal, 'riferimento ~' + H.removal) + meter('Pescata di carte', cn.draw, H.draw, 'riferimento ~' + H.draw) +
+        '</div><p class="bk-foot">Conteggi dal testo delle carte, confrontati con la regola comune «36–38 terre e circa 10 carte per ciascun ruolo»: sono un punto di partenza, non un voto.</p></section>' : '';
+      var miss = an && an.missing.length ? '<p class="lb-warn">Per ' + plural(an.missing.length, 'carta', 'carte') + ' non ho i dati (' + an.missing.slice(0, 4).map(esc).join(', ') + (an.missing.length > 4 ? '…' : '') + '): non contano nel calcolo.</p>' : '';
       shell(deck,
-        '<div class="bk-score"><div class="bk-num b' + sum.n + '"><small>Bracket stimato</small><b>' + (sum.n || '✕') + '</b></div>' +
-        '<div><span class="bk-chip t-' + esc(sum.tag.toLowerCase()) + '">Spellbook: ' + esc(sum.name) + '</span><p>Perché: ' + sum.reasons.map(esc).join('; ') + '.</p></div></div>' + warn +
-        list('Game Changer', sum.gameChangers) + list('Distruzione di terre di massa', sum.massLandDenial) + list('Turni extra', sum.extraTurns) +
-        (combos ? '<div class="bk-sec"><h4>Combo trovate <span>' + sum.combos.length + '</span></h4><ul>' + combos + '</ul></div>' : '') + unk +
-        (!sum.gameChangers.length && !sum.massLandDenial.length && !sum.extraTurns.length && !sum.combos.length && !sum.banned.length ? '<p class="bk-none">Nessun Game Changer, turno extra, distruzione di terre o combo trovati.</p>' : '') +
-        '<p class="bk-foot">Calcolo basato sulle regole di Wizards e sui dati di Commander Spellbook. Non misura la velocità di gioco (che può alzare il bracket), e 1 e 5 (cEDH) non si calcolano: se commanderbracket.app dice altro, imposta il suo numero a mano. La lista del mazzo viene inviata a Commander Spellbook per il calcolo.</p>' +
+        '<div class="bkr-head' + (art ? ' has-art' : '') + '"' + (cmd ? ' data-n="' + esc(cmd.name) + '" data-s="' + esc(cmd.set || '') + '" data-c="' + esc(cmd.cn || '') + '"' : '') + (art ? ' style="--art:url(' + esc(art) + ')"' : '') + '>' + seed +
+        '<div class="bk-num b' + b.n + '"><small>Bracket stimato</small><b>' + (b.n || '✕') + '</b></div>' +
+        '<div class="bkr-vt"><h3>' + esc(deck.name) + '</h3><p>' + (b.n ? 'Perché: ' + b.reasons.map(esc).join('; ') + '.' : b.reasons.map(esc).join('; ') + '.') + '</p>' +
+        (near.length ? '<p class="bkr-near">Vicino al bracket successivo: ' + near.map(esc).join(', ') + '.</p>' : '') +
+        (spell ? '<span class="bk-chip t-' + esc(sum.tag.toLowerCase()) + '">Spellbook: ' + esc(sum.name) + '</span>' : '') + '</div></div>' + warn + miss +
+        '<section class="bkr-sec"><h3>Cosa decide il bracket</h3><div class="bkr-tiles">' +
+        tile(deck, 'Game Changer', sum.gameChangers, floor, 'warn', 'Nessuno: non alza il bracket.') +
+        tile(deck, 'Turni extra', sum.extraTurns, sum.extraTurns.length >= 3 ? 'Da 3 in su: minimo 4' : '', 'warn', 'Nessuno.') +
+        tile(deck, 'Distruzione di terre di massa', sum.massLandDenial, sum.massLandDenial.length ? 'Mette il minimo a 4' : '', 'warn', 'Nessuna.') +
+        tile(deck, 'Tutor', cl.tutors, cl.tutors.length >= 6 ? 'Molti' : cl.tutors.length ? 'Nella norma' : '', '', 'Nessuno.') +
+        tile(deck, 'Mana veloce', cl.fast, cl.fast.length ? 'Da cEDH' : '', '', 'Nessuna carta da cEDH.') +
+        comboTile + '</div></section>' + draw + health + unk +
+        '<p class="bk-foot">Stima secondo le regole pubbliche di Wizards: vale l\'elemento più forte (Game Changer, distruzione di terre di massa, turni extra, combo). Non misura la velocità né l\'intento, quindi 1 e 5 (cEDH) non si calcolano: se al tavolo il mazzo è un\'altra cosa, imposta il numero a mano.' + (spell ? ' La lista è stata inviata a Commander Spellbook per i combo.' : '') + '</p>' +
         '<div class="bk-set"><span>Se il tuo riferimento dice altro, imposta a mano:</span>' + [1, 2, 3, 4, 5].map(function (k) {
           return '<button class="bk-badge b' + k + '" data-a="bk-set" data-n="' + k + '" aria-label="Imposta bracket ' + k + '">' + k + '</button>';
         }).join('') + '</div><div class="bk-bar">' + webBtn() + '</div>');
+      IMG.hydrate();
     }
     function fail(deck, why) {
       shell(deck, '<p class="lb-warn">' + (why === 'cors' ? 'Da questo browser il calcolo non è disponibile: il sito di Commander Spellbook non permette richieste da altre pagine.' :
         'Non sono riuscito a calcolare il bracket (' + (why === 'timeout' ? 'tempo scaduto' : why === 'http' ? 'il servizio ha risposto con un errore' : 'nessuna connessione') + ').') + '</p>' +
         '<p>Puoi farlo sul sito: copio la lista e lo apro, poi incolli e premi «Check my bracket».</p><div class="bk-bar">' + webBtn() + '</div>');
     }
+    /* Dati delle carte che servono al calcolo: mancanti, oppure salvati prima che esistessero Game Changer e carte bandite. */
+    function dataNeeds(deck) {
+      var cc = CARDS.get(); if (!cc) return [];
+      return cc.pricedCards(deck, C.isBasic).filter(function (c) { var r = dkRec(cc, c); return !r || r.gc === undefined; })
+        .map(function (c) { return { name: c.name, set: c.set, cn: c.cn }; });
+    }
+    function uni(a, b) { var seen = {}, out = []; a.concat(b).forEach(function (x) { if (!seen[x]) { seen[x] = 1; out.push(x); } }); return out.sort(function (p, q) { return p.localeCompare(q, 'en'); }); }
     function start(deck) {
-      last = deck; var my = ++run, payload = C.bracketPayload(deck);
-      shell(deck, '<p class="lb-wait bk-wait">Calcolo il bracket di «' + esc(deck.name) + '»…</p>');
-      var native = !!window.cpaNet;
-      call(payload).then(function (j) {
+      last = deck; var my = ++run, payload = C.bracketPayload(deck), cc = window.CPABracket ? CARDS.get() : null;
+      var local = cc && CARDS.enabled(), native = !!window.cpaNet, spell = null, spellWhy = '', spellDone = !available();
+      function finish() {
         if (my !== run || !box) return;
-        var sum = C.bracketSummary(j, payload);
-        saveBracket(deck, { n: sum.n, sig: C.deckSig(deck), at: Date.now(), manual: false });
-        show(deck, sum);
-      }, function (e) {
-        if (my !== run || !box) return;
-        var m = e && e.message;
-        fail(deck, m === 'timeout' || m === 'http' ? m : (!native && e instanceof TypeError && location.protocol.indexOf('http') === 0 && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) ? 'cors' : 'network');
-      });
+        var an = null, dr = null;
+        if (window.CPABracket && cc) {
+          var ctx = { rec: function (c) { return dkRec(cc, c); }, isBasic: C.isBasic, keyOf: C.keyOf };
+          an = window.CPABracket.analyze(deck, ctx);
+          if (!an.hasData) an = null;
+        }
+        if (!an && !spell) return fail(deck, spellWhy || 'network');
+        var sum = an ? JSON.parse(JSON.stringify(an.sum)) : { tag: '', range: '', name: '', note: '', gameChangers: [], massLandDenial: [], extraTurns: [], banned: [], combos: [], unknown: [] };
+        if (spell) {
+          sum.gameChangers = uni(sum.gameChangers, spell.gameChangers); sum.massLandDenial = uni(sum.massLandDenial, spell.massLandDenial);
+          sum.extraTurns = uni(sum.extraTurns, spell.extraTurns); sum.banned = uni(sum.banned, spell.banned);
+          sum.combos = spell.combos; sum.tag = spell.tag; sum.name = spell.name; sum.unknown = spell.unknown;
+        }
+        var b = C.bracketNumber(sum);
+        if (an) { var cmd = an.commander, rc = deck.commander ? dkRec(cc, deck.cards.filter(function (x) { return C.keyOf(x.name) === C.keyOf(deck.commander); })[0] || {}) : null; dr = window.CPABracket.draws(an, rc ? rc.ci : ''); }
+        saveBracket(deck, { n: b.n, sig: C.deckSig(deck), at: Date.now(), manual: false });
+        show(deck, { an: an, sum: sum, b: b, spell: spell, spellWhy: spellWhy, dr: dr });
+      }
+      shell(deck, '<p class="lb-wait bk-wait" id="bkw">Calcolo il bracket di «' + esc(deck.name) + '»…</p>');
+      var pending = 0, step = function () { pending--; if (pending === 0) finish(); };
+      if (available()) {
+        pending++;
+        call(payload).then(function (j) { if (my !== run) return; spell = C.bracketSummary(j, payload); step(); }, function (e) {
+          if (my !== run) return;
+          var m = e && e.message;
+          spellWhy = m === 'timeout' || m === 'http' ? m : (!native && e instanceof TypeError && location.protocol.indexOf('http') === 0 && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) ? 'cors' : 'network';
+          step();
+        });
+      }
+      if (local) {
+        var need = dataNeeds(deck);
+        if (need.length) {
+          pending++;
+          cc.ensure(need, { force: true }, function (p) {
+            var w = box && box.querySelector('#bkw'); if (w && p.total) w.textContent = 'Scarico i dati delle carte da Scryfall: ' + p.done + ' su ' + p.total + '…';
+          }).then(step, function () { if (my === run) step(); });
+        }
+      }
+      if (!pending) { pending = 1; step(); }
     }
     function web(deck) {
       /* prima si avvia la copia (la finestra ha ancora il focus), poi si apre il sito: tutto dentro lo stesso clic */
@@ -5193,7 +5471,14 @@ window.CPA_SYNC = {
     var u = IMG.pic(c.name, c.set, c.cn, 'art_crop');
     if (u) { h.style.setProperty('--art', 'url(' + u + ')'); h.classList.add('has-art'); }
   }
-  IMG.onFill(function () { if (ui.view === 'deck') { dprevPaint(); dkHeroArt(); } });
+  IMG.onFill(function () {
+    if (ui.view === 'deck') { dprevPaint(); dkHeroArt(); }
+    var bh = document.querySelector('.bkr-head[data-n]');
+    if (bh && !bh.classList.contains('has-art')) {
+      var u = IMG.pic(bh.dataset.n, bh.dataset.s, bh.dataset.c, 'art_crop');
+      if (u) { bh.style.setProperty('--art', 'url(' + u + ')'); bh.classList.add('has-art'); }
+    }
+  });
 
   function dkHero(d) {
     var cmdCard = d.kind === 'deck' && d.commander ? d.cards.filter(function (x) { return dkIsCmd(d, x); })[0] : null;
@@ -5634,7 +5919,7 @@ window.CPA_SYNC = {
       case 'restore-json': restore(ui.restoreText); break;
       case 'bracket':
         deck = getDeck(id);
-        if (deck) { if (BK.available()) BK.start(deck); else BK.web(deck); }
+        if (deck) { if (BK.available() || (window.CPABracket && CARDS.enabled())) BK.start(deck); else BK.web(deck); }
         break;
       case 'bk-web':
         deck = getDeck(id) || getDeck();

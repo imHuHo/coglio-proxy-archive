@@ -8,7 +8,7 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 web = os.path.join(root, 'web')
 rd = lambda f: open(os.path.join(web, f), encoding='utf-8').read()
 css, core, app = rd('style.css'), rd('core.js'), rd('app.js')
-extra = {n: rd(n) for n in ('version.js', 'changelog.js', 'pdf.js', 'proxy.js', 'search.js', 'cards.js', 'sync-config.js', 'sync.js', 'builder.js', 'cardrender.js', 'designer.js')}
+extra = {n: rd(n) for n in ('version.js', 'changelog.js', 'pdf.js', 'proxy.js', 'search.js', 'cards.js', 'bracket.js', 'sync-config.js', 'sync.js', 'builder.js', 'cardrender.js', 'designer.js')}
 for name, src in [('core.js', core), ('app.js', app)] + list(extra.items()):
     assert '</script' not in src.lower(), name
 fonts = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap'
@@ -40,6 +40,9 @@ single = f'''<title>Coglio Proxy Archive</title>
 </script>
 <script>
 {extra['cards.js']}
+</script>
+<script>
+{extra['bracket.js']}
 </script>
 <script>
 {extra['sync-config.js']}

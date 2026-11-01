@@ -966,3 +966,45 @@ body.on-deck #toast { bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
 /* «Chiudi» nell'avviso giallo delle novità: sul giallo resta leggibile anche con il tema scuro */
 .news-banner.major .btn:not(.primary) { background: rgba(255, 255, 255, .92); color: #1d1600; border-color: #a87c00; box-shadow: 0 2px 0 #a87c00; }
 .news-banner.major .btn:not(.primary):hover:not(:disabled) { background: #fff; }
+
+/* report del bracket in locale */
+.bk-box.wide, .bk .bk-box:has(.bkr-head) { width: min(880px, 100%); }
+.bkr-head { position: relative; display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 14px; overflow: hidden; background: var(--surface2); border: 1px solid var(--line); isolation: isolate; }
+.bkr-head.has-art::before { content: ''; position: absolute; inset: 0; z-index: -2; background: var(--art) center 22% / cover; opacity: .42; }
+.bkr-head.has-art::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, var(--surface2) 8%, transparent 70%); }
+.bkr-vt { display: grid; gap: 6px; min-width: 0; }
+.bkr-vt h3 { margin: 0; font: 800 20px/1.15 var(--display, inherit); overflow-wrap: anywhere; }
+.bkr-vt p { font-size: 13.5px; }
+.bkr-near { color: var(--part, #a85a00); font-weight: 700; }
+.bkr-sec { display: grid; gap: 8px; }
+.bkr-sec > h3 { margin: 0; font: 800 14px var(--display, inherit); text-transform: uppercase; letter-spacing: .05em; padding-bottom: 4px; border-bottom: 2.5px solid #f6c93a; }
+.bkr-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.bkr-tile { display: grid; gap: 6px; align-content: start; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.bkr-tile.has { background: var(--surface2); }
+.bkr-tile.wide { grid-column: 1 / -1; }
+.bkr-th { display: flex; gap: 8px; justify-content: space-between; align-items: baseline; flex-wrap: wrap; }
+.bkr-th h4 { margin: 0; font-size: 13.5px; display: flex; gap: 8px; align-items: baseline; }
+.bkr-th h4 span { font: 700 11px var(--mono); color: var(--muted); }
+.bkr-tag { font-style: normal; font: 700 10.5px var(--mono); padding: 2px 7px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+.bkr-tag.warn { background: #f6c93a; color: #1d1d1d; border-color: #a87c00; }
+.bkr-thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+.bkr-thumbs .th { width: 44px; height: 61px; border-radius: 4px; flex: none; }
+.bkr-tile p { font-size: 12.5px; overflow-wrap: anywhere; }
+.bkr-tile ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; }
+.bkr-none { color: var(--muted); }
+.bkr-draw { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+@media (max-width: 560px) { .bkr-draw { grid-template-columns: repeat(2, 1fr); } }
+.bkr-draw > div { display: grid; gap: 2px; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface2); }
+.bkr-draw b { font: 800 26px/1.1 var(--body); font-variant-numeric: tabular-nums; }
+.bkr-draw span { font-weight: 700; font-size: 12.5px; }
+.bkr-draw small, .bkr-m small { color: var(--muted); font-size: 11.5px; }
+.bkr-health { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+.bkr-m { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface2); align-items: baseline; }
+.bkr-m span { font-weight: 700; font-size: 12.5px; }
+.bkr-m b { font: 800 18px var(--body); font-variant-numeric: tabular-nums; }
+.bkr-m i { grid-column: 1 / -1; height: 8px; border-radius: 99px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; display: block; }
+.bkr-m u { display: block; height: 100%; background: #8a8fa6; text-decoration: none; }
+.bkr-m u.ok { background: #43c59e; }
+.bkr-m u.low { background: #f6c93a; }
+.bkr-m small { grid-column: 1 / -1; }
+@media (max-width: 560px) { .bkr-head { flex-direction: column; align-items: flex-start; } }
