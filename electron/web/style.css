@@ -963,3 +963,6 @@ body.on-deck #toast { bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
 @media (min-width: 860px) { body.on-deck #toast { bottom: 76px; } }
 .dr .dzb { display: none; flex: none; min-height: 26px; padding: 1px 9px; font-size: 12px; }
 .dr:hover .dzb, .dr.sel .dzb, .dr:focus-within .dzb { display: inline-flex; align-items: center; }
+/* «Chiudi» nell'avviso giallo delle novità: sul giallo resta leggibile anche con il tema scuro */
+.news-banner.major .btn:not(.primary) { background: rgba(255, 255, 255, .92); color: #1d1600; border-color: #a87c00; box-shadow: 0 2px 0 #a87c00; }
+.news-banner.major .btn:not(.primary):hover:not(:disabled) { background: #fff; }
