@@ -41,7 +41,7 @@ jobs:
         working-directory: capacitor
         run: |
           npm install --no-save @capacitor/assets
-          npx capacitor-assets generate --android --iconBackgroundColor '#3347d6' --iconBackgroundColorDark '#3347d6'
+          npx capacitor-assets generate --android --iconBackgroundColor '#1b3b7a' --iconBackgroundColorDark '#1b3b7a'
       - name: Compila l'APK
         working-directory: capacitor/android
         run: ./gradlew assembleDebug

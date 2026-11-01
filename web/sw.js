@@ -1,7 +1,9 @@
 /* Service worker: l'app funziona offline dopo il primo caricamento. Cambia CACHE a ogni rilascio. */
-const CACHE = 'cpa-v33';
+const CACHE = 'cpa-v34';
 const ASSETS = ['./', 'index.html', 'style.css', 'version.js', 'changelog.js', 'core.js', 'pdf.js', 'proxy.js', 'app.js', 'builder.js', 'cardrender.js', 'designer.js', 'manifest.webmanifest', 'icon.svg',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
+  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
+  'fonts/cinzel-latin-600-normal.woff2', 'fonts/cinzel-latin-700-normal.woff2', 'fonts/syne-latin-700-normal.woff2', 'fonts/syne-latin-800-normal.woff2', 'fonts/manrope-latin-wght-normal.woff2',
+  'fonts/jetbrains-mono-latin-400-normal.woff2', 'fonts/jetbrains-mono-latin-500-normal.woff2', 'fonts/jetbrains-mono-latin-600-normal.woff2'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });

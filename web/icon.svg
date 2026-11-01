@@ -1,8 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#3347d6"/>
-  <rect x="96" y="96" width="190" height="260" rx="30" transform="rotate(-14 191 226)" fill="#8f9cf0"/>
-  <rect x="136" y="82" width="190" height="260" rx="30" fill="#e3e6fb"/>
-  <rect x="176" y="96" width="190" height="260" rx="30" transform="rotate(12 271 226)" fill="#ffffff"/>
-  <circle cx="352" cy="352" r="82" fill="#e4572e"/>
-  <path d="M316 354l26 26 46-52" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f62b0"/><stop offset="1" stop-color="#13285a"/></linearGradient>
+    <radialGradient id="orb" cx=".34" cy=".28" r=".85"><stop offset="0" stop-color="#fff4a8"/><stop offset=".42" stop-color="#ffd23a"/><stop offset="1" stop-color="#e3a400"/></radialGradient>
+    <linearGradient id="art" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4c86d8"/><stop offset="1" stop-color="#1d4488"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect x="84" y="86" width="196" height="272" rx="26" transform="rotate(-16 182 222)" fill="#86a9e6"/>
+  <rect x="128" y="70" width="196" height="272" rx="26" fill="#d6e3fa"/>
+  <g transform="rotate(12 270 224)">
+    <rect x="172" y="86" width="196" height="272" rx="26" fill="#ffffff"/>
+    <rect x="188" y="102" width="164" height="30" rx="10" fill="#dce7f8"/>
+    <rect x="188" y="142" width="164" height="108" rx="8" fill="url(#art)"/>
+    <circle cx="322" cy="176" r="15" fill="#ffd23a"/>
+    <path d="M188 250v-34l42-30 36 26 24-14 62 26v26z" fill="#13285a" opacity=".55"/>
+    <rect x="188" y="260" width="164" height="84" rx="8" fill="#eef3fc"/>
+  </g>
+  <polygon points="369.5,248.3 385.2,279.4 415.5,262.2 416.1,297.1 450.9,294.7 436.3,326.4 468.7,339.4 441.8,361.6 465.4,387.3 431.5,395.7 441.5,429.1 407.4,421.9 402.0,456.3 374.3,435.0 354.5,463.7 338.8,432.6 308.5,449.8 307.9,414.9 273.1,417.3 287.7,385.6 255.3,372.6 282.2,350.4 258.6,324.7 292.5,316.3 282.5,282.9 316.6,290.1 322.0,255.7 349.7,277.0" fill="url(#orb)" stroke="#0e1c40" stroke-width="14" stroke-linejoin="round"/>
+  <g transform="rotate(-9 362 356)"><rect x="347" y="296" width="30" height="76" rx="15" fill="#0e1c40"/><circle cx="362" cy="408" r="17" fill="#0e1c40"/></g>
 </svg>

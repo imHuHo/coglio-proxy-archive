@@ -8,6 +8,9 @@ Per pubblicare una nuova versione: scheda *Actions* → *Windows app* (e *Androi
 Archivio delle tue carte Magic. Importi le liste dei mazzi in `.txt`, segni quali mazzi sono attivi
 e l'app ti dice quali carte hai, quante sono libere e in quale mazzo sono impegnate.
 
+## Aspetto
+I colori sono quelli del Coglio (blu denim e giallo banana); i cinque colori del mana (bianco, blu, nero, rosso, verde) fanno da linguaggio dei dettagli, e «Codighel!» ha il suo adesivo. I caratteri (Cinzel, Syne, Manrope, JetBrains Mono) sono in `web/fonts` e funzionano offline. L'icona è `web/icon.svg`: `python3 tools/make_icons.py` rigenera i PNG (serve playwright per python).
+
 ## Cosa fa
 
 - **Importa mazzi da .txt**: righe tipo `1 Sol Ring`, `1x Sol Ring (C21) 263`, `1 Sol Ring [CMM] 400 *F*`,

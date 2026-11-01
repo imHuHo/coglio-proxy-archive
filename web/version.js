@@ -1,1 +1,1 @@
-window.CPA_VERSION = '3.3.3';
+window.CPA_VERSION = '3.4.0';
