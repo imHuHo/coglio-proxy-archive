@@ -28,19 +28,12 @@
   };
   var LOGO = '<svg width="40" height="40" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#1f4a92"/>' +
     '<rect x="84" y="86" width="196" height="272" rx="26" transform="rotate(-16 182 222)" fill="#86a9e6"/><rect x="128" y="70" width="196" height="272" rx="26" fill="#d6e3fa"/>' +
-    '<g transform="rotate(12 270 224)"><rect x="172" y="86" width="196" height="272" rx="26" fill="#fff"/><rect x="188" y="102" width="164" height="30" rx="10" fill="#dce7f8"/><rect x="188" y="142" width="164" height="108" rx="8" fill="#2d5fae"/><circle cx="322" cy="176" r="15" fill="#ffd23a"/><rect x="188" y="260" width="164" height="84" rx="8" fill="#eef3fc"/></g>' +
+    '<g transform="rotate(12 270 224)"><rect x="172" y="86" width="196" height="272" rx="26" fill="#fff"/><rect x="188" y="102" width="164" height="30" rx="10" fill="#dce7f8"/><rect x="188" y="142" width="164" height="108" rx="8" fill="#2d5fae"/><polygon points="270.0,140.0 281.6,156.7 300.3,148.9 301.0,169.2 320.9,172.7 310.6,190.2 325.4,204.0 307.3,213.0 312.3,232.7 292.2,230.5 285.8,249.7 270.0,237.0 254.2,249.7 247.8,230.5 227.7,232.7 232.7,213.0 214.6,204.0 229.4,190.2 219.1,172.7 239.0,169.2 239.7,148.9 258.4,156.7" fill="#ffd23a" stroke="#0e1c40" stroke-width="6" stroke-linejoin="round"/><ellipse cx="253" cy="188" rx="9" ry="11" fill="#fff" stroke="#0e1c40" stroke-width="3.5"/><ellipse cx="287" cy="188" rx="9" ry="11" fill="#fff" stroke="#0e1c40" stroke-width="3.5"/><circle cx="256" cy="186" r="4.2" fill="#0e1c40"/><circle cx="290" cy="186" r="4.2" fill="#0e1c40"/><path d="M241 170l22 7M299 170l-22 7" stroke="#0e1c40" stroke-width="6" stroke-linecap="round"/><path d="M256 207q14 -7 28 0 2 18 -14 20 -16 -2 -14 -20z" fill="#0e1c40"/><path d="M262 218q8 5 16 0 -2 5 -8 5 -6 0 -8 -5z" fill="#ff7a6b"/><rect x="188" y="260" width="164" height="84" rx="8" fill="#eef3fc"/></g>' +
     '<polygon points="370,248 385,279 416,262 416,297 451,295 436,326 469,339 442,362 465,387 431,396 442,429 407,422 402,456 374,435 354,464 339,433 308,450 308,415 273,417 288,386 255,373 282,350 259,325 293,316 282,283 317,290 322,256 350,277" fill="#ffd23a" stroke="#0e1c40" stroke-width="14" stroke-linejoin="round"/><g transform="rotate(-9 362 356)"><rect x="347" y="296" width="30" height="76" rx="15" fill="#0e1c40"/><circle cx="362" cy="408" r="17" fill="#0e1c40"/></g></svg>';
 
 
-  /* simboli di mana disegnati (W U B R G): servono solo come decorazione */
-  var PIP = {
-    W: ['#f3ecc4', '<circle cx="12" cy="12" r="3.2"/><path d="M12 4.500v2.600M12 16.900v2.600M4.500 12h2.600M16.900 12h2.600M6.700 6.700l1.800 1.800M15.500 15.500l1.800 1.800M17.300 6.700l-1.800 1.800M8.500 15.500l-1.800 1.800" stroke="#1b1b22" stroke-width="1.800" stroke-linecap="round" fill="none"/>'],
-    U: ['#a9cdf0', '<path d="M12 4.500c2.800 3.600 4.800 6.100 4.800 8.600a4.800 4.800 0 0 1-9.600 0c0-2.500 2-5 4.800-8.600z"/>'],
-    B: ['#b9aeb6', '<path d="M12 5a5.500 5.500 0 0 0-3.600 9.700V17.500h7.200v-2.800A5.500 5.500 0 0 0 12 5z"/><circle cx="9.800" cy="12" r="1.350" fill="#b9aeb6"/><circle cx="14.200" cy="12" r="1.350" fill="#b9aeb6"/>'],
-    R: ['#f0a58b', '<path d="M12.300 4c.4 2.800 4 4.400 4 8.300a4.300 4.300 0 0 1-8.600 0c0-1.700.7-2.900 1.600-3.800.1 1.300.7 1.900 1.300 2.100.4-2.500.1-4.400 1.700-6.600z"/>'],
-    G: ['#a3cf9b', '<path d="M12 4.200c-3.600 2.600-5.300 5.400-3.600 8.300.5.900 1.400 1.500 2.300 1.800v4.700h2.600v-4.700c.9-.3 1.800-.9 2.300-1.800 1.700-2.900 0-5.700-3.600-8.300z"/>']
-  };
-  function pip(k) { var p = PIP[k]; return '<svg class="pip" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="' + p[0] + '" stroke="#0f1d3a" stroke-width="1.500"/><g fill="#1b1b22">' + p[1] + '</g></svg>'; }
+  /* i cinque colori del mana (file in web/mana): decorazione e identità delle sezioni */
+  function pip(k) { return '<img class="pip" src="mana/' + k.toLowerCase() + '.svg" alt="" width="20" height="20" draggable="false">'; }
   function pips() { return 'WUBRG'.split('').map(pip).join(''); }
 
   /* ---------- Stato ---------- */
@@ -825,7 +818,7 @@
   function render() {
     var navHtml = NAV.map(function (n) { return navBtn(n[0], n[1]); }).join('');
     APP.innerHTML =
-      '<div class="shell"><aside class="side"><div class="brand">' + LOGO + '<span><b>Coglio</b><small>Proxy Archive</small></span></div>' + navHtml +
+      '<div class="shell" data-view="' + esc(ui.view) + '"><aside class="side"><div class="brand">' + LOGO + '<span><b>Coglio</b><small>Proxy Archive</small></span></div>' + navHtml +
       '<div class="side-foot"><span class="pips">' + pips() + '</span><small>Versione <b>' + esc(String(window.CPA_VERSION || '')) + '</b><br>Fatto dal Coglio. Codighel!</small></div></aside>' +
       '<main class="main"><div class="mobile-brand">' + LOGO + '<span><b>Coglio</b><small>Proxy Archive</small></span></div>' + NEWS.banner() + viewHtml() + '</main></div>' +
       '<nav class="tabs" aria-label="Sezioni">' + navHtml + '</nav>';
@@ -856,7 +849,7 @@
     window.scrollTo(0, 0); render();
   }
   function welcome() {
-    return '<div class="empty">' + '<svg class="empty-art" viewBox="0 0 240 130" aria-hidden="true"><g transform="translate(120 118)">' + [-18, 0, 18].map(function (a, i) { return '<g transform="rotate(' + a + ')"><rect x="-37" y="-104" width="74" height="104" rx="9" fill="' + ['#2a5aa6', '#1f4a92', '#173a78'][i] + '" stroke="#0e1c40" stroke-width="3"/><rect x="-29" y="-96" width="58" height="88" rx="5" fill="none" stroke="#86a9e6" stroke-width="1.500"/><path d="M0 -76l14 24-14 24-14-24z" fill="#f7c52b" stroke="#0e1c40" stroke-width="2" stroke-linejoin="round"/></g>'; }).join('') + '</g></svg>' + '<h2>Archivio vuoto</h2><p>Importa le liste dei tuoi mazzi e l\'archivio ti dirà quali carte hai, quante sono libere e dove sono impegnate.</p>' +
+    return '<div class="empty">' + '<svg class="empty-art" viewBox="0 0 240 130" aria-hidden="true"><g transform="translate(120 118)">' + [-18, 0, 18].map(function (a, i) { return '<g transform="rotate(' + a + ')"><rect x="-37" y="-104" width="74" height="104" rx="9" fill="' + ['#2a5aa6', '#1f4a92', '#173a78'][i] + '" stroke="#0e1c40" stroke-width="3"/><rect x="-29" y="-96" width="58" height="88" rx="5" fill="none" stroke="#86a9e6" stroke-width="1.500"/><path d="M0 -76l14 24-14 24-14-24z" fill="#f7c52b" stroke="#0e1c40" stroke-width="2" stroke-linejoin="round"/></g>'; }).join('') + '</g></svg>' + '<span class="empty-mana" aria-hidden="true">' + pips() + '</span><h2>Archivio vuoto</h2><p>Importa le liste dei tuoi mazzi e l\'archivio ti dirà quali carte hai, quante sono libere e dove sono impegnate.</p>' +
       '<ol class="steps"><li><b>Importa</b> una lista .txt (quantità, nome, e se vuoi collezione).</li><li><b>Scegli il commander</b> dalla lista.</li><li><b>Attiva</b> i mazzi che hai montati: le loro carte risulteranno in uso.</li></ol>' +
       '<button class="btn primary" data-a="nav" data-v="import">Importa il primo mazzo</button></div>';
   }

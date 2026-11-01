@@ -632,10 +632,10 @@ img.dz-msym { box-shadow: none; }
 .brand small, .mobile-brand small { font-family: var(--mono); letter-spacing: .1em; text-transform: none; font-size: 11px; }
 .side-foot { margin-top: auto; padding: 14px 6px 0; display: grid; gap: 8px; border-top: 1px solid rgba(255, 255, 255, .1); }
 .side-foot .pips { display: flex; gap: 5px; }
-.side-foot .pips svg { width: 20px; height: 20px; }
+.side-foot .pips img { width: 22px; height: 22px; }
 .side-foot small { font: 500 11.5px/1.35 var(--mono); color: #8fa4cf; }
 .side-foot small b { color: var(--banana-hi); font-weight: 600; }
-.pip { display: inline-block; vertical-align: middle; }
+.pip { display: inline-block; vertical-align: middle; border-radius: 50%; box-shadow: 0 1px 3px rgba(0, 0, 0, .45); }
 
 /* --- titoli: il carattere delle carte (Cinzel) --- */
 .vh h1 { font: 700 27px/1.15 var(--display); letter-spacing: .01em; }
@@ -740,3 +740,20 @@ input[type="file"]::file-selector-button { font: 700 14px var(--body); color: va
 input[type="file"]::file-selector-button:hover { background: var(--surface2); }
 input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color: var(--accent); }
 .news-list li b { display: block; font-weight: 800; }
+
+/* --- i cinque colori del mana: ogni sezione ha il suo --- */
+.shell[data-view="archive"] { --sec: url("mana/u.svg"); }
+.shell[data-view="decks"], .shell[data-view="deck"], .shell[data-view="upgrade"] { --sec: url("mana/g.svg"); }
+.shell[data-view="import"] { --sec: url("mana/b.svg"); }
+.shell[data-view="designer"] { --sec: url("mana/r.svg"); }
+.shell[data-view="builder"] { --sec: url("mana/w.svg"); }
+.shell[data-view="data"] { --sec: url("mana/c.svg"); }
+.vh h1::before { content: ""; display: inline-block; width: .84em; height: .84em; margin-right: .5em; vertical-align: -.07em; border-radius: 50%;
+  background: var(--sec, none) center / contain no-repeat; box-shadow: 0 1.5px 3px rgba(15, 29, 58, .4); }
+.empty-mana { display: flex; gap: 7px; margin: -2px 0 0; }
+.empty-mana .pip { width: 28px; height: 28px; }
+@media (min-width: 860px) {
+  .shell::after { content: ""; position: fixed; right: -70px; bottom: -70px; width: 380px; height: 380px; background: var(--sec, none) center / contain no-repeat; opacity: .055; pointer-events: none; }
+  .main { position: relative; z-index: 1; }
+}
+.brand svg, .mobile-brand svg { width: 46px; height: 46px; }

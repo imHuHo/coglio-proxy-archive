@@ -4,7 +4,8 @@ window.CPA_CHANGELOG = [
   { v: '3.4.0', date: '1 novembre 2026', title: 'Una veste nuova, tutta Coglio', items: [
     { t: 'Denim e banana', d: 'L\'app ha i colori del Coglio: la barra laterale blu notte, il giallo banana per ciò che conta (voce attiva, bracket, Codighel!) e una nuova icona con il suo bel botto.' },
     { t: 'Codighel! ha il suo adesivo', d: 'L\'esclamazione del gruppo compare come un adesivo fumettoso nell\'avviso delle carte già stampate e in quello delle novità.' },
-    { t: 'I colori del mana ovunque', d: 'La striscia bianco, blu, nero, rosso e verde accompagna il logo e il menu; i titoli hanno il carattere delle carte.' },
+    { t: 'Botto, la mascotte', d: 'Nell\'icona, al posto dell\'arte della carta, c\'è Botto: un\'esplosione gialla che urla Codighel!. È un personaggio tutto nostro.' },
+    { t: 'Un colore di mana per sezione', d: 'Archivio è blu, Mazzi verde, Importa nero, Designer rosso, Stampa bianco, Dati incolore: il simbolo sta davanti al titolo e, grande e sfumato, sullo sfondo. La striscia dei cinque colori accompagna logo e menu; i titoli hanno il carattere delle carte.' },
     { t: 'Mazzi come carte', d: 'Il segno accanto al nome del mazzo è una carta dritta quando è attivo, girata quando è smontato, tratteggiata se non è ancora stampato.' },
     { t: 'Copie come orbe di mana', d: 'Nell\'archivio ogni copia è un\'orbe: piena se è libera, vuota se è in uso (si distingue anche senza i colori).' },
     { t: 'Font inclusi', d: 'I caratteri dell\'app sono dentro l\'app: stesso aspetto anche senza internet.' },
