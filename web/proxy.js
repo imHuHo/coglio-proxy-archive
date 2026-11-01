@@ -124,7 +124,7 @@
       });
       var p = noCollection ? singles(recs, found) : stages(recs, found, 0).catch(function (err) {
         if (err && err.status) throw err;
-        noCollection = true; return singles(recs.filter(function (r) { return !found[r.k]; }), found);
+        noCollection = true; return singles(recs.filter(function (r) { return !found[r.k]; }), found).catch(function (e2) { noCollection = false; throw e2; });
       });
       return p.then(function () {
         var rest = recs.filter(function (r) { return !found[r.k]; });

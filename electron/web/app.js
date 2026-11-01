@@ -43,6 +43,7 @@
     view: 'archive', deckId: null, upId: null, deckTab: 'cards', deckQ: '',
     q: '', st: 'all', fdeck: '', fset: '', sort: 'name', nobasic: false, open: {}, limit: 150,
     adv: false, help: false, f: { colors: '', cmode: 'any', types: [], cost: [], rar: [], text: '' }, dtab: 'cards',
+    dSort: 'name', dMan: false, dprev: null, dflip: false, crazy: false,
     upQ: '', upSt: 'all', draft: null, confirm: null, backupOut: '', restoreText: '', dataMsg: ''
   };
   var upd = { st: 'idle', info: null, err: '', prog: null, saved: '' };
@@ -688,6 +689,7 @@
     function fill(el) {
       var h = get(el.getAttribute('data-thk'));
       if (!h) return;
+      if (el.classList.contains('seed')) { el.classList.add(h.u ? 'on' : 'nf'); return; }   /* serve solo a ricordare l'immagine */
       if (h.u) {
         el.classList.remove('nf'); el.classList.add('on');
         if (h.m) el.classList.add('fb');
@@ -697,7 +699,8 @@
         }
       } else el.classList.add('nf');
     }
-    function paint() { [].forEach.call(document.querySelectorAll('.th[data-thk]'), fill); }
+    var fillFns = [];
+    function paint() { [].forEach.call(document.querySelectorAll('.th[data-thk]'), fill); fillFns.forEach(function (f) { try { f(); } catch (e) { /* ignorato */ } }); }
     function drain() {
       drainT = null;
       if (running || !enabled()) return;
@@ -740,6 +743,13 @@
       return '<span class="th' + (h && h.u ? ' on' : h && h.x ? ' nf' : '') + (h && h.m ? ' fb' : '') + '" aria-hidden="true" data-thk="' + esc(k) + '" data-thn="' + esc(name) + '" data-ths="' + esc(set || '') + '" data-thc="' + esc(cn || '') + '"' + (deckId ? ' data-thd="' + esc(deckId) + '"' : '') + '>' + im + '</span>';
     }
 
+    /* Indirizzo dell'immagine di una stampa gia' conosciuta ('' se non ancora arrivata); ver: small, normal, large, art_crop. */
+    function pic(name, set, cn, ver, back) {
+      var h = get(key(name, set, cn)); if (!h || !h.u) return '';
+      return url(back ? h.b : h.u, ver || 'normal');
+    }
+    function hasBack(name, set, cn) { var h = get(key(name, set, cn)); return !!(h && h.b); }
+
     /* ----- anteprima grande ----- */
     function closeLb() { if (lb) { lb.remove(); lb = null; } }
     function showLb(el, side) {
@@ -775,12 +785,15 @@
         var list = ((res && res.data) || []).filter(function (c) { return !c.digital && nameIs(c, name); });
         var grid = lb.querySelector('#prgrid');
         if (!list.length) { grid.innerHTML = '<p class="lb-wait">Nessuna stampa trovata.</p>'; return; }
+        var unitOf = function (c) { var q = c.prices || {}, v = q.eur != null ? parseFloat(q.eur) : q.eur_foil != null ? parseFloat(q.eur_foil) : NaN; return isNaN(v) ? null : v; };
+        var min = null; list.forEach(function (c) { var v = unitOf(c); if (v != null && (min == null || v < min)) min = v; });
         grid.innerHTML = list.map(function (c) {
           var f = faces(c); if (!f) return '';
+          var pv = unitOf(c);
           cache[key(name, c.set, c.collector_number)] = { u: f.u, b: f.b, t: Date.now() };
           var cur = c.set === set0 && String(c.collector_number).toLowerCase() === cn0;
-          return '<button class="pr' + (cur ? ' cur' : '') + '" data-a="lb-pick" data-s="' + esc(c.set) + '" data-n="' + esc(c.collector_number) + '" title="' + esc(c.set_name || '') + '">' +
-            '<img src="' + esc(url(f.u, 'normal')) + '" alt="' + esc(c.set_name || c.set) + '" loading="lazy"><span>' + esc(c.set.toUpperCase()) + ' ' + esc(c.collector_number) + ' · ' + esc((c.released_at || '').slice(0, 4)) + '</span>' + (c.set_name ? '<span class="pn">' + esc(c.set_name) + '</span>' : '') + '</button>';
+          return '<button class="pr' + (cur ? ' cur' : '') + (pv != null && pv === min ? ' low' : '') + '" data-a="lb-pick" data-s="' + esc(c.set) + '" data-n="' + esc(c.collector_number) + '" title="' + esc(c.set_name || '') + '">' +
+            '<img src="' + esc(url(f.u, 'normal')) + '" alt="' + esc(c.set_name || c.set) + '" loading="lazy"><span>' + esc(c.set.toUpperCase()) + ' ' + esc(c.collector_number) + ' · ' + esc((c.released_at || '').slice(0, 4)) + '</span><span class="pp">' + (pv != null ? eurF(pv) : 'senza prezzo') + (pv != null && pv === min ? ' · la più economica' : '') + '</span>' + (c.set_name ? '<span class="pn">' + esc(c.set_name) + '</span>' : '') + '</button>';
         }).join('');
         persist();
       }).catch(function () {
@@ -788,7 +801,18 @@
         lb.querySelector('#prgrid').innerHTML = '<p class="lb-wait">Non riesco a contattare Scryfall. Riprova tra poco.</p>';
       });
     }
-    function backLb() { if (lb && lb._el) showLb(lb._el, false); }
+    function backLb() { if (!lb || !lb._el) return; var h = get(lb._el.getAttribute('data-thk')); if (h && h.u) showLb(lb._el, false); else closeLb(); }
+    /* Apre direttamente la scelta della stampa (senza passare dall'anteprima grande). */
+    function openPrints(name, set, cn, deckId) {
+      closeLb();
+      var at = { 'data-thn': name, 'data-ths': set || '', 'data-thc': cn || '', 'data-thd': deckId || '', 'data-thk': key(name, set, cn) };
+      lb = document.createElement('div'); lb.id = 'lb'; lb.className = 'lb'; lb.setAttribute('data-a', 'lb-close');
+      lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', 'Stampe di ' + name);
+      lb._el = { getAttribute: function (a) { return at[a] == null ? null : at[a]; } }; lb._side = 0;
+      document.body.appendChild(lb);
+      printsLb();
+      var x = lb.querySelector('#lbx'); if (x) x.focus();
+    }
     function pickLb(set, cn) {
       if (!lb || !lb._el) return;
       var el = lb._el, deckId = el.getAttribute('data-thd'), nm = el.getAttribute('data-thn');
@@ -818,7 +842,7 @@
     }
 
     return { enabled: enabled, thumb: thumb, hydrate: hydrate, get: get, key: key, count: count, clear: clear,
-      open: function (el) { showLb(el, false); }, flip: flipLb, prints: printsLb, back: backLb, pick: pickLb, close: closeLb, hover: hover, isOpen: function () { return !!lb; } };
+      open: function (el) { showLb(el, false); }, flip: flipLb, prints: printsLb, openPrints: openPrints, pic: pic, hasBack: hasBack, onFill: function (f) { fillFns.push(f); }, back: backLb, pick: pickLb, close: closeLb, hover: hover, isOpen: function () { return !!lb; } };
   })();
 
   /* ---------- Struttura generale ---------- */
@@ -835,7 +859,9 @@
       '<main class="main"><div class="mobile-brand">' + LOGO + '<span><b>Coglio</b><small>Proxy Archive</small></span></div>' + NEWS.banner() + viewHtml() + '</main></div>' +
       '<nav class="tabs" aria-label="Sezioni">' + navHtml + '</nav>';
     if (ui.view === 'archive' && state.decks.length) updateArchiveList();
-    if (ui.view === 'deck') { if (ui.deckTab === 'prices' && CARDS.ready()) renderPrices(); else updateDeckList(); }
+    if (ui.view === 'deck') { dkBarPaint(); if (ui.deckTab === 'prices' && CARDS.ready()) renderPrices(); else updateDeckList(); }
+    document.body.classList.toggle('on-deck', ui.view === 'deck');
+    paintCrazy();
     if (ui.view === 'upgrade') updateUpgradeCols();
     if (ui.view === 'builder' && window.CPABuilder) window.CPABuilder.after();
     if (ui.view === 'designer' && window.CPADesigner) window.CPADesigner.after();
@@ -871,7 +897,7 @@
   /* Tipo, colori, costo, rarità, testo e prezzi arrivano da Scryfall e restano sul dispositivo (cards.js).
      Si scaricano solo quando servono: la prima volta che usi un filtro o guardi i prezzi. */
   var CARDS = (function () {
-    var inst = null, repaintFn = null, st = { busy: false, what: '', done: 0, total: 0, err: '' };
+    var inst = null, loadedOk = false, repaintFn = null, st = { busy: false, what: '', done: 0, total: 0, err: '' };
     function ready() { return !!(window.CPACards && window.CPAProxy && window.CPASearch); }
     function enabled() { return ready() && !!store && store.kind !== 'claude' && typeof fetch === 'function'; }
     function changed() { if (repaintFn) repaintFn(); }
@@ -880,7 +906,7 @@
       var proxy = window.CPAProxy.create({ fetch: function (u, i) { return fetch(u, i); }, keyOf: C.keyOf, gap: window.CPA_API_GAP });
       inst = window.CPACards.create({ proxy: proxy, keyOf: C.keyOf, storage: window.CPACards.idbStorage('coglio-cards') || window.CPACards.memoryStorage() });
       inst.onChange(changed);
-      inst.load().then(changed);
+      inst.load().then(function () { loadedOk = true; changed(); });
       return inst;
     }
     function fail(e) {
@@ -893,7 +919,7 @@
       fn(function (p) { st.done = p.done; st.total = p.total; changed(); }).then(function () { st.busy = false; changed(); }, function (e) { st.busy = false; fail(e); changed(); });
       return true;
     }
-    return { ready: ready, enabled: enabled, get: get, run: run, st: st, onRepaint: function (f) { repaintFn = f; } };
+    return { ready: ready, enabled: enabled, loaded: function () { return loadedOk; }, get: get, run: run, st: st, onRepaint: function (f) { repaintFn = f; } };
   })();
   function cardRec(name) { var c = CARDS.get(); return c ? c.any(name) : null; }
 
@@ -1147,33 +1173,11 @@
     }
     IMG.hydrate();
   }
-  function savingHtml() {
-    var c = CARDS.get(), st = CARDS.st;
-    if (!c || !CARDS.enabled()) return '';
-    var printed = state.decks.filter(C.isPrinted);
-    if (!printed.length) return '';
-    var qty = 0, total = 0, cheap = 0, ready = true, cheapOk = true, ndeck = 0;
-    printed.forEach(function (d) {
-      var v = c.valueDeck(d, C.isBasic); qty += sum(d.cards);
-      if (!v.ready) ready = false;
-      total += v.total; cheap += v.cheapTotal; if (!v.cheapComplete && v.cards.length) cheapOk = false;
-      ndeck++;
-    });
-    var head = '<h2><b class="bang">Codighel!</b> Ma questo risparmio è crazy!</h2>';
-    var busy = st.busy && (st.what === 'prices' || st.what === 'cheap');
-    var body;
-    if (busy) body = '<p class="hint">' + progLine(st.what) + '</p>';
-    else if (!ready) body = '<p class="sub">Quanto varrebbero le carte che hai stampato? Lo calcolo con i prezzi di Scryfall.</p>' + (st.err ? errLine() : '') + '<div class="btns"><button class="btn primary" data-a="s-calc">Calcola il risparmio</button></div>';
-    else body = '<p class="sub"><b class="big">' + eurF(total) + '</b> è il valore delle <b>' + plural(qty, 'carta', 'carte') + '</b> che hai stampato in <b>' + plural(ndeck, 'mazzo', 'mazzi') + '</b>: tanto avresti speso comprandole.</p>' +
-      (cheapOk ? '<p class="sub">Con la stampa più economica di ogni carta sarebbero <b>' + eurF(cheap) + '</b>.</p>' : '') +
-      (st.err ? errLine() : '') +
-      '<div class="btns">' + (cheapOk ? '' : '<button class="btn small" data-a="s-cheap">Calcola con le stampe economiche</button>') + '<button class="btn small" data-a="s-fresh">Aggiorna i prezzi</button></div>';
-    return '<section class="saving" id="saving">' + head + body + '</section>';
-  }
   function repaintPrices() {
-    if (ui.view === 'deck' && ui.deckTab === 'prices') renderPrices();
-    else if (ui.view === 'decks') {
-      var el = $('#saving'); if (el) el.outerHTML = savingHtml();
+    if (ui.view === 'deck') {
+      if (ui.deckTab === 'prices') renderPrices(); else if (ui.deckTab === 'cards') updateDeckList();
+      paintCrazy();
+    } else if (ui.view === 'decks') {
       var dl = $('#declist'); if (dl) dl.innerHTML = state.decks.filter(function (d) { return d.kind === 'deck'; }).map(deckCard).join('');
     }
   }
@@ -1385,9 +1389,174 @@
     var act = ds.filter(function (d) { return d.active; }).length, np = ds.filter(function (d) { return C.statusOf(d) === 'unprinted'; }).length;
     return '<header class="vh"><h1>Mazzi</h1><p class="sub"><b>' + act + '</b> attivi su <b>' + ds.length + '</b>' + (np ? ' · <b>' + np + '</b> da stampare' : '') + '. Un mazzo attivo è montato: le sue carte risultano in uso nell\'archivio.</p></header>' +
       '<div class="btns" style="margin-bottom:12px"><button class="btn primary" data-a="nav" data-v="import">Importa un mazzo</button></div>' +
-      savingHtml() +
       '<div class="list" id="declist">' + ds.map(deckCard).join('') + '</div>' +
       (bs.length ? '<h2 class="sect">Carte sciolte</h2><div class="list">' + bs.map(deckCard).join('') + '</div>' : '');
+  }
+  /* ---------- Pagina del mazzo (stile Moxfield) ---------- */
+  /* Banner con l'artwork del commander, lista a tutta pagina divisa per tipo, anteprima a lato (passando il mouse),
+     cambio stampa con il prezzo accanto al nome e, in basso, la barra banana con i conteggi e «Calcola valore mazzo». */
+  var DK_TYPES = [
+    ['creature', 'Creature'], ['planeswalker', 'Planeswalker'], ['battle', 'Battaglie'], ['sorcery', 'Stregonerie'], ['enchantment', 'Incantesimi'],
+    ['instant', 'Istantanei'], ['artifact', 'Artefatti'], ['land', 'Terre'], ['other', 'Altre carte']
+  ];
+  var DK_SVG = {
+    creature: '<circle cx="8" cy="10.5" r="3"/><circle cx="3.5" cy="7" r="1.3"/><circle cx="6" cy="3.8" r="1.3"/><circle cx="10" cy="3.8" r="1.3"/><circle cx="12.5" cy="7" r="1.3"/>',
+    planeswalker: '<path d="M8 1.500l5.500 6.500L8 14.500 2.500 8z"/>',
+    battle: '<path d="M3 3l10 10M13 3L3 13"/>',
+    sorcery: '<path d="M8 1.500c.5 2.500 3.800 4 3.800 7.200a3.800 3.800 0 0 1-7.600 0c0-1.600.8-2.400 1.600-3.300.1 1 .7 1.700 1.400 1.900C7.300 5.700 7.500 3.500 8 1.500z"/>',
+    enchantment: '<path d="M8 1.500l1.800 4 4.200.5-3.200 2.800.9 4.200L8 10.800 4.300 13l.9-4.200L2 6l4.200-.5z"/>',
+    instant: '<path d="M9 1.500L3.500 9H8l-1 5.500L12.500 7H8z"/>',
+    artifact: '<path d="M8 1.500l5.200 3v6L8 14.500l-5.200-4v-6z"/><circle cx="8" cy="8" r="2"/>',
+    land: '<path d="M1.500 13.500L6 5l3 5 1.500-2.500 4 6z"/>',
+    other: '<circle cx="8" cy="8" r="5.500"/><path d="M8 5v3.500M8 11v.1"/>',
+    cmd: '<path d="M2 12.500l1.500-7 3 3L8 3.500l1.500 5 3-3 1.500 7z"/>'
+  };
+  function dkIcon(k) { return '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (DK_SVG[k] || DK_SVG.other) + '</svg>'; }
+  var IC_SWAP = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.500 5.500h9L9.500 3.500M13.500 10.500h-9l2 2"/></svg>';
+
+  function dkType(c, rec) {
+    if (C.isBasic(c.name)) return 'land';
+    if (!rec) return 'other';
+    var t = String(rec.t || '').split('//')[0].toLowerCase();
+    return /creature/.test(t) ? 'creature' : /land/.test(t) ? 'land' : /planeswalker/.test(t) ? 'planeswalker' : /battle/.test(t) ? 'battle' :
+      /artifact/.test(t) ? 'artifact' : /enchantment/.test(t) ? 'enchantment' : /sorcery/.test(t) ? 'sorcery' : /instant/.test(t) ? 'instant' : 'other';
+  }
+  /* il riassunto per il tipo vale per qualunque stampa; quello per il prezzo deve essere della stampa del mazzo */
+  function dkRec(cc, c) { return cc ? ((c.set ? cc.rec(c.name, c.set, c.cn) : cc.rec(c.name, '', '')) || cc.any(c.name)) : null; }
+  function dkPriceRec(cc, c) { return cc ? (c.set ? cc.rec(c.name, c.set, c.cn) : (cc.rec(c.name, '', '') || cc.any(c.name))) : null; }
+  function dkIsCmd(d, c) { return d.kind === 'deck' && !!d.commander && C.keyOf(d.commander) === C.keyOf(c.name); }
+  function dkSame(c, p) { return p && C.keyOf(c.name) === C.keyOf(p.n) && (c.set || '') === (p.s || '') && (c.cn || '') === (p.c || ''); }
+  function dkAside() { return !!(window.matchMedia && window.matchMedia('(min-width: 1100px)').matches); }
+  function dkAgo(ts) {
+    if (!ts) return '';
+    var n = Math.floor((Date.now() - ts) / 864e5);
+    return n <= 0 ? 'oggi' : n === 1 ? 'ieri' : n + ' giorni fa';
+  }
+  function dkAttrs(c) { return ' data-n="' + esc(c.name) + '" data-s="' + esc(c.set || '') + '" data-c="' + esc(c.cn || '') + '"'; }
+
+  /* Scarica una volta sola i dati delle carte che mancano (tipo e prezzo della stampa del mazzo). */
+  function dkAuto(d) {
+    var cc = CARDS.get(); if (!cc || !CARDS.loaded() || !CARDS.enabled() || CARDS.st.busy || CARDS.st.err) return;
+    var need = cc.pricedCards(d, C.isBasic).filter(function (c) { return !dkPriceRec(cc, c) && !cc.known(c.name, c.set, c.cn); });
+    if (!need.length) return;
+    var ents = need.map(function (c) { return { name: c.name, set: c.set, cn: c.cn }; });
+    CARDS.run('deck', function (prog) { return cc.ensure(ents, {}, prog); });
+  }
+
+  function dkRows(d) {
+    var cc = CARDS.get(), A = getArchive(), q = C.searchNorm(ui.deckQ), out = [];
+    d.cards.forEach(function (c) {
+      var rec = dkRec(cc, c), pr = dkPriceRec(cc, c), e = A.map[C.keyOf(c.name)];
+      out.push({
+        c: c, rec: rec, type: dkIsCmd(d, c) ? 'cmd' : dkType(c, rec), realType: dkType(c, rec), pr: pr, unit: pr ? window.CPACards.unitPrice(pr) : null,
+        others: e ? e.rows.filter(function (r) { return r.deckId !== d.id; }) : [], hit: !q || C.searchNorm(c.name).indexOf(q) >= 0
+      });
+    });
+    return out;
+  }
+  function dkSort(rows) {
+    var by = ui.dSort;
+    return rows.slice().sort(function (a, b) {
+      if (by === 'cmc') return ((a.rec ? a.rec.v : 99) - (b.rec ? b.rec.v : 99)) || byName(a.c, b.c);
+      if (by === 'price') return ((b.unit == null ? -1 : b.unit) - (a.unit == null ? -1 : a.unit)) || byName(a.c, b.c);
+      return byName(a.c, b.c);
+    });
+  }
+  function dkRow(d, r) {
+    var c = r.c, cc = CARDS.get(), basic = C.isBasic(c.name), st = CARDS.st;
+    var seed = IMG.thumb(c.name, c.set, c.cn, d.id).replace('class="th', 'class="th seed');
+    var pv = '';
+    if (!c.design && !basic) pv = r.pr ? (r.unit != null ? '(' + eurF(r.unit) + ')' : '(n.d.)') : (CARDS.enabled() && !st.err ? '(…)' : '');
+    var tip = 'Cambia stampa' + (c.set ? ' · ora ' + String(c.set).toUpperCase() + (c.cn ? ' ' + c.cn : '') : ' · stampa non indicata');
+    var oth = r.others.length ? '<span class="oth ' + (r.others.some(function (x) { return x.active; }) ? 'use' : 'free') + '" title="' + esc('Anche in ' + r.others.map(function (x) { return x.deckName + ' ×' + x.qty + (x.active ? ' (in uso)' : ' (libera)'); }).join(', ')) + '">+' + r.others.length + '</span>' : '';
+    var sel = dkSame(c, ui.dprev);
+    return '<div class="dr' + (sel ? ' sel' : '') + '" data-a="dr-open" tabindex="0"' + dkAttrs(c) + '>' + seed + '<span class="q">' + c.qty + '</span><span class="n">' + esc(c.name) + '</span>' +
+      (c.design ? '<span class="tag dzt">Design</span>' : '') + oth +
+      (window.CPADesigner ? (c.design ? '<button class="btn small dzb" data-a="dz-unbind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Togli design</button>' : '<button class="btn small dzb" data-a="dz-bind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Design</button>') : '') +
+      (c.design ? '' : '<button class="pb" data-a="dr-prints"' + dkAttrs(c) + ' title="' + esc(tip) + '" aria-label="' + esc('Cambia stampa di ' + c.name) + '">' + IC_SWAP + (pv ? '<span class="pv">' + pv + '</span>' : '') + '</button>') + '</div>';
+  }
+  function dkGroup(d, key, label, rows) {
+    var n = rows.reduce(function (t, r) { return t + r.c.qty; }, 0);
+    return '<section class="dg" data-g="' + key + '"><h3>' + dkIcon(key) + '<span>' + label + '</span><i>' + n + '</i></h3>' + rows.map(function (r) { return dkRow(d, r); }).join('') + '</section>';
+  }
+  function updateDeckList() {
+    var el = $('#dlist'), d = getDeck(); if (!d) return;
+    dkBarPaint();
+    if (!el) return;
+    var rows = dkRows(d), shown = rows.filter(function (r) { return r.hit; }), html = '';
+    var by = {}; shown.forEach(function (r) { (by[r.type] = by[r.type] || []).push(r); });
+    var onlyOther = Object.keys(by).every(function (k) { return k === 'other' || k === 'cmd'; });
+    if (by.cmd) html += dkGroup(d, 'cmd', 'Commander', dkSort(by.cmd));
+    DK_TYPES.forEach(function (t) { if (by[t[0]]) html += dkGroup(d, t[0], t[0] === 'other' && onlyOther ? 'Carte' : t[1], dkSort(by[t[0]])); });
+    el.innerHTML = html || '<p class="hint">Nessuna carta trovata.</p>';
+    var st = CARDS.st, line = '';
+    if (CARDS.ready() && !CARDS.enabled()) line = '<p class="hint">Senza Scryfall (qui non è raggiungibile) non posso dividere le carte per tipo né mostrare i prezzi.</p>';
+    else if (st.busy && (st.what === 'deck' || st.what === 'prices')) line = '<p class="hint"><span class="spin" aria-hidden="true"></span> Scarico i dati delle carte da Scryfall: <b>' + st.done + '</b> su ' + st.total + '. La prima volta ci vuole un momento.</p>';
+    else if (st.err) line = '<p class="err">' + esc(st.err) + ' <button class="link" data-a="dr-retry">Riprova</button></p>';
+    var se = $('#dstat'); if (se) { se.innerHTML = line; se.hidden = !line; }
+    IMG.hydrate();
+    dkAuto(d);
+  }
+  function dkBarPaint() {
+    var el = $('#dbar'), d = getDeck(); if (!el || !d) return;
+    var cc = CARDS.get(), cnt = {}, total = 0, keys = 0;
+    d.cards.forEach(function (c) { var t = dkType(c, dkRec(cc, c)); cnt[t] = (cnt[t] || 0) + c.qty; total += c.qty; });
+    Object.keys(cnt).forEach(function () { keys++; });
+    var tys = keys === 1 && cnt.other ? '' : DK_TYPES.filter(function (t) { return cnt[t[0]]; }).map(function (t) {
+      return '<span class="ty" title="' + esc(t[1] + ': ' + cnt[t[0]]) + '">' + dkIcon(t[0]) + '<b>' + cnt[t[0]] + '</b><span class="sr">' + esc(t[1]) + '</span></span>';
+    }).join('');
+    el.innerHTML = '<span class="tot"><b>' + total + '</b> ' + (total === 1 ? 'carta' : 'carte') + '</span>' + (tys ? '<span class="tys">' + tys + '</span>' : '<span class="tys"></span>') +
+      (CARDS.ready() ? '<button class="calc" data-a="crazy-open">Calcola valore mazzo</button>' : '');
+  }
+
+  /* anteprima a lato: l'ultima carta su cui si è passati resta lì, così si può usare anche il bottone */
+  function dkPrevHtml(d) {
+    var p = ui.dprev, c = p && d.cards.filter(function (x) { return dkSame(x, p); })[0];
+    if (!c) return '<div class="pv-empty"><p>Passa il mouse su una carta per vederla qui.</p></div>';
+    var cc = CARDS.get(), pr = dkPriceRec(cc, c), unit = pr ? window.CPACards.unitPrice(pr) : null, rec = dkRec(cc, c);
+    var back = ui.dflip && IMG.hasBack(c.name, c.set, c.cn);
+    var big = IMG.pic(c.name, c.set, c.cn, 'normal', back);
+    var A = getArchive(), e = A.map[C.keyOf(c.name)], others = e ? e.rows.filter(function (r) { return r.deckId !== d.id; }) : [];
+    return '<div class="pv-img">' + (big ? '<img src="' + esc(big) + '" alt="' + esc(c.name) + '"' + (IMG.hasBack(c.name, c.set, c.cn) ? ' data-a="dr-flip" title="Gira la carta"' : '') + '>' : '<div class="pv-ph"><span>' + esc(c.name) + '</span></div>') + '</div>' +
+      '<div class="pv-name">' + esc(c.name) + '</div>' +
+      '<div class="pv-meta">' + (c.set ? esc(String(c.set).toUpperCase()) + (c.cn ? ' ' + esc(c.cn) : '') : 'stampa non indicata') + (!c.design && !C.isBasic(c.name) && unit != null ? ' · ' + eurF(unit) : '') + '</div>' +
+      (rec && rec.t ? '<div class="pv-type">' + esc(rec.t) + '</div>' : '') +
+      (others.length ? '<div class="pv-oth">' + others.map(function (r) {
+        return '<span class="pill ' + (r.active ? 'use' : 'free') + '">anche in ' + esc(r.deckName) + ' ×' + r.qty + (r.active ? ' · in uso' : ' · libera') + '</span>';
+      }).join('') + '</div>' : '') +
+      '<div class="pv-act">' + (c.design ? '' : '<button class="btn small" data-a="dr-prints"' + dkAttrs(c) + '>Cambia stampa</button>') +
+      (window.CPADesigner ? (c.design ? '<button class="btn small" data-a="dz-unbind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Togli design</button>' : '<button class="btn small" data-a="dz-bind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Design</button>') : '') + '</div>';
+  }
+  function dprevPaint() { var el = $('#dprev'), d = getDeck(); if (el && d) el.innerHTML = dkPrevHtml(d); }
+  function dkSelect(row) {
+    var p = { n: row.dataset.n, s: row.dataset.s, c: row.dataset.c };
+    if (ui.dprev && ui.dprev.n === p.n && ui.dprev.s === p.s && ui.dprev.c === p.c) return;
+    ui.dprev = p; ui.dflip = false;
+    [].forEach.call(document.querySelectorAll('.dr.sel'), function (x) { x.classList.remove('sel'); });
+    row.classList.add('sel');
+    dprevPaint();
+  }
+  function dkHeroArt() {
+    var h = $('.dk-hero'), d = getDeck(); if (!h || !d || !d.commander) return;
+    var c = d.cards.filter(function (x) { return dkIsCmd(d, x); })[0]; if (!c) return;
+    var u = IMG.pic(c.name, c.set, c.cn, 'art_crop');
+    if (u) { h.style.setProperty('--art', 'url(' + u + ')'); h.classList.add('has-art'); }
+  }
+  IMG.onFill(function () { if (ui.view === 'deck') { dprevPaint(); dkHeroArt(); } });
+
+  function dkHero(d) {
+    var cmdCard = d.kind === 'deck' && d.commander ? d.cards.filter(function (x) { return dkIsCmd(d, x); })[0] : null;
+    var seed = cmdCard ? IMG.thumb(cmdCard.name, cmdCard.set, cmdCard.cn).replace('class="th', 'class="th seed') : '';
+    var art = cmdCard ? IMG.pic(cmdCard.name, cmdCard.set, cmdCard.cn, 'art_crop') : '';
+    var ago = dkAgo(d.updatedAt);
+    return '<header class="dk-hero' + (art ? ' has-art' : '') + '"' + (art ? ' style="--art:url(' + esc(art) + ')"' : '') + '>' + seed +
+      '<button class="back" data-a="nav" data-v="decks">← Mazzi</button>' +
+      '<h1>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h1>' +
+      '<div class="dk-meta"><span class="hc fmt">' + (d.kind === 'deck' ? 'Commander' : 'Carte sciolte') + '</span>' +
+      (d.kind === 'deck' ? (d.commander ? '<span class="hc">' + esc(d.commander) + '</span>' : '<span class="hc">Nessun commander</span>') + switchHtml(d) : '') +
+      (ago ? '<span class="hc dim">aggiornato ' + ago + '</span>' : '') + '</div>' +
+      '<div class="dk-hact">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="make-pdf" data-id="' + esc(d.id) + '">Crea PDF</button>' +
+      '<button class="btn small" data-a="deck-man" aria-expanded="' + !!ui.dMan + '" aria-controls="dman">Gestisci</button></div></header>';
   }
   function deckView() {
     var d = getDeck(); if (!d) { ui.view = 'decks'; return decksView(); }
@@ -1395,40 +1564,75 @@
     var cmdOpts = '<option value="">Nessuno</option>' + d.cards.slice().sort(byName).map(function (c) {
       return '<option value="' + esc(c.name) + '"' + (c.name === d.commander ? ' selected' : '') + '>' + esc(c.name) + '</option>';
     }).join('');
-    var tabs = '<div class="subtabs"><button class="chip" data-a="deck-tab" data-v="cards" aria-pressed="' + (ui.deckTab === 'cards') + '">Carte (' + sum(d.cards) + ')</button>' +
+    var cardsTab = ui.deckTab !== 'prices' && ui.deckTab !== 'ups' || (ui.deckTab === 'ups' && d.kind !== 'deck') || (ui.deckTab === 'prices' && !CARDS.ready());
+    var tabs = '<div class="subtabs"><button class="chip" data-a="deck-tab" data-v="cards" aria-pressed="' + cardsTab + '">Lista</button>' +
       (d.kind === 'deck' ? '<button class="chip" data-a="deck-tab" data-v="ups" aria-pressed="' + (ui.deckTab === 'ups') + '">Upgrade (' + d.upgrades.length + ')</button>' : '') +
       (CARDS.ready() ? '<button class="chip" data-a="deck-tab" data-v="prices" aria-pressed="' + (ui.deckTab === 'prices') + '">Prezzi</button>' : '') + '</div>';
+    var opt = function (v, l) { return '<option value="' + v + '"' + (ui.dSort === v ? ' selected' : '') + '>' + l + '</option>'; };
+    var tools = '<div class="dk-tools">' + tabs + (cardsTab ? '<div class="search dk-q">' + IC.search + '<input class="input" data-c="deckq" type="search" placeholder="Cerca nelle carte del mazzo" autocomplete="off" aria-label="Cerca nel mazzo" value="' + esc(ui.deckQ) + '"></div>' +
+      '<label class="dk-sort">Ordina<select class="select" data-c="dsort" aria-label="Ordina le carte">' + opt('name', 'Nome') + opt('cmc', 'Costo di mana') + opt('price', 'Prezzo') + '</select></label>' : '') + '</div>';
+    var man = '<section class="panel dk-man" id="dman"' + (ui.dMan ? '' : ' hidden') + '><label class="lbl">Nome<input class="input" data-c="deck-name" value="' + esc(d.name) + '"></label>' +
+      (d.kind === 'deck' ? '<label class="lbl">Commander<select class="select" data-c="deck-cmd">' + cmdOpts + '</select></label><p class="hint">' + statusHint(d) + '</p>' : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
+      '<div class="btns"><button class="btn small" data-a="copy-deck">Copia lista .txt</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina il mazzo') + '</button></div></section>';
     var body;
     if (ui.deckTab === 'prices' && CARDS.ready()) {
-      body = '<div id="prices" class="prices"></div>';
+      body = '<div id="prices" class="prices dk-narrow"></div>';
     } else if (ui.deckTab === 'ups' && d.kind === 'deck') {
-      body = '<div class="btns" style="margin-bottom:12px"><button class="btn primary" data-a="new-up">Nuovo upgrade</button></div>' +
+      body = '<div class="dk-narrow"><div class="btns" style="margin-bottom:12px"><button class="btn primary" data-a="new-up">Nuovo upgrade</button></div>' +
         (d.upgrades.length ? '<div class="list">' + d.upgrades.map(function (u) { return upgradeCard(d, u); }).join('') + '</div>' :
-          '<div class="empty"><p>Incolla la lista aggiornata di questo mazzo: vedrai cosa esce, cosa entra e quali carte hai già nell\'archivio, così non ristampi doppioni.</p></div>');
+          '<div class="empty"><p>Incolla la lista aggiornata di questo mazzo: vedrai cosa esce, cosa entra e quali carte hai già nell\'archivio, così non ristampi doppioni.</p></div>') + '</div>';
     } else {
-      body = '<div class="search" style="margin-bottom:10px">' + IC.search + '<input class="input" data-c="deckq" type="search" placeholder="Cerca nelle carte del mazzo" autocomplete="off" aria-label="Cerca nel mazzo" value="' + esc(ui.deckQ) + '"></div><div class="list" id="dlist"></div>';
+      body = '<div class="dk-main"><aside class="dk-prev" id="dprev" aria-label="Anteprima della carta">' + dkPrevHtml(d) + '</aside><div class="dk-list"><div id="dstat" hidden></div><div class="dk-cols" id="dlist"></div></div></div>';
     }
-    return '<header class="vh"><button class="back" data-a="nav" data-v="decks">← Mazzi</button><h1>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h1></header>' +
-      '<section class="panel"><label class="lbl">Nome<input class="input" data-c="deck-name" value="' + esc(d.name) + '"></label>' +
-      (d.kind === 'deck' ? '<label class="lbl">Commander<select class="select" data-c="deck-cmd">' + cmdOpts + '</select></label><div>' + switchHtml(d) +
-        '<p class="hint" style="margin-top:6px">' + statusHint(d) + '</p></div>' : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
-      '<div class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="make-pdf" data-id="' + esc(d.id) + '">Crea PDF</button><button class="btn small" data-a="copy-deck">Copia lista .txt</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina') + '</button></div></section>' + tabs + body;
+    return '<div class="dk">' + dkHero(d) + man + tools + body + '<div class="dk-bar" id="dbar" role="region" aria-label="Riepilogo del mazzo"></div></div>';
   }
-  function updateDeckList() {
-    var el = $('#dlist'); var d = getDeck(); if (!el || !d) return;
-    var A = getArchive(), q = C.searchNorm(ui.deckQ);
-    var cards = d.cards.slice().sort(byName).filter(function (c) { return !q || C.searchNorm(c.name).indexOf(q) >= 0; });
-    el.innerHTML = cards.map(function (c) {
-      var e = A.map[C.keyOf(c.name)], others = e ? e.rows.filter(function (r) { return r.deckId !== d.id; }) : [];
-      var isCmd = d.commander && C.keyOf(d.commander) === C.keyOf(c.name);
-      return '<div class="crow">' + IMG.thumb(c.name, c.set, c.cn, d.id) + '<span class="qty">' + c.qty + '×</span><span class="nm">' + esc(c.name) + '</span>' +
-        (isCmd ? '<span class="tag cmd">commander</span>' : '') + (c.design ? '<span class="tag dzt">Design</span>' : '') + (c.set ? '<span class="tag">' + esc(c.set) + (c.cn ? ' ' + esc(c.cn) : '') + '</span>' : '') +
-        (others.length ? '<span class="other">' + others.map(function (r) {
-          return '<span class="pill ' + (r.active ? 'use' : 'free') + '">anche in ' + esc(r.deckName) + ' ×' + r.qty + (r.active ? ' · in uso' : ' · libera') + '</span>';
-        }).join('') + '</span>' : '') +
-        (window.CPADesigner ? (c.design ? '<button class="btn small" data-a="dz-unbind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Togli design</button>' : '<button class="btn small" data-a="dz-bind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Design</button>') : '') + '</div>';
-    }).join('') || '<p class="hint">Nessuna carta trovata.</p>';
-    IMG.hydrate();
+
+  /* ---------- «Ma questo risparmio è crazy!» ---------- */
+  var crazyEl = null;
+  function closeCrazy() { ui.crazy = false; paintCrazy(); }
+  function crazyHtml(d) {
+    var cc = CARDS.get(), st = CARDS.st;
+    var head = '<button class="cz-x" data-a="crazy-close" aria-label="Chiudi">×</button><p class="cz-k"><b class="bang">Codighel!</b></p><h2 id="czt">Ma questo risparmio è crazy!</h2><p class="cz-deck">' + esc(d.name) + '</p>';
+    var foot = '<div class="btns"><button class="btn small" data-a="crazy-close">Chiudi</button></div>';
+    if (!cc || !CARDS.enabled()) return head + '<p class="hint">I prezzi arrivano da Scryfall, che qui non è raggiungibile. Li trovi nell\'app per Windows, nell\'APK e nella versione web installata.</p>' + foot;
+    var v = cc.valueDeck(d, C.isBasic);
+    if (!v.cards.length) return head + '<p class="hint">In questo mazzo ci sono solo terre base o carte tue del Designer: non c\'è nulla da valutare.</p>' + foot;
+    if (st.err && !st.busy) return head + errLine() + '<div class="btns"><button class="btn primary" data-a="crazy-retry">Riprova</button><button class="btn small" data-a="crazy-close">Chiudi</button></div>';
+    var busy = st.busy ? '<p class="hint">' + progLine(st.what === 'cheap' ? 'cheap' : 'prices') + '</p>' : '';
+    var diff = v.total - v.cheapTotal, pct = v.total > 0 ? Math.round(diff / v.total * 100) : 0;
+    var t1 = v.ready ? '<b>' + eurF(v.total) + '</b><span>con le stampe del mazzo · ' + plural(v.qty, 'carta', 'carte') + '</span>' : '<b>…</b><span>sto leggendo i prezzi</span>';
+    var t2 = v.ready && v.cheapComplete ? '<b>' + eurF(v.cheapTotal) + '</b><span>' + (diff > 0.004 ? 'meno ' + eurF(diff) + ' (−' + pct + '%)' : 'hai già le stampe più economiche') + '</span>' : '<b>…</b><span>cerco la stampa più economica di ogni carta</span>';
+    var done = v.ready && v.cheapComplete;
+    var notes = [];
+    if (v.skipped.basic) notes.push(plural(v.skipped.basic, 'terra base esclusa', 'terre base escluse'));
+    if (v.skipped.design) notes.push(plural(v.skipped.design, 'carta del Designer esclusa', 'carte del Designer escluse'));
+    if (v.missing.length) notes.push(plural(v.missing.length, 'carta senza prezzo', 'carte senza prezzo') + ' non conteggiata');
+    return head + '<div class="ptiles"><div class="ptile real"><small>Costo se fosse reale</small>' + t1 + '</div><div class="ptile cheap"><small>Con le stampe più economiche</small>' + t2 + '</div></div>' +
+      (v.ready ? '<p class="psave"><b class="bang">Codighel!</b> ' + (C.isPrinted(d) ? 'Stampando questo mazzo invece di comprarlo hai risparmiato' : 'Quando lo stampi, invece di comprarlo, risparmi') + ' <b>' + eurF(v.total) + '</b>.</p>' : '') +
+      busy + (done ? '<p class="hint pnote">Prezzi in euro di Cardmarket, tramite Scryfall. Contano le stampe senza foil.' + (notes.length ? ' ' + notes.join(' · ') + '.' : '') + '</p>' : '') +
+      '<div class="btns"><button class="btn small" data-a="crazy-fresh"' + (st.busy ? ' disabled' : '') + '>Aggiorna i prezzi</button><button class="btn small" data-a="crazy-detail">Prezzi carta per carta</button><button class="btn small" data-a="crazy-close">Chiudi</button></div>';
+  }
+  /* Calcola da solo i passi che mancano: prima i prezzi, poi la stampa più economica di ogni carta. */
+  function crazyDrive(d) {
+    var cc = CARDS.get(), st = CARDS.st; if (!cc || !CARDS.enabled() || !CARDS.loaded() || st.busy || st.err) return;
+    var v = cc.valueDeck(d, C.isBasic); if (!v.cards.length) return;
+    if (!v.ready) loadPrices([d]); else if (!v.cheapComplete) loadCheap([d]);
+  }
+  function paintCrazy() {
+    var d = getDeck();
+    if (!ui.crazy || ui.view !== 'deck' || !d) {
+      ui.crazy = false;
+      if (crazyEl) { crazyEl.remove(); crazyEl = null; }
+      return;
+    }
+    if (!crazyEl) {
+      crazyEl = document.createElement('div'); crazyEl.id = 'crazy'; crazyEl.className = 'lb cz'; crazyEl.setAttribute('data-a', 'crazy-close');
+      crazyEl.setAttribute('role', 'dialog'); crazyEl.setAttribute('aria-modal', 'true'); crazyEl.setAttribute('aria-labelledby', 'czt');
+      document.body.appendChild(crazyEl);
+    }
+    crazyEl.innerHTML = '<div class="cz-box" data-a="crazy-keep">' + crazyHtml(d) + '</div>';
+    if (!crazyEl._focused) { crazyEl._focused = 1; var x = crazyEl.querySelector('.cz-x'); if (x) x.focus(); }
+    crazyDrive(d);
   }
 
   /* ---------- Upgrade ---------- */
@@ -1707,9 +1911,17 @@
       case 'p-all': ui.pAll = !ui.pAll; renderPrices(); break;
       case 'p-fresh': CARDS.st.err = ''; deck = getDeck(); if (deck) { loadPrices([deck], true); renderPrices(); } break;
       case 'p-cheap': CARDS.st.err = ''; deck = getDeck(); if (deck) { loadCheap([deck]); renderPrices(); } break;
-      case 's-calc': CARDS.st.err = ''; loadPrices(state.decks.filter(C.isPrinted)); repaintPrices(); break;
-      case 's-cheap': CARDS.st.err = ''; loadCheap(state.decks.filter(C.isPrinted)); repaintPrices(); break;
-      case 's-fresh': CARDS.st.err = ''; loadPrices(state.decks.filter(C.isPrinted), true); repaintPrices(); break;
+      case 'dr-open': dkSelect(el); if (!dkAside()) { var sd = el.querySelector('.th.seed.on'); if (sd) IMG.open(sd); } break;
+      case 'dr-prints': IMG.openPrints(el.dataset.n, el.dataset.s, el.dataset.c, ui.deckId); break;
+      case 'dr-flip': ui.dflip = !ui.dflip; dprevPaint(); break;
+      case 'dr-retry': CARDS.st.err = ''; updateDeckList(); break;
+      case 'deck-man': ui.dMan = !ui.dMan; { var mp = $('#dman'); if (mp) mp.hidden = !ui.dMan; el.setAttribute('aria-expanded', ui.dMan); } break;
+      case 'crazy-open': ui.crazy = true; if (crazyEl) { crazyEl.remove(); crazyEl = null; } CARDS.st.err = ''; paintCrazy(); break;
+      case 'crazy-close': closeCrazy(); break;
+      case 'crazy-keep': break;
+      case 'crazy-retry': CARDS.st.err = ''; paintCrazy(); break;
+      case 'crazy-fresh': deck = getDeck(); if (deck) { CARDS.st.err = ''; loadPrices([deck], true); paintCrazy(); } break;
+      case 'crazy-detail': ui.crazy = false; paintCrazy(); ui.deckTab = 'prices'; render(); break;
       case 'sync-now': SYNC.run(true); break;
       case 'sync-dbx': SYNC.dropboxStart(); break;
       case 'sync-dbx-ok': { var sc = $('[data-c="sync-code"]'); if (sc && sc.value.trim()) SYNC.dropboxFinish(sc.value); } break;
@@ -1718,7 +1930,7 @@
       case 'sync-unlink': confirmThen('sync-unlink', function () { SYNC.unlink(); }); break;
       case 'f-load': CARDS.st.err = ''; if (ui.view === 'archive') { loadArchiveData(getArchive()); updateArchiveList(); } break;
       case 'toggle-card': ui.open[el.dataset.k] = !ui.open[el.dataset.k]; updateArchiveList(); break;
-      case 'open-deck': CARDS.st.err = ''; ui.view = 'deck'; ui.deckId = id; ui.deckTab = 'cards'; ui.deckQ = ''; window.scrollTo(0, 0); render(); break;
+      case 'open-deck': CARDS.st.err = ''; ui.view = 'deck'; ui.deckId = id; ui.deckTab = 'cards'; ui.deckQ = ''; ui.dprev = null; ui.dMan = false; window.scrollTo(0, 0); render(); break;
       case 'deck-tab': ui.deckTab = el.dataset.v; CARDS.st.err = ''; render(); break;
       case 'back-deck': ui.view = 'deck'; ui.deckTab = 'ups'; window.scrollTo(0, 0); render(); break;
       case 'del-deck':
@@ -1784,7 +1996,7 @@
       case 'lb-flip': IMG.flip(); break;
       case 'lb-prints': IMG.prints(); break;
       case 'lb-back': IMG.back(); break;
-      case 'lb-pick': IMG.pick(el.dataset.s, el.dataset.n); break;
+      case 'lb-pick': { var sy = window.scrollY; IMG.pick(el.dataset.s, el.dataset.n); window.scrollTo(0, sy); } break;
       case 'lb-keep': break;
       case 'news-open': NEWS.open(); break;
       case 'news-close': NEWS.close(); break;
@@ -1810,12 +2022,26 @@
     ui.dataMsg = ''; ui.restoreText = ''; render();
   }
 
-  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (window.CPADesigner && ui.view === 'designer' && window.CPADesigner.escape()) return; if (window.CPABuilder && ui.view === 'builder' && window.CPABuilder.escape()) return; if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (ui.crazy) { closeCrazy(); return; } if (window.CPADesigner && ui.view === 'designer' && window.CPADesigner.escape()) return; if (window.CPABuilder && ui.view === 'builder' && window.CPABuilder.escape()) return; if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
   document.addEventListener('mousemove', function (ev) {
     var t = ev.target.closest && ev.target.closest('.th.on');
+    if (!t && ev.target.closest && ui.view === 'deck') { var dr = ev.target.closest('.dr'); if (dr && !dkAside()) t = dr.querySelector('.th.seed.on'); }
     IMG.hover(!!t, t, ev);
   });
   window.addEventListener('scroll', function () { IMG.hover(false); }, true);
+  document.addEventListener('mouseover', function (ev) {
+    if (ui.view !== 'deck' || !ev.target.closest) return;
+    var r = ev.target.closest('.dr'); if (r) dkSelect(r);
+  });
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    var r = ev.target.classList && ev.target.classList.contains('dr') ? ev.target : null;
+    if (r) { ev.preventDefault(); r.click(); }
+  });
+  document.addEventListener('focusin', function (ev) {
+    if (ui.view !== 'deck' || !ev.target.closest) return;
+    var r = ev.target.closest('.dr'); if (r) dkSelect(r);
+  });
 
   document.addEventListener('input', function (e) {
     var c = e.target.dataset && e.target.dataset.c; if (!c) return;
@@ -1840,6 +2066,7 @@
       case 'fdeck': ui.fdeck = t.value; ui.limit = 150; render(); break;
       case 'fset': ui.fset = t.value; ui.limit = 150; render(); break;
       case 'sort': ui.sort = t.value; render(); break;
+      case 'dsort': ui.dSort = t.value; updateDeckList(); break;
       case 'nobasic': ui.nobasic = t.checked; ui.limit = 150; render(); break;
       case 'status':
         d = getDeck(t.dataset.id);

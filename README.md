@@ -21,9 +21,13 @@ I colori sono quelli del Coglio (blu denim e giallo banana); i cinque colori del
   Ricerca per nome **o con la sintassi di Scryfall** (`t:creature c:rg mv<=3 o:"draw" r:mythic`, `or`, `-`, parentesi, `/regex/`),
   più un pannello **Filtri** (colori di mana, tipo, costo, rarità, testo, disponibilità, mazzo, collezione) che scrive la ricerca per te.
   Si ordina anche per costo di mana e per prezzo.
-- **Prezzi (4.0)**: ogni mazzo ha la scheda *Prezzi* con il valore in euro (Cardmarket, via Scryfall) delle stampe che hai scelto,
-  le carte più care e quanto costerebbe il mazzo con la stampa più economica di ogni carta. In cima ai mazzi il banner
-  «Ma questo risparmio è crazy!» mostra quanto hai risparmiato stampando. Terre base e carte del Designer non contano.
+- **Pagina del mazzo (4.0, stile Moxfield)**: titolo grande su un banner con l'artwork del commander; lista a tutta pagina già divisa
+  per tipo (commander, creature, stregonerie, incantesimi, istantanei, artefatti, terre), con la carta grande a lato quando passi il mouse
+  (su telefono si tocca). Accanto al nome l'icona per **cambiare stampa**, con il prezzo in euro della stampa tra parentesi.
+  Nome, commander e stato si cambiano da «Gestisci»; upgrade e prezzi carta per carta sono nelle schede in alto.
+- **Prezzi (4.0)**: la barra giallo banana in fondo al mazzo mostra le carte totali e per tipo; **«Calcola valore mazzo»** apre il pop-up
+  «Ma questo risparmio è crazy!» con il costo in euro (Cardmarket, via Scryfall) con le stampe che hai scelto e con la stampa più
+  economica di ogni carta, cioè quanto risparmi stampando invece di comprare. Terre base e carte del Designer non contano.
 - **Sincronizzazione (4.0)**: archivio, mazzi e impostazioni uguali su PC e telefono tramite Dropbox e/o Google Drive (vedi sotto).
 - **Upgrade di un mazzo**: incolli la lista aggiornata, l'app mostra cosa esce, cosa entra e per ogni carta
   entrante se ce l'hai già libera in un altro mazzo o nella raccolta (niente doppioni da ristampare) oppure è da procurare.
@@ -150,7 +154,7 @@ Tutti i dati restano sul dispositivo (IndexedDB del browser). Nessun account, ne
 
 ## Note
 - `pdf-test.js` e `proxy-test.js` girano con solo Node (il primo, se ci sono `python3` con Pillow, `pdfinfo`, `qpdf` e `pdftoppm`, controlla anche i PDF con strumenti esterni e confronta i pixel); `update-test.js` (scarico dell'aggiornamento con rete simulata) e `status-test.js` (stati dei mazzi e riuso delle carte) girano con solo Node; `ui-smoke.js`, `builder-smoke.js`, `img-smoke.js`, `update-smoke.js` e `status-smoke.js` usano jsdom (`node tools/builder-smoke.js <percorso-di-jsdom>`).
-- `search-test.js`, `cards-test.js` e `sync-test.js` girano con solo Node (ricerca Scryfall, dati/prezzi, sincronizzazione con Dropbox e Drive simulati da `fake-clouds.js`); `feat-smoke.js` e `sync-smoke.js` provano l'interfaccia in Chromium.
+- `search-test.js`, `cards-test.js` e `sync-test.js` girano con solo Node (ricerca Scryfall, dati/prezzi, sincronizzazione con Dropbox e Drive simulati da `fake-clouds.js`); `feat-smoke.js`, `deck-smoke.js` (pagina del mazzo) e `sync-smoke.js` provano l'interfaccia in Chromium.
 - `designer-test.js` usa Chromium (Playwright): `node tools/designer-test.js`.
 - `test.js`, `ui-smoke.js` e `img-smoke.js` leggono alcune liste di mazzi da `tools/fixtures/`, che non sono nel repository: servono liste tue per provarli.
 - Progetto non ufficiale, non affiliato né approvato da Wizards of the Coast. Immagini e dati delle carte: [Scryfall](https://scryfall.com). Magic: The Gathering è un marchio di Wizards of the Coast.

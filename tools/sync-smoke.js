@@ -104,7 +104,7 @@ const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers
   /* modifica sul telefono: parte da sola (sincronizzazione automatica) */
   await B.nav('decks');
   await B.page.click('[data-a="open-deck"]');
-  await B.page.fill('[data-c="deck-name"]', 'Kaalia (telefono)'); await B.page.press('[data-c="deck-name"]', 'Tab');
+  await B.page.click('[data-a="deck-man"]'); await B.page.fill('[data-c="deck-name"]', 'Kaalia (telefono)'); await B.page.press('[data-c="deck-name"]', 'Tab');
   await B.page.waitForFunction(() => true);
   const t0 = Date.now();
   while (Date.now() - t0 < 8000 && JSON.parse(dbx.file).decks[0].name !== 'Kaalia (telefono)') await B.page.waitForTimeout(150);
@@ -125,7 +125,7 @@ const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers
   await B.page.waitForFunction(() => document.querySelector('#toast') && /mazzo nuovo/.test(document.querySelector('#toast').textContent), null, { timeout: 15000 });
   ok((await B.deckNames()).sort().join() === 'Gemello,Kaalia (telefono)', 'telefono: due mazzi');
   await B.page.locator('[data-a="open-deck"]').first().click();
-  await B.page.click('[data-a="del-deck"]'); await B.page.click('[data-a="del-deck"]');
+  await B.page.click('[data-a="deck-man"]'); await B.page.click('[data-a="del-deck"]'); await B.page.click('[data-a="del-deck"]');
   await B.page.waitForFunction(() => /Mazzi/.test(document.querySelector('h1').textContent));
   const t2 = Date.now();
   while (Date.now() - t2 < 8000 && Object.keys(JSON.parse(dbx.file).tombs || {}).length === 0) await B.page.waitForTimeout(150);

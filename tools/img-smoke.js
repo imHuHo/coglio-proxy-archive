@@ -125,19 +125,19 @@ async function importDeck(t) {
 
     // mazzo e upgrade
     t.clickA('nav', '[data-v="decks"]'); t.clickA('open-deck');
-    ok(t.$$('#dlist .crow .th.on').length === 5, 'miniature anche nella lista del mazzo');
+    ok(t.$$('#dlist .dr .th.on').length === 5, 'miniature anche nella lista del mazzo');
 
     // scelta della stampa
-    const solRow = () => t.$$('#dlist .crow').find(r => r.textContent.includes('Sol Ring'));
+    const solRow = () => t.$$('#dlist .dr').find(r => r.textContent.includes('Sol Ring'));
     t.click(solRow().querySelector('.th'));
     ok(t.$('#lb [data-a="lb-prints"]'), 'nel mazzo c\'è «Cambia stampa»');
     t.clickA('lb-prints'); await sleep(100);
     ok(t.$$('#lb .pr').length === 2 && t.$('#lb .pr.cur').dataset.s === 'c21', 'stampe di carta, quella attuale evidenziata (le digitali sono escluse)');
     t.click(t.$$('#lb .pr').find(b => b.dataset.s === 'cmm'));
-    ok(!t.$('#lb') && solRow().textContent.includes('CMM') && solRow().textContent.includes('400'), 'stampa scelta salvata nel mazzo');
-    ok(solRow().querySelector('.th img').src.includes('sol-ring-cmm'), 'la miniatura mostra subito la stampa scelta');
+    ok(!t.$('#lb') && solRow().dataset.s === 'CMM' && solRow().dataset.c === '400', 'stampa scelta salvata nel mazzo');
+    ok(solRow().querySelector('.th.seed').dataset.thk === 'sol ring|cmm|400' && solRow().querySelector('.th.seed.on'), 'l\'immagine della stampa scelta è già nota');
     t.clickA('undo');
-    ok(solRow().textContent.includes('C21') && solRow().textContent.includes('263'), 'Annulla ripristina la stampa');
+    ok(solRow().dataset.s === 'C21' && solRow().dataset.c === '263', 'Annulla ripristina la stampa');
     t.clickA('nav', '[data-v="archive"]'); t.type('#q', 'sol ring');
     t.click(t.$('#alist .item-main'));
     ok(t.$$('#alist .where .th').length === 1 && t.$('#alist .where .th').dataset.thd, 'miniatura per ogni copia nel dettaglio');
@@ -181,7 +181,7 @@ async function importDeck(t) {
     const posts = t.log.filter(x => x.path === '/cards/collection');
     ok(posts.length === 2 && posts[1].body.identifiers.length === 1 && posts[1].body.identifiers[0].set === 'cmm' && !posts[1].body.identifiers[0].collector_number, 'secondo tentativo: nome e collezione senza numero');
     t.clickA('nav', '[data-v="decks"]'); t.clickA('open-deck');
-    const rows = t.$$('#dlist .crow');
+    const rows = t.$$('#dlist .dr');
     ok(rows.length === 2 && rows.filter(r => r.querySelector('.th.fb')).length === 1, 'solo la riga con numero sbagliato è segnata');
   }
 

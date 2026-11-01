@@ -90,6 +90,12 @@ function scry(name, set, cn, eurOverride) {
   await page.fill('[data-c="draft-name"]', 'Kaalia');
   await page.click('[data-a="draft-next"]'); await page.click('[data-a="draft-create"]');
   await page.waitForSelector('#dlist');
+  /* aprendo il mazzo i dati si scaricano da soli: aspetto, poi li cancello per provare l'archivio da zero */
+  await page.waitForFunction(() => document.querySelectorAll('.dr .pv').length > 0 && ![...document.querySelectorAll('.dr .pv')].some(e => e.textContent === '(…)'), null, { timeout: 15000 });
+  ok(calls.collection >= 1, 'aprendo il mazzo scarica da solo tipo e prezzi: ' + calls.collection);
+  await nav('data'); await page.click('[data-a="cards-clear"]');
+  await page.waitForFunction(() => !document.querySelector('[data-a="cards-clear"]'));
+  calls.collection = 0; calls.search = 0; calls.cheapQ.length = 0;
   await nav('archive');
   const total = await items().count();
   ok(total >= 70, 'archivio con le carte del mazzo: ' + total);
@@ -197,26 +203,20 @@ function scry(name, set, cn, eurOverride) {
   /* ----- prezzi ----- */
   /* se i dati sono già arrivati per la ricerca, i prezzi si vedono subito: lo verifico, poi parto da zero */
   await nav('decks');
-  ok(await page.locator('#saving .big').count() === 1, 'i dati scaricati per la ricerca servono anche ai prezzi');
+  ok(await page.locator('#saving').count() === 0, 'nessun banner del risparmio nell\'elenco dei mazzi');
+  await page.click('[data-a="open-deck"]'); await page.waitForSelector('.dg');
+  ok(/\(.*€\)/.test(await page.locator('.dr .pb .pv').first().textContent()), 'i dati scaricati per la ricerca servono anche ai prezzi nel mazzo');
   await nav('data'); await page.click('[data-a="cards-clear"]');
   await page.waitForFunction(() => !document.querySelector('[data-a="cards-clear"]'));
   await nav('decks');
-  ok(await page.locator('#saving').isVisible(), 'banner del risparmio');
-  ok(/crazy/.test(await page.locator('#saving h2').textContent()), 'titolo del banner');
-  ok(await page.locator('#saving [data-a="s-calc"]').count() === 1, 'prima va calcolato');
   await shot('2-mazzi-prima');
-  await page.click('#saving [data-a="s-calc"]');
-  await page.waitForSelector('#saving .big', { timeout: 15000 });
-  const expect = {};
   const kaalia = fs.readFileSync(FX + 'kaalia_old.txt', 'utf8').split('\n').map(l => l.trim()).filter(Boolean).map(l => { const m = /^(\d+)\s+(.+)$/.exec(l); return m ? { qty: +m[1], name: m[2] } : { qty: 1, name: l }; });
   const isBasic = nm => /^(Mountain|Plains|Swamp)$/.test(nm);
   const want = kaalia.filter(c => !isBasic(c.name)).reduce((t, c) => t + c.qty * +basePrice(c.name).toFixed(2), 0);
-  const shown = await page.locator('#saving .big').textContent();
-  const num = parseFloat(shown.replace(/[^\d,]/g, '').replace(',', '.'));
-  if (Math.abs(num - want) >= 0.005 && process.env.DBG) { await nav('decks'); await page.click('[data-a="open-deck"]'); await page.click('[data-a="deck-tab"][data-v="prices"]'); await page.waitForSelector('.ptiles'); await page.click('[data-a="p-all"]'); const rows = await page.$$eval('.prow', els => els.map(e => e.querySelector('.nm').textContent + ' | ' + e.querySelector('.pu').textContent + ' | ' + e.querySelector('.pl').textContent)); const got = new Set(rows.map(r => r.split(' | ')[0].replace(/\s+\S*$/, ''))); console.log(rows.length, kaalia.filter(c => !isBasic(c.name)).length, kaalia.filter(c => !isBasic(c.name)).filter(c => !rows.some(r => r.startsWith(c.name))).map(c => c.name + ' ' + basePrice(c.name))); }
-  ok(Math.abs(num - want) < 0.005, 'valore dei mazzi stampati: ' + shown + ' (atteso ' + want.toFixed(2) + ')');
-  ok(/carte/.test(await page.locator('#saving').textContent()) && /1 mazzo/.test(await page.locator('#saving').textContent()), 'conteggio delle carte stampate');
-  if (process.env.DBG) console.log(await page.locator('#declist').innerHTML().catch(e => 'noid'), await page.locator('main').innerHTML().then(h => h.slice(0, 600)));
+  await page.click('[data-a="open-deck"]'); await page.waitForSelector('.dg');
+  await page.waitForFunction(() => document.querySelectorAll('.dr .pv').length > 0 && ![...document.querySelectorAll('.dr .pv')].some(e => e.textContent === '(…)'), null, { timeout: 15000 });
+  ok(true, 'aprendo il mazzo i dati si riscaricano da soli');
+  await nav('decks');
   ok(await page.locator('.deckcard .worth').count() === 1, 'prezzo sulla scheda del mazzo');
   await shot('3-mazzi-risparmio');
 
@@ -247,8 +247,10 @@ function scry(name, set, cn, eurOverride) {
   await shot('4-prezzi-mazzo');
 
   /* dopo il calcolo il banner mostra anche il totale economico */
-  await nav('decks');
-  ok(/Con la stampa più economica/.test(await page.locator('#saving').textContent()), 'il banner conosce il totale economico');
+  await page.click('[data-a="crazy-open"]');
+  await page.waitForSelector('#crazy .ptile.cheap');
+  ok(/meno|già le stampe/.test(await page.locator('#crazy .ptile.cheap').textContent()) && (await page.locator('#crazy .spin').count()) === 0, 'il pop-up conosce il totale economico');
+  await page.keyboard.press('Escape');
 
   /* mazzo con stampe precise + mazzo non ancora stampato */
   await nav('import');

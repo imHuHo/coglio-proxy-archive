@@ -282,21 +282,21 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   /* vista mazzo: etichette Design */
   await nav('decks');
   await page.click('[data-a="open-deck"]');
-  await page.waitForSelector('#dlist .crow');
-  const rows = await page.locator('#dlist .crow').count();
+  await page.waitForSelector('#dlist .dr');
+  const rows = await page.locator('#dlist .dr').count();
   ok(rows === 4, 'righe del mazzo: ' + rows);
   ok(await page.locator('#dlist .tag.dzt').count() === 2, 'due carte con design nel mazzo');
   ok(await page.locator('#dlist [data-a="dz-unbind"]').count() === 2, 'pulsanti «Togli design»');
   ok(await page.locator('#dlist [data-a="dz-bind"]').count() === 2, 'pulsanti «Design» sulle altre');
 
   /* scegliere un design per una carta dal mazzo */
-  await page.locator('#dlist .crow', { hasText: 'Sol Ring' }).locator('[data-a="dz-bind"]').click();
+  await page.locator('#dlist .dr', { hasText: 'Sol Ring' }).hover(); await page.locator('#dlist .dr', { hasText: 'Sol Ring' }).locator('[data-a="dz-bind"]').click();
   await page.waitForSelector('.dz-pickit');
   await page.locator('.dz-pickit').first().click();
   await page.waitForFunction(() => /sostituisce Sol Ring/.test(document.body.innerText) || /Designer/.test(document.body.innerText));
-  await nav('decks'); await page.click('[data-a="open-deck"]'); await page.waitForSelector('#dlist .crow');
+  await nav('decks'); await page.click('[data-a="open-deck"]'); await page.waitForSelector('#dlist .dr');
   ok(await page.locator('#dlist .tag.dzt').count() === 3, 'terza carta con design');
-  await page.locator('#dlist .crow', { hasText: 'Sol Ring' }).locator('[data-a="dz-unbind"]').click();
+  await page.locator('#dlist .dr', { hasText: 'Sol Ring' }).hover(); await page.locator('#dlist .dr', { hasText: 'Sol Ring' }).locator('[data-a="dz-unbind"]').click();
   await page.waitForFunction(() => document.querySelectorAll('#dlist .tag.dzt').length === 2);
   ok(true, 'design tolto da una carta');
 
