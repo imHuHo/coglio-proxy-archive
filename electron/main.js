@@ -52,6 +52,31 @@ ipcMain.handle('cpa:image', async (_event, url) => {
   } catch (e) { return { ok: false, error: e && e.name === 'TimeoutError' ? 'tempo scaduto' : 'rete' }; }
 });
 
+/* Sincronizzazione: le richieste a Dropbox e Google Drive partono da Electron (niente CORS, la pagina e' un file://).
+   Solo questi indirizzi, solo https, intestazioni e dimensioni limitate. */
+const SYNC_HOSTS = new Set(['api.dropboxapi.com', 'content.dropboxapi.com', 'oauth2.googleapis.com', 'www.googleapis.com']);
+const SYNC_HEADERS = new Set(['authorization', 'content-type', 'dropbox-api-arg', 'accept']);
+const SYNC_MAX = 25 * 1024 * 1024;
+ipcMain.handle('cpa:http', async (_event, req) => {
+  try {
+    if (!req || typeof req !== 'object') return { status: 0, error: 'richiesta non valida' };
+    const u = new URL(String(req.url));
+    if (u.protocol !== 'https:' || !SYNC_HOSTS.has(u.hostname)) return { status: 0, error: 'indirizzo non consentito' };
+    const method = ['GET', 'POST', 'PATCH', 'PUT'].includes(req.method) ? req.method : 'GET';
+    const headers = {};
+    Object.keys(req.headers || {}).forEach((k) => { if (SYNC_HEADERS.has(k.toLowerCase())) headers[k] = String(req.headers[k]); });
+    let body;
+    if (req.form && typeof req.form === 'object') { body = new URLSearchParams(req.form).toString(); headers['Content-Type'] = 'application/x-www-form-urlencoded'; }
+    else if (typeof req.body === 'string') body = req.body;
+    if (body && Buffer.byteLength(body) > SYNC_MAX) return { status: 0, error: 'troppo grande' };
+    const res = await net.fetch(u.href, { method, headers, body: method === 'GET' ? undefined : body, redirect: 'error', signal: AbortSignal.timeout(30000) });
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > SYNC_MAX) return { status: 0, error: 'risposta troppo grande' };
+    const h = {}; res.headers.forEach((v, k) => { h[k.toLowerCase()] = v; });
+    return { status: res.status, text: buf.toString('utf8'), headers: h };
+  } catch (e) { return { status: 0, error: e && e.name === 'TimeoutError' ? 'tempo scaduto' : 'rete' }; }
+});
+
 /* Appunti scritti dal programma: funziona anche quando la finestra ha perso il focus (ad esempio dopo aver aperto il browser). */
 ipcMain.handle('cpa:copy', (_event, text) => {
   if (typeof text !== 'string' || text.length > 1000000) return false;

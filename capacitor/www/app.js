@@ -18,26 +18,31 @@
   var byName = function (a, b) { return a.name.localeCompare(b.name, 'en'); };
 
   var IC = {
-    archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"/></svg>',
-    decks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="13" height="17" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h9"/></svg>',
-    import: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
+    archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.2C10 4.6 7 4.1 3.5 4.7v13.6c3.500-.6 6.500-.1 8.500 1.500 2-1.600 5-2.100 8.500-1.500V4.700C17 4.100 14 4.600 12 6.200zM12 6.200v13.600"/></svg>',
+    decks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7.500" y="3.500" width="12" height="17" rx="2" transform="rotate(9 13.500 12)"/><path d="M4.800 7.500v10.500a2 2 0 0 0 2 2h6.700"/></svg>',
+    import: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.500v11M7.500 10.500l4.500 4.500 4.500-4.500"/><path d="M4 16.500v1.500a2.500 2.500 0 0 0 2.500 2.500h11a2.500 2.500 0 0 0 2.500-2.500v-1.500"/></svg>',
     builder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="7" y="13" width="10" height="8" rx="1"/></svg>',
     designer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="13" height="18" rx="2"/><path d="M7 15l3-4 2 2 2-3M18 9l3 3-6 6-3.5.5.5-3.5z"/></svg>',
-    data: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>',
-    search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
+    data: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.500 4h11l3.500 5-9 11L3 9z"/><path d="M3 9h18M9.500 4 8 9l4 11 4-11-1.500-5"/></svg>',
+    search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+    filter: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg>'
   };
-  var LOGO = '<svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true">' +
-    '<rect x="5" y="7" width="19" height="26" rx="3.5" transform="rotate(-14 14 20)" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.6"/>' +
-    '<rect x="9" y="5" width="19" height="26" rx="3.5" style="fill:var(--surface);stroke:var(--accent);stroke-width:1.6"/>' +
-    '<rect x="13" y="7" width="19" height="26" rx="3.5" transform="rotate(12 22 20)" style="fill:var(--accent)"/>' +
-    '<circle cx="29" cy="29" r="8" style="fill:var(--stamp)"/>' +
-    '<path d="M25.4 29.2l2.6 2.6 4.6-5.2" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var LOGO = '<svg width="40" height="40" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#1f4a92"/>' +
+    '<rect x="84" y="86" width="196" height="272" rx="26" transform="rotate(-16 182 222)" fill="#86a9e6"/><rect x="128" y="70" width="196" height="272" rx="26" fill="#d6e3fa"/>' +
+    '<g transform="rotate(12 270 224)"><rect x="172" y="86" width="196" height="272" rx="26" fill="#fff"/><rect x="188" y="102" width="164" height="30" rx="10" fill="#dce7f8"/><rect x="188" y="142" width="164" height="108" rx="8" fill="#2d5fae"/><path d="M270 146C286 170 314 184 314 206A44 44 0 0 1 226 206C226 184 254 170 270 146Z" fill="#ffd23a" stroke="#0e1c40" stroke-width="5.5" stroke-linejoin="round"/><ellipse cx="257" cy="201" rx="8" ry="10" fill="#fff" stroke="#0e1c40" stroke-width="3.2"/><ellipse cx="283" cy="201" rx="8" ry="10" fill="#fff" stroke="#0e1c40" stroke-width="3.2"/><circle cx="259" cy="199" r="3.8" fill="#0e1c40"/><circle cx="285" cy="199" r="3.8" fill="#0e1c40"/><path d="M246 185l19 6M294 185l-19 6" stroke="#0e1c40" stroke-width="5.5" stroke-linecap="round"/><path d="M258 219q12 -6 24 0 2 14 -12 16 -14 -2 -12 -16z" fill="#0e1c40"/><path d="M263 228q7 4 14 0 -2 4 -7 4 -5 0 -7 -4z" fill="#ff7a6b"/><rect x="188" y="260" width="164" height="84" rx="8" fill="#eef3fc"/></g>' +
+    '<polygon points="370,248 385,279 416,262 416,297 451,295 436,326 469,339 442,362 465,387 431,396 442,429 407,422 402,456 374,435 354,464 339,433 308,450 308,415 273,417 288,386 255,373 282,350 259,325 293,316 282,283 317,290 322,256 350,277" fill="#ffd23a" stroke="#0e1c40" stroke-width="14" stroke-linejoin="round"/><g transform="rotate(-9 362 356)"><rect x="347" y="296" width="30" height="76" rx="15" fill="#0e1c40"/><circle cx="362" cy="408" r="17" fill="#0e1c40"/></g></svg>';
+
+
+  /* i cinque colori del mana (file in web/mana): decorazione e identità delle sezioni */
+  function pip(k) { return '<img class="pip" src="mana/' + k.toLowerCase() + '.svg" alt="" width="20" height="20" draggable="false">'; }
+  function pips() { return 'WUBRG'.split('').map(pip).join(''); }
 
   /* ---------- Stato ---------- */
   var state = { decks: [], settings: C.sanitizeSettings() };
   var ui = {
     view: 'archive', deckId: null, upId: null, deckTab: 'cards', deckQ: '',
     q: '', st: 'all', fdeck: '', fset: '', sort: 'name', nobasic: false, open: {}, limit: 150,
+    adv: false, help: false, f: { colors: '', cmode: 'any', types: [], cost: [], rar: [], text: '' }, dtab: 'cards',
     upQ: '', upSt: 'all', draft: null, confirm: null, backupOut: '', restoreText: '', dataMsg: ''
   };
   var upd = { st: 'idle', info: null, err: '', prog: null, saved: '' };
@@ -148,12 +153,22 @@
     });
   }
 
-  function schedule() { clearTimeout(timer); timer = setTimeout(flush, 350); }
-  function touch(id) { archCache = null; delete gone[id]; dirty[id] = true; schedule(); }
+  function schedule() { clearTimeout(timer); timer = setTimeout(flush, 350); if (SYNC && SYNC.queue) SYNC.queue(); }
+  /* Ogni mazzo ricorda com'era l'ultima volta: se il contenuto cambia, `updatedAt` si aggiorna da solo.
+     La sincronizzazione si basa su quella data, quindi nessuna modifica puo' sfuggire, qualunque strada l'abbia fatta. */
+  var sigs = {};
+  function sigOf(d) { var c = {}; Object.keys(d).forEach(function (k) { if (k !== 'updatedAt') c[k] = d[k]; }); return JSON.stringify(c); }
+  function bump(d) {
+    var sg = sigOf(d);
+    if (sigs[d.id] !== undefined && sigs[d.id] !== sg) d.updatedAt = Math.max(Date.now(), (d.updatedAt || 0) + 1);
+    sigs[d.id] = sg;
+  }
+  function touch(id) { archCache = null; delete gone[id]; var d = getDeck(id); if (d) bump(d); dirty[id] = true; schedule(); }
   function touchSettings() { archCache = null; settingsDirty = true; schedule(); }
   function removed(id) { archCache = null; delete dirty[id]; gone[id] = true; schedule(); }
   function persistAll(prevIds) {
     archCache = null;
+    state.decks.forEach(bump);
     var now = {}; state.decks.forEach(function (d) { now[d.id] = true; });
     prevIds.forEach(function (id) { if (!now[id]) { gone[id] = true; delete dirty[id]; } });
     state.decks.forEach(function (d) { delete gone[d.id]; dirty[d.id] = true; });
@@ -815,11 +830,12 @@
   function render() {
     var navHtml = NAV.map(function (n) { return navBtn(n[0], n[1]); }).join('');
     APP.innerHTML =
-      '<div class="shell"><aside class="side"><div class="brand">' + LOGO + '<span><b>Coglio</b><small>Proxy Archive</small></span></div>' + navHtml + '</aside>' +
+      '<div class="shell" data-view="' + esc(ui.view) + '"><aside class="side"><div class="brand">' + LOGO + '<span><b>Coglio</b><small>Proxy Archive</small></span></div>' + navHtml +
+      '<div class="side-foot"><span class="pips">' + pips() + '</span><small>Versione <b>' + esc(String(window.CPA_VERSION || '')) + '</b><br>Applicazione approvata dal Pisciatore in persona</small></div></aside>' +
       '<main class="main"><div class="mobile-brand">' + LOGO + '<span><b>Coglio</b><small>Proxy Archive</small></span></div>' + NEWS.banner() + viewHtml() + '</main></div>' +
       '<nav class="tabs" aria-label="Sezioni">' + navHtml + '</nav>';
     if (ui.view === 'archive' && state.decks.length) updateArchiveList();
-    if (ui.view === 'deck') updateDeckList();
+    if (ui.view === 'deck') { if (ui.deckTab === 'prices' && CARDS.ready()) renderPrices(); else updateDeckList(); }
     if (ui.view === 'upgrade') updateUpgradeCols();
     if (ui.view === 'builder' && window.CPABuilder) window.CPABuilder.after();
     if (ui.view === 'designer' && window.CPADesigner) window.CPADesigner.after();
@@ -840,21 +856,133 @@
     if (v === 'builder' && window.CPABuilder) { ui.confirm = null; window.CPABuilder.open(null); return; }
     if (v === 'designer' && window.CPADesigner) { ui.confirm = null; document.body.classList.remove('bd-lock'); window.CPADesigner.open(); return; }
     document.body.classList.remove('bd-lock');
+    CARDS.st.err = '';
     ui.view = v; ui.confirm = null;
     if (v === 'import' && !(ui.draft && ui.draft.step === 1 && ui.draft.mode !== 'upgrade')) ui.draft = newDraft('deck');
     window.scrollTo(0, 0); render();
   }
   function welcome() {
-    return '<div class="empty"><h2>Archivio vuoto</h2><p>Importa le liste dei tuoi mazzi e l\'archivio ti dirà quali carte hai, quante sono libere e dove sono impegnate.</p>' +
+    return '<div class="empty">' + '<svg class="empty-art" viewBox="0 0 240 130" aria-hidden="true"><g transform="translate(120 118)">' + [-18, 0, 18].map(function (a, i) { return '<g transform="rotate(' + a + ')"><rect x="-37" y="-104" width="74" height="104" rx="9" fill="' + ['#2a5aa6', '#1f4a92', '#173a78'][i] + '" stroke="#0e1c40" stroke-width="3"/><rect x="-29" y="-96" width="58" height="88" rx="5" fill="none" stroke="#86a9e6" stroke-width="1.500"/><path d="M0 -76l14 24-14 24-14-24z" fill="#f7c52b" stroke="#0e1c40" stroke-width="2" stroke-linejoin="round"/></g>'; }).join('') + '</g></svg>' + '<span class="empty-mana" aria-hidden="true">' + pips() + '</span><h2>Archivio vuoto</h2><p>Importa le liste dei tuoi mazzi e l\'archivio ti dirà quali carte hai, quante sono libere e dove sono impegnate.</p>' +
       '<ol class="steps"><li><b>Importa</b> una lista .txt (quantità, nome, e se vuoi collezione).</li><li><b>Scegli il commander</b> dalla lista.</li><li><b>Attiva</b> i mazzi che hai montati: le loro carte risulteranno in uso.</li></ol>' +
       '<button class="btn primary" data-a="nav" data-v="import">Importa il primo mazzo</button></div>';
   }
 
+  /* ---------- Dati delle carte: ricerca avanzata e prezzi ---------- */
+  /* Tipo, colori, costo, rarità, testo e prezzi arrivano da Scryfall e restano sul dispositivo (cards.js).
+     Si scaricano solo quando servono: la prima volta che usi un filtro o guardi i prezzi. */
+  var CARDS = (function () {
+    var inst = null, repaintFn = null, st = { busy: false, what: '', done: 0, total: 0, err: '' };
+    function ready() { return !!(window.CPACards && window.CPAProxy && window.CPASearch); }
+    function enabled() { return ready() && !!store && store.kind !== 'claude' && typeof fetch === 'function'; }
+    function changed() { if (repaintFn) repaintFn(); }
+    function get() {
+      if (inst || !ready()) return inst;
+      var proxy = window.CPAProxy.create({ fetch: function (u, i) { return fetch(u, i); }, keyOf: C.keyOf, gap: window.CPA_API_GAP });
+      inst = window.CPACards.create({ proxy: proxy, keyOf: C.keyOf, storage: window.CPACards.idbStorage('coglio-cards') || window.CPACards.memoryStorage() });
+      inst.onChange(changed);
+      inst.load().then(changed);
+      return inst;
+    }
+    function fail(e) {
+      st.err = e && e.status === 429 ? 'Scryfall chiede una pausa: riprova tra un minuto.' : 'Non riesco a raggiungere Scryfall. Controlla la connessione e riprova.';
+    }
+    /* Un lavoro alla volta: fn(progress) restituisce una promessa. */
+    function run(what, fn) {
+      if (st.busy || !enabled() || !get()) return false;
+      st.busy = true; st.what = what; st.err = ''; st.done = 0; st.total = 0; changed();
+      fn(function (p) { st.done = p.done; st.total = p.total; changed(); }).then(function () { st.busy = false; changed(); }, function (e) { st.busy = false; fail(e); changed(); });
+      return true;
+    }
+    return { ready: ready, enabled: enabled, get: get, run: run, st: st, onRepaint: function (f) { repaintFn = f; } };
+  })();
+  function cardRec(name) { var c = CARDS.get(); return c ? c.any(name) : null; }
+
+  /* costo di mana come simboli: i cinque colori usano i simboli veri, il resto un tondino */
+  function manaHtml(mc) {
+    var m = String(mc || '').match(/\{[^}]+\}/g);
+    if (!m) return '';
+    return '<span class="mc" role="img" aria-label="Costo ' + esc(mc.replace(/[{}]/g, '')) + '">' + m.map(function (x) {
+      var k = x.slice(1, -1).toUpperCase();
+      return 'WUBRGC'.indexOf(k) >= 0 && k.length === 1 ? '<img class="ms" src="mana/' + k.toLowerCase() + '.svg" alt="" width="14" height="14" draggable="false">' : '<span class="ms n">' + esc(k.replace('/', '')) + '</span>';
+    }).join('') + '</span>';
+  }
+
+  var F_TYPES = [['creature', 'Creatura'], ['instant', 'Istantaneo'], ['sorcery', 'Stregoneria'], ['artifact', 'Artefatto'], ['enchantment', 'Incantesimo'], ['planeswalker', 'Planeswalker'], ['land', 'Terra'], ['legendary', 'Leggendaria']];
+  var F_COSTS = ['0', '1', '2', '3', '4', '5', '6', '7+'];
+  var F_RARS = [['c', 'Comune'], ['u', 'Non comune'], ['r', 'Rara'], ['m', 'Mitica']];
+  var F_COLORS = [['W', 'Bianco'], ['U', 'Blu'], ['B', 'Nero'], ['R', 'Rosso'], ['G', 'Verde'], ['C', 'Incolore']];
+  function fullQuery() { return (ui.q + ' ' + (window.CPASearch ? window.CPASearch.filtersQuery(ui.f) : '')).trim(); }
+  function filterCount() {
+    var f = ui.f;
+    return (f.colors ? 1 : 0) + (f.types.length ? 1 : 0) + (f.cost.length ? 1 : 0) + (f.rar.length ? 1 : 0) + (f.text.trim() ? 1 : 0) +
+      (ui.fdeck ? 1 : 0) + (ui.fset ? 1 : 0) + (ui.nobasic ? 1 : 0);
+  }
+  var qMemo = { s: null, c: null };
+  function compiledQuery() {
+    var s = fullQuery();
+    if (qMemo.s !== s) { qMemo.s = s; qMemo.c = window.CPASearch ? window.CPASearch.compile(s) : null; }
+    return qMemo.c;
+  }
+  function toggleIn(arr, v) { var i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else arr.push(v); }
+  function fchip(a, v, label, on) { return '<button class="chip" data-a="' + a + '" data-v="' + esc(v) + '" aria-pressed="' + on + '">' + label + '</button>'; }
+  function advHtml() {
+    var f = ui.f, A = getArchive();
+    var sets = {}; A.list.forEach(function (e) { e.sets.forEach(function (x) { sets[x] = 1; }); });
+    var opt = function (v, label, cur) { return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>'; };
+    var seg = function (v, label) { return '<button class="seg-b" data-a="f-cm" data-v="' + v + '" aria-pressed="' + (f.cmode === v) + '">' + label + '</button>'; };
+    var ex = (window.CPASearch ? window.CPASearch.EXAMPLES : []).map(function (x) {
+      return '<li><button class="link" data-a="f-ex" data-v="' + esc(x[0]) + '"><code>' + esc(x[0]) + '</code></button><span>' + esc(x[1]) + '</span></li>';
+    }).join('');
+    return '<section class="panel advf" id="advf"' + (ui.adv ? '' : ' hidden') + ' aria-label="Filtri">' +
+      '<div class="fgrp"><span class="lbl-t">Colore</span><div class="fcol"><span class="cpick" role="group" aria-label="Colori">' + F_COLORS.map(function (c) {
+        return '<button class="cp" data-a="f-col" data-v="' + c[0] + '" aria-pressed="' + (f.colors.indexOf(c[0]) >= 0) + '" aria-label="' + c[1] + '" title="' + c[1] + '"><img src="mana/' + c[0].toLowerCase() + '.svg" alt="" width="26" height="26" draggable="false"></button>';
+      }).join('') + '</span><span class="seg" role="group" aria-label="Come contare i colori">' + seg('any', 'Include') + seg('exact', 'Esattamente') + seg('max', 'Al massimo') + '</span></div></div>' +
+      '<div class="fgrp"><span class="lbl-t">Tipo</span><div class="chips">' + F_TYPES.map(function (t) { return fchip('f-type', t[0], t[1], f.types.indexOf(t[0]) >= 0); }).join('') + '</div></div>' +
+      '<div class="fgrp"><span class="lbl-t">Costo di mana</span><div class="chips">' + F_COSTS.map(function (c) { return fchip('f-cost', c, c, f.cost.indexOf(c) >= 0); }).join('') + '</div></div>' +
+      '<div class="fgrp"><span class="lbl-t">Rarità</span><div class="chips">' + F_RARS.map(function (r) { return fchip('f-rar', r[0], r[1], f.rar.indexOf(r[0]) >= 0); }).join('') + '</div></div>' +
+      '<label class="lbl">Testo della carta<input class="input" data-c="f-text" type="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ad esempio: draw a card" value="' + esc(f.text) + '"></label>' +
+      '<div class="row-sel"><label class="lbl">Mazzo<select class="select" data-c="fdeck">' + opt('', 'Tutti i mazzi', ui.fdeck) + state.decks.map(function (d) { return opt(d.id, d.name, ui.fdeck); }).join('') + '</select></label>' +
+      '<label class="lbl">Collezione<select class="select" data-c="fset">' + opt('', 'Tutte', ui.fset) + Object.keys(sets).sort().map(function (x) { return opt(x, x, ui.fset); }).join('') + '</select></label>' +
+      '<label class="lbl">Ordina per<select class="select" data-c="sort">' + opt('name', 'Nome', ui.sort) + opt('owned', 'Più copie', ui.sort) + opt('free', 'Più libere', ui.sort) + opt('cmc', 'Costo di mana', ui.sort) + opt('price', 'Prezzo (più alto)', ui.sort) + '</select></label></div>' +
+      '<label class="check"><input type="checkbox" data-c="nobasic"' + (ui.nobasic ? ' checked' : '') + '> Nascondi terre base</label>' +
+      '<div class="advf-foot"><button class="btn small" data-a="f-clear">Azzera i filtri</button><button class="btn small ghost" data-a="f-help" aria-expanded="' + ui.help + '">Sintassi Scryfall</button></div>' +
+      (ui.help ? '<div class="syn"><p>Nella barra di ricerca puoi scrivere come su Scryfall: più condizioni insieme valgono tutte, <code>or</code> ne accetta una qualsiasi, <code>-</code> esclude, le parentesi raggruppano. Chiavi utili: <code>t:</code> tipo, <code>o:</code> testo, <code>c:</code> colori, <code>id:</code> identità, <code>mv</code> costo, <code>r:</code> rarità, <code>pow</code> <code>tou</code>, <code>kw:</code> abilità, <code>m:</code> simboli di mana, <code>produces:</code>, <code>eur</code> prezzo, <code>set:</code>. Tocca un esempio per provarlo:</p><ul>' + ex + '</ul></div>' : '') +
+      '</section>';
+  }
+  /* Le carte che i filtri attuali non possono ancora valutare perché mancano i loro dati. */
+  function needsCardData() {
+    var cq = compiledQuery();
+    return (cq && cq.needsData) || ui.sort === 'cmc' || ui.sort === 'price';
+  }
+  function missingData(A) {
+    var c = CARDS.get(); if (!c) return [];
+    return A.list.filter(function (e) { return !c.known(e.name, e.pset, e.pcn) && !c.known(e.name, '', ''); });
+  }
+  function entryPrints(e) {
+    var c = CARDS.get(), seen = {}, out = [];
+    e.rows.forEach(function (r) {
+      var k = r.set + '|' + r.cn; if (seen[k]) return; seen[k] = 1;
+      var rec = r.set && c ? c.rec(e.name, r.set, r.cn) : null;
+      out.push({ set: r.set, cn: r.cn, p: rec ? window.CPACards.unitPrice(rec) : undefined });
+    });
+    return out.length ? out : [null];
+  }
+  function entryPrice(e) {
+    var c = CARDS.get(); if (!c) return null;
+    var rec = (e.pset && c.rec(e.name, e.pset, e.pcn)) || c.any(e.name);
+    return rec ? window.CPACards.unitPrice(rec) : null;
+  }
+
   /* ---------- Archivio ---------- */
-  function archiveFiltered(A) {
-    var q = C.searchNorm(ui.q);
+  function archiveFiltered(A, stat) {
+    var cq = compiledQuery(), q = C.searchNorm(ui.q), pend = 0;
+    var useAdv = !!(cq && cq.ok && !cq.empty);
     var l = A.list.filter(function (e) {
-      if (q && C.searchNorm(e.name).indexOf(q) < 0) return false;
+      if (useAdv) {
+        var rec = cardRec(e.name), pr = entryPrints(e), v = false, unk = false;
+        for (var i = 0; i < pr.length; i++) { var x = cq.test(e.name, rec, pr[i]); if (x === true) { v = true; break; } if (x === null) unk = true; }
+        if (!v) { if (unk) pend++; return false; }
+      } else if ((!cq || !cq.ok) && q && C.searchNorm(e.name).indexOf(q) < 0) return false;
       if (ui.st === 'avail' && !(e.free > 0)) return false;
       if (ui.st === 'busy' && e.free !== 0) return false;
       if (ui.st === 'part' && e.status !== 'part') return false;
@@ -863,8 +991,11 @@
       if (ui.nobasic && e.basic) return false;
       return true;
     });
+    if (stat) stat.pending = pend;
     if (ui.sort === 'owned') l.sort(function (a, b) { return b.owned - a.owned || byName(a, b); });
     if (ui.sort === 'free') l.sort(function (a, b) { return b.free - a.free || byName(a, b); });
+    if (ui.sort === 'cmc') l.sort(function (a, b) { var ra = cardRec(a.name), rb = cardRec(b.name); return (ra ? ra.v : 99) - (rb ? rb.v : 99) || byName(a, b); });
+    if (ui.sort === 'price') l.sort(function (a, b) { var pa = entryPrice(a), pb = entryPrice(b); return (pb == null ? -1 : pb) - (pa == null ? -1 : pa) || byName(a, b); });
     return l;
   }
   function meter(e) {
@@ -876,13 +1007,17 @@
     return '<span class="meter bar" role="img" aria-label="' + label + '">' +
       (e.occupied ? '<i class="u" style="flex:' + e.occupied + '"></i>' : '') + (e.free ? '<i style="flex:' + e.free + '"></i>' : '') + '</span>';
   }
+  function typeLine(e) {
+    var r = cardRec(e.name);
+    return r && r.t ? '<span class="ty"><span class="tl">' + esc(r.t.split(' // ')[0]) + '</span>' + manaHtml(r.mc) + '</span>' : '';
+  }
   function itemHtml(e) {
     var open = !!ui.open[e.key];
     var isCmd = state.decks.some(function (d) { return d.commander && C.keyOf(d.commander) === e.key; });
     var tags = (isCmd ? '<span class="tag cmd">commander</span>' : '') + (e.basic ? '<span class="tag">terra base</span>' : '') +
       e.sets.map(function (s) { return '<span class="tag">' + esc(s) + '</span>'; }).join('');
     return '<li class="item s-' + e.status + '"><button class="item-main" data-a="toggle-card" data-k="' + esc(e.key) + '" aria-expanded="' + open + '">' +
-      '<span class="ttl">' + IMG.thumb(e.name, e.pset, e.pcn) + '<span class="ttx"><span class="nm">' + esc(e.name) + '</span>' + (tags ? '<span class="tags">' + tags + '</span>' : '') + '</span></span>' +
+      '<span class="ttl">' + IMG.thumb(e.name, e.pset, e.pcn) + '<span class="ttx"><span class="nm">' + esc(e.name) + '</span>' + typeLine(e) + (tags ? '<span class="tags">' + tags + '</span>' : '') + '</span></span>' +
       '<span class="cnt"><b>' + e.free + '</b><small>libere su ' + e.owned + '</small></span>' + meter(e) + '</button>' +
       (open ? cardDetail(e) : '') + '</li>';
   }
@@ -902,23 +1037,311 @@
     var chip = function (v, label, n) { return '<button class="chip" data-a="st" data-v="' + v + '" aria-pressed="' + (ui.st === v) + '">' + label + '<i>' + n + '</i></button>'; };
     var opt = function (v, label, cur) { return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>'; };
     return '<header class="vh"><h1>Archivio</h1><p class="sub"><b>' + s.unique + '</b> carte diverse · <b>' + s.owned + '</b> copie · <b>' + s.occupied + '</b> in uso · <b>' + s.free + '</b> libere · <b>' + s.activeDecks + '</b> su ' + s.decks + ' mazzi attivi</p></header>' +
-      '<div class="sticky"><div class="search">' + IC.search + '<input class="input" id="q" data-c="q" type="search" inputmode="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Cerca una carta nel tuo archivio" aria-label="Cerca una carta" value="' + esc(ui.q) + '"></div>' +
-      '<div class="chips" role="group" aria-label="Disponibilità">' + chip('all', 'Tutte', s.unique) + chip('avail', 'Con copie libere', s.avail) + chip('busy', 'Tutte occupate', s.busy) + chip('part', 'Parziali', s.part) + '</div>' +
-      '<div class="row-sel"><label class="lbl">Mazzo<select class="select" data-c="fdeck">' + opt('', 'Tutti i mazzi', ui.fdeck) + state.decks.map(function (d) { return opt(d.id, d.name, ui.fdeck); }).join('') + '</select></label>' +
-      '<label class="lbl">Collezione<select class="select" data-c="fset">' + opt('', 'Tutte', ui.fset) + Object.keys(sets).sort().map(function (x) { return opt(x, x, ui.fset); }).join('') + '</select></label>' +
-      '<label class="lbl">Ordina<select class="select" data-c="sort">' + opt('name', 'Nome', ui.sort) + opt('owned', 'Più copie', ui.sort) + opt('free', 'Più libere', ui.sort) + '</select></label></div>' +
-      '<label class="check"><input type="checkbox" data-c="nobasic"' + (ui.nobasic ? ' checked' : '') + '> Nascondi terre base</label></div>' +
+      '<div class="sticky"><div class="srow"><div class="search">' + IC.search + '<input class="input" id="q" data-c="q" type="search" inputmode="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Cerca per nome o con la sintassi Scryfall" aria-label="Cerca una carta" value="' + esc(ui.q) + '"></div>' +
+      '<button class="btn fbtn" data-a="adv" aria-expanded="' + ui.adv + '" aria-controls="advf">' + IC.filter + '<span>Filtri</span><i id="fcount"' + (filterCount() ? '' : ' hidden') + '>' + filterCount() + '</i></button></div>' +
+      '<p class="qmsg" id="qmsg" role="status" hidden></p>' +
+      '<div class="chips" role="group" aria-label="Disponibilità">' + chip('all', 'Tutte', s.unique) + chip('avail', 'Con copie libere', s.avail) + chip('busy', 'Tutte occupate', s.busy) + chip('part', 'Parziali', s.part) + '</div></div>' +
+      advHtml() +
+      '<div class="adata" id="adata" hidden></div>' +
       '<p class="count" id="acount" aria-live="polite"></p><ul class="list" id="alist"></ul><div class="more" id="amore"></div>' +
       '<details class="how"><summary>Come conto le carte</summary><p><b>Possedute</b>: tutte le copie presenti nelle liste che hai inserito (mazzi e carte sciolte). <b>In uso</b>: le copie nei mazzi segnati come attivi. <b>Libere</b>: possedute meno in uso, cioè le carte dei mazzi smontati e delle carte sciolte. Se la stessa carta compare in due mazzi, sono due copie. Le terre base possono essere considerate sempre disponibili nelle impostazioni.</p></details>';
   }
   function updateArchiveList() {
     var list = $('#alist'); if (!list) return;
-    var A = getArchive(), f = archiveFiltered(A), shown = f.slice(0, ui.limit);
+    var A = getArchive(), stat = {}, f = archiveFiltered(A, stat), shown = f.slice(0, ui.limit);
+    var cq = compiledQuery();
+    var msg = $('#qmsg');
+    if (msg) { msg.hidden = !(cq && !cq.ok && ui.q.trim()); msg.textContent = cq && !cq.ok ? cq.error + ' Controllo il nome finché non è corretta.' : ''; }
+    var fc = $('#fcount'); if (fc) { var n = filterCount(); fc.hidden = !n; fc.textContent = n; }
     $('#acount').textContent = f.length === A.list.length ? plural(f.length, 'carta', 'carte') : plural(f.length, 'carta trovata', 'carte trovate') + ' su ' + A.list.length;
     list.innerHTML = shown.length ? shown.map(itemHtml).join('') :
       '<li class="empty"><p>Nessuna carta corrisponde ai filtri. Se non è in nessuna lista che hai importato, non è nel tuo archivio.</p></li>';
     $('#amore').innerHTML = f.length > shown.length ? '<button class="btn" data-a="more">Mostra altre ' + Math.min(150, f.length - shown.length) + '</button>' : '';
     IMG.hydrate();
+    updateArchiveData(A, stat);
+  }
+  /* Riga di stato sotto la ricerca: dati in arrivo, errore, o carte ancora senza dati. */
+  function updateArchiveData(A, stat) {
+    var el = $('#adata'); if (!el) return;
+    var need = needsCardData();
+    var miss = need ? missingData(A) : [], st = CARDS.st, html = '';
+    if (need && !CARDS.enabled()) html = '<p class="hint">I filtri su tipo, colore, costo e prezzo usano i dati di Scryfall, che qui non sono raggiungibili: restano attivi solo nome e collezione.</p>';
+    else if (st.busy && st.what === 'archive') html = '<p class="hint"><span class="spin" aria-hidden="true"></span> Scarico i dati delle carte da Scryfall: <b>' + st.done + '</b> su ' + st.total + '. La prima volta ci vuole un momento, poi restano sul dispositivo.</p>';
+    else if (st.err && need) html = '<p class="err">' + esc(st.err) + ' <button class="link" data-a="f-load">Riprova</button></p>';
+    else if (need && miss.length) html = '<p class="hint">Per questo filtro mi servono i dati di ' + plural(miss.length, 'carta', 'carte') + '. <button class="link" data-a="f-load">Scaricali ora</button></p>';
+    else if (need && stat && stat.pending) html = '<p class="hint">' + plural(stat.pending, 'carta non ha', 'carte non hanno') + ' dati su Scryfall e non può comparire in questa ricerca.</p>';
+    el.hidden = !html; el.innerHTML = html;
+    if (need && miss.length && !st.busy && !st.err && CARDS.enabled()) loadArchiveData(A);
+  }
+  function loadArchiveData(A) {
+    var c = CARDS.get(); if (!c) return;
+    var entries = missingData(A).map(function (e) { return { name: e.name, set: e.pset, cn: e.pcn }; });
+    if (!entries.length) return;
+    CARDS.run('archive', function (prog) { return c.ensure(entries, {}, prog); });
+  }
+
+  /* ---------- Prezzi (euro, Cardmarket via Scryfall) ---------- */
+  function eurF(x) { return window.CPACards ? window.CPACards.eur(x) : String(x); }
+  /* force: l'utente ha chiesto di aggiornare. Se le stampe economiche erano già calcolate si rinnovano anche quelle (se vecchie). */
+  function loadPrices(decks, force) {
+    var c = CARDS.get(); if (!c) return;
+    var entries = []; decks.forEach(function (d) { entries = entries.concat(c.pricedCards(d, C.isBasic)); });
+    var names = entries.map(function (x) { return x.name; });
+    CARDS.run('prices', function (prog) {
+      return c.ensure(entries, { force: !!force }, prog).then(function () {
+        return force && names.length && names.every(function (nm) { return c.hasCheapest(nm); }) ? c.ensureCheapest(names, { fresh: true }, prog) : null;
+      });
+    });
+  }
+  function loadCheap(decks, fresh) {
+    var c = CARDS.get(); if (!c) return; var names = [];
+    decks.forEach(function (d) { c.pricedCards(d, C.isBasic).forEach(function (x) { names.push(x.name); }); });
+    CARDS.run('cheap', function (prog) { return c.ensureCheapest(names, { fresh: !!fresh }, prog); });
+  }
+  function progLine(what) {
+    var st = CARDS.st, label = what === 'cheap' ? 'Cerco la stampa più economica di ogni carta' : 'Scarico i prezzi da Scryfall';
+    return '<span class="spin" aria-hidden="true"></span> ' + label + (st.total ? ': <b>' + st.done + '</b> su ' + st.total : '…');
+  }
+  function errLine() { return '<p class="err">' + esc(CARDS.st.err) + '</p>'; }
+  function priceRow(x, d) {
+    return '<div class="prow">' + IMG.thumb(x.name, x.set, x.cn, d.id) + '<span class="nm">' + esc(x.name) + (x.set ? ' <span class="tag">' + esc(x.set) + (x.cn ? ' ' + esc(x.cn) : '') + '</span>' : '') + '</span>' +
+      '<span class="pu">' + (x.unit != null ? (x.qty > 1 ? x.qty + ' × ' + eurF(x.unit) : eurF(x.unit)) : '<em>senza prezzo</em>') + '</span><b class="pl">' + (x.line != null ? eurF(x.line) : '—') + '</b>' +
+      (x.save > 0.004 ? '<span class="pa">Più economica: <b>' + esc(x.cheapSet.toUpperCase()) + ' ' + esc(x.cheapCn) + '</b> · ' + eurF(x.cheapUnit) + ' <i>−' + eurF(x.save) + '</i></span>' : '') + '</div>';
+  }
+  function pricesHtml(d) {
+    var c = CARDS.get(), st = CARDS.st;
+    if (!c || !CARDS.enabled()) return '<p class="hint">I prezzi arrivano da Scryfall, che qui non è raggiungibile. Li trovi nell\'app per Windows, nell\'APK e nella versione web installata.</p>';
+    var v = c.valueDeck(d, C.isBasic);
+    if (!v.cards.length) return '<p class="hint">In questo mazzo ci sono solo terre base o carte tue del Designer: non c\'è nulla da valutare.</p>';
+    if (!v.ready) return st.err ? errLine() + '<div class="btns"><button class="btn" data-a="p-fresh">Riprova</button></div>' : '<p class="hint">' + progLine('prices') + '</p>';
+    var diff = v.total - v.cheapTotal, pct = v.total > 0 ? Math.round(diff / v.total * 100) : 0;
+    var cheapBusy = st.busy && st.what === 'cheap';
+    var tile2 = v.cheapComplete
+      ? '<b>' + eurF(v.cheapTotal) + '</b><span>' + (diff > 0.004 ? 'meno ' + eurF(diff) + ' (−' + pct + '%)' : 'hai già le stampe più economiche') + '</span>'
+      : cheapBusy ? '<b>…</b><span>' + progLine('cheap') + '</span>'
+        : '<b>—</b><span><button class="link" data-a="p-cheap">Calcola</button> la stampa più economica di ogni carta</span>';
+    var printed = C.isPrinted(d);
+    var rows = v.cards.slice().sort(function (a, b) { return (b.line || 0) - (a.line || 0) || byName(a, b); });
+    var shownRows = ui.pAll ? rows : rows.slice(0, 12);
+    var notes = [];
+    if (v.skipped.basic) notes.push(plural(v.skipped.basic, 'terra base esclusa', 'terre base escluse'));
+    if (v.skipped.design) notes.push(plural(v.skipped.design, 'carta del Designer esclusa', 'carte del Designer escluse'));
+    if (v.missing.length) notes.push(plural(v.missing.length, 'carta senza prezzo', 'carte senza prezzo') + ' non conteggiata');
+    var when = c.newest() ? new Date(c.newest()).toLocaleDateString('it-IT', { day: 'numeric', month: 'long' }) : '';
+    return '<div class="ptiles"><div class="ptile real"><small>Costo se fosse reale</small><b>' + eurF(v.total) + '</b><span>con le stampe del mazzo · ' + plural(v.qty, 'carta', 'carte') + '</span></div>' +
+      '<div class="ptile cheap"><small>Con le stampe più economiche</small>' + tile2 + '</div></div>' +
+      '<p class="psave"><b class="bang">Codighel!</b> ' + (printed ? 'Stampando questo mazzo invece di comprarlo hai risparmiato' : 'Quando lo stampi, invece di comprarlo, risparmi') + ' <b>' + eurF(v.total) + '</b>.</p>' +
+      '<div class="plist">' + shownRows.map(function (x) { return priceRow(x, d); }).join('') + '</div>' +
+      (rows.length > 12 ? '<div class="btns"><button class="btn small" data-a="p-all">' + (ui.pAll ? 'Mostra solo le più care' : 'Mostra tutte le ' + rows.length + ' carte') + '</button></div>' : '') +
+      '<p class="hint pnote">Prezzi in euro di Cardmarket, tramite Scryfall' + (when ? ', aggiornati al ' + when : '') + '. Contano le stampe senza foil.' + (notes.length ? ' ' + notes.join(' · ') + '.' : '') + '</p>' +
+      (st.err ? errLine() : '') +
+      '<div class="btns"><button class="btn small" data-a="p-fresh"' + (st.busy ? ' disabled' : '') + '>Aggiorna i prezzi</button></div>';
+  }
+  function renderPrices() {
+    var el = $('#prices'), d = getDeck(); if (!el || !d) return;
+    el.innerHTML = pricesHtml(d);
+    var c = CARDS.get();
+    if (c && CARDS.enabled() && !CARDS.st.busy && !CARDS.st.err) {
+      var v = c.valueDeck(d, C.isBasic);
+      if (!v.ready && v.cards.length) loadPrices([d]);
+    }
+    IMG.hydrate();
+  }
+  function savingHtml() {
+    var c = CARDS.get(), st = CARDS.st;
+    if (!c || !CARDS.enabled()) return '';
+    var printed = state.decks.filter(C.isPrinted);
+    if (!printed.length) return '';
+    var qty = 0, total = 0, cheap = 0, ready = true, cheapOk = true, ndeck = 0;
+    printed.forEach(function (d) {
+      var v = c.valueDeck(d, C.isBasic); qty += sum(d.cards);
+      if (!v.ready) ready = false;
+      total += v.total; cheap += v.cheapTotal; if (!v.cheapComplete && v.cards.length) cheapOk = false;
+      ndeck++;
+    });
+    var head = '<h2><b class="bang">Codighel!</b> Ma questo risparmio è crazy!</h2>';
+    var busy = st.busy && (st.what === 'prices' || st.what === 'cheap');
+    var body;
+    if (busy) body = '<p class="hint">' + progLine(st.what) + '</p>';
+    else if (!ready) body = '<p class="sub">Quanto varrebbero le carte che hai stampato? Lo calcolo con i prezzi di Scryfall.</p>' + (st.err ? errLine() : '') + '<div class="btns"><button class="btn primary" data-a="s-calc">Calcola il risparmio</button></div>';
+    else body = '<p class="sub"><b class="big">' + eurF(total) + '</b> è il valore delle <b>' + plural(qty, 'carta', 'carte') + '</b> che hai stampato in <b>' + plural(ndeck, 'mazzo', 'mazzi') + '</b>: tanto avresti speso comprandole.</p>' +
+      (cheapOk ? '<p class="sub">Con la stampa più economica di ogni carta sarebbero <b>' + eurF(cheap) + '</b>.</p>' : '') +
+      (st.err ? errLine() : '') +
+      '<div class="btns">' + (cheapOk ? '' : '<button class="btn small" data-a="s-cheap">Calcola con le stampe economiche</button>') + '<button class="btn small" data-a="s-fresh">Aggiorna i prezzi</button></div>';
+    return '<section class="saving" id="saving">' + head + body + '</section>';
+  }
+  function repaintPrices() {
+    if (ui.view === 'deck' && ui.deckTab === 'prices') renderPrices();
+    else if (ui.view === 'decks') {
+      var el = $('#saving'); if (el) el.outerHTML = savingHtml();
+      var dl = $('#declist'); if (dl) dl.innerHTML = state.decks.filter(function (d) { return d.kind === 'deck'; }).map(deckCard).join('');
+    }
+  }
+
+  /* ---------- Sincronizzazione (Dropbox, Google Drive) ---------- */
+  /* La logica sta in sync.js. Qui: rete (Electron, Android o browser), stato salvato sul dispositivo,
+     avvio automatico, e il pannello nella scheda Dati. I token restano in questo dispositivo e non finiscono nei backup. */
+  function httpReq(req) {
+    var cap = window.Capacitor, nat = cap && cap.Plugins && cap.Plugins.CapacitorHttp;
+    function lower(h) { var o = {}; Object.keys(h || {}).forEach(function (k) { o[k.toLowerCase()] = h[k]; }); return o; }
+    if (window.cpaNet && window.cpaNet.http) {
+      return window.cpaNet.http(req).then(function (r) { if (!r || !r.status) throw new Error((r && r.error) || 'rete'); return { status: r.status, text: r.text || '', headers: lower(r.headers) }; });
+    }
+    if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform() && nat) {
+      var h = Object.assign({}, req.headers || {});
+      if (req.form) h['Content-Type'] = 'application/x-www-form-urlencoded';
+      return nat.request({ url: req.url, method: req.method || 'GET', headers: h, data: req.form || req.body, responseType: 'text' }).then(function (r) {
+        return { status: r.status, text: typeof r.data === 'string' ? r.data : JSON.stringify(r.data), headers: lower(r.headers) };
+      });
+    }
+    var headers = Object.assign({}, req.headers || {}), body = req.body;
+    if (req.form) { headers['Content-Type'] = 'application/x-www-form-urlencoded'; body = Object.keys(req.form).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(req.form[k]); }).join('&'); }
+    return fetch(req.url, { method: req.method || 'GET', headers: headers, body: body }).then(function (r) {
+      return r.text().then(function (t) { var hh = {}; r.headers.forEach(function (v, k) { hh[k.toLowerCase()] = v; }); return { status: r.status, text: t, headers: hh }; });
+    });
+  }
+  var SYNC = (function () {
+    var LS = 'cpa:sync:v1', inst = null, mem = null, timer = null, pollT = null, running = false, quiet = false, lastTry = 0;
+    var view = { busy: false, msg: '', err: '', step: '', url: '', code: '', until: 0 };
+    function ready() { return !!window.CPASync && !!store && store.kind !== 'claude'; }
+    function lsGet() { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch (e) { return {}; } }
+    function lsSet(v) { try { localStorage.setItem(LS, JSON.stringify(v)); } catch (e) { /* ignorato */ } }
+    function device() { var cap = window.Capacitor; return window.cpaNet ? 'Windows' : cap && cap.isNativePlatform && cap.isNativePlatform() ? 'Android' : 'Web'; }
+    function get() {
+      if (!inst && ready()) {
+        inst = window.CPASync.create({ http: httpReq, store: { get: function () { return mem || (mem = lsGet()); }, set: function (v) { mem = v; lsSet(v); } }, config: window.CPA_SYNC || {}, device: device() });
+      }
+      return inst;
+    }
+    function sigNow() { return JSON.stringify([state.decks.map(function (d) { return d.id + ':' + d.updatedAt; }), state.settings.basicsUnlimited, state.settings.images]); }
+    var ctx = {
+      local: function () { return { decks: state.decks, settings: state.settings }; },
+      signature: sigNow,
+      apply: function (m) {
+        var prevIds = state.decks.map(function (d) { return d.id; });
+        state.decks = m.decks.map(C.sanitizeDeck);
+        state.settings.basicsUnlimited = m.settings.basicsUnlimited; state.settings.images = m.settings.images;
+        state.decks.forEach(function (d) { sigs[d.id] = sigOf(d); });
+        quiet = true; persistAll(prevIds); quiet = false;
+      }
+    };
+    function repaint() { var el = $('#syncp'); if (el) el.outerHTML = syncHtml(); }
+    function who(p) { return p === 'dropbox' ? 'Dropbox' : 'Google Drive'; }
+    function errText(e) {
+      var p = who(get() && get().linked() || (view.step.indexOf('google') === 0 ? 'google' : 'dropbox'));
+      if (!e) return '';
+      if (e.code === 'net') return 'Non riesco a raggiungere ' + p + '. Controlla la connessione' + (p === 'Google Drive' && !window.cpaNet && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ? ' (il collegamento a Google Drive funziona solo nelle app per Windows e Android)' : '') + '.';
+      if (e.code === 'auth') return 'Il collegamento con ' + p + ' è scaduto: scollega e ricollega l\'account.';
+      return e.message || 'Errore di sincronizzazione.';
+    }
+    function summary(r) {
+      var parts = [];
+      if (r.added.length) parts.push(plural(r.added.length, 'mazzo nuovo', 'mazzi nuovi'));
+      if (r.updated.length) parts.push(plural(r.updated.length, 'mazzo aggiornato', 'mazzi aggiornati'));
+      if (r.removed.length) parts.push(plural(r.removed.length, 'mazzo eliminato', 'mazzi eliminati'));
+      if (r.settings) parts.push('impostazioni aggiornate');
+      return parts.length ? 'Sincronizzato: ' + parts.join(', ') + '.' : 'Tutto già sincronizzato.';
+    }
+    function run(manual) {
+      var s = get(); if (!s || !s.linked() || running) return;
+      running = true; view.busy = true; view.err = ''; lastTry = Date.now(); repaint();
+      s.sync(ctx).then(function (r) {
+        running = false; view.busy = false;
+        if (r.again) { queue(2500); repaint(); return; }
+        view.msg = summary(r);
+        if (r.added.length || r.updated.length || r.removed.length || r.settings) { archCache = null; render(); toast(view.msg); }
+        else if (manual) toast(view.msg);
+        repaint();
+      }, function (e) {
+        running = false; view.busy = false; view.err = errText(e);
+        if (manual || (e && e.code === 'auth')) toast(view.err, null, true);
+        repaint();
+      });
+    }
+    function autoOn() { var s = get(); return !!s && s.linked() && s.state().auto !== false; }
+    function queue(ms) {
+      if (quiet || !autoOn()) return;
+      clearTimeout(timer); timer = setTimeout(function () { run(false); }, ms || window.CPA_SYNC_DELAY || 12000);
+    }
+    function start() {
+      if (!autoOn()) return;
+      setTimeout(function () { run(false); }, 1500);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden && autoOn() && Date.now() - lastTry > 90000) run(false); });
+      window.addEventListener('online', function () { if (autoOn()) run(false); });
+    }
+    function pollStep() {
+      clearTimeout(pollT);
+      if (view.step !== 'google-code') return;
+      pollT = setTimeout(function () {
+        get().googlePoll().then(function (r) {
+          if (r === 'done') { view.step = ''; view.err = ''; toast('Google Drive collegato.'); repaint(); run(true); }
+          else pollStep();
+        }, function (e) { view.step = ''; view.err = errText(e); repaint(); });
+      }, Math.max(3, view.interval || 5) * 1000 * (window.CPA_POLL_SCALE || 1));
+    }
+    return {
+      view: view, get: get, ready: ready, run: run, queue: queue, start: start, who: who,
+      dropboxStart: function () {
+        try { view.url = get().dropboxStart().url; view.step = 'dropbox-code'; view.err = ''; } catch (e) { view.err = errText(e); }
+        repaint();
+      },
+      dropboxFinish: function (code) {
+        view.busy = true; view.err = ''; repaint();
+        get().dropboxFinish(code).then(function () { view.busy = false; view.step = ''; toast('Dropbox collegato.'); repaint(); run(true); }, function (e) { view.busy = false; view.err = errText(e); repaint(); });
+      },
+      googleStart: function () {
+        view.busy = true; view.err = ''; repaint();
+        get().googleStart().then(function (r) {
+          view.busy = false; view.step = 'google-code'; view.code = r.userCode; view.url = r.url; view.interval = r.interval; repaint(); pollStep();
+        }, function (e) { view.busy = false; view.err = errText(e); repaint(); });
+      },
+      cancel: function () { clearTimeout(pollT); view.step = ''; view.err = ''; repaint(); },
+      unlink: function () { clearTimeout(pollT); clearTimeout(timer); if (get()) get().unlink(); view.step = ''; view.msg = ''; view.err = ''; toast('Sincronizzazione scollegata. I dati su questo dispositivo restano.'); repaint(); },
+      setAuto: function (on) { var st = get().state(); st.auto = on; lsSet(st); if (on) queue(500); }
+    };
+  })();
+  function whenText(ts) {
+    if (!ts) return 'mai';
+    var d = new Date(ts), t = new Date(), same = d.toDateString() === t.toDateString();
+    return (same ? 'oggi' : d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' })) + ' alle ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  }
+  function syncHtml() {
+    var S = SYNC.get(), v = SYNC.view;
+    if (!S) return '<span id="syncp" hidden></span>';
+    var linked = S.linked(), st = S.state();
+    var head = '<h2 class="sect" style="margin:0">Sincronizzazione</h2>';
+    var msg = (v.err ? '<p class="err" role="alert">' + esc(v.err) + '</p>' : v.msg && linked ? '<p class="hint" role="status">' + esc(v.msg) + '</p>' : '');
+    if (linked) {
+      return '<section class="panel" id="syncp">' + head +
+        '<p class="sub"><b>Collegato a ' + esc(SYNC.who(linked)) + '</b> · ultima sincronizzazione: ' + esc(whenText(st.lastSync)) + '</p>' +
+        '<label class="switch"><input type="checkbox" data-c="sync-auto"' + (st.auto !== false ? ' checked' : '') + '><span class="tr"></span><span>Sincronizza in automatico</span></label>' +
+        '<p class="hint">Mazzi, upgrade, stati, bracket, stampe scelte e impostazioni (tranne il tema) viaggiano tra i tuoi dispositivi. I design del Designer restano su ciascun dispositivo. Un mazzo cancellato qui sparisce anche altrove.</p>' + msg +
+        '<div class="btns"><button class="btn primary" data-a="sync-now"' + (v.busy ? ' disabled' : '') + '>' + (v.busy ? 'Sincronizzo…' : 'Sincronizza ora') + '</button><button class="btn small danger' + (armed('sync-unlink') ? ' armed' : '') + '" data-a="sync-unlink" data-cf="1">' + (armed('sync-unlink') ? 'Conferma: scollega' : 'Scollega') + '</button></div></section>';
+    }
+    var cfgD = S.configured('dropbox'), cfgG = S.configured('google');
+    var body;
+    if (v.step === 'dropbox-code') {
+      body = '<ol class="steps"><li><b>Apri Dropbox</b> e consenti l\'accesso: <a class="btn small" href="' + esc(v.url) + '" target="_blank" rel="noopener noreferrer">Apri Dropbox</a></li>' +
+        '<li><b>Copia il codice</b> che ti mostra e incollalo qui.</li></ol>' +
+        '<div class="srow"><input class="input" data-c="sync-code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Codice di Dropbox" aria-label="Codice di Dropbox"><button class="btn primary" data-a="sync-dbx-ok"' + (v.busy ? ' disabled' : '') + '>Conferma</button></div>' +
+        '<div class="btns"><button class="btn small ghost" data-a="sync-cancel">Annulla</button></div>';
+    } else if (v.step === 'google-code') {
+      body = '<ol class="steps"><li><b>Apri</b> <a href="' + esc(v.url) + '" target="_blank" rel="noopener noreferrer">' + esc(String(v.url).replace(/^https?:\/\//, '')) + '</a> su qualunque dispositivo.</li><li><b>Digita questo codice</b> e consenti l\'accesso:</li></ol>' +
+        '<p class="usercode" aria-label="Codice">' + esc(v.code) + '</p><p class="hint"><span class="spin" aria-hidden="true"></span> Aspetto la tua conferma…</p>' +
+        '<div class="btns"><button class="btn small ghost" data-a="sync-cancel">Annulla</button></div>';
+    } else {
+      body = '<div class="prov"><div class="pcard"><h3>Dropbox</h3><p class="hint">Funziona ovunque, anche nella versione web.</p>' +
+        '<button class="btn primary" data-a="sync-dbx"' + (cfgD ? '' : ' disabled') + '>Collega Dropbox</button></div>' +
+        '<div class="pcard"><h3>Google Drive</h3><p class="hint">Solo nelle app per Windows e Android.</p>' +
+        '<button class="btn primary" data-a="sync-ggl"' + (cfgG && !v.busy ? '' : ' disabled') + '>Collega Google Drive</button></div></div>';
+    }
+    var keys = S.keys();
+    var cfg = (!cfgD || !cfgG) && !v.step ? '<details class="how"' + (!cfgD && !cfgG ? ' open' : '') + '><summary>Prima configurazione</summary><p>Per collegare un servizio serve una chiave dell\'app, che si crea gratis una volta sola (la guida passo passo è nel README). Incollala qui: resta solo su questo dispositivo.</p>' +
+      (cfgD ? '' : '<label class="lbl">Chiave dell\'app Dropbox<input class="input" data-c="sync-key" data-k="dropbox" autocomplete="off" spellcheck="false" value="' + esc(keys.dropbox) + '"></label>') +
+      (cfgG ? '' : '<label class="lbl">ID client Google<input class="input" data-c="sync-key" data-k="googleId" autocomplete="off" spellcheck="false" value="' + esc(keys.googleId) + '"></label><label class="lbl">Segreto client Google<input class="input" data-c="sync-key" data-k="googleSecret" autocomplete="off" spellcheck="false" value="' + esc(keys.googleSecret) + '"></label>') +
+      '</details>' : '';
+    return '<section class="panel" id="syncp">' + head +
+      '<p class="hint">Tieni archivio, mazzi e impostazioni uguali sul PC e sul telefono con il tuo Dropbox o il tuo Google Drive. L\'app salva un solo piccolo file nella sua cartella riservata e non tocca nient\'altro.</p>' + body + msg + cfg + '</section>';
   }
 
   /* ---------- Mazzi ---------- */
@@ -939,7 +1362,9 @@
   function deckCard(d) {
     var on = d.kind === 'deck' && d.active, np = d.kind === 'deck' && C.statusOf(d) === 'unprinted';
     var meta = d.kind === 'deck' ? (d.commander ? 'Commander: ' + esc(d.commander) : 'Nessun commander scelto') : 'Carte sciolte, sempre disponibili';
-    return '<article class="deckcard' + (on ? ' is-on' : np ? ' is-np' : '') + '"><div class="top"><div><h2>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + '</div></div>' +
+    var cc = CARDS.get(), dv = cc && CARDS.enabled() ? cc.valueDeck(d, C.isBasic) : null;
+    var worth = dv && dv.ready && dv.cards.length ? ' · <span class="worth" title="Costo se fosse reale, con le stampe del mazzo">' + eurF(dv.total) + '</span>' : '';
+    return '<article class="deckcard' + (on ? ' is-on' : np ? ' is-np' : '') + '"><div class="top"><div><h2>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + worth + '</div></div>' +
       (d.kind === 'deck' ? switchHtml(d) : '') + '</div><div class="foot"><span>' +
       (d.upgrades.length ? '<span class="pill info">' + plural(d.upgrades.length, 'upgrade', 'upgrade') + '</span>' : '<span class="hint">Nessun upgrade</span>') +
       '</span><span class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="open-deck" data-id="' + esc(d.id) + '">Apri</button></span></div></article>';
@@ -960,7 +1385,8 @@
     var act = ds.filter(function (d) { return d.active; }).length, np = ds.filter(function (d) { return C.statusOf(d) === 'unprinted'; }).length;
     return '<header class="vh"><h1>Mazzi</h1><p class="sub"><b>' + act + '</b> attivi su <b>' + ds.length + '</b>' + (np ? ' · <b>' + np + '</b> da stampare' : '') + '. Un mazzo attivo è montato: le sue carte risultano in uso nell\'archivio.</p></header>' +
       '<div class="btns" style="margin-bottom:12px"><button class="btn primary" data-a="nav" data-v="import">Importa un mazzo</button></div>' +
-      '<div class="list">' + ds.map(deckCard).join('') + '</div>' +
+      savingHtml() +
+      '<div class="list" id="declist">' + ds.map(deckCard).join('') + '</div>' +
       (bs.length ? '<h2 class="sect">Carte sciolte</h2><div class="list">' + bs.map(deckCard).join('') + '</div>' : '');
   }
   function deckView() {
@@ -970,9 +1396,12 @@
       return '<option value="' + esc(c.name) + '"' + (c.name === d.commander ? ' selected' : '') + '>' + esc(c.name) + '</option>';
     }).join('');
     var tabs = '<div class="subtabs"><button class="chip" data-a="deck-tab" data-v="cards" aria-pressed="' + (ui.deckTab === 'cards') + '">Carte (' + sum(d.cards) + ')</button>' +
-      (d.kind === 'deck' ? '<button class="chip" data-a="deck-tab" data-v="ups" aria-pressed="' + (ui.deckTab === 'ups') + '">Upgrade (' + d.upgrades.length + ')</button>' : '') + '</div>';
+      (d.kind === 'deck' ? '<button class="chip" data-a="deck-tab" data-v="ups" aria-pressed="' + (ui.deckTab === 'ups') + '">Upgrade (' + d.upgrades.length + ')</button>' : '') +
+      (CARDS.ready() ? '<button class="chip" data-a="deck-tab" data-v="prices" aria-pressed="' + (ui.deckTab === 'prices') + '">Prezzi</button>' : '') + '</div>';
     var body;
-    if (ui.deckTab === 'ups' && d.kind === 'deck') {
+    if (ui.deckTab === 'prices' && CARDS.ready()) {
+      body = '<div id="prices" class="prices"></div>';
+    } else if (ui.deckTab === 'ups' && d.kind === 'deck') {
       body = '<div class="btns" style="margin-bottom:12px"><button class="btn primary" data-a="new-up">Nuovo upgrade</button></div>' +
         (d.upgrades.length ? '<div class="list">' + d.upgrades.map(function (u) { return upgradeCard(d, u); }).join('') + '</div>' :
           '<div class="empty"><p>Incolla la lista aggiornata di questo mazzo: vedrai cosa esce, cosa entra e quali carte hai già nell\'archivio, così non ristampi doppioni.</p></div>');
@@ -1211,6 +1640,12 @@
     if (state.settings.images === false) return 'Immagini spente: nelle liste vedi solo i nomi.';
     return 'Le miniature arrivano da Scryfall, servono internet la prima volta e restano ricordate sul dispositivo' + (IMG.count() ? ' (' + plural(IMG.count(), 'carta', 'carte') + (IMG.count() === 1 ? ' già salvata)' : ' già salvate)') + '.' : '.') + ' Tocca una miniatura per ingrandirla.';
   }
+  function cardsDataHtml() {
+    var c = CARDS.get(); if (!c || !CARDS.enabled()) return '';
+    var n = c.count();
+    return '<p class="hint">' + (n ? 'Per la ricerca avanzata e i prezzi tengo sul dispositivo i dati di ' + plural(n, 'carta', 'carte') + ' presi da Scryfall (tipo, colori, costo, rarità, testo e prezzo in euro).' : 'Quando usi i filtri o guardi i prezzi, scarico da Scryfall i dati delle carte (tipo, colori, costo, rarità, testo e prezzo in euro) e li tengo sul dispositivo.') + '</p>' +
+      (n ? '<div class="btns"><button class="btn small" data-a="cards-clear">Cancella i dati delle carte</button></div>' : '');
+  }
   function dataView() {
     var armedReset = armed('reset');
     return '<header class="vh"><h1>Dati</h1><p class="sub">' + esc(storageLabel()) + '</p></header>' +
@@ -1220,7 +1655,9 @@
       '<label class="switch"><input type="checkbox" data-c="basics"' + (state.settings.basicsUnlimited ? ' checked' : '') + '><span class="tr"></span><span>Terre base sempre disponibili negli upgrade</span></label>' +
       '<label class="switch"><input type="checkbox" data-c="images"' + (state.settings.images !== false ? ' checked' : '') + '><span class="tr"></span><span>Mostra le immagini delle carte</span></label>' +
       '<p class="hint">' + imagesHint() + '</p>' +
-      (IMG.enabled() && IMG.count() ? '<div class="btns"><button class="btn small" data-a="img-clear">Cancella le immagini salvate</button></div>' : '') + '</section>' +
+      (IMG.enabled() && IMG.count() ? '<div class="btns"><button class="btn small" data-a="img-clear">Cancella le immagini salvate</button></div>' : '') +
+      cardsDataHtml() + '</section>' +
+      syncHtml() +
       '<section class="panel"><h2 class="sect" style="margin:0">Backup</h2><p class="hint">Un file JSON con tutti i mazzi, gli upgrade e le impostazioni.</p>' +
       '<div class="btns"><button class="btn" data-a="dl-json">Scarica backup</button><button class="btn" data-a="copy-json">Copia backup</button></div>' +
       (ui.backupOut ? '<textarea class="textarea out-ta mono" readonly aria-label="Backup">' + esc(ui.backupOut) + '</textarea>' : '') +
@@ -1253,9 +1690,36 @@
       case 'toast-close': hideToast(); break;
       case 'st': ui.st = el.dataset.v; ui.limit = 150; render(); break;
       case 'more': ui.limit += 150; updateArchiveList(); break;
+      case 'adv': ui.adv = !ui.adv; { var pn = $('#advf'); if (pn) pn.hidden = !ui.adv; el.setAttribute('aria-expanded', ui.adv); } break;
+      case 'f-col': {
+        var v = el.dataset.v, cs = ui.f.colors;
+        if (v === 'C') cs = cs.indexOf('C') >= 0 ? '' : 'C';
+        else { cs = cs.replace('C', ''); cs = cs.indexOf(v) >= 0 ? cs.replace(v, '') : cs + v; }
+        ui.f.colors = cs; ui.limit = 150; render(); break;
+      }
+      case 'f-cm': ui.f.cmode = el.dataset.v; ui.limit = 150; render(); break;
+      case 'f-type': toggleIn(ui.f.types, el.dataset.v); ui.limit = 150; render(); break;
+      case 'f-cost': toggleIn(ui.f.cost, el.dataset.v); ui.limit = 150; render(); break;
+      case 'f-rar': toggleIn(ui.f.rar, el.dataset.v); ui.limit = 150; render(); break;
+      case 'f-clear': ui.f = { colors: '', cmode: 'any', types: [], cost: [], rar: [], text: '' }; ui.fdeck = ''; ui.fset = ''; ui.nobasic = false; ui.q = ''; ui.limit = 150; render(); break;
+      case 'f-help': ui.help = !ui.help; render(); break;
+      case 'f-ex': ui.q = el.dataset.v; ui.limit = 150; render(); { var qi = $('#q'); if (qi) qi.focus(); } break;
+      case 'p-all': ui.pAll = !ui.pAll; renderPrices(); break;
+      case 'p-fresh': CARDS.st.err = ''; deck = getDeck(); if (deck) { loadPrices([deck], true); renderPrices(); } break;
+      case 'p-cheap': CARDS.st.err = ''; deck = getDeck(); if (deck) { loadCheap([deck]); renderPrices(); } break;
+      case 's-calc': CARDS.st.err = ''; loadPrices(state.decks.filter(C.isPrinted)); repaintPrices(); break;
+      case 's-cheap': CARDS.st.err = ''; loadCheap(state.decks.filter(C.isPrinted)); repaintPrices(); break;
+      case 's-fresh': CARDS.st.err = ''; loadPrices(state.decks.filter(C.isPrinted), true); repaintPrices(); break;
+      case 'sync-now': SYNC.run(true); break;
+      case 'sync-dbx': SYNC.dropboxStart(); break;
+      case 'sync-dbx-ok': { var sc = $('[data-c="sync-code"]'); if (sc && sc.value.trim()) SYNC.dropboxFinish(sc.value); } break;
+      case 'sync-ggl': SYNC.googleStart(); break;
+      case 'sync-cancel': SYNC.cancel(); break;
+      case 'sync-unlink': confirmThen('sync-unlink', function () { SYNC.unlink(); }); break;
+      case 'f-load': CARDS.st.err = ''; if (ui.view === 'archive') { loadArchiveData(getArchive()); updateArchiveList(); } break;
       case 'toggle-card': ui.open[el.dataset.k] = !ui.open[el.dataset.k]; updateArchiveList(); break;
-      case 'open-deck': ui.view = 'deck'; ui.deckId = id; ui.deckTab = 'cards'; ui.deckQ = ''; window.scrollTo(0, 0); render(); break;
-      case 'deck-tab': ui.deckTab = el.dataset.v; render(); break;
+      case 'open-deck': CARDS.st.err = ''; ui.view = 'deck'; ui.deckId = id; ui.deckTab = 'cards'; ui.deckQ = ''; window.scrollTo(0, 0); render(); break;
+      case 'deck-tab': ui.deckTab = el.dataset.v; CARDS.st.err = ''; render(); break;
       case 'back-deck': ui.view = 'deck'; ui.deckTab = 'ups'; window.scrollTo(0, 0); render(); break;
       case 'del-deck':
         confirmThen('del-deck:' + id, function () {
@@ -1328,6 +1792,7 @@
       case 'upd-go': UPD.start(); break;
       case 'upd-reload': UPD.reload(); break;
       case 'upd-quit': if (window.cpaNet && window.cpaNet.quit) window.cpaNet.quit(); else toast('Chiudi la finestra per uscire.'); break;
+      case 'cards-clear': if (CARDS.get()) CARDS.get().clear().then(function () { toast('Dati delle carte cancellati: li riscarico quando servono.'); render(); }); break;
       case 'img-clear': IMG.clear(); toast('Immagini salvate cancellate: le riscarico quando servono.'); render(); break;
       case 'reset-all':
         confirmThen('reset', function () { mutate('Tutti i dati cancellati.', function () { state.decks = []; }); render(); }); break;
@@ -1357,6 +1822,7 @@
     if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.input(c, e.target); return; }
     if (c.indexOf('dz-') === 0 && window.CPADesigner) { window.CPADesigner.input(c, e.target); return; }
     if (c === 'q') { ui.q = e.target.value; ui.limit = 150; updateArchiveList(); }
+    else if (c === 'f-text') { ui.f.text = e.target.value; ui.limit = 150; updateArchiveList(); }
     else if (c === 'upq') { ui.upQ = e.target.value; updateUpgradeCols(); }
     else if (c === 'deckq') { ui.deckQ = e.target.value; updateDeckList(); }
     else if (c === 'draft-text') ui.draft.text = e.target.value;
@@ -1402,6 +1868,8 @@
         if (t.files && t.files[0]) readFile(t.files[0], function (txt) { ui.restoreText = txt; render(); }); break;
       case 'theme': state.settings.theme = t.value; applyTheme(); touchSettings(); break;
       case 'basics': state.settings.basicsUnlimited = t.checked; touchSettings(); break;
+      case 'sync-auto': SYNC.setAuto(t.checked); break;
+      case 'sync-key': { var kk = {}; kk[t.dataset.k] = t.value; SYNC.get().setKeys(kk); render(); } break;
       case 'images': state.settings.images = t.checked; touchSettings(); render(); break;
     }
   });
@@ -1426,8 +1894,13 @@
     }).then(function (data) {
       state.decks = (data.decks || []).map(C.sanitizeDeck);
       state.settings = C.sanitizeSettings(data.settings);
-      archCache = null; applyTheme(); render();
+      state.decks.forEach(function (d) { sigs[d.id] = sigOf(d); });
+      archCache = null; applyTheme(); render(); SYNC.start();
     }).catch(function () { store = makeMemoryStore(); render(); });
   }
+  CARDS.onRepaint(function () {
+    if (ui.view === 'archive') updateArchiveList();
+    else if (typeof repaintPrices === 'function') repaintPrices();
+  });
   boot();
 })();

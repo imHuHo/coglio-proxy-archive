@@ -1,6 +1,13 @@
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '4.0.0', date: '1 novembre 2026', title: 'Codighel! Ricerca, prezzi e sincronizzazione', items: [
+    { t: 'Ricerca avanzata', d: 'La barra dell\'archivio capisce la sintassi di Scryfall (t:creature c:rg mv<=3 o:"draw" r:mythic, or, -, parentesi, /regex/) e accanto c\'è il pannello Filtri: colori di mana, tipo, costo, rarità e testo, che scrivono la ricerca per te. Mazzo, collezione, disponibilità e ordinamento sono lì dentro; si può ordinare anche per costo di mana e per prezzo.' },
+    { t: 'Prezzi in euro', d: 'Ogni mazzo ha la scheda Prezzi: valore con le stampe che hai scelto (da Cardmarket, via Scryfall), carte più care, e quanto costerebbe se ogni carta avesse la stampa più economica. Nell\'elenco dei mazzi compare il valore, e in cima il banner «Ma questo risparmio è crazy!» con quanto hai risparmiato stampando invece di comprare.' },
+    { t: 'Sincronizzazione Dropbox e Google Drive', d: 'In Dati, Sincronizzazione: collega Dropbox e/o Google Drive e archivio, mazzi e impostazioni restano uguali tra PC e telefono. Le modifiche fatte su due dispositivi si fondono, le cancellazioni viaggiano, e puoi tenerla automatica. I tuoi Designer e il tema restano sul dispositivo. Serve una prima configurazione (la chiave dell\'app): è spiegata nel README.' },
+    { t: 'Dati delle carte sul dispositivo', d: 'Per cercare e per i prezzi l\'app scarica da Scryfall le informazioni delle carte e le tiene sul dispositivo; in Dati puoi cancellarle quando vuoi.' },
+    { t: 'La veste nuova', d: 'Tutto quello che c\'era in 3.4: denim e banana, un colore di mana per sezione, Codighel! adesivo, Botto, mazzi come carte, copie come orbe, font inclusi.' },
+  ] },
   { v: '3.4.0', date: '1 novembre 2026', title: 'Una veste nuova, tutta Coglio', items: [
     { t: 'Denim e banana', d: 'L\'app ha i colori del Coglio: la barra laterale blu notte, il giallo banana per ciò che conta (voce attiva, bracket, Codighel!) e una nuova icona con il suo bel botto.' },
     { t: 'Codighel! ha il suo adesivo', d: 'L\'esclamazione del gruppo compare come un adesivo fumettoso nell\'avviso delle carte già stampate e in quello delle novità.' },

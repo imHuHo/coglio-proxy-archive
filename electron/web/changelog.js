@@ -1,13 +1,57 @@
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '4.0.0', date: '1 novembre 2026', title: 'Codighel! Ricerca, prezzi e sincronizzazione', items: [
+    { t: 'Ricerca avanzata', d: 'La barra dell\'archivio capisce la sintassi di Scryfall (t:creature c:rg mv<=3 o:"draw" r:mythic, or, -, parentesi, /regex/) e accanto c\'è il pannello Filtri: colori di mana, tipo, costo, rarità e testo, che scrivono la ricerca per te. Mazzo, collezione, disponibilità e ordinamento sono lì dentro; si può ordinare anche per costo di mana e per prezzo.' },
+    { t: 'Prezzi in euro', d: 'Ogni mazzo ha la scheda Prezzi: valore con le stampe che hai scelto (da Cardmarket, via Scryfall), carte più care, e quanto costerebbe se ogni carta avesse la stampa più economica. Nell\'elenco dei mazzi compare il valore, e in cima il banner «Ma questo risparmio è crazy!» con quanto hai risparmiato stampando invece di comprare.' },
+    { t: 'Sincronizzazione Dropbox e Google Drive', d: 'In Dati, Sincronizzazione: collega Dropbox e/o Google Drive e archivio, mazzi e impostazioni restano uguali tra PC e telefono. Le modifiche fatte su due dispositivi si fondono, le cancellazioni viaggiano, e puoi tenerla automatica. I tuoi Designer e il tema restano sul dispositivo. Serve una prima configurazione (la chiave dell\'app): è spiegata nel README.' },
+    { t: 'Dati delle carte sul dispositivo', d: 'Per cercare e per i prezzi l\'app scarica da Scryfall le informazioni delle carte e le tiene sul dispositivo; in Dati puoi cancellarle quando vuoi.' },
+    { t: 'La veste nuova', d: 'Tutto quello che c\'era in 3.4: denim e banana, un colore di mana per sezione, Codighel! adesivo, Botto, mazzi come carte, copie come orbe, font inclusi.' },
+  ] },
+  { v: '3.4.0', date: '1 novembre 2026', title: 'Una veste nuova, tutta Coglio', items: [
+    { t: 'Denim e banana', d: 'L\'app ha i colori del Coglio: la barra laterale blu notte, il giallo banana per ciò che conta (voce attiva, bracket, Codighel!) e una nuova icona con il suo bel botto.' },
+    { t: 'Codighel! ha il suo adesivo', d: 'L\'esclamazione del gruppo compare come un adesivo fumettoso nell\'avviso delle carte già stampate e in quello delle novità.' },
+    { t: 'Botto, la mascotte', d: 'Nell\'icona, al posto dell\'arte della carta, c\'è Botto: una goccia gialla che urla Codighel!. È un personaggio tutto nostro.' },
+    { t: 'Un colore di mana per sezione', d: 'Archivio è blu, Mazzi verde, Importa nero, Designer rosso, Stampa bianco, Dati incolore: il simbolo sta davanti al titolo e, grande e sfumato, sullo sfondo. La striscia dei cinque colori accompagna logo e menu; i titoli hanno il carattere delle carte.' },
+    { t: 'Mazzi come carte', d: 'Il segno accanto al nome del mazzo è una carta dritta quando è attivo, girata quando è smontato, tratteggiata se non è ancora stampato.' },
+    { t: 'Copie come orbe di mana', d: 'Nell\'archivio ogni copia è un\'orbe: piena se è libera, vuota se è in uso (si distingue anche senza i colori).' },
+    { t: 'Font inclusi', d: 'I caratteri dell\'app sono dentro l\'app: stesso aspetto anche senza internet.' },
+  ] },
+  { v: '3.3.3', date: '31 ottobre 2026', title: 'Immagini da un link', items: [
+    { t: 'Cambia immagine con un link', d: 'Nel Designer, nella scheda Arte, puoi incollare l\'indirizzo di un\'immagine e premere «Usa link» (o Invio): l\'app la scarica e la usa come arte. Su Windows e Android funziona con quasi tutti i siti; nel browser dipende dal sito.' },
+  ] },
+  { v: '3.3.2', date: '31 ottobre 2026', title: 'La corona giusta per ogni cornice', items: [
+    { t: 'Corona automatica in base alla cornice', d: 'Con le cornici a tutta larghezza (esteso, senza bordo, boxtopper) la corona leggendaria diventa da sola quella fluttuante, senza gambe che scendono sull\'arte. Sulle cornici normali resta quella classica.' },
+    { t: 'Corone fluttuanti per le bifronte', d: 'Le cornici Transform e Modali estese o senza bordo hanno la loro corona fluttuante con il posto per l\'icona di trasformazione. Aggiorna le cornici dal catalogo per averle.' },
+    { t: 'Via la riga sotto il titolo', d: 'Sparito il filo di cornice che restava sotto la corona fluttuante.' },
+  ] },
+  { v: '3.3.1', date: '31 ottobre 2026', title: 'Carte più fedeli a Card Conjurer', items: [
+    { t: 'Simboli del mana di Card Conjurer', d: 'I simboli (numeri, colori, ibridi, phyrexiani, neve, tap) sono quelli di Card Conjurer: numeri più grandi e pesanti, colori più scuri e ombra in basso a sinistra.' },
+    { t: 'Font delle regole giusto', d: 'Il testo delle regole usava una versione più sottile di MPlantin: ora è quella di Card Conjurer, con lo stesso spessore.' },
+    { t: 'Testo e simboli come sulle carte vere', d: 'Con le cornici importate titolo, tipo e regole hanno ora le stesse dimensioni e la stessa interlinea di Card Conjurer, quindi il testo va a capo negli stessi punti. I simboli del mana sono più grandi e il «2» (e gli altri numeri) si legge meglio, anche dentro il testo delle regole.' },
+    { t: 'Corona leggendaria giusta per le bifronte', d: 'Le cornici Transform e Modali hanno la loro corona dedicata, con il posto per l\'icona di trasformazione, e la striscia di cornice sotto la corona non si vede più. Se hai già scaricato quei pacchetti, nel Catalogo cornici trovi il tasto «Aggiorna».' },
+    { t: 'Info in basso come sulle carte stampate', d: 'Numero e rarità sopra, sigla del set e illustratore (con il pennello) sotto.' },
+    { t: 'Catalogo cornici più simpatico', d: 'Il tasto ha ora una vetrina colorata.' },
+  ] },
+  { v: '3.3.0', date: '31 ottobre 2026', title: 'Bicolore e carte bifronte', items: [
+    { t: 'Cornici e corone a due colori', d: 'Nel Designer puoi mescolare due colori nella cornice (e, con le cornici importate, anche nella corona): il secondo compare da destra con una sfumatura, come nei bicolori di Card Conjurer, anche sul riquadro di forza e costituzione. Le carte con costo ibrido, ad esempio {W/U}, lo prendono da sole.' },
+    { t: 'Scegli come mescolare i colori', d: 'Con una carta a due colori scegli tra: normale (dorata), solo la corona a due colori, oppure cornice e corona a due colori. L\'ordine dei colori segue il costo di mana, e puoi sceglierli a mano.' },
+    { t: 'Font delle carte vere', d: 'Titolo, tipo e forza/costituzione ora usano Beleren, il font dei titoli di Magic (prima era Relay); numero di collezione e artista usano Gotham, come sulle carte stampate. Il testo delle regole resta in MPlantin.' },
+    { t: 'Tasto Trasforma', d: 'Ogni design può avere un retro: il tasto «Trasforma» nell\'editor gira la carta e ti fa modificare l\'altra faccia. Importando una carta bifronte da Scryfall (trasformabile o modale) il retro arriva già con testo, arte e cornice del retro. Nel Builder il retro si stampa come retro della carta.' },
+    { t: 'Simbolo del set personalizzato', d: 'Nella scheda Aspetto puoi caricare un tuo simbolo o logo al posto di quello del set (accanto al tipo di carta). Si adatta da solo allo spazio e puoi colorarlo con la rarità, come i veri simboli di espansione.' },
+    { t: 'Editor più pulito', d: 'La creazione delle carte è riorganizzata in quattro schede (Testo, Aspetto, Arte, Mazzo): meno cose a schermo, stesse funzioni. L\'anteprima resta sempre visibile, l\'importazione è una barra compatta e la lista delle stampe si apre solo quando serve.' },
+  ] },
+  { v: '3.2.1', date: '30 ottobre 2026', title: 'Token nel Builder', items: [
+    { t: 'Token del mazzo', d: 'Nel Builder, spuntando «Aggiungi i token», i token collegati alle carte del mazzo compaiono in un elenco a parte, con anteprima, e finiscono nel PDF e nell\'anteprima. Senza doppioni: una copia ciascuno, ma cambi la quantità (0 = non stamparlo) o scegli un\'altra stampa. Valgono anche per le carte con un design del Designer.' },
+  ] },
   { v: '3.1.0', date: '30 ottobre 2026', title: 'Catalogo cornici, cartelle e altro', items: [
     { t: 'Nuove cornici', d: 'Nyx (Theros), Terre M15, Neve (Kaldheim), Devoid (Zendikar) e Miracle: le trovi nel menu «Cornice importata», con scelta automatica sui colori.' },
     { t: 'Catalogo cornici', d: 'Nel Designer c\'è «Catalogo cornici»: 174 pacchetti con 1273 cornici estratte da Card Conjurer (borderless con testo trasparente, extended art, full art, Universes Beyond, showcase, promo, token, planeswalker, saghe, bifronte…). Le aggiungi con un tocco e si scaricano da internet solo quelle che scegli; poi le trovi nel menu «Cornice importata».' },
     { t: 'Planeswalker fedeli', d: 'Con le cornici planeswalker (Magic Set Editor e catalogo) le abilità hanno le fasce chiare e scure alternate, le icone vere di lealtà (+, −, 0) e la casella della lealtà come sulle carte vere; righe e icone seguono il numero di abilità (da 1 a 4) e le versioni «tall».' },
     { t: 'Cornici a colpo d\'occhio', d: 'Nell\'editor le cornici non sono più un menu di testo: c\'è una griglia di anteprime, una per stile, già nel colore della carta. Restano solo le versioni automatiche, che cambiano da sole quando cambi i colori.' },
     { t: 'Costo di mana a pulsanti', d: 'Tocchi bianco, blu, nero, rosso, verde o incolore per aggiungerli; accanto compaiono − e + per regolare quanti. I colori della carta seguono il costo. X, ibridi e phyrexiani si scrivono ancora a mano con «Scrivi il costo a mano».' },
-    { t: 'Scegli la stampa', d: 'Quando parti da una carta esistente, un menu ti fa scegliere la stampa (il set): cambia arte, collezione, numero, rarità, artista e testo di flavour, e il testo della carta resta quello che hai scritto.' },
+    { t: 'Scegli la stampa', d: 'Quando parti da una carta esistente, scegli la stampa (il set) da una galleria di immagini: cambia arte, cornice, collezione, numero, rarità, artista e testo di flavour, e il testo della carta resta quello che hai scritto.' },
+    { t: 'Cornice identica alla carta', d: 'Partendo da una carta (o cambiando stampa) il designer imposta la cornice vera di quella carta: epoca, extended art, borderless, showcase, planeswalker, saga, bifronte e così via, più corona leggendaria, stampo olografico e The List. Se la cornice non è scaricata te lo dice e ti chiede se vuoi scaricarla.' },
     { t: 'Cartelle nel Designer', d: 'Raggruppi i tuoi design in cartelle (per mazzo, per cube, per uso…): le crei, rinomini ed elimini dalla lista, e sposti ogni carta dal suo menu «Cartella». Eliminando una cartella i design restano, senza cartella.' },
     { t: 'Elimina dalla lista', d: 'Ogni design ha il pulsante «Elimina» direttamente nella lista, con una conferma, senza dover entrare nella modifica.' },
     { t: 'Un solo «Nuova carta»', d: 'Tolti «Nuovo token» e «Alter di una carta»: sono già dentro «Nuova carta» (cornice token, e «Parti da una carta esistente»).' },

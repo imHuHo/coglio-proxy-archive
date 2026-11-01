@@ -18,7 +18,13 @@ I colori sono quelli del Coglio (blu denim e giallo banana); i cinque colori del
   Dopo l'importazione scegli il **commander** dalla lista (quello suggerito è già selezionato).
 - **Mazzi attivi / non attivi**: un mazzo attivo è montato, le sue carte risultano *in uso*.
 - **Archivio**: per ogni carta vedi copie possedute, in uso e libere, e in quale mazzo sono.
-  Ricerca per nome, filtri per disponibilità, mazzo e collezione, ordinamento.
+  Ricerca per nome **o con la sintassi di Scryfall** (`t:creature c:rg mv<=3 o:"draw" r:mythic`, `or`, `-`, parentesi, `/regex/`),
+  più un pannello **Filtri** (colori di mana, tipo, costo, rarità, testo, disponibilità, mazzo, collezione) che scrive la ricerca per te.
+  Si ordina anche per costo di mana e per prezzo.
+- **Prezzi (4.0)**: ogni mazzo ha la scheda *Prezzi* con il valore in euro (Cardmarket, via Scryfall) delle stampe che hai scelto,
+  le carte più care e quanto costerebbe il mazzo con la stampa più economica di ogni carta. In cima ai mazzi il banner
+  «Ma questo risparmio è crazy!» mostra quanto hai risparmiato stampando. Terre base e carte del Designer non contano.
+- **Sincronizzazione (4.0)**: archivio, mazzi e impostazioni uguali su PC e telefono tramite Dropbox e/o Google Drive (vedi sotto).
 - **Upgrade di un mazzo**: incolli la lista aggiornata, l'app mostra cosa esce, cosa entra e per ogni carta
   entrante se ce l'hai già libera in un altro mazzo o nella raccolta (niente doppioni da ristampare) oppure è da procurare.
   Dentro l'upgrade c'è una **barra di ricerca** e un filtro (*Già in archivio* / *Da procurare*) per trovare al volo le carte da scambiare.
@@ -110,10 +116,31 @@ Nota: nella versione nativa il pulsante *Scarica backup* può non funzionare; us
 ### Sul PC senza installare nulla
 Apri `web/index.html` con Chrome o Edge: funziona anche da file locale (senza modalità offline/installazione).
 
+## Sincronizzazione (Dropbox e Google Drive)
+In *Dati → Sincronizzazione* colleghi uno o entrambi i servizi. L'app salva **un solo file** (`coglio-sync.json`) nella sua cartella riservata
+(Dropbox: *Apps/…*; Drive: cartella dati nascosta dell'app) e non vede nient'altro. Le modifiche fatte su due dispositivi si fondono,
+le cancellazioni viaggiano (con una finestra di 90 giorni) e puoi tenere la sincronizzazione automatica. Si sincronizzano archivio, mazzi
+e le impostazioni *terre base* e *immagini*; **tema e Designer restano sul dispositivo**. Il file non contiene le chiavi di accesso.
+
+Serve una chiave dell'app, da creare una volta sola (gratis). Si può mettere in `web/sync-config.js` prima di costruire l'app,
+oppure incollare in *Dati → Sincronizzazione → Prima configurazione* su ogni dispositivo (resta solo lì).
+
+**Dropbox** (funziona ovunque, anche nel browser)
+1. Vai su <https://www.dropbox.com/developers/apps> → *Create app* → *Scoped access* → **App folder**.
+2. Scheda *Permissions*: spunta `files.content.read` e `files.content.write` e salva.
+3. Copia la **App key** (non serve il secret). In app: *Collega Dropbox* → autorizza → incolla il codice che Dropbox mostra.
+
+**Google Drive** (solo app Windows e Android: dal browser Google blocca la richiesta)
+1. Su <https://console.cloud.google.com> crea un progetto e abilita **Google Drive API**; configura la schermata di consenso (tipo *Esterno*, aggiungi il tuo indirizzo tra gli utenti di prova).
+2. *Credenziali → Crea credenziali → ID client OAuth* → tipo **TV e dispositivi con input limitato**.
+3. Copia **ID client** e **Segreto client**. In app: *Collega Google Drive* → apri l'indirizzo mostrato e digita il codice.
+
+Nota: la sincronizzazione è stata verificata con servizi simulati; al primo collegamento reale controlla che mazzi e archivio siano quelli giusti.
+
 ## Struttura
 ```
 web/        l'app (HTML, CSS, JS senza dipendenze) = PWA
-            core.js (archivio) · pdf.js (motore PDF) · proxy.js (Scryfall e immagini) · builder.js (schermata Stampa) · cardrender.js + designer.js (Designer) · app.js
+            core.js (archivio) · pdf.js (motore PDF) · proxy.js (Scryfall e immagini) · search.js (ricerca e sintassi Scryfall) · cards.js (dati e prezzi delle carte) · sync.js + sync-config.js (Dropbox e Google Drive) · builder.js (schermata Stampa) · cardrender.js + designer.js (Designer) · app.js
 electron/   wrapper Windows
 capacitor/  wrapper Android/iOS
 tools/      test (test.js, pdf-test.js, proxy-test.js, update-test.js, status-test.js, ui-smoke.js, builder-smoke.js, img-smoke.js, update-smoke.js, status-smoke.js, designer-test.js, design-core-test.js), build.py, make_icons.py
@@ -123,6 +150,7 @@ Tutti i dati restano sul dispositivo (IndexedDB del browser). Nessun account, ne
 
 ## Note
 - `pdf-test.js` e `proxy-test.js` girano con solo Node (il primo, se ci sono `python3` con Pillow, `pdfinfo`, `qpdf` e `pdftoppm`, controlla anche i PDF con strumenti esterni e confronta i pixel); `update-test.js` (scarico dell'aggiornamento con rete simulata) e `status-test.js` (stati dei mazzi e riuso delle carte) girano con solo Node; `ui-smoke.js`, `builder-smoke.js`, `img-smoke.js`, `update-smoke.js` e `status-smoke.js` usano jsdom (`node tools/builder-smoke.js <percorso-di-jsdom>`).
+- `search-test.js`, `cards-test.js` e `sync-test.js` girano con solo Node (ricerca Scryfall, dati/prezzi, sincronizzazione con Dropbox e Drive simulati da `fake-clouds.js`); `feat-smoke.js` e `sync-smoke.js` provano l'interfaccia in Chromium.
 - `designer-test.js` usa Chromium (Playwright): `node tools/designer-test.js`.
 - `test.js`, `ui-smoke.js` e `img-smoke.js` leggono alcune liste di mazzi da `tools/fixtures/`, che non sono nel repository: servono liste tue per provarli.
 - Progetto non ufficiale, non affiliato né approvato da Wizards of the Coast. Immagini e dati delle carte: [Scryfall](https://scryfall.com). Magic: The Gathering è un marchio di Wizards of the Coast.

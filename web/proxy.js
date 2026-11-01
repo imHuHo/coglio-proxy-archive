@@ -148,6 +148,14 @@
       });
     };
 
+    /* La stampa piu' economica in carta (prezzo europeo di Scryfall): una sola richiesta, ordinata per prezzo crescente. */
+    self.cheapest = function (name) {
+      var q = '!"' + String(name).replace(/"/g, '') + '" game:paper eur>0';
+      return getJson('/cards/search?q=' + encodeURIComponent(q) + '&unique=prints&order=eur&dir=asc').then(function (res) {
+        return (res && res.data && res.data[0]) || null;
+      });
+    };
+
     /* Stampe disponibili di una carta (per scegliere un'altra illustrazione). */
     self.printings = function (name) {
       return getJson('/cards/search?q=' + encodeURIComponent('!"' + String(name).replace(/"/g, '') + '"') + '&unique=prints&order=released&dir=desc').then(function (res) {

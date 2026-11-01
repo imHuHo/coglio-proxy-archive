@@ -470,18 +470,18 @@
   function drawHeader(cv, o, g) {
     if (!headerRoom(o, g)) return;
     var S = 7, x = g.x0, y = (g.y0 - S) / 2, k = pt(S / 40);
-    var ACC = '#3347d6', c = function (hex) { return fillOp(hex) + ' ' + strokeOp(hex); };
+    var ACC = '#244f95', c = function (hex) { return fillOp(hex) + ' ' + strokeOp(hex); };
     cv.raw('q ' + n3(k) + ' 0 0 ' + n3(-k) + ' ' + n3(pt(x)) + ' ' + n3(pt(g.pageH - y)) + ' cm');
-    cv.raw('q ' + rotAbout(-14, 14, 20) + ' ' + fillOp('#e3e6fb') + ' ' + strokeOp(ACC) + ' 1.6 w ' + rrect(5, 7, 19, 26, 3.5) + ' B Q');
+    cv.raw('q ' + rotAbout(-14, 14, 20) + ' ' + fillOp('#dce7fa') + ' ' + strokeOp(ACC) + ' 1.6 w ' + rrect(5, 7, 19, 26, 3.5) + ' B Q');
     cv.raw('q ' + fillOp('#ffffff') + ' ' + strokeOp(ACC) + ' 1.6 w ' + rrect(9, 5, 19, 26, 3.5) + ' B Q');
     cv.raw('q ' + rotAbout(12, 22, 20) + ' ' + fillOp(ACC) + ' ' + rrect(13, 7, 19, 26, 3.5) + ' f Q');
     var kk = 0.5523 * 8, cx = 29, cy = 29, r = 8;
-    cv.raw('q ' + fillOp('#e4572e') + ' ' + n3(cx + r) + ' ' + n3(cy) + ' m ' + n3(cx + r) + ' ' + n3(cy + kk) + ' ' + n3(cx + kk) + ' ' + n3(cy + r) + ' ' + n3(cx) + ' ' + n3(cy + r) + ' c ' +
+    cv.raw('q ' + fillOp('#f7c52b') + ' ' + n3(cx + r) + ' ' + n3(cy) + ' m ' + n3(cx + r) + ' ' + n3(cy + kk) + ' ' + n3(cx + kk) + ' ' + n3(cy + r) + ' ' + n3(cx) + ' ' + n3(cy + r) + ' c ' +
       n3(cx - kk) + ' ' + n3(cy + r) + ' ' + n3(cx - r) + ' ' + n3(cy + kk) + ' ' + n3(cx - r) + ' ' + n3(cy) + ' c ' + n3(cx - r) + ' ' + n3(cy - kk) + ' ' + n3(cx - kk) + ' ' + n3(cy - r) + ' ' + n3(cx) + ' ' + n3(cy - r) + ' c ' +
       n3(cx + kk) + ' ' + n3(cy - r) + ' ' + n3(cx + r) + ' ' + n3(cy - kk) + ' ' + n3(cx + r) + ' ' + n3(cy) + ' c h f Q');
-    cv.raw('q ' + strokeOp('#ffffff') + ' 2.2 w 1 J 1 j 25.4 29.2 m 28 31.8 l 32.6 26.6 l S Q');
+    cv.raw('q ' + strokeOp('#0f1d3a') + ' 2.2 w 1 J 1 j 25.4 29.2 m 28 31.8 l 32.6 26.6 l S Q');
     cv.raw('Q');
-    cv.text('Coglio', x + S + 2.2, y + 3.3, 12, true, '#14172b');
+    cv.text('Coglio', x + S + 2.2, y + 3.3, 12, true, '#111d3a');
     cv.text('PROXY ARCHIVE', x + S + 2.2, y + 6.4, 5.5, false, '#586079', 1);
   }
 
