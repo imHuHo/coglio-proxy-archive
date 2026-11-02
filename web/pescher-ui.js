@@ -451,7 +451,7 @@
         if (curTable() || tables().length >= P.TABLES_MAX) break;
         var nt = P.makeTable(g, ux.tnew); tables().unshift(nt); saveTables(); g.table = nt.id; ux.tnew = ''; repaint(); toast('Tavolo «' + nt.name + '» salvato.'); break;
       }
-      case 'pe-tcreate': { if (!cm() || !P.hasFriends(g)) break; serverSave(null, ux.tnew, function (l) { toast('Tavolo «' + l.name + '» condiviso con gli amici.'); }); break; }
+      case 'pe-tcreate': { if (!cm() || !P.hasFriends(g)) break; serverSave(null, P.makeTable(g, ux.tnew).name, function (l) { toast('Tavolo «' + l.name + '» condiviso con gli amici.'); }); break; }
       case 'pe-tshare': { var lt = curTable(); if (!lt || lt.shared || !cm() || !P.hasFriends(g)) break; shareLocal(lt); break; }
       case 'pe-sync': refresh(true); break;
       case 'pe-pick': { if (!cm()) break; ux.pick = id; ux.perr = ''; openPop('pick'); var pa = cm(); if (pa && (!pa.friends || !pa.me.id)) pa.ready().then(function () { if (ux.pop === 'pick') paintPop(); }, function (e) { ux.perr = C.messageOf(e); if (ux.pop === 'pick') paintPop(); }); break; }
