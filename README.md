@@ -156,13 +156,13 @@ Nota: la sincronizzazione è stata verificata con servizi simulati; al primo col
 ## Struttura
 ```
 web/        l'app (HTML, CSS, JS senza dipendenze) = PWA
-            core.js (archivio) · pdf.js (motore PDF) · proxy.js (Scryfall e immagini) · search.js (ricerca e sintassi Scryfall) · cards.js (dati e prezzi delle carte) · sync.js + sync-config.js (Dropbox e Google Drive) · builder.js (schermata Stampa) · cardrender.js + designer.js (Designer) · app.js
+            core.js (archivio) · pdf.js (motore PDF) · proxy.js (Scryfall e immagini) · search.js (ricerca e sintassi Scryfall) · cards.js (dati e prezzi delle carte) · community.js + community-ui.js + community-config.js (Codighel ID) · sync.js + sync-config.js (Dropbox e Google Drive) · builder.js (schermata Stampa) · cardrender.js + designer.js (Designer) · app.js
 electron/   wrapper Windows
 capacitor/  wrapper Android/iOS
-tools/      test (test.js, pdf-test.js, proxy-test.js, update-test.js, status-test.js, ui-smoke.js, builder-smoke.js, img-smoke.js, update-smoke.js, status-smoke.js, designer-test.js, design-core-test.js), build.py, make_icons.py
+tools/      test (community-test.js, community-sql-test.js e community-smoke.js per il Codighel ID, test.js, pdf-test.js, proxy-test.js, update-test.js, status-test.js, ui-smoke.js, builder-smoke.js, img-smoke.js, update-smoke.js, status-smoke.js, designer-test.js, design-core-test.js), build.py, make_icons.py
 dist/       coglio-proxy-archive.html = pagina unica
 ```
-Tutti i dati restano sul dispositivo (IndexedDB del browser). Nessun account, nessun server.
+Tutti i dati restano sul dispositivo (IndexedDB del browser). Nessun account, nessun server, salvo le funzioni community facoltative (vedi «Community»; lo schema del server e' in `supabase/schema.sql`).
 
 ## Note
 - `pdf-test.js` e `proxy-test.js` girano con solo Node (il primo, se ci sono `python3` con Pillow, `pdfinfo`, `qpdf` e `pdftoppm`, controlla anche i PDF con strumenti esterni e confronta i pixel); `update-test.js` (scarico dell'aggiornamento con rete simulata) e `status-test.js` (stati dei mazzi e riuso delle carte) girano con solo Node; `ui-smoke.js`, `builder-smoke.js`, `img-smoke.js`, `update-smoke.js` e `status-smoke.js` usano jsdom (`node tools/builder-smoke.js <percorso-di-jsdom>`).
@@ -170,3 +170,17 @@ Tutti i dati restano sul dispositivo (IndexedDB del browser). Nessun account, ne
 - `designer-test.js` usa Chromium (Playwright): `node tools/designer-test.js`.
 - `test.js`, `ui-smoke.js` e `img-smoke.js` leggono alcune liste di mazzi da `tools/fixtures/`, che non sono nel repository: servono liste tue per provarli.
 - Progetto non ufficiale, non affiliato né approvato da Wizards of the Coast. Immagini e dati delle carte: [Scryfall](https://scryfall.com). Magic: The Gathering è un marchio di Wizards of the Coast.
+
+## Community (Codighel ID)
+
+Il pannello **Dati > Codighel ID** dà a ognuno un nome utente unico tra amici, **senza email né password**, con un artwork di una carta (da Scryfall) come immagine. Serve un piccolo server: Supabase, gratis (500 MB di database, 50.000 utenti attivi al mese; i progetti gratuiti si **mettono in pausa dopo 1 settimana senza uso** e si riattivano dalla dashboard, e non hanno backup automatici). Finche' `web/community-config.js` e' vuoto il pannello dice che le funzioni non sono ancora attive e l'app funziona come prima.
+
+**Attivarlo (una volta sola):**
+1. Su [supabase.com](https://supabase.com) crea un progetto gratuito.
+2. Apri **SQL Editor**, incolla tutto `supabase/schema.sql` e premi **Run** (si puo' rilanciare senza danni).
+3. In **Project Settings > API** copia l'indirizzo del progetto (`https://xxxx.supabase.co`) e la chiave **anon public**, e scrivili in `web/community-config.js` (`url` e `key`). Entrambi sono pubblici per natura.
+4. Ricostruisci (`python3 tools/build.py`) e pubblica.
+
+**Come funziona.** Il codice di recupero (20 caratteri, 100 bit di casualita', alfabeto senza I, L, O, U) si genera sul dispositivo (`crypto.getRandomValues`); al server arriva solo per dimostrare chi sei e li' ne resta l'impronta SHA-256. La tabella `cpa_profiles` e' chiusa a tutti (RLS senza policy, nessun permesso all'`anon`): tutto passa dalle funzioni `cpa_*` (`handle_free`, `profile`, `register`, `login`, `set_avatar`, `rename`, `delete`), che controllano il codice e accettano come immagine solo indirizzi `https://cards.scryfall.io/...`. Gli ID sono 3-20 caratteri `[A-Za-z0-9_.-]`, unici senza badare alle maiuscole, con qualche nome riservato (admin, botto, ...). Chi perde il codice perde il profilo: non c'e' recupero. Il profilo (ID e codice) sta in `localStorage` (`cpa:community:v1`) e **non** entra nei backup ne' nella sincronizzazione.
+
+`web/community.js` e' logica pura (`CPACommunity`: controlli sugli ID, codice, ricerca artwork `unique=art`, client delle funzioni con `fetch` iniettabile); `web/community-ui.js` disegna solo il pannello `#cm` e i suoi pop-up. Prove: `node tools/community-test.js` (logica), `node tools/community-sql-test.js <pglite>` (lo schema su un Postgres vero, chiamato come `anon`) e `node tools/community-smoke.js <pglite>` (Chromium contro lo stesso Postgres); `<pglite>` e' la cartella di `@electric-sql/pglite` (`npm i @electric-sql/pglite` in una cartella a parte).

@@ -1236,6 +1236,7 @@
     if (ui.view === 'builder' && window.CPABuilder) window.CPABuilder.after();
     if (ui.view === 'designer' && window.CPADesigner) window.CPADesigner.after();
     if (window.CPAPescherUI) { if (ui.view === 'pescher') window.CPAPescherUI.after(); else window.CPAPescherUI.idle(); }
+    if (window.CPACommunityUI && ui.view === 'data') window.CPACommunityUI.after();
   }
   function viewHtml() {
     switch (ui.view) {
@@ -2365,6 +2366,7 @@
     var armedReset = armed('reset');
     return '<header class="vh"><h1>Dati</h1><p class="sub">' + esc(storageLabel()) + '</p></header>' +
       NEWS.panel() +
+      (window.CPACommunityUI ? window.CPACommunityUI.html() : '') +
       '<section class="panel"><h2 class="sect" style="margin:0">Impostazioni</h2>' +
       '<label class="lbl">Tema<select class="select" data-c="theme"><option value="auto"' + (state.settings.theme === 'auto' ? ' selected' : '') + '>Automatico</option><option value="light"' + (state.settings.theme === 'light' ? ' selected' : '') + '>Chiaro</option><option value="dark"' + (state.settings.theme === 'dark' ? ' selected' : '') + '>Scuro</option></select></label>' +
       '<label class="switch"><input type="checkbox" data-c="basics"' + (state.settings.basicsUnlimited ? ' checked' : '') + '><span class="tr"></span><span>Terre base sempre disponibili negli upgrade</span></label>' +
@@ -2399,6 +2401,7 @@
     if (a.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.click(a, el); return; }
     if (a.indexOf('dz-') === 0 && window.CPADesigner) { if (el.dataset.cf) ui.confirm = null; window.CPADesigner.click(a, el); return; }
     if (a.indexOf('pe-') === 0 && window.CPAPescherUI) { window.CPAPescherUI.click(a, el); return; }
+    if (a.indexOf('cm-') === 0 && window.CPACommunityUI) { window.CPACommunityUI.click(a, el); return; }
     var deck;
     switch (a) {
       case 'nav': go(el.dataset.v); break;
@@ -2552,7 +2555,7 @@
     var t = ev.target;
     if (ev.key === 'Enter' && !ev.shiftKey && t && t.getAttribute && t.getAttribute('data-c') === 'dadd-q') { ev.preventDefault(); daddGo(false); }
   });
-  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (ui.crazy) { closeCrazy(); return; } if (window.CPADesigner && ui.view === 'designer' && window.CPADesigner.escape()) return; if (window.CPABuilder && ui.view === 'builder' && window.CPABuilder.escape()) return; if (window.CPAPescherUI && ui.view === 'pescher' && window.CPAPescherUI.escape()) return; if (AN.isOpen()) AN.close(); else if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (ui.crazy) { closeCrazy(); return; } if (window.CPACommunityUI && window.CPACommunityUI.escape()) return; if (window.CPADesigner && ui.view === 'designer' && window.CPADesigner.escape()) return; if (window.CPABuilder && ui.view === 'builder' && window.CPABuilder.escape()) return; if (window.CPAPescherUI && ui.view === 'pescher' && window.CPAPescherUI.escape()) return; if (AN.isOpen()) AN.close(); else if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
   document.addEventListener('mousemove', function (ev) {
     var t = ev.target.closest && ev.target.closest('.th.on');
     if (!t && ev.target.closest && ui.view === 'deck') { var dr = ev.target.closest('.dr'); if (dr && !dkAside()) t = dr.querySelector('.th.seed.on'); }
@@ -2578,6 +2581,7 @@
     if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.input(c, e.target); return; }
     if (c.indexOf('dz-') === 0 && window.CPADesigner) { window.CPADesigner.input(c, e.target); return; }
     if (c.indexOf('pe-') === 0 && window.CPAPescherUI) { window.CPAPescherUI.input(c, e.target); return; }
+    if (c.indexOf('cm-') === 0 && window.CPACommunityUI) { window.CPACommunityUI.input(c, e.target); return; }
     if (c === 'q') { ui.q = e.target.value; ui.limit = 150; updateArchiveList(); }
     else if (c === 'f-text') { ui.f.text = e.target.value; ui.limit = 150; updateArchiveList(); }
     else if (c === 'upq') { ui.upQ = e.target.value; updateUpgradeCols(); }
@@ -2594,6 +2598,7 @@
     if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.change(c, t); return; }
     if (c.indexOf('dz-') === 0 && window.CPADesigner) { window.CPADesigner.change(c, t); return; }
     if (c.indexOf('pe-') === 0 && window.CPAPescherUI) { window.CPAPescherUI.change(c, t); return; }
+    if (c.indexOf('cm-') === 0 && window.CPACommunityUI) { window.CPACommunityUI.change(c, t); return; }
     var d;
     switch (c) {
       case 'fdeck': ui.fdeck = t.value; ui.limit = 150; render(); break;
