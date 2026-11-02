@@ -7,7 +7,8 @@
   if (!H || !C) return;
   var esc = H.esc, KEY = 'cpa:community:v1';
   var me = null, loaded = false, cli = null, pop = null, refreshed = false, checkT = 0, checkN = 0;
-  var ux = { handle: '', avatar: null, st: { k: '', t: '' }, busy: '', err: '', pop: '', arm: '', q: '', list: [], artBusy: false, artMsg: '', artFor: '', perr: '', lh: '', lc: '', first: false };
+  var ux = { handle: '', avatar: null, st: { k: '', t: '' }, busy: '', err: '', pop: '', arm: '', q: '', list: [], artBusy: false, artMsg: '', artFor: '', perr: '', lh: '', lc: '', first: false, add: '', inv: null, openInvite: false, pendingInvite: '' };
+  var fr = { data: null, busy: false, err: '', msg: '', loaded: false };
 
   /* ---------- profilo sul dispositivo ---------- */
   function load() { if (!loaded) { loaded = true; try { me = C.restoreLocal(localStorage.getItem(KEY)); } catch (e) { me = null; } } return me; }
@@ -37,8 +38,26 @@
       (ux.err ? '<p class="err" role="alert">' + esc(ux.err) + '</p>' : '') +
       '<div class="btns"><button type="button" class="btn" data-a="cm-art" aria-haspopup="dialog">Cambia immagine</button><button type="button" class="btn" data-a="cm-code" aria-haspopup="dialog">Codice di recupero</button><button type="button" class="btn" data-a="cm-rename-open" aria-haspopup="dialog">Cambia ID</button></div>' +
       '<p class="hint">Per entrare da un altro dispositivo servono l’ID e il codice di recupero. Il profilo non fa parte del backup: il codice sta solo qui e nel file che hai salvato.</p>' +
-      '<div class="btns"><button type="button" class="btn small' + (ux.arm === 'logout' ? ' danger' : '') + '" data-a="cm-logout">' + (ux.arm === 'logout' ? 'Sicuro? Senza il codice non rientri' : 'Esci da questo dispositivo') + '</button>' +
+      friendsHtml() +
+      '<h3 class="cm-sub">Profilo</h3><div class="btns"><button type="button" class="btn small' + (ux.arm === 'logout' ? ' danger' : '') + '" data-a="cm-logout">' + (ux.arm === 'logout' ? 'Sicuro? Senza il codice non rientri' : 'Esci da questo dispositivo') + '</button>' +
       '<button type="button" class="btn small danger' + (ux.arm === 'del' ? ' armed' : '') + '" data-a="cm-del">' + (ux.arm === 'del' ? 'Sicuro? Sparisce per sempre' : 'Elimina il profilo') + '</button></div>';
+  }
+  function person(p, actions) {
+    return '<li class="cm-fr">' + face(p.avatar_url ? { url: p.avatar_url } : null, p.handle) + '<div><b>@' + esc(p.handle) + '</b>' + (p.avatar_name ? '<small>' + esc(p.avatar_name) + '</small>' : '') + '</div><span class="cm-fa">' + actions + '</span></li>';
+  }
+  function friendsHtml() {
+    var d = fr.data, h = function (a, label, cls, handle) { return '<button type="button" class="btn small' + (cls ? ' ' + cls : '') + '" data-a="' + a + '" data-h="' + esc(handle) + '">' + label + '</button>'; };
+    var out = '<h3 class="cm-sub">Amici</h3>' +
+      '<div class="btns"><button type="button" class="btn primary" data-a="cm-share">Condividi il mio link</button><button type="button" class="btn" data-a="cm-link">Copia il link</button></div>' +
+      '<p class="hint">Chi apre il link vede il tuo ID e può chiederti l’amicizia: diventate amici solo se accetti. Oppure scrivi qui l’ID di un amico.</p>' +
+      '<form class="cm-sf" data-a="cm-keep" onsubmit="return false"><input class="input" id="cm-add" data-c="cm-add" value="' + esc(ux.add) + '" maxlength="21" placeholder="ID di un amico" aria-label="ID di un amico" autocomplete="off" autocapitalize="off" spellcheck="false"><button type="button" class="btn" data-a="cm-fadd">Aggiungi</button></form>' +
+      (fr.err ? '<p class="err" role="alert">' + esc(fr.err) + '</p>' : fr.msg ? '<p class="hint cm-st ok" role="status">' + esc(fr.msg) + '</p>' : '');
+    if (!d) return out + '<p class="hint">' + (fr.busy ? 'Carico gli amici…' : 'Non riesco a caricare gli amici.') + '</p>' + (fr.busy ? '' : '<div class="btns"><button type="button" class="btn small" data-a="cm-frefresh">Riprova</button></div>');
+    if (d.incoming.length) out += '<h4 class="cm-sub2">Richieste ricevute</h4><ul class="cm-frs">' + d.incoming.map(function (p) { return person(p, h('cm-facc', 'Accetta', 'primary', p.handle) + h('cm-frej', 'Rifiuta', '', p.handle)); }).join('') + '</ul>';
+    out += '<h4 class="cm-sub2">I tuoi amici' + (d.friends.length ? ' (' + d.friends.length + ')' : '') + '</h4>' +
+      (d.friends.length ? '<ul class="cm-frs">' + d.friends.map(function (p) { var armed = ux.arm === 'rm:' + p.handle; return person(p, h('cm-frm', armed ? 'Sicuro?' : 'Togli', armed ? 'danger' : '', p.handle)); }).join('') + '</ul>' : '<p class="hint">Ancora nessun amico: manda il tuo link o aggiungi un ID.</p>');
+    if (d.outgoing.length) out += '<h4 class="cm-sub2">Richieste inviate</h4><ul class="cm-frs">' + d.outgoing.map(function (p) { return person(p, '<span class="cm-wait">in attesa</span>' + h('cm-fcancel', 'Annulla', '', p.handle)); }).join('') + '</ul>';
+    return out + '<div class="btns"><button type="button" class="btn small" data-a="cm-frefresh"' + (fr.busy ? ' disabled' : '') + '>' + (fr.busy ? 'Aggiorno…' : 'Aggiorna') + '</button></div>';
   }
   function inner() {
     var head = '<h2 class="sect" style="margin:0">Codighel ID</h2>';
@@ -46,13 +65,28 @@
     load(); return head + (me ? meHtml() : joinHtml());
   }
   function html() { return '<section class="panel cm" id="cm">' + inner() + '</section>'; }
-  function repaint() { var el = document.getElementById('cm'); if (el) el.innerHTML = inner(); }
-  /* aprendo Dati si controlla (una volta) che il profilo esista ancora e si aggiorna l'immagine */
+  function repaint() {
+    var el = document.getElementById('cm'); if (!el) return;
+    var a = document.activeElement, id = a && a.id && el.contains(a) ? a.id : '', ss = id && a.selectionStart != null ? [a.selectionStart, a.selectionEnd] : null;
+    el.innerHTML = inner();
+    if (id) { var n = document.getElementById(id); if (n) { try { n.focus({ preventScroll: true }); if (ss) n.setSelectionRange(ss[0], ss[1]); } catch (e) { /* pazienza */ } } }
+  }
+  /* aprendo Dati si controlla (una volta) che il profilo esista ancora e si aggiorna l'immagine; si caricano gli amici; si apre l'invito se si arriva da un link */
+  function loadFriends() {
+    if (!on() || !load() || fr.busy) return; fr.busy = true; fr.loaded = true; repaint();
+    client().friends(me.handle, me.secret).then(function (d) { fr.data = d; }, function (e) { if (e.code !== 'bad_login') fr.err = C.messageOf(e); })
+      .then(function () { fr.busy = false; repaint(); });
+  }
   function after() {
-    if (refreshed || !on() || !load()) return; refreshed = true;
-    client().login(me.handle, me.secret).then(function (r) {
-      me.handle = r.handle; me.avatar = { name: r.avatar_name || '', url: r.avatar_url || '' }; save(); ux.err = ''; repaint();
-    }, function (e) { if (e.code === 'bad_login') { ux.err = 'Questo profilo non risulta più sul server (eliminato, o l’ID è stato cambiato da un altro dispositivo). Se hai il codice, esci e usa «Ho già un ID».'; repaint(); } });
+    if (ux.openInvite && on()) { ux.openInvite = false; openInvite(); }
+    if (!on() || !load()) return;
+    if (!refreshed) {
+      refreshed = true;
+      client().login(me.handle, me.secret).then(function (r) {
+        me.handle = r.handle; me.avatar = { name: r.avatar_name || '', url: r.avatar_url || '' }; save(); ux.err = ''; repaint();
+      }, function (e) { if (e.code === 'bad_login') { ux.err = 'Questo profilo non risulta più sul server (eliminato, o l’ID è stato cambiato da un altro dispositivo). Se hai il codice, esci e usa «Ho già un ID».'; repaint(); } });
+    }
+    if (!fr.loaded) loadFriends();
   }
 
   /* ---------- pop-up ---------- */
@@ -84,6 +118,18 @@
         '<div class="pe-popbar"><button type="button" class="btn primary" data-a="cm-login"' + (ux.busy === 'login' ? ' disabled' : '') + '>' + (ux.busy === 'login' ? 'Entro…' : 'Entra') + '</button></div>' +
         '<p class="hint">Va bene scrivere il codice come capita: maiuscole, trattini e spazi non contano.</p>';
     }
+    if (ux.pop === 'invite') {
+      var v = ux.inv || {}, hd = head('Invito', 'Amicizia su Codighel'), who = v.profile ? '<div class="cm-me">' + face(v.profile.avatar_url ? { url: v.profile.avatar_url } : null, v.profile.handle, true) + '<div><b class="cm-h">@' + esc(v.profile.handle) + '</b>' + (v.profile.avatar_name ? '<small>' + esc(v.profile.avatar_name) + '</small>' : '') + '</div></div>' : '';
+      if (v.state === 'loading') return hd + '<p class="an-none">Cerco @' + esc(v.handle) + '…</p>';
+      if (v.state === 'err') return hd + '<p class="err" role="alert">' + esc(v.msg) + '</p><div class="pe-popbar"><button type="button" class="btn" data-a="cm-iretry">Riprova</button></div>';
+      if (v.state === 'none') return hd + '<p class="an-none">Non esiste nessun Codighel ID «' + esc(v.handle) + '»: il link è sbagliato o il profilo è stato eliminato.</p>';
+      if (v.state === 'self') return hd + who + '<p class="hint">È il tuo stesso link: mandalo a un amico.</p>';
+      if (v.state === 'sent') return hd + who + '<p class="cm-st ok" role="status">' + esc(v.msg) + '</p><div class="pe-popbar"><button type="button" class="btn primary" data-a="cm-close">Fatto</button></div>';
+      if (!me) return hd + who + '<p>Per aggiungere <b>@' + esc(v.handle) + '</b> ti serve un Codighel ID: è gratis, senza email né password. Appena lo hai, gli mando la richiesta.</p>' +
+        '<div class="pe-popbar"><button type="button" class="btn primary" data-a="cm-icreate">Crea il mio ID</button><button type="button" class="btn" data-a="cm-ilogin">Ho già un ID</button></div>';
+      return hd + who + '<p>Vuoi aggiungere <b>@' + esc(v.profile.handle) + '</b> ai tuoi amici? Diventate amici quando accetta.</p>' + (v.err ? '<p class="err" role="alert">' + esc(v.err) + '</p>' : '') +
+        '<div class="pe-popbar"><button type="button" class="btn primary" data-a="cm-iadd"' + (ux.busy === 'invite' ? ' disabled' : '') + '>' + (ux.busy === 'invite' ? 'Invio…' : 'Aggiungi agli amici') + '</button><button type="button" class="btn" data-a="cm-close">No, grazie</button></div>';
+    }
     if (ux.pop === 'rename') {
       return head('Il tuo ID', 'Cambia ID') +
         '<form class="cm-lf" data-a="cm-keep" onsubmit="return false"><label class="lbl">Nuovo ID<input class="input" id="cm-nh" data-c="cm-nh" value="' + esc(ux.lh) + '" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false"></label></form>' +
@@ -103,7 +149,7 @@
     if (!pop) {
       pop = document.createElement('div'); pop.id = 'cm-pop'; pop.className = 'lb bk an pe-pop cm-pop'; pop.setAttribute('data-a', 'cm-close'); pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); document.body.appendChild(pop);
     }
-    pop.setAttribute('aria-label', { art: 'Scegli un artwork', code: 'Codice di recupero', login: 'Entra', rename: 'Cambia ID' }[kind] || 'Codighel ID');
+    pop.setAttribute('aria-label', { art: 'Scegli un artwork', code: 'Codice di recupero', login: 'Entra', rename: 'Cambia ID', invite: 'Invito di amicizia' }[kind] || 'Codighel ID');
     paintPop(focusId);
   }
 
@@ -136,9 +182,36 @@
     return Promise.resolve(fallback());
   }
 
+  function copyText(text) {
+    function fallback() { try { var t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;left:-9999px;top:0'; document.body.appendChild(t); t.select(); var okc = document.execCommand('copy'); t.remove(); return okc; } catch (e) { return false; } }
+    try { if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallback(); }); } catch (e) { /* si prova l'altra strada */ }
+    return Promise.resolve(fallback());
+  }
+  function request(to) { return client().friendRequest(me.handle, me.secret, to); }
+  function sentText(r, h) { return r === 'accepted' ? 'Ora tu e @' + h + ' siete amici.' : 'Richiesta inviata a @' + h + ': diventate amici quando accetta.'; }
+  /* chi ha aperto un link e poi ha creato l'ID o è entrato: la richiesta parte da sola */
+  function sendPending() {
+    var h = ux.pendingInvite; ux.pendingInvite = ''; if (!h || !me || h.toLowerCase() === me.handle.toLowerCase()) return;
+    request(h).then(function (r) { toast(sentText(r, h)); fr.loaded = false; if (document.getElementById('cm')) { fr.loaded = true; loadFriends(); } }, function (e) { toast(C.messageOf(e)); });
+  }
+  function openInvite() {
+    var h = ux.inv && ux.inv.handle; if (!h) return;
+    ux.inv = { handle: h, state: 'loading' }; openPop('invite');
+    if (me && me.handle.toLowerCase() === h.toLowerCase()) { ux.inv.state = 'self'; ux.inv.profile = { handle: me.handle, avatar_name: me.avatar.name, avatar_url: me.avatar.url }; paintPop(); return; }
+    client().profile(h).then(function (p) {
+      if (!ux.inv || ux.inv.handle !== h) return;
+      if (!p) ux.inv = { handle: h, state: 'none' }; else ux.inv = { handle: h, state: 'ready', profile: { handle: p.handle, avatar_name: p.avatar_name || '', avatar_url: C.cleanFriends({ friends: [p] }).friends[0] ? C.cleanFriends({ friends: [p] }).friends[0].avatar_url : '' } };
+      if (ux.pop === 'invite') paintPop();
+    }, function (e) { ux.inv = { handle: h, state: 'err', msg: C.messageOf(e) }; if (ux.pop === 'invite') paintPop(); });
+  }
+  function friendAct(promise, okMsg) {
+    fr.err = ''; fr.msg = ''; ux.arm = '';
+    promise.then(function (r) { fr.msg = typeof okMsg === 'function' ? okMsg(r) : okMsg; }, function (e) { fr.err = C.messageOf(e); }).then(function () { fr.busy = false; fr.loaded = false; loadFriends(); });
+  }
+
   function click(a, el) {
-    var i = parseInt(el.dataset.i, 10);
-    if (a !== 'cm-logout' && a !== 'cm-del' && ux.arm) { ux.arm = ''; repaint(); }
+    var i = parseInt(el.dataset.i, 10), fh = el.dataset.h;
+    if (a !== 'cm-logout' && a !== 'cm-del' && a !== 'cm-frm' && ux.arm) { ux.arm = ''; repaint(); }
     switch (a) {
       case 'cm-art': ux.artFor = me ? 'me' : 'new'; ux.list = []; ux.artMsg = ''; openPop('art', 'cm-q'); break;
       case 'cm-search': {
@@ -161,7 +234,7 @@
         if (p) { setStatus('bad', p); var inp = document.getElementById('cm-handle'); if (inp) inp.focus(); break; }
         var secret = C.newSecret(); ux.busy = 'create'; repaint();
         client().register(h, secret, ux.avatar).then(function (r) {
-          me = { handle: r.handle, secret: secret, avatar: { name: r.avatar_name || '', url: r.avatar_url || '' } }; save(); ux.busy = ''; ux.handle = ''; ux.avatar = null; ux.st = { k: '', t: '' }; ux.first = true; refreshed = true; repaint(); openPop('code'); toast('Codighel ID creato: salva il codice di recupero.');
+          me = { handle: r.handle, secret: secret, avatar: { name: r.avatar_name || '', url: r.avatar_url || '' } }; save(); ux.busy = ''; ux.handle = ''; ux.avatar = null; ux.st = { k: '', t: '' }; ux.first = true; refreshed = true; fr = { data: { friends: [], incoming: [], outgoing: [] }, busy: false, err: '', msg: '', loaded: true }; repaint(); openPop('code'); toast('Codighel ID creato: salva il codice di recupero.'); sendPending();
         }, function (e) { ux.busy = ''; if (e.code === 'handle_taken') { ux.st = { k: 'bad', t: '«' + h + '» è già preso.' }; } else ux.err = C.messageOf(e); repaint(); });
         break;
       }
@@ -174,7 +247,7 @@
         if (!C.validHandle(lh) || !C.validSecret(lc)) { ux.perr = C.validHandle(lh) ? 'Il codice è di 20 caratteri (cifre e lettere, senza I, L, O, U).' : 'Scrivi il tuo ID.'; paintPop(C.validHandle(lh) ? 'cm-lc' : 'cm-lh'); break; }
         ux.busy = 'login'; ux.perr = ''; paintPop();
         client().login(lh, lc).then(function (r) {
-          me = { handle: r.handle, secret: lc, avatar: { name: r.avatar_name || '', url: r.avatar_url || '' } }; save(); ux.busy = ''; ux.err = ''; ux.lc = ''; refreshed = true; closePop(); repaint(); toast('Bentornato, @' + r.handle + '.');
+          me = { handle: r.handle, secret: lc, avatar: { name: r.avatar_name || '', url: r.avatar_url || '' } }; save(); ux.busy = ''; ux.err = ''; ux.lc = ''; refreshed = true; fr = { data: null, busy: false, err: '', msg: '', loaded: false }; closePop(); repaint(); toast('Bentornato, @' + r.handle + '.'); if (ux.pendingInvite) sendPending(); loadFriends();
         }, function (e) { ux.busy = ''; ux.perr = C.messageOf(e); paintPop('cm-lc'); });
         break;
       }
@@ -189,11 +262,41 @@
       }
       case 'cm-logout':
         if (ux.arm !== 'logout') { ux.arm = 'logout'; repaint(); break; }
-        ux.arm = ''; me = null; save(); ux.err = ''; repaint(); toast('Uscito da questo dispositivo. Il profilo resta sul server.'); break;
+        ux.arm = ''; me = null; save(); ux.err = ''; fr = { data: null, busy: false, err: '', msg: '', loaded: false }; repaint(); toast('Uscito da questo dispositivo. Il profilo resta sul server.'); break;
       case 'cm-del':
         if (ux.arm !== 'del') { ux.arm = 'del'; repaint(); break; }
-        ux.arm = ''; client().remove(me.handle, me.secret).then(function () { me = null; save(); ux.err = ''; repaint(); toast('Profilo eliminato.'); }, function (e) { ux.err = C.messageOf(e); repaint(); });
+        ux.arm = ''; client().remove(me.handle, me.secret).then(function () { me = null; save(); ux.err = ''; fr = { data: null, busy: false, err: '', msg: '', loaded: false }; repaint(); toast('Profilo eliminato.'); }, function (e) { ux.err = C.messageOf(e); repaint(); });
         break;
+      case 'cm-share': {
+        var link = C.friendLink(me.handle), text = 'Aggiungimi su Coglio Proxy Archive: il mio Codighel ID è @' + me.handle;
+        if (navigator.share) { navigator.share({ title: 'Codighel ID', text: text, url: link }).catch(function (e) { if (e && e.name !== 'AbortError') copyText(link).then(function (okc) { toast(okc ? 'Link copiato.' : 'Non riesco a copiare il link.'); }); }); }
+        else copyText(link).then(function (okc) { toast(okc ? 'Link copiato: incollalo dove vuoi.' : 'Non riesco a copiare il link.'); });
+        break;
+      }
+      case 'cm-link': copyText(C.friendLink(me.handle)).then(function (okc) { toast(okc ? 'Link copiato.' : 'Non riesco a copiare il link.'); }); break;
+      case 'cm-fadd': {
+        var to = C.cleanHandle(ux.add), pr = C.handleProblem(to); fr.msg = ''; fr.err = '';
+        if (pr) { fr.err = to ? pr : 'Scrivi l’ID di un amico.'; repaint(); break; }
+        fr.busy = true; repaint();
+        client().friendRequest(me.handle, me.secret, to).then(function (r) { ux.add = ''; fr.msg = sentText(r, to); }, function (e) { fr.err = C.messageOf(e); }).then(function () { fr.busy = false; fr.loaded = false; loadFriends(); });
+        break;
+      }
+      case 'cm-facc': fr.busy = true; friendAct(client().friendRespond(me.handle, me.secret, fh, true), 'Ora tu e @' + fh + ' siete amici.'); break;
+      case 'cm-frej': fr.busy = true; friendAct(client().friendRespond(me.handle, me.secret, fh, false), 'Richiesta di @' + fh + ' rifiutata.'); break;
+      case 'cm-fcancel': fr.busy = true; friendAct(client().friendRemove(me.handle, me.secret, fh), 'Richiesta a @' + fh + ' annullata.'); break;
+      case 'cm-frm':
+        if (ux.arm !== 'rm:' + fh) { ux.arm = 'rm:' + fh; repaint(); break; }
+        fr.busy = true; friendAct(client().friendRemove(me.handle, me.secret, fh), '@' + fh + ' non è più tra i tuoi amici.'); break;
+      case 'cm-frefresh': fr.loaded = false; fr.err = ''; fr.msg = ''; loadFriends(); break;
+      case 'cm-iadd': {
+        if (ux.busy || !ux.inv || !me) break; var ih = ux.inv.profile.handle; ux.busy = 'invite'; ux.inv.err = ''; paintPop();
+        request(ih).then(function (r) { ux.busy = ''; ux.inv.state = 'sent'; ux.inv.msg = sentText(r, ih); if (ux.pop === 'invite') paintPop(); fr.loaded = false; if (document.getElementById('cm')) loadFriends(); },
+          function (e) { ux.busy = ''; ux.inv.err = C.messageOf(e); if (ux.pop === 'invite') paintPop(); });
+        break;
+      }
+      case 'cm-iretry': openInvite(); break;
+      case 'cm-icreate': ux.pendingInvite = ux.inv ? ux.inv.handle : ''; closePop(); { var hi = document.getElementById('cm-handle'); if (hi) { hi.scrollIntoView({ block: 'center' }); hi.focus(); } } break;
+      case 'cm-ilogin': ux.pendingInvite = ux.inv ? ux.inv.handle : ''; ux.lh = ''; ux.lc = ''; openPop('login', 'cm-lh'); break;
       case 'cm-close': closePop(); break;
       case 'cm-keep': break;
     }
@@ -201,6 +304,7 @@
   function input(c, t) {
     if (c === 'cm-handle') { ux.handle = t.value; checkHandle(); }
     else if (c === 'cm-q') ux.q = t.value;
+    else if (c === 'cm-add') ux.add = t.value;
     else if (c === 'cm-lh' || c === 'cm-nh') ux.lh = t.value;
     else if (c === 'cm-lc') ux.lc = t.value;
   }
@@ -208,12 +312,23 @@
   /* Invio nei campi dei pop-up e nel campo dell'ID */
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Enter' || !e.target || !e.target.id) return;
-    var map = { 'cm-q': 'cm-search', 'cm-lh': 'cm-login', 'cm-lc': 'cm-login', 'cm-nh': 'cm-rename', 'cm-handle': 'cm-create' };
+    var map = { 'cm-q': 'cm-search', 'cm-lh': 'cm-login', 'cm-lc': 'cm-login', 'cm-nh': 'cm-rename', 'cm-handle': 'cm-create', 'cm-add': 'cm-fadd' };
     var a = map[e.target.id]; if (!a) return; e.preventDefault();
     var b = document.querySelector('[data-a="' + a + '"]'); if (b && !b.disabled) click(a, b);
   });
   function escape() { if (pop) { closePop(); return true; } return false; }
   function isOpen() { return !!pop; }
+
+  /* si arriva da un link di amicizia (#amico=ID): si va in Dati e si apre l'invito */
+  (function () {
+    var h = ''; try { h = C.parseFriendHash(location.hash); } catch (e) { h = ''; }
+    if (!h) return;
+    ux.inv = { handle: h, state: 'loading' }; ux.openInvite = true;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* pazienza */ }
+    var tries = 0, t = setInterval(function () {
+      if (document.querySelector('.shell') || ++tries > 100) { clearInterval(t); if (document.querySelector('.shell')) { H.ui.view = 'data'; H.render(); } }
+    }, 100);
+  })();
 
   window.CPACommunityUI = { html: html, after: after, click: click, input: input, change: change, escape: escape, isOpen: isOpen, state: function () { return load(); } };
 })();

@@ -1,4 +1,4 @@
--- Coglio Proxy Archive · Codighel ID (tappa 1)
+-- Coglio Proxy Archive · Codighel ID (tappa 1) e amici (tappa 2)
 --
 -- Si incolla UNA volta nel «SQL Editor» di Supabase e si preme Run (si può rilanciare senza danni).
 -- Niente account, niente email: ogni profilo ha un ID (il nome utente) e un codice di recupero lungo e casuale
@@ -125,18 +125,117 @@ begin
   return true;
 end $$;
 
+-- ============ Amici (tappa 2) ============
+-- Una riga per ogni coppia: chi ha chiesto (a), chi ha ricevuto (b) e se l'amicizia e' stata accettata.
+-- Le richieste hanno bisogno del sì dell'altro; se due persone si chiedono a vicenda l'amicizia scatta subito.
+create table if not exists public.cpa_friends (
+  a          uuid not null references public.cpa_profiles(id) on delete cascade,
+  b          uuid not null references public.cpa_profiles(id) on delete cascade,
+  status     text not null default 'pending',
+  created_at timestamptz not null default now(),
+  primary key (a, b),
+  constraint cpa_friends_not_self check (a <> b),
+  constraint cpa_friends_status check (status in ('pending', 'accepted'))
+);
+create unique index if not exists cpa_friends_pair on public.cpa_friends (least(a, b), greatest(a, b));   -- una sola relazione per coppia
+create index if not exists cpa_friends_b on public.cpa_friends (b);
+alter table public.cpa_friends enable row level security;       -- senza policy: nessun accesso diretto
+revoke all on public.cpa_friends from public;
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'anon') then revoke all on public.cpa_friends from anon; end if;
+  if exists (select 1 from pg_roles where rolname = 'authenticated') then revoke all on public.cpa_friends from authenticated; end if;
+end $$;
+
+-- Chiede l'amicizia (restituisce 'pending', oppure 'accepted' se eravate già amici o l'altro l'aveva già chiesta a te).
+-- Errori: no_such_user, self, too_many (al massimo 30 richieste in attesa e 100 amici).
+create or replace function public.cpa_friend_request(p_handle text, p_secret text, p_to text) returns text
+language plpgsql security definer set search_path = public as $$
+declare me uuid; t uuid; r cpa_friends; cnt int;
+begin
+  me := cpa_auth(p_handle, p_secret);
+  perform cpa_check(p_to);
+  select id into t from cpa_profiles where handle_key = lower(p_to);
+  if t is null then raise exception 'no_such_user'; end if;
+  if t = me then raise exception 'self'; end if;
+  select * into r from cpa_friends where (a = me and b = t) or (a = t and b = me);
+  if found then
+    if r.status = 'accepted' then return 'accepted'; end if;
+    if r.a = me then return 'pending'; end if;
+    update cpa_friends set status = 'accepted' where a = r.a and b = r.b;
+    return 'accepted';
+  end if;
+  select count(*) into cnt from cpa_friends where a = me and status = 'pending';
+  if cnt >= 30 then raise exception 'too_many'; end if;
+  select count(*) into cnt from cpa_friends where (a = me or b = me) and status = 'accepted';
+  if cnt >= 100 then raise exception 'too_many'; end if;
+  insert into cpa_friends (a, b) values (me, t);
+  return 'pending';
+exception when unique_violation then return 'pending';
+end $$;
+
+-- Risponde a una richiesta ricevuta: accetta (true) o rifiuta (false). Errore: no_request.
+create or replace function public.cpa_friend_respond(p_handle text, p_secret text, p_from text, p_accept boolean) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare me uuid; f uuid; cnt int;
+begin
+  me := cpa_auth(p_handle, p_secret);
+  perform cpa_check(p_from);
+  select id into f from cpa_profiles where handle_key = lower(p_from);
+  if f is null or not exists (select 1 from cpa_friends where a = f and b = me and status = 'pending') then raise exception 'no_request'; end if;
+  if coalesce(p_accept, false) then
+    select count(*) into cnt from cpa_friends where (a = me or b = me) and status = 'accepted';
+    if cnt >= 100 then raise exception 'too_many'; end if;
+    update cpa_friends set status = 'accepted' where a = f and b = me;
+    return true;
+  end if;
+  delete from cpa_friends where a = f and b = me;
+  return false;
+end $$;
+
+-- Toglie un amico o annulla una richiesta (in entrambi i versi). Restituisce se c'era qualcosa da togliere.
+create or replace function public.cpa_friend_remove(p_handle text, p_secret text, p_other text) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare me uuid; o uuid; n int;
+begin
+  me := cpa_auth(p_handle, p_secret);
+  perform cpa_check(p_other);
+  select id into o from cpa_profiles where handle_key = lower(p_other);
+  if o is null then return false; end if;
+  delete from cpa_friends where (a = me and b = o) or (a = o and b = me);
+  get diagnostics n = row_count;
+  return n > 0;
+end $$;
+
+-- Amici, richieste ricevute e richieste inviate (solo ID e immagine di ognuno).
+create or replace function public.cpa_friend_list(p_handle text, p_secret text) returns json
+language plpgsql security definer set search_path = public as $$
+declare me uuid;
+begin
+  me := cpa_auth(p_handle, p_secret);
+  return json_build_object(
+    'friends', coalesce((select json_agg(json_build_object('handle', p.handle, 'avatar_name', p.avatar_name, 'avatar_url', p.avatar_url) order by p.handle_key)
+      from cpa_friends f join cpa_profiles p on p.id = case when f.a = me then f.b else f.a end where (f.a = me or f.b = me) and f.status = 'accepted'), '[]'::json),
+    'incoming', coalesce((select json_agg(json_build_object('handle', p.handle, 'avatar_name', p.avatar_name, 'avatar_url', p.avatar_url) order by p.handle_key)
+      from cpa_friends f join cpa_profiles p on p.id = f.a where f.b = me and f.status = 'pending'), '[]'::json),
+    'outgoing', coalesce((select json_agg(json_build_object('handle', p.handle, 'avatar_name', p.avatar_name, 'avatar_url', p.avatar_url) order by p.handle_key)
+      from cpa_friends f join cpa_profiles p on p.id = f.b where f.a = me and f.status = 'pending'), '[]'::json));
+end $$;
+
 -- Chi può chiamare cosa: l'app usa la chiave «anon», e basta; i controlli interni non si chiamano da fuori.
 revoke all on function public.cpa_reserved(text), public.cpa_hash(text), public.cpa_check(text, text, text), public.cpa_auth(text, text) from public;
 revoke all on function public.cpa_handle_free(text), public.cpa_profile(text), public.cpa_register(text, text, text, text), public.cpa_login(text, text),
-  public.cpa_set_avatar(text, text, text, text), public.cpa_rename(text, text, text), public.cpa_delete(text, text) from public;
+  public.cpa_set_avatar(text, text, text, text), public.cpa_rename(text, text, text), public.cpa_delete(text, text),
+  public.cpa_friend_request(text, text, text), public.cpa_friend_respond(text, text, text, boolean), public.cpa_friend_remove(text, text, text), public.cpa_friend_list(text, text) from public;
 do $$ begin
   if exists (select 1 from pg_roles where rolname = 'anon') then
     grant execute on function public.cpa_handle_free(text), public.cpa_profile(text), public.cpa_register(text, text, text, text), public.cpa_login(text, text),
-      public.cpa_set_avatar(text, text, text, text), public.cpa_rename(text, text, text), public.cpa_delete(text, text) to anon;
+      public.cpa_set_avatar(text, text, text, text), public.cpa_rename(text, text, text), public.cpa_delete(text, text),
+      public.cpa_friend_request(text, text, text), public.cpa_friend_respond(text, text, text, boolean), public.cpa_friend_remove(text, text, text), public.cpa_friend_list(text, text) to anon;
   end if;
   if exists (select 1 from pg_roles where rolname = 'authenticated') then
     grant execute on function public.cpa_handle_free(text), public.cpa_profile(text), public.cpa_register(text, text, text, text), public.cpa_login(text, text),
-      public.cpa_set_avatar(text, text, text, text), public.cpa_rename(text, text, text), public.cpa_delete(text, text) to authenticated;
+      public.cpa_set_avatar(text, text, text, text), public.cpa_rename(text, text, text), public.cpa_delete(text, text),
+      public.cpa_friend_request(text, text, text), public.cpa_friend_respond(text, text, text, boolean), public.cpa_friend_remove(text, text, text), public.cpa_friend_list(text, text) to authenticated;
   end if;
 end $$;
 

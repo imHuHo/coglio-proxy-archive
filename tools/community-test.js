@@ -57,6 +57,24 @@ const calls = []; const sf = (body, status) => (u) => { calls.push(u); return Pr
   await rej(C.create(cfg, () => Promise.reject(new TypeError('Failed to fetch'))).login('a', 'b'), 'offline', 'senza rete'); await rej(C.create({}, srv(200, true)).login('a', 'b'), 'unconfigured', 'non configurato');
   ok(['handle_taken', 'bad_login', 'offline', 'unconfigured', 'server', 'scryfall', 'bad_handle', 'bad_secret', 'bad_avatar'].every(c => C.messageOf({ code: c }).length > 10) && C.messageOf(null) === C.TEXT.server, 'ogni errore ha il suo messaggio');
 
+
+  /* amici */
+  const art2 = 'https://cards.scryfall.io/art_crop/front/1/2/aaa.jpg?1';
+  eq(C.cleanFriends({ friends: [{ handle: 'Anna', avatar_name: 'K', avatar_url: art2 }, { handle: 'no!' }, null, { handle: 'Bru', avatar_url: 'https://evil.example/x.jpg' }], incoming: 'boh' }), { friends: [{ handle: 'Anna', avatar_name: 'K', avatar_url: art2 }, { handle: 'Bru', avatar_name: '', avatar_url: '' }], incoming: [], outgoing: [] }, 'elenco ripulito: ID non validi e immagini esterne scartati');
+  eq(C.cleanFriends(null), { friends: [], incoming: [], outgoing: [] }, 'senza risposta, elenco vuoto');
+  const seen2 = []; const srv2 = (body) => (u, o) => { seen2.push({ u, o }); return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify(body)) }); };
+  let fc = C.create(cfg, srv2({ friends: [{ handle: 'Anna' }], incoming: [], outgoing: [] }));
+  eq((await fc.friends('Simone', 'S')).friends[0].handle, 'Anna', 'friends'); eq([seen2[0].u.split('/').pop(), JSON.parse(seen2[0].o.body)], ['cpa_friend_list', { p_handle: 'Simone', p_secret: 'S' }], 'friends: chiamata');
+  fc = C.create(cfg, srv2('pending')); eq(await fc.friendRequest('Simone', 'S', 'Anna'), 'pending', 'friendRequest'); eq([seen2[1].u.split('/').pop(), JSON.parse(seen2[1].o.body)], ['cpa_friend_request', { p_handle: 'Simone', p_secret: 'S', p_to: 'Anna' }], 'friendRequest: chiamata');
+  fc = C.create(cfg, srv2(true)); await fc.friendRespond('Simone', 'S', 'Anna', true); await fc.friendRespond('Simone', 'S', 'Anna', 0); await fc.friendRemove('Simone', 'S', 'Anna');
+  eq(seen2.slice(2).map(x => [x.u.split('/').pop(), JSON.parse(x.o.body)]), [['cpa_friend_respond', { p_handle: 'Simone', p_secret: 'S', p_from: 'Anna', p_accept: true }], ['cpa_friend_respond', { p_handle: 'Simone', p_secret: 'S', p_from: 'Anna', p_accept: false }], ['cpa_friend_remove', { p_handle: 'Simone', p_secret: 'S', p_other: 'Anna' }]], 'respond (sì e no) e remove');
+  for (const m of ['no_such_user', 'self', 'no_request', 'too_many']) await rej(C.create(cfg, srv(400, { message: m })).friendRequest('a', 'b', 'c'), m, 'errore amici: ' + m);
+  ok(['no_such_user', 'self', 'no_request', 'too_many'].every(c => C.messageOf({ code: c }).length > 10), 'messaggi per gli errori degli amici');
+  /* link */
+  eq(C.friendLink('Simone'), 'https://imHuHo.github.io/coglio-proxy-archive/#amico=Simone', 'link amicizia'); eq(C.friendLink('@Kaalia.99', 'http://localhost:8080/x/#vecchio'), 'http://localhost:8080/x/#amico=Kaalia.99', 'con un altro indirizzo, senza altri #');
+  eq([C.parseFriendHash('#amico=Simone'), C.parseFriendHash('amico=Simone'), C.parseFriendHash('#amico=Simo%20ne'), C.parseFriendHash('#amico=%E0%A4%A'), C.parseFriendHash('#amico='), C.parseFriendHash('#altro=Simone'), C.parseFriendHash(''), C.parseFriendHash(null), C.parseFriendHash('#amico=<script>')], ['Simone', 'Simone', '', '', '', '', '', '', ''], 'il link si legge solo se contiene un ID valido');
+  eq(C.parseFriendHash(C.friendLink('Kaalia-99_x').split('/').pop()), 'Kaalia-99_x', 'andata e ritorno'); eq(C.parseFriendHash('#amico=Simone&x=1'), 'Simone', 'ignora il resto');
+
   /* profilo sul dispositivo */
   const loc = { handle: 'Simone', secret: 'ABCDE12345FGHJK67890', avatar: { name: 'K', url: art } };
   eq(C.restoreLocal(JSON.stringify(loc)), loc, 'profilo locale ripristinato'); eq(C.restoreLocal('rotto'), null, 'testo rotto'); eq(C.restoreLocal({ handle: 'ok1', secret: 'corto' }), null, 'codice non valido'); eq(C.restoreLocal({ handle: 'a', secret: loc.secret }), null, 'ID non valido');

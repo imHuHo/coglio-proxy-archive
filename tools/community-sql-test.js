@@ -82,6 +82,57 @@ const URL1 = 'https://cards.scryfall.io/art_crop/front/1/2/12345678-aaaa-bbbb-cc
   await fails('cpa_login', { p_handle: 'Luchino', p_secret: SECRET2 }, 'bad_login', 'dopo l\'eliminazione non si entra'); eq(await call('cpa_handle_free', { p_handle: 'Luchino' }), true, 'e l\'ID si libera');
   eq((await call('cpa_login', { p_handle: 'Simone', p_secret: SECRET })).handle, 'Simone', 'gli altri profili non sono toccati');
 
+
+  /* ----- amici ----- */
+  const S3 = 'AAAAA11111BBBBB22222', S4 = 'CCCCC33333DDDDD44444', S5 = 'EEEEE55555FFFFF66666';
+  for (const [h, sc] of [['Anna', S3], ['Bruno', S4], ['Carla', S5]]) await call('cpa_register', { p_handle: h, p_secret: sc });
+  const fl = async (h, sc) => call('cpa_friend_list', { p_handle: h, p_secret: sc });
+  const names = a => a.map(x => x.handle);
+  const req = (h, sc, to) => call('cpa_friend_request', { p_handle: h, p_secret: sc, p_to: to });
+  for (const q of ['select * from public.cpa_friends', 'delete from public.cpa_friends', "insert into public.cpa_friends (a, b) select a.id, b.id from public.cpa_profiles a, public.cpa_profiles b where a.id <> b.id limit 1"]) {
+    let denied = false; try { await db.query(q); } catch (e) { denied = /permission denied/i.test(e.message); } ok(denied, 'amicizie: accesso negato: ' + q.slice(0, 40));
+  }
+  eq(await fl('Anna', S3), { friends: [], incoming: [], outgoing: [] }, 'all\'inizio niente amici');
+  await fails('cpa_friend_list', { p_handle: 'Anna', p_secret: S4 }, 'bad_login', 'elenco con il codice di un altro');
+  await fails('cpa_friend_request', { p_handle: 'Anna', p_secret: S4, p_to: 'Bruno' }, 'bad_login', 'richiesta con il codice di un altro');
+  await fails('cpa_friend_request', { p_handle: 'Anna', p_secret: S3, p_to: 'Anna' }, 'self', 'non puoi chiedere l\'amicizia a te stesso'); await fails('cpa_friend_request', { p_handle: 'Anna', p_secret: S3, p_to: 'ANNA' }, 'self', '...nemmeno con le maiuscole');
+  await fails('cpa_friend_request', { p_handle: 'Anna', p_secret: S3, p_to: 'Nessuno' }, 'no_such_user', 'ID che non esiste'); await fails('cpa_friend_request', { p_handle: 'Anna', p_secret: S3, p_to: 'no way' }, 'bad_handle', 'ID non valido');
+  eq(await req('Anna', S3, 'bruno'), 'pending', 'richiesta inviata (ID senza badare alle maiuscole)');
+  eq(await req('Anna', S3, 'Bruno'), 'pending', 'ripeterla non crea doppioni');
+  eq([names((await fl('Anna', S3)).outgoing), names((await fl('Anna', S3)).friends)], [['Bruno'], []], 'Anna vede la richiesta inviata');
+  eq([names((await fl('Bruno', S4)).incoming), names((await fl('Bruno', S4)).friends)], [['Anna'], []], 'Bruno vede la richiesta ricevuta'); eq((await fl('Carla', S5)).incoming, [], 'Carla non vede niente');
+  await fails('cpa_friend_respond', { p_handle: 'Anna', p_secret: S3, p_from: 'Bruno', p_accept: true }, 'no_request', 'chi ha chiesto non può accettare da solo');
+  await fails('cpa_friend_respond', { p_handle: 'Carla', p_secret: S5, p_from: 'Anna', p_accept: true }, 'no_request', 'un terzo non può accettare');
+  await fails('cpa_friend_respond', { p_handle: 'Bruno', p_secret: S3, p_from: 'Anna', p_accept: true }, 'bad_login', 'accettare con il codice di un altro');
+  eq(await call('cpa_friend_respond', { p_handle: 'Bruno', p_secret: S4, p_from: 'ANNA', p_accept: true }), true, 'Bruno accetta');
+  const fa = await fl('Anna', S3), fb = await fl('Bruno', S4);
+  eq([names(fa.friends), fa.outgoing, names(fb.friends), fb.incoming], [['Bruno'], [], ['Anna'], []], 'amici da tutte e due le parti, richieste chiuse');
+  eq(fa.friends[0], { handle: 'Bruno', avatar_name: '', avatar_url: '' }, 'dell\'amico si vedono solo ID e immagine'); ok(JSON.stringify(fa).indexOf('hash') < 0 && JSON.stringify(fa).indexOf(S4) < 0, 'nessun segreto nell\'elenco');
+  eq(await req('Bruno', S4, 'Anna'), 'accepted', 'chiedere a chi è già amico: già amici'); eq(await req('Anna', S3, 'Bruno'), 'accepted', '...da entrambe le parti');
+  /* richieste incrociate: scatta subito */
+  eq(await req('Anna', S3, 'Carla'), 'pending', 'Anna chiede a Carla'); eq(await req('Carla', S5, 'Anna'), 'accepted', 'Carla chiede ad Anna che le aveva già chiesto: amici subito');
+  eq(names((await fl('Anna', S3)).friends), ['Bruno', 'Carla'], 'Anna ha due amici, in ordine alfabetico'); eq((await fl('Carla', S5)).incoming, [], 'e nessuna richiesta in sospeso');
+  /* rifiuto */
+  const S6 = 'GGGGG77777HHHHH88888'; await call('cpa_register', { p_handle: 'Dario', p_secret: S6 });
+  eq(await req('Dario', S6, 'Bruno'), 'pending', 'Dario chiede a Bruno'); eq(await call('cpa_friend_respond', { p_handle: 'Bruno', p_secret: S4, p_from: 'Dario', p_accept: false }), false, 'Bruno rifiuta');
+  eq([(await fl('Dario', S6)).outgoing, (await fl('Bruno', S4)).incoming], [[], []], 'la richiesta sparisce da entrambe le parti');
+  eq(await req('Dario', S6, 'Bruno'), 'pending', 'dopo un rifiuto si può richiedere'); await fails('cpa_friend_respond', { p_handle: 'Bruno', p_secret: S4, p_from: 'Nessuno', p_accept: true }, 'no_request', 'rispondere a un ID che non esiste');
+  /* annullare e togliere */
+  eq(await call('cpa_friend_remove', { p_handle: 'Dario', p_secret: S6, p_other: 'Bruno' }), true, 'chi ha chiesto può annullare'); eq((await fl('Bruno', S4)).incoming, [], 'e Bruno non la vede più');
+  eq(await call('cpa_friend_remove', { p_handle: 'Dario', p_secret: S6, p_other: 'Bruno' }), false, 'togliere qualcosa che non c\'è: false'); eq(await call('cpa_friend_remove', { p_handle: 'Dario', p_secret: S6, p_other: 'Nessuno' }), false, 'ID che non esiste: false');
+  await fails('cpa_friend_remove', { p_handle: 'Anna', p_secret: S4, p_other: 'Bruno' }, 'bad_login', 'togliere un amico con il codice di un altro');
+  eq(await call('cpa_friend_remove', { p_handle: 'Bruno', p_secret: S4, p_other: 'anna' }), true, 'Bruno toglie Anna'); eq([names((await fl('Anna', S3)).friends), (await fl('Bruno', S4)).friends], [['Carla'], []], 'non sono più amici, per nessuno dei due');
+  eq(await req('Bruno', S4, 'Anna'), 'pending', 'e si può ricominciare (la richiesta va dal nuovo richiedente)'); eq(names((await fl('Anna', S3)).incoming), ['Bruno'], 'ora è Anna a riceverla');
+  /* rinominare non rompe le amicizie, eliminare le porta via */
+  await call('cpa_rename', { p_handle: 'Carla', p_secret: S5, p_new: 'Carlotta' }); eq(names((await fl('Anna', S3)).friends), ['Carlotta'], 'chi cambia ID resta amico, col nuovo nome');
+  await call('cpa_delete', { p_handle: 'Carlotta', p_secret: S5 }); eq((await fl('Anna', S3)).friends, [], 'eliminando il profilo spariscono le sue amicizie'); await db.exec('reset role'); eq((await db.query("select count(*)::int c from public.cpa_friends where status = 'accepted'")).rows[0].c, 0, 'nessuna riga orfana'); await db.exec('set role anon');
+  /* limiti */
+  const bot = i => ['Bot' + String(i).padStart(2, '0'), 'BBBBB' + String(i).padStart(2, '0') + 'CCCCCDDDDDEEE'];
+  for (let i = 0; i < 31; i++) await call('cpa_register', { p_handle: bot(i)[0], p_secret: bot(i)[1] });
+  for (let i = 0; i < 30; i++) await req('Dario', S6, bot(i)[0]);
+  await fails('cpa_friend_request', { p_handle: 'Dario', p_secret: S6, p_to: bot(30)[0] }, 'too_many', 'al massimo 30 richieste in attesa');
+  eq((await fl('Dario', S6)).outgoing.length, 30, 'le prime 30 ci sono');
+
   /* l'orologio: seen_at si aggiorna */
   await db.exec('reset role'); const t0 = (await db.query("select seen_at from public.cpa_profiles where handle_key = 'simone'")).rows[0].seen_at; await db.exec('select pg_sleep(0.05)'); await db.exec('set role anon');
   await call('cpa_login', { p_handle: 'Simone', p_secret: SECRET }); await db.exec('reset role');

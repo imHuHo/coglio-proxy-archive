@@ -59,7 +59,7 @@
   }
 
   /* ----- client delle funzioni del server ----- */
-  var KNOWN = { bad_handle: 1, bad_secret: 1, bad_avatar: 1, bad_login: 1, handle_taken: 1 };
+  var KNOWN = { bad_handle: 1, bad_secret: 1, bad_avatar: 1, bad_login: 1, handle_taken: 1, no_such_user: 1, self: 1, no_request: 1, too_many: 1 };
   function fail(code, message) { var e = new Error(message || code); e.code = code; return e; }
   /* Messaggi per le persone, per codice d'errore. */
   var TEXT = {
@@ -68,6 +68,10 @@
     bad_avatar: 'Questa immagine non si può usare.',
     bad_login: 'ID o codice di recupero sbagliati.',
     handle_taken: 'Questo ID è già preso.',
+    no_such_user: 'Non esiste nessun Codighel ID così: controlla come è scritto.',
+    self: 'Questo è il tuo ID!',
+    no_request: 'Questa richiesta non c’è più.',
+    too_many: 'Troppe richieste in attesa o troppi amici: sistema quelle che hai già.',
     offline: 'Non riesco a raggiungere il server: controlla la connessione e riprova.',
     unconfigured: 'Le funzioni community non sono ancora attive.',
     server: 'Il server ha risposto in modo strano: riprova tra poco.',
@@ -100,8 +104,30 @@
       login: function (h, secret) { return call('cpa_login', { p_handle: h, p_secret: secret }); },
       setAvatar: function (h, secret, a) { var b = av(a); return call('cpa_set_avatar', { p_handle: h, p_secret: secret, p_name: b.p_name, p_url: b.p_url }); },
       rename: function (h, secret, nh) { return call('cpa_rename', { p_handle: h, p_secret: secret, p_new: nh }); },
-      remove: function (h, secret) { return call('cpa_delete', { p_handle: h, p_secret: secret }); }
+      remove: function (h, secret) { return call('cpa_delete', { p_handle: h, p_secret: secret }); },
+      friends: function (h, secret) { return call('cpa_friend_list', { p_handle: h, p_secret: secret }).then(cleanFriends); },
+      friendRequest: function (h, secret, to) { return call('cpa_friend_request', { p_handle: h, p_secret: secret, p_to: to }); },
+      friendRespond: function (h, secret, from, accept) { return call('cpa_friend_respond', { p_handle: h, p_secret: secret, p_from: from, p_accept: !!accept }); },
+      friendRemove: function (h, secret, other) { return call('cpa_friend_remove', { p_handle: h, p_secret: secret, p_other: other }); }
     };
+  }
+
+  /* ----- amici ----- */
+  function cleanPerson(p) {
+    if (!p || !validHandle(p.handle)) return null;
+    return { handle: p.handle, avatar_name: String(p.avatar_name || '').slice(0, 160), avatar_url: ART_RE.test(String(p.avatar_url || '')) ? String(p.avatar_url) : '' };
+  }
+  function cleanFriends(r) {
+    function list(a) { return Array.isArray(a) ? a.map(cleanPerson).filter(Boolean) : []; }
+    r = r || {}; return { friends: list(r.friends), incoming: list(r.incoming), outgoing: list(r.outgoing) };
+  }
+  /* Il link che si manda agli amici: apre la versione web e lo riconosce dal #amico=ID. */
+  var WEB_URL = 'https://imHuHo.github.io/coglio-proxy-archive/';
+  function friendLink(handle, base) { return String(base || WEB_URL).replace(/#.*$/, '') + '#amico=' + encodeURIComponent(cleanHandle(handle)); }
+  function parseFriendHash(hash) {
+    var m = /^#?amico=([^&]*)/.exec(String(hash || '')); if (!m) return '';
+    var h; try { h = decodeURIComponent(m[1]); } catch (e) { return ''; }
+    h = cleanHandle(h); return validHandle(h) ? h : '';
   }
 
   /* ----- profilo salvato sul dispositivo ----- */
@@ -116,6 +142,7 @@
     HANDLE_RE: HANDLE_RE, SECRET_LEN: SECRET_LEN, ART_HOST: ART_HOST,
     cleanHandle: cleanHandle, validHandle: validHandle, handleProblem: handleProblem,
     newSecret: newSecret, formatSecret: formatSecret, normSecret: normSecret, validSecret: validSecret,
+    cleanFriends: cleanFriends, friendLink: friendLink, parseFriendHash: parseFriendHash, WEB_URL: WEB_URL,
     artFromCard: artFromCard, artSearch: artSearch, configured: configured, create: create, messageOf: messageOf, TEXT: TEXT, restoreLocal: restoreLocal
   };
 });

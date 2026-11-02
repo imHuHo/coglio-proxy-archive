@@ -6,7 +6,7 @@ const dir = process.argv[2]; if (!dir) { console.error('serve la cartella di @el
 const { PGlite } = require(path.resolve(dir));
 const WEB = path.join(__dirname, '..', 'web');
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/json', '.woff2': 'font/woff2', '.json': 'application/json' };
-let n = 0; const ok = (c, m) => { n++; assert.ok(c, m); };
+let n = 0; const ok = (c, m) => { n++; assert.ok(c, m); }; const eq = (a, b, m) => { n++; assert.deepStrictEqual(a, b, m); };
 const SHOTS = process.env.SHOTS || '';
 const ART = i => 'https://cards.scryfall.io/art_crop/front/' + i + '/' + i + '/0000000' + i + '-aaaa-bbbb-cccc-1234567890ab.jpg?15629034' + i + i;
 const CARDS = { data: [{ name: 'Kaalia of the Vast', set: 'cmd', artist: 'Jason Chan', image_uris: { art_crop: ART(1) } }, { name: 'Kaalia of the Vast', set: 'cm2', artist: 'Aleksi Briclot', image_uris: { art_crop: ART(2) } }, { name: 'Kaalia, Zenith Seeker', set: 'cmr', artist: 'Magali Villeneuve', card_faces: [{ name: 'Kaalia, Zenith Seeker', image_uris: { art_crop: ART(3) } }, {}] }] };
@@ -125,6 +125,63 @@ const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers
   await pb.click('#cm [data-a="cm-del"]'); ok(await count() === 1, 'una pressione sola non elimina'); await pb.click('#cm [data-a="cm-del"]'); await pb.waitForSelector('#cm #cm-handle'); ok(await count() === 0, 'profilo eliminato dal server'); ok(await pb.evaluate(() => localStorage.getItem('cpa:community:v1') === null), 'e dal dispositivo');
   await pc.fill('#cm-handle', 'Simo'); await pc.waitForFunction(() => /» è libero\./.test(document.getElementById('cm-st').textContent)); ok(true, 'l\'ID eliminato torna libero');
   ok(rpcLog.every(f => /^cpa_/.test(f)) && rpcLog.length > 10, 'tutte le chiamate sono funzioni cpa_*: ' + rpcLog.length);
+
+
+  /* ----- amici ----- */
+  const createId = async (pg, handle) => { await pg.fill('#cm-handle', handle); await pg.click('#cm [data-a="cm-create"]'); await pg.waitForSelector('#cm-pop #cm-code'); const c = await pg.textContent('#cm-code'); await pg.keyboard.press('Escape'); await pg.waitForSelector('#cm .cm-me'); return c; };
+  const openLink = async (ctx, hash) => { const pg = await ctx.newPage(); pg.on('pageerror', e => errors.push(e.message)); await pg.goto(base + hash); await pg.waitForSelector('.shell'); return pg; };
+  const lis = (pg, sec) => pg.evaluate(k => { const h = [...document.querySelectorAll('#cm .cm-sub2')].find(x => x.textContent.indexOf(k) === 0); const u = h && h.nextElementSibling; return u && u.tagName === 'UL' ? [...u.querySelectorAll('li b')].map(b => b.textContent) : []; }, sec);
+  const refresh = async pg => { await pg.click('#cm [data-a="cm-frefresh"]'); await pg.waitForFunction(() => !document.querySelector('#cm [data-a="cm-frefresh"][disabled]')); };
+  const D1 = await device(true), p1 = D1.page, D2 = await device(true), p2 = D2.page;
+  const codeAnna = await createId(p1, 'Anna'); await createId(p2, 'Bruno');
+  await p1.waitForSelector('#cm .cm-sub:has-text("Amici")'); ok(/Ancora nessun amico/.test(await p1.textContent('#cm')), 'all\'inizio nessun amico');
+  await shotOf(p1)('community-friends-empty');
+  /* chiedere l'amicizia per ID */
+  await p2.fill('#cm-add', 'x'); await p2.click('#cm [data-a="cm-fadd"]'); ok(/Almeno 3/.test(await p2.textContent('#cm .err')), 'ID troppo corto');
+  await p2.fill('#cm-add', 'Nessuno'); await p2.keyboard.press('Enter'); await p2.waitForFunction(() => /Non esiste nessun Codighel ID/.test((document.querySelector('#cm .err') || {}).textContent || '')); ok(true, 'ID che non esiste');
+  await p2.fill('#cm-add', 'bruno'); await p2.click('#cm [data-a="cm-fadd"]'); await p2.waitForFunction(() => /Questo è il tuo ID/.test((document.querySelector('#cm .err') || {}).textContent || '')); ok(true, 'non puoi aggiungere te stesso');
+  await p2.fill('#cm-add', 'anna'); await p2.click('#cm [data-a="cm-fadd"]'); await p2.waitForFunction(() => /Richiesta inviata a @anna/.test((document.querySelector('#cm .cm-st.ok') || {}).textContent || ''));
+  ok(await p2.inputValue('#cm-add') === '', 'il campo si svuota'); await p2.waitForFunction(() => /Richieste inviate/.test(document.getElementById('cm').textContent)); eq(await lis(p2, 'Richieste inviate'), ['@Anna'], 'Bruno vede la richiesta inviata (con l\'ID scritto bene)');
+  /* ...e Anna la riceve */
+  await refresh(p1); eq(await lis(p1, 'Richieste ricevute'), ['@Bruno'], 'Anna vede la richiesta di Bruno'); await shotOf(p1)('community-friends-incoming');
+  await p1.click('#cm [data-a="cm-facc"][data-h="Bruno"]'); await p1.waitForFunction(() => /siete amici/.test((document.querySelector('#cm .cm-st.ok') || {}).textContent || ''));
+  await p1.waitForFunction(() => /I tuoi amici \(1\)/.test(document.getElementById('cm').textContent)); eq([await lis(p1, 'I tuoi amici'), await lis(p1, 'Richieste ricevute')], [['@Bruno'], []], 'Anna: Bruno è amico, la richiesta è chiusa');
+  await refresh(p2); eq([await lis(p2, 'I tuoi amici'), await lis(p2, 'Richieste inviate')], [['@Anna'], []], 'Bruno: Anna è amica'); await shotOf(p2)('community-friends');
+  /* togliere un amico chiede conferma */
+  await p2.click('#cm [data-a="cm-frm"][data-h="Anna"]'); ok(/Sicuro/.test(await p2.textContent('#cm [data-a="cm-frm"]')) && (await lis(p2, 'I tuoi amici')).length === 1, 'togliere chiede conferma');
+  await p2.click('#cm [data-a="cm-frm"][data-h="Anna"]'); await p2.waitForFunction(() => /non è più tra i tuoi amici/.test(document.getElementById('cm').textContent)); eq(await lis(p2, 'I tuoi amici'), [], 'tolto'); await refresh(p1); eq(await lis(p1, 'I tuoi amici'), [], 'e non lo è più nemmeno per Anna');
+  /* il link */
+  const LINK = 'https://imHuHo.github.io/coglio-proxy-archive/#amico=Anna';
+  await p1.click('#cm [data-a="cm-link"]'); await p1.waitForFunction(() => /Link copiato/.test(document.body.textContent)); ok((await p1.evaluate(() => navigator.clipboard.readText())) === LINK, 'il link copiato porta al mio ID');
+  await p1.evaluate(() => navigator.clipboard.writeText('x')); await p1.click('#cm [data-a="cm-share"]'); await p1.waitForFunction(() => navigator.clipboard.readText().then(t => t.indexOf('#amico=Anna') > 0)); ok(true, 'condividi (senza menu di sistema) copia il link');
+  /* chi apre il link con un profilo: gli propongo di aggiungere Anna */
+  const l2 = await openLink(D2.ctx, '#amico=Anna'); await l2.waitForSelector('#cm-pop .cm-me');
+  ok(/@Anna/.test(await l2.textContent('#cm-pop .cm-h')) && /Vuoi aggiungere/.test(await l2.textContent('#cm-pop')), 'invito: «Vuoi aggiungere @Anna»'); ok(await l2.evaluate(() => location.hash === '' && document.querySelector('.nav.on, [data-a="nav"][aria-current], [data-a="nav"].on') !== null), 'il link porta in Dati e si pulisce l\'indirizzo'); await shotOf(l2)('community-invite');
+  await l2.click('#cm-pop [data-a="cm-iadd"]'); await l2.waitForFunction(() => /Richiesta inviata a @Anna/.test((document.querySelector('#cm-pop .cm-st') || {}).textContent || '')); await l2.click('#cm-pop [data-a="cm-close"]');
+  await refresh(p1); eq(await lis(p1, 'Richieste ricevute'), ['@Bruno'], 'Anna ha di nuovo la richiesta di Bruno'); await l2.close();
+  /* link al proprio ID, a un ID che non esiste, rotto */
+  const l3 = await openLink(D1.ctx, '#amico=anna'); await l3.waitForSelector('#cm-pop'); ok(/stesso link/.test(await l3.textContent('#cm-pop')), 'il proprio link: «è il tuo stesso link»'); await l3.close();
+  const l4 = await openLink(D1.ctx, '#amico=Nessuno'); await l4.waitForSelector('#cm-pop .an-none'); ok(/Non esiste nessun Codighel ID/.test(await l4.textContent('#cm-pop')), 'link a un ID che non esiste'); await l4.close();
+  const l5 = await openLink(D1.ctx, '#amico=%3Cx%3E'); await l5.waitForTimeout(800); ok(await l5.locator('#cm-pop').count() === 0, 'link con un ID non valido: niente invito'); await l5.close();
+  /* chi non ha ancora un ID: lo crea e la richiesta parte da sola */
+  const D3 = await (async () => { const ctx = await browser.newContext({ viewport: { width: vp[0], height: vp[1] }, colorScheme: process.env.DARK ? 'dark' : 'light' }); const pg = await ctx.newPage(); pg.on('pageerror', e => errors.push(e.message)); await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort()); await ctx.route('https://api.scryfall.com/**', r => r.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify(CARDS) })); await ctx.route('https://cards.scryfall.io/**', r => r.fulfill({ status: 200, headers: { 'content-type': 'image/svg+xml' }, body: SVG }));
+    await ctx.route('**/community-config.js', r => r.fulfill({ status: 200, headers: { 'content-type': 'text/javascript' }, body: "window.CPA_COMMUNITY = { url: 'https://test.supabase.co', key: 'sb_publishable_testkey0123456789' };" })); await ctx.route('https://test.supabase.co/**', rpc); await ctx.route(url => url.protocol === 'https:' && !/test\.supabase\.co|scryfall/.test(url.href), r => r.abort());
+    await pg.goto(base + '#amico=Anna'); await pg.waitForSelector('#cm-pop'); return { ctx, pg }; })();
+  const p3 = D3.pg; ok(/ti serve un Codighel ID/.test(await p3.textContent('#cm-pop')) && await p3.locator('#cm-pop [data-a="cm-icreate"]').count() === 1, 'senza ID: «ti serve un Codighel ID»'); await shotOf(p3)('community-invite-new');
+  await p3.click('#cm-pop [data-a="cm-icreate"]'); ok(await p3.locator('#cm-pop').count() === 0 && await p3.evaluate(() => document.activeElement.id) === 'cm-handle', 'si va al campo dell\'ID');
+  await createId(p3, 'Carla'); await p3.waitForFunction(() => /Richiesta inviata a @Anna/.test(document.body.textContent)); await p3.waitForFunction(() => /Richieste inviate/.test(document.getElementById('cm').textContent)); eq(await lis(p3, 'Richieste inviate'), ['@Anna'], 'creato l\'ID, la richiesta ad Anna è partita da sola');
+  await refresh(p1); eq(await lis(p1, 'Richieste ricevute'), ['@Bruno', '@Carla'], 'Anna ha due richieste'); await p1.click('#cm [data-a="cm-frej"][data-h="Bruno"]'); await p1.waitForFunction(() => /rifiutata/.test(document.getElementById('cm').textContent)); eq(await lis(p1, 'Richieste ricevute'), ['@Carla'], 'rifiutata quella di Bruno');
+  await refresh(p2); eq(await lis(p2, 'Richieste inviate'), [], 'Bruno non la vede più tra le inviate (rifiutata)');
+  /* annullare una richiesta inviata */
+  await p2.fill('#cm-add', 'Carla'); await p2.click('#cm [data-a="cm-fadd"]'); await p2.waitForFunction(() => /Richiesta inviata/.test((document.querySelector('#cm .cm-st.ok') || {}).textContent || '')); await p2.waitForFunction(() => document.querySelector('#cm [data-a="cm-fcancel"]'));
+  await p2.click('#cm [data-a="cm-fcancel"]'); await p2.waitForFunction(() => /annullata/.test(document.getElementById('cm').textContent)); eq(await lis(p2, 'Richieste inviate'), [], 'richiesta annullata');
+  /* esco e rientro: l'elenco amici si ricarica */
+  await p1.click('#cm [data-a="cm-facc"][data-h="Carla"]'); await p1.waitForFunction(() => /siete amici/.test(document.getElementById('cm').textContent));
+  await p1.click('#cm [data-a="cm-logout"]'); await p1.click('#cm [data-a="cm-logout"]'); await p1.waitForSelector('#cm #cm-handle'); ok(!/Amici/.test(await p1.textContent('#cm')), 'uscito: niente elenco amici');
+  await p1.click('#cm [data-a="cm-login-open"]'); await p1.fill('#cm-lh', 'anna'); await p1.fill('#cm-lc', codeAnna); await p1.click('#cm-pop [data-a="cm-login"]'); await p1.waitForSelector('#cm .cm-me'); await p1.waitForFunction(() => /I tuoi amici \(1\)/.test(document.getElementById('cm').textContent)); eq(await lis(p1, 'I tuoi amici'), ['@Carla'], 'rientrata, ritrovo Carla tra gli amici');
+  /* eliminare il profilo porta via le amicizie */
+  await p3.click('#cm [data-a="cm-frefresh"]'); await p3.waitForFunction(() => /I tuoi amici \(1\)/.test(document.getElementById('cm').textContent)); await p1.click('#cm [data-a="cm-del"]'); await p1.click('#cm [data-a="cm-del"]'); await p1.waitForSelector('#cm #cm-handle');
+  await refresh(p3); eq(await lis(p3, 'I tuoi amici'), [], 'Anna eliminata: sparisce anche dagli amici di Carla');
 
   /* senza rete: errore comprensibile, niente blocchi */
   const D = await device(true), pd = D.page; await D.ctx.route('https://test.supabase.co/**', r => r.abort());
