@@ -4789,10 +4789,10 @@ window.CPA_CHANGELOG = [
       /* tavoli condivisi e le loro partite */
       tables: function (h, secret) { return call('cpa_table_list', { p_handle: h, p_secret: secret }).then(function (a) { return Array.isArray(a) ? a.map(cleanTable).filter(Boolean) : []; }); },
       tableSave: function (h, secret, t) {
-        return call('cpa_table_save', { p_handle: h, p_secret: secret, p_id: t.id || null, p_name: t.name, p_players: JSON.stringify((t.players || []).map(seatOut)), p_start: t.start, p_cmd_life: t.cmdLife !== false }).then(function (r) { var c = cleanTable(r); if (!c) throw fail('server'); return c; });
+        return call('cpa_table_save', { p_handle: h, p_secret: secret, p_id: t.id || null, p_name: t.name, p_players: (t.players || []).map(seatOut), p_start: t.start, p_cmd_life: t.cmdLife !== false }).then(function (r) { var c = cleanTable(r); if (!c) throw fail('server'); return c; });
       },
       tableGames: function (h, secret, id) { return call('cpa_table_games', { p_handle: h, p_secret: secret, p_id: id }).then(function (a) { return Array.isArray(a) ? a.map(cleanGame).filter(Boolean) : []; }); },
-      gameAdd: function (h, secret, table, rec) { return call('cpa_game_add', { p_handle: h, p_secret: secret, p_table: table, p_rec: JSON.stringify(rec) }); },
+      gameAdd: function (h, secret, table, rec) { return call('cpa_game_add', { p_handle: h, p_secret: secret, p_table: table, p_rec: rec }); },
       gameDelete: function (h, secret, table, gid) { return call('cpa_game_delete', { p_handle: h, p_secret: secret, p_table: table, p_game: gid }); },
       tableDelete: function (h, secret, id) { return call('cpa_table_delete', { p_handle: h, p_secret: secret, p_id: id }); },
       tableLeave: function (h, secret, id) { return call('cpa_table_leave', { p_handle: h, p_secret: secret, p_id: id }); },

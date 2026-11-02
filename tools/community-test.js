@@ -95,13 +95,13 @@ const calls = []; const sf = (body, status) => (u) => { calls.push(u); return Pr
   eq((await tc.tables('Simone', 'S')).map(t => t.id), [T1], 'tables: solo quelli validi'); eq(seen3[0], { f: 'cpa_table_list', b: { p_handle: 'Simone', p_secret: 'S' } }, 'tables: chiamata');
   tc = C.create(cfg, srv3({ id: T1, name: 'Nuovo', owner: 'Simone', mine: true, start: 40, cmd_life: true, players: [{ name: 'A', u: U1 }, { name: 'B' }] }));
   eq((await tc.tableSave('Simone', 'S', { name: 'Nuovo', players: [{ name: 'Ignorato', u: U1 }, { name: ' Ospite ', u: 'brutto' }], start: 40 })).name, 'Nuovo', 'tableSave');
-  eq(seen3[1], { f: 'cpa_table_save', b: { p_handle: 'Simone', p_secret: 'S', p_id: null, p_name: 'Nuovo', p_players: JSON.stringify([{ u: U1 }, { name: 'Ospite' }]), p_start: 40, p_cmd_life: true } }, 'tableSave: amici per id (senza nome), ospiti per nome, nuovo = id nullo');
+  eq(seen3[1], { f: 'cpa_table_save', b: { p_handle: 'Simone', p_secret: 'S', p_id: null, p_name: 'Nuovo', p_players: [{ u: U1 }, { name: 'Ospite' }], p_start: 40, p_cmd_life: true } }, 'tableSave: amici per id (senza nome), ospiti per nome, nuovo = id nullo');
   await tc.tableSave('Simone', 'S', { id: T1, name: 'N', players: [{ name: 'a' }, { name: 'b' }], start: 20, cmdLife: false }); eq([seen3[2].b.p_id, seen3[2].b.p_start, seen3[2].b.p_cmd_life], [T1, 20, false], 'tableSave: aggiornamento');
   await rej(C.create(cfg, srv3({})).tableSave('S', 'S', { name: 'x', players: [] }), 'server', 'tableSave: risposta strana');
   tc = C.create(cfg, srv3([gsrv, { gid: 'x' }]));
   eq((await tc.tableGames('Simone', 'S', T1)).map(x => x.id), [G1], 'tableGames: solo partite valide'); eq(seen3[4], { f: 'cpa_table_games', b: { p_handle: 'Simone', p_secret: 'S', p_id: T1 } }, 'tableGames: chiamata');
   tc = C.create(cfg, srv3({ gid: G1 })); const rec = { t: 1, players: [{ name: 'a' }, { name: 'b' }] };
-  eq((await tc.gameAdd('Simone', 'S', T1, rec)).gid, G1, 'gameAdd'); eq(seen3[5], { f: 'cpa_game_add', b: { p_handle: 'Simone', p_secret: 'S', p_table: T1, p_rec: JSON.stringify(rec) } }, 'gameAdd: chiamata');
+  eq((await tc.gameAdd('Simone', 'S', T1, rec)).gid, G1, 'gameAdd'); eq(seen3[5], { f: 'cpa_game_add', b: { p_handle: 'Simone', p_secret: 'S', p_table: T1, p_rec: rec } }, 'gameAdd: chiamata');
   tc = C.create(cfg, srv3(true)); await tc.gameDelete('Simone', 'S', T1, G1); await tc.tableDelete('Simone', 'S', T1); await tc.tableLeave('Simone', 'S', T1);
   eq(seen3.slice(6).map(x => [x.f, x.b]), [['cpa_game_delete', { p_handle: 'Simone', p_secret: 'S', p_table: T1, p_game: G1 }], ['cpa_table_delete', { p_handle: 'Simone', p_secret: 'S', p_id: T1 }], ['cpa_table_leave', { p_handle: 'Simone', p_secret: 'S', p_id: T1 }]], 'gameDelete, tableDelete, tableLeave');
   for (const m of ['not_friend', 'bad_data', 'no_table', 'not_owner', 'is_owner']) { await rej(C.create(cfg, srv(400, { message: m })).tableSave('a', 'b', { name: 'x', players: [] }), m, 'errore tavoli: ' + m); ok(C.messageOf({ code: m }).length > 10, 'messaggio: ' + m); }

@@ -1,5 +1,5 @@
 /* Service worker: l'app funziona offline dopo il primo caricamento. Cambia CACHE a ogni rilascio. */
-const CACHE = 'cpa-v49';
+const CACHE = 'cpa-v50';
 const ASSETS = ['./', 'index.html', 'style.css', 'version.js', 'changelog.js', 'core.js', 'pdf.js', 'proxy.js', 'search.js', 'cards.js', 'bracket.js', 'mpc.js', 'analysis.js', 'pescher.js', 'community.js', 'community-config.js', 'sync-config.js', 'sync.js', 'app.js', 'builder.js', 'cardrender.js', 'designer.js', 'pescher-ui.js', 'community-ui.js', 'chat-ui.js', 'manifest.webmanifest', 'icon.svg',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'mana/w.svg', 'mana/u.svg', 'mana/b.svg', 'mana/r.svg', 'mana/g.svg', 'mana/c.svg', 'mana/botto.svg',

@@ -26,7 +26,7 @@ const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers
     const fn = rq.url().split('/rpc/')[1], body = JSON.parse(rq.postData() || '{}'), k = Object.keys(body); rpcLog.push(fn);
     if (!/^cpa_[a-z_]+$/.test(fn)) return route.fulfill({ status: 404, headers: CORS, body: '{}' });
     try {
-      const r = await db.query('select public.' + fn + '(' + k.map((x, i) => x + ' => $' + (i + 1)).join(', ') + ') as r', k.map(x => body[x]));
+      const r = await db.query('select public.' + fn + '(' + k.map((x, i) => x + ' => $' + (i + 1)).join(', ') + ') as r', k.map(x => (x === 'p_players' || x === 'p_rec') ? JSON.stringify(body[x]) : body[x]));
       return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify(r.rows[0].r) });
     } catch (e) { return route.fulfill({ status: 400, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify({ code: e.code || 'P0001', message: e.message }) }); }
   };

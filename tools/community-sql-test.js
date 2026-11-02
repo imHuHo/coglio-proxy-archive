@@ -13,7 +13,7 @@ const URL1 = 'https://cards.scryfall.io/art_crop/front/1/2/12345678-aaaa-bbbb-cc
   const sql = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'schema.sql'), 'utf8');
   await db.exec(sql); await db.exec(sql); ok(true, 'lo schema si può lanciare due volte');
   await db.exec('set role anon');
-  const call = async (fn, args) => { const k = Object.keys(args || {}); const r = await db.query('select public.' + fn + '(' + k.map((x, i) => x + ' => $' + (i + 1)).join(', ') + ') as r', k.map(x => args[x])); return r.rows[0].r; };
+  const call = async (fn, args) => { const k = Object.keys(args || {}); const r = await db.query('select public.' + fn + '(' + k.map((x, i) => x + ' => $' + (i + 1)).join(', ') + ') as r', k.map(x => (x === 'p_players' || x === 'p_rec') ? JSON.stringify(args[x]) : args[x])); return r.rows[0].r; };
   const fails = async (fn, args, msg, why) => { try { await call(fn, args); } catch (e) { n++; assert.ok(String(e.message).indexOf(msg) >= 0, why + ' (errore: ' + e.message + ')'); return; } assert.fail(why + ' (non ha dato errore)'); };
 
   /* l'anon non tocca la tabella */
@@ -142,26 +142,27 @@ const URL1 = 'https://cards.scryfall.io/art_crop/front/1/2/12345678-aaaa-bbbb-cc
   await req('Elena', SE, 'Gino'); await call('cpa_friend_respond', { p_handle: 'Gino', p_secret: SG, p_from: 'Elena', p_accept: true });
   for (const [h, sc, o] of [['Elena', SE, 'Fabio'], ['Fabio', SF, 'Elena']]) { const f = (await fl(h, sc)).friends.find(x => x.handle === o); id[o] = f.id; }
   id.Gino = (await fl('Elena', SE)).friends.find(x => x.handle === 'Gino').id; id.Elena = (await fl('Fabio', SF)).friends[0].id;
-  const tsave = (h, sc, a) => call('cpa_table_save', { p_handle: h, p_secret: sc, p_id: a.id || null, p_name: a.name, p_players: JSON.stringify(a.players), p_start: a.start == null ? 40 : a.start, p_cmd_life: a.cmd == null ? true : a.cmd });
+  const tsave = (h, sc, a) => call('cpa_table_save', { p_handle: h, p_secret: sc, p_id: a.id || null, p_name: a.name, p_players: a.players, p_start: a.start == null ? 40 : a.start, p_cmd_life: a.cmd == null ? true : a.cmd });
   const tlist = (h, sc) => call('cpa_table_list', { p_handle: h, p_secret: sc });
   const tgames = (h, sc, t) => call('cpa_table_games', { p_handle: h, p_secret: sc, p_id: t });
-  const gadd = (h, sc, t, rec) => call('cpa_game_add', { p_handle: h, p_secret: sc, p_table: t, p_rec: JSON.stringify(rec) });
+  const gadd = (h, sc, t, rec) => call('cpa_game_add', { p_handle: h, p_secret: sc, p_table: t, p_rec: rec });
   for (const q of ['select * from public.cpa_tables', 'select * from public.cpa_games', 'select * from public.cpa_table_members', 'delete from public.cpa_tables', 'select public.cpa_roster(\'[]\'::json, null, \'{}\')', 'select public.cpa_table_doc(null, null)']) {
     let denied = false; try { await db.query(q); } catch (e) { denied = /permission denied/i.test(e.message); } ok(denied, 'tavoli: accesso negato: ' + q.slice(0, 40));
   }
   const P4 = [{ name: 'boh', u: id.Elena }, { name: 'x', u: id.Fabio }, { name: 'Ospite' }, { name: '  Marta  ' }];
   /* controlli sui posti */
-  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: JSON.stringify([{ name: 'solo' }]), p_start: 40, p_cmd_life: true }, 'bad_data', 'un solo posto');
-  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: JSON.stringify(Array.from({ length: 7 }, (_, i) => ({ name: 'g' + i }))), p_start: 40, p_cmd_life: true }, 'bad_data', 'sette posti');
-  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: JSON.stringify([{ name: 'a' }, { name: ' ' }]), p_start: 40, p_cmd_life: true }, 'bad_data', 'nome libero vuoto');
-  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: JSON.stringify([{ name: 'a' }, { name: 'b', u: 'non-un-uuid' }]), p_start: 40, p_cmd_life: true }, 'bad_data', 'id non valido');
-  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: JSON.stringify([{ name: 'a' }, { name: 'b', u: '11111111-1111-1111-1111-111111111111' }]), p_start: 40, p_cmd_life: true }, 'bad_data', 'id che non esiste');
-  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: JSON.stringify([{ u: id.Fabio }, { u: id.Fabio }]), p_start: 40, p_cmd_life: true }, 'bad_data', 'lo stesso amico due volte');
+  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: [{ name: 'solo' }], p_start: 40, p_cmd_life: true }, 'bad_data', 'un solo posto');
+  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: Array.from({ length: 7 }, (_, i) => ({ name: 'g' + i })), p_start: 40, p_cmd_life: true }, 'bad_data', 'sette posti');
+  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: [{ name: 'a' }, { name: ' ' }], p_start: 40, p_cmd_life: true }, 'bad_data', 'nome libero vuoto');
+  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: [{ name: 'a' }, { name: 'b', u: 'non-un-uuid' }], p_start: 40, p_cmd_life: true }, 'bad_data', 'id non valido');
+  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: [{ name: 'a' }, { name: 'b', u: '11111111-1111-1111-1111-111111111111' }], p_start: 40, p_cmd_life: true }, 'bad_data', 'id che non esiste');
+  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: [{ u: id.Fabio }, { u: id.Fabio }], p_start: 40, p_cmd_life: true }, 'bad_data', 'lo stesso amico due volte');
+  { const old = await tsave('Elena', SE, { name: 'Vecchio client', players: '[{"u":"' + id.Fabio + '"},{"name":"Gino"}]' }); ok(old.players.length === 2 && old.players[0].name === 'Fabio', 'client vecchi: i posti come testo JSON vengono letti lo stesso'); await call('cpa_table_delete', { p_handle: 'Elena', p_secret: SE, p_id: old.id }); await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: 'non json', p_start: 40, p_cmd_life: true }, 'bad_data', 'testo che non è JSON'); }
   const hugoId = (await db.exec('reset role').then(() => db.query("select id from public.cpa_profiles where handle_key = 'hugo'"))).rows[0].id; await db.exec('set role anon');
-  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: JSON.stringify([{ name: 'a' }, { u: hugoId }]), p_start: 40, p_cmd_life: true }, 'not_friend', 'chi non è amico non si siede');
-  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: '  ', p_players: JSON.stringify(P4), p_start: 40, p_cmd_life: true }, 'bad_data', 'tavolo senza nome');
-  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: JSON.stringify(P4), p_start: 0, p_cmd_life: true }, 'bad_data', 'vita iniziale 0');
-  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SF, p_id: null, p_name: 'T', p_players: JSON.stringify(P4), p_start: 40, p_cmd_life: true }, 'bad_login', 'creare con il codice di un altro');
+  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: [{ name: 'a' }, { u: hugoId }], p_start: 40, p_cmd_life: true }, 'not_friend', 'chi non è amico non si siede');
+  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: '  ', p_players: P4, p_start: 40, p_cmd_life: true }, 'bad_data', 'tavolo senza nome');
+  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'T', p_players: P4, p_start: 0, p_cmd_life: true }, 'bad_data', 'vita iniziale 0');
+  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SF, p_id: null, p_name: 'T', p_players: P4, p_start: 40, p_cmd_life: true }, 'bad_login', 'creare con il codice di un altro');
   eq(await tlist('Elena', SE), [], 'nessun tavolo all\'inizio');
   const T = await tsave('Elena', SE, { name: '  Il venerdì  ', players: P4, start: 30, cmd: false });
   eq([T.name, T.owner, T.mine, T.start, T.cmd_life, T.players.map(p => p.name), T.players.map(p => !!p.u)], ['Il venerdì', 'Elena', true, 30, false, ['Elena', 'Fabio', 'Ospite', 'Marta'], [true, true, false, false]], 'tavolo creato: nomi degli amici presi dai loro ID, i liberi ripuliti');
@@ -170,8 +171,8 @@ const URL1 = 'https://cards.scryfall.io/art_crop/front/1/2/12345678-aaaa-bbbb-cc
   const tf = await tlist('Fabio', SF); eq([tf.length, tf[0].id, tf[0].mine, tf[0].owner], [1, T.id, false, 'Elena'], 'Fabio lo vede (non suo)');
   eq([await tlist('Gino', SG), await tlist('Hugo', SH)], [[], []], 'chi non è al tavolo non lo vede');
   await fails('cpa_table_games', { p_handle: 'Hugo', p_secret: SH, p_id: T.id }, 'no_table', 'Hugo non vede le partite'); await fails('cpa_table_games', { p_handle: 'Hugo', p_secret: SH, p_id: null }, 'no_table', 'tavolo nullo');
-  await fails('cpa_table_save', { p_handle: 'Fabio', p_secret: SF, p_id: T.id, p_name: 'Mio', p_players: JSON.stringify(P4), p_start: 40, p_cmd_life: true }, 'not_owner', 'un invitato non cambia il tavolo');
-  await fails('cpa_table_save', { p_handle: 'Hugo', p_secret: SH, p_id: T.id, p_name: 'Mio', p_players: JSON.stringify(P4), p_start: 40, p_cmd_life: true }, 'no_table', 'un estraneo non sa nemmeno che esiste');
+  await fails('cpa_table_save', { p_handle: 'Fabio', p_secret: SF, p_id: T.id, p_name: 'Mio', p_players: P4, p_start: 40, p_cmd_life: true }, 'not_owner', 'un invitato non cambia il tavolo');
+  await fails('cpa_table_save', { p_handle: 'Hugo', p_secret: SH, p_id: T.id, p_name: 'Mio', p_players: P4, p_start: 40, p_cmd_life: true }, 'no_table', 'un estraneo non sa nemmeno che esiste');
   /* partite */
   eq(await tgames('Fabio', SF, T.id), [], 'nessuna partita all\'inizio');
   const rec = { t: 1000, ms: 65000, rounds: 7, start: 30, players: [{ name: 'Elena', u: id.Elena, life: 12, out: false }, { name: 'Fabio', u: id.Fabio, life: -4, out: true }, { name: 'Ospite', life: 3, out: false, extra: 'x' }, { name: 'Hugo', u: hugoId, life: 100000, out: false }], winner: 'Elena', wu: id.Elena, deck: '  Kaalia  ', inutile: 'boh' };
@@ -180,10 +181,10 @@ const URL1 = 'https://cards.scryfall.io/art_crop/front/1/2/12345678-aaaa-bbbb-cc
   eq([gl[0].gid, gl[0].winner, gl[0].wu, gl[0].deck, gl[0].rounds, gl[0].t, 'inutile' in gl[0]], [g1.gid, 'Elena', id.Elena, 'Kaalia', 7, 1000, false], 'partita ripulita');
   eq(gl[0].players.map(p => [p.name, p.u, p.life, p.out, 'extra' in p]), [['Elena', id.Elena, 12, false, false], ['Fabio', id.Fabio, -4, true, false], ['Ospite', null, 3, false, false], ['Hugo', null, 9999, false, false]], 'giocatori: id solo di chi è al tavolo, vita limitata');
   eq((await gadd('Elena', SE, T.id, { ...rec, t: 2000, winner: '', wu: hugoId, deck: '' })).gid.length, 36, 'seconda partita, senza vincitore'); eq((await tgames('Fabio', SF, T.id)).map(g => [g.t, g.wu]), [[2000, null], [1000, id.Elena]], 'ordine: la più recente per prima; vincitore estraneo scartato');
-  await fails('cpa_game_add', { p_handle: 'Hugo', p_secret: SH, p_table: T.id, p_rec: JSON.stringify(rec) }, 'no_table', 'un estraneo non registra partite');
-  await fails('cpa_game_add', { p_handle: 'Fabio', p_secret: SF, p_table: T.id, p_rec: JSON.stringify({ ...rec, players: [rec.players[0]] }) }, 'bad_data', 'un solo giocatore'); await fails('cpa_game_add', { p_handle: 'Fabio', p_secret: SF, p_table: T.id, p_rec: '"stringa"' }, 'bad_data', 'non è un oggetto');
-  await fails('cpa_game_add', { p_handle: 'Fabio', p_secret: SF, p_table: T.id, p_rec: JSON.stringify({ ...rec, t: 'domani' }) }, 'bad_data', 'tempo non numerico'); await fails('cpa_game_add', { p_handle: 'Fabio', p_secret: SF, p_table: T.id, p_rec: JSON.stringify({ ...rec, deck: 'x'.repeat(9000) }) }, 'bad_data', 'troppo grande');
-  await fails('cpa_game_add', { p_handle: 'Fabio', p_secret: SE, p_table: T.id, p_rec: JSON.stringify(rec) }, 'bad_login', 'partita con il codice di un altro');
+  await fails('cpa_game_add', { p_handle: 'Hugo', p_secret: SH, p_table: T.id, p_rec: rec }, 'no_table', 'un estraneo non registra partite');
+  await fails('cpa_game_add', { p_handle: 'Fabio', p_secret: SF, p_table: T.id, p_rec: { ...rec, players: [rec.players[0]] } }, 'bad_data', 'un solo giocatore'); await fails('cpa_game_add', { p_handle: 'Fabio', p_secret: SF, p_table: T.id, p_rec: 'stringa' }, 'bad_data', 'non è un oggetto');
+  await fails('cpa_game_add', { p_handle: 'Fabio', p_secret: SF, p_table: T.id, p_rec: { ...rec, t: 'domani' } }, 'bad_data', 'tempo non numerico'); await fails('cpa_game_add', { p_handle: 'Fabio', p_secret: SF, p_table: T.id, p_rec: { ...rec, deck: 'x'.repeat(9000) } }, 'bad_data', 'troppo grande');
+  await fails('cpa_game_add', { p_handle: 'Fabio', p_secret: SE, p_table: T.id, p_rec: rec }, 'bad_login', 'partita con il codice di un altro');
   eq((await gadd('Fabio', SF, T.id, { ...rec, t: 3000, deck: 'x'.repeat(200), winner: 'y'.repeat(80), players: rec.players.slice(0, 2).map(p => ({ ...p, name: ' ' })) }))?.gid.length, 36, 'nomi vuoti: «?»'); const g3 = (await tgames('Fabio', SF, T.id))[0]; eq([g3.deck.length, g3.winner.length, g3.players.map(p => p.name)], [60, 24, ['?', '?']], 'testi tagliati');
   await fails('cpa_game_delete', { p_handle: 'Hugo', p_secret: SH, p_table: T.id, p_game: g1.gid }, 'no_table', 'un estraneo non elimina partite');
   eq(await call('cpa_game_delete', { p_handle: 'Fabio', p_secret: SF, p_table: T.id, p_game: g1.gid }), true, 'un invitato elimina una partita'); eq(await call('cpa_game_delete', { p_handle: 'Fabio', p_secret: SF, p_table: T.id, p_game: g1.gid }), false, 'già eliminata'); eq((await tgames('Elena', SE, T.id)).length, 2, 'ne restano due');
@@ -194,14 +195,14 @@ const URL1 = 'https://cards.scryfall.io/art_crop/front/1/2/12345678-aaaa-bbbb-cc
   eq([T2.id, T2.name, T2.start, T2.cmd_life, T2.players.map(p => p.name)], [T.id, 'Venerdì sera', 40, true, ['Elena', 'Fabio', 'Gino', 'Marta']], 'tavolo aggiornato, stesso id'); eq((await tlist('Gino', SG)).length, 1, 'Gino adesso lo vede'); eq((await tgames('Gino', SG, T.id)).length, 2, 'e vede le partite');
   await call('cpa_friend_remove', { p_handle: 'Elena', p_secret: SE, p_other: 'Gino' });
   eq((await tsave('Elena', SE, { id: T.id, name: 'Venerdì sera', players: [{ u: id.Elena }, { u: id.Fabio }, { u: id.Gino }, { name: 'Marta' }] })).players.length, 4, 'chi è già al tavolo resta anche se l\'amicizia finisce');
-  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'Altro', p_players: JSON.stringify([{ u: id.Elena }, { u: id.Gino }]), p_start: 40, p_cmd_life: true }, 'not_friend', 'ma un tavolo nuovo non lo accetta');
+  await fails('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: null, p_name: 'Altro', p_players: [{ u: id.Elena }, { u: id.Gino }], p_start: 40, p_cmd_life: true }, 'not_friend', 'ma un tavolo nuovo non lo accetta');
   const T3 = await tsave('Elena', SE, { id: T.id, name: 'Venerdì sera', players: [{ u: id.Elena }, { u: id.Gino }, { name: 'Marta' }] }); eq([T3.players.length, (await tlist('Fabio', SF)).length], [3, 0], 'tolto Fabio dai posti: non vede più il tavolo');
   await fails('cpa_table_games', { p_handle: 'Fabio', p_secret: SF, p_id: T.id }, 'no_table', 'né le sue partite');
   /* lasciare il tavolo */
   await fails('cpa_table_leave', { p_handle: 'Elena', p_secret: SE, p_id: T.id }, 'is_owner', 'il proprietario non lo lascia, lo elimina'); await fails('cpa_table_leave', { p_handle: 'Hugo', p_secret: SH, p_id: T.id }, 'no_table', 'un estraneo non può lasciarlo');
   eq(await call('cpa_table_leave', { p_handle: 'Gino', p_secret: SG, p_id: T.id }), true, 'Gino lascia il tavolo'); eq([(await tlist('Gino', SG)).length, (await tlist('Elena', SE))[0].players.map(p => [p.name, !!p.u])], [0, [['Elena', true], ['Gino', false], ['Marta', false]]], 'il suo posto resta come nome libero');
   /* eliminare */
-  await call('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: T.id, p_name: 'Venerdì sera', p_players: JSON.stringify([{ u: id.Elena }, { u: id.Fabio }, { name: 'Marta' }]), p_start: 40, p_cmd_life: true });
+  await call('cpa_table_save', { p_handle: 'Elena', p_secret: SE, p_id: T.id, p_name: 'Venerdì sera', p_players: [{ u: id.Elena }, { u: id.Fabio }, { name: 'Marta' }], p_start: 40, p_cmd_life: true });
   await fails('cpa_table_delete', { p_handle: 'Fabio', p_secret: SF, p_id: T.id }, 'not_owner', 'un invitato non elimina il tavolo'); await fails('cpa_table_delete', { p_handle: 'Hugo', p_secret: SH, p_id: T.id }, 'no_table', 'un estraneo nemmeno');
   eq(await call('cpa_table_delete', { p_handle: 'Elena', p_secret: SE, p_id: T.id }), true, 'il proprietario elimina'); eq([await tlist('Elena', SE), await tlist('Fabio', SF)], [[], []], 'sparito per tutti');
   await db.exec('reset role'); eq([(await db.query('select count(*)::int c from public.cpa_games')).rows[0].c, (await db.query('select count(*)::int c from public.cpa_table_members')).rows[0].c], [0, 0], 'partite e membri portati via insieme al tavolo'); await db.exec('set role anon');
@@ -210,7 +211,7 @@ const URL1 = 'https://cards.scryfall.io/art_crop/front/1/2/12345678-aaaa-bbbb-cc
   /* limiti: 20 tavoli, 500 partite */
   const tiny = n => ({ name: 'T' + n, players: [{ name: 'a' }, { name: 'b' }] }); let first;
   for (let i = 0; i < 20; i++) { const t = await tsave('Hugo', SH, tiny(i)); if (!i) first = t; }
-  await fails('cpa_table_save', { p_handle: 'Hugo', p_secret: SH, p_id: null, p_name: 'T20', p_players: JSON.stringify(tiny(20).players), p_start: 40, p_cmd_life: true }, 'too_many', 'al massimo 20 tavoli propri'); eq((await tlist('Hugo', SH)).length, 20, 'i primi 20 ci sono');
+  await fails('cpa_table_save', { p_handle: 'Hugo', p_secret: SH, p_id: null, p_name: 'T20', p_players: tiny(20).players, p_start: 40, p_cmd_life: true }, 'too_many', 'al massimo 20 tavoli propri'); eq((await tlist('Hugo', SH)).length, 20, 'i primi 20 ci sono');
   await db.exec('reset role'); await db.query("insert into public.cpa_games (table_id, t, rec) select $1, g, '{\"players\":[{},{}]}'::jsonb from generate_series(1, 499) g", [first.id]); await db.exec('set role anon');
   for (let i = 0; i < 3; i++) await gadd('Hugo', SH, first.id, { t: 10000 + i, players: [{ name: 'a' }, { name: 'b' }] });
   await db.exec('reset role'); eq((await db.query('select count(*)::int c from public.cpa_games where table_id = $1', [first.id])).rows[0].c, 500, 'al massimo 500 partite per tavolo'); eq((await db.query('select min(t)::int m from public.cpa_games where table_id = $1', [first.id])).rows[0].m, 3, 'si perdono le più vecchie'); await db.exec('set role anon');

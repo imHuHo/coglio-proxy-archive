@@ -283,6 +283,10 @@ create or replace function public.cpa_roster(p_players json, p_owner uuid, p_kee
 language plpgsql security definer set search_path = public as $$
 declare o jsonb := '[]'::jsonb; e json; u uuid; nm text; seen uuid[] := '{}';
 begin
+  /* PostgREST passa un valore JSON: una stringa (vecchi client) viene letta come testo JSON */
+  if p_players is not null and json_typeof(p_players) = 'string' then
+    begin p_players := (p_players::jsonb #>> '{}')::json; exception when others then raise exception 'bad_data'; end;
+  end if;
   if p_players is null or json_typeof(p_players) <> 'array' or json_array_length(p_players) < 2 or json_array_length(p_players) > 6 then raise exception 'bad_data'; end if;
   for e in select value from json_array_elements(p_players) loop
     nm := left(btrim(coalesce(e->>'name', '')), 24); u := null;
@@ -354,6 +358,7 @@ begin
   if p_table is null or not cpa_is_member(p_table, me) then raise exception 'no_table'; end if;
   select array_agg(profile_id) into mem from cpa_table_members where table_id = p_table;
   begin
+    if p_rec is not null and json_typeof(p_rec) = 'string' then p_rec := (p_rec::jsonb #>> '{}')::json; end if;
     r := p_rec::jsonb;
     if jsonb_typeof(r) <> 'object' or length(r::text) > 8000 or jsonb_typeof(r->'players') <> 'array' or jsonb_array_length(r->'players') not between 2 and 6 then raise exception 'bad_data'; end if;
     wu := cpa_uuid_or_null(r->>'wu'); if wu is not null and not (wu = any(mem)) then wu := null; end if;
