@@ -65,6 +65,12 @@ I colori sono quelli del Coglio (blu denim e giallo banana); i cinque colori del
   imposti a mano dal pannello. Il numero resta salvato e compare accanto al titolo (1 blu, 2 verde, 3 giallo, 4 arancione, 5 rosso, ✕ carte bandite);
   se cambi la lista il box diventa tratteggiato. Se non ci sono né dati di Scryfall né Spellbook, il pulsante copia la lista e apre
   [commanderbracket.app](https://commanderbracket.app/bracket).
+- **Modifica del mazzo a mano (4.2).** Nella pagina del mazzo: «+ Aggiungi carta» (campo con suggerimenti `cards/autocomplete` di Scryfall; il testo si legge
+  con lo stesso parser dell'import, quindi `2 Sol Ring (C21) 263` funziona; un nome che Scryfall non trova si può aggiungere comunque), menu «⋯» su ogni riga
+  (±1 copia, rimuovi, sposta in/da sideboard) e «Annulla» su ogni modifica (`mutate`). Se si toglie il commander, il mazzo resta senza.
+  **Sideboard**: `deck.side` (stessa forma di `deck.cards`, solo per i mazzi). Non entra in bracket, impronta del bracket, statistiche, prezzi del mazzo e upgrade;
+  entra in archivio, disponibilità/riuso (`C.allCards`) e Stampa (a 0 copie). L'import riempie `side` dalla sezione Sideboard. **Export**: `C.exportDeck`
+  (Commander / Deck / Sideboard con quantità, nome, `(SET) numero`) per «Scarica lista .txt» e «Copia lista»; si rilegge con `C.parseList`.
 - **Stampe diverse = carte diverse.** Per l'archivio una carta è identificata da nome *e* stampa (collezione + numero). Quando importi un mazzo,
   l'avviso CODIGHEL separa le carte che hai già libere **in quella esatta stampa** da quelle che hai **ma in un'altra stampa** (le puoi riusare, oppure
   stampare quella nuova). Negli upgrade ogni differenza è di tre tipi: *esce*, *entra*, *cambia solo la stampa*; per le carte che entrano si vede se
@@ -157,7 +163,7 @@ Tutti i dati restano sul dispositivo (IndexedDB del browser). Nessun account, ne
 
 ## Note
 - `pdf-test.js` e `proxy-test.js` girano con solo Node (il primo, se ci sono `python3` con Pillow, `pdfinfo`, `qpdf` e `pdftoppm`, controlla anche i PDF con strumenti esterni e confronta i pixel); `update-test.js` (scarico dell'aggiornamento con rete simulata) e `status-test.js` (stati dei mazzi e riuso delle carte) girano con solo Node; `ui-smoke.js`, `builder-smoke.js`, `img-smoke.js`, `update-smoke.js` e `status-smoke.js` usano jsdom (`node tools/builder-smoke.js <percorso-di-jsdom>`).
-- `search-test.js`, `cards-test.js` e `sync-test.js` girano con solo Node (ricerca Scryfall, dati/prezzi, sincronizzazione con Dropbox e Drive simulati da `fake-clouds.js`); `feat-smoke.js`, `deck-smoke.js` (pagina del mazzo) e `sync-smoke.js` provano l'interfaccia in Chromium.
+- `search-test.js`, `cards-test.js`, `bracket-test.js` e `sync-test.js` girano con solo Node (ricerca Scryfall, dati/prezzi, sincronizzazione con Dropbox e Drive simulati da `fake-clouds.js`); `feat-smoke.js`, `deck-smoke.js` (pagina del mazzo), `edit-smoke.js` (aggiungi/togli carte, sideboard, export), `bracket-smoke.js` (report del bracket) e `sync-smoke.js` provano l'interfaccia in Chromium.
 - `designer-test.js` usa Chromium (Playwright): `node tools/designer-test.js`.
 - `test.js`, `ui-smoke.js` e `img-smoke.js` leggono alcune liste di mazzi da `tools/fixtures/`, che non sono nel repository: servono liste tue per provarli.
 - Progetto non ufficiale, non affiliato né approvato da Wizards of the Coast. Immagini e dati delle carte: [Scryfall](https://scryfall.com). Magic: The Gathering è un marchio di Wizards of the Coast.

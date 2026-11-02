@@ -248,4 +248,56 @@ function sum(cards) { return cards.reduce((t, c) => t + c.qty, 0); }
   ok(r4[0].exact === 0 && r4[0].other === 1, 'riuso: solo altra stampa');
 }
 
+
+// 15. sideboard e modifica a mano
+{
+  ok(m.side.length === 2 && m.side.reduce((t, x) => t + x.qty, 0) === m.excluded && m.side.some(x => x.name === 'Counterspell'), 'parser: il sideboard viene letto a parte');
+  const mkd = (cards, side, extra) => Object.assign({ id: 'dd', name: 'Test Deck', kind: 'deck', status: 'active', active: true, commander: 'Kaalia of the Vast', cards, side, upgrades: [], createdAt: 1, updatedAt: 1 }, extra || {});
+  const cd = (name, qty, set, cn, design) => Object.assign({ name, qty, set: set || '', cn: cn || '' }, design ? { design } : {});
+  const d = mkd([cd('Kaalia of the Vast', 1, 'CMD', '12'), cd('Sol Ring', 1, 'C21', '263'), cd('Mountain', 8)], undefined);
+  C.addCard(d, { name: 'sol ring', set: 'C21', cn: '263' }, 2);
+  ok(d.cards.filter(c => c.name === 'Sol Ring').length === 1 && d.cards.find(c => c.name === 'Sol Ring').qty === 3, 'addCard: si fonde con la riga identica');
+  C.addCard(d, { name: 'Sol Ring', set: 'CMM', cn: '400' }, 1);
+  ok(d.cards.filter(c => c.name === 'Sol Ring').length === 2, 'addCard: un\'altra stampa è un\'altra riga');
+  C.addCard(d, { name: 'Counterspell' }, 1, true);
+  ok(d.side.length === 1 && C.countOf(d.side) === 1 && C.countOf(d.cards) === 1 + 3 + 1 + 8, 'addCard: crea il sideboard');
+  ok(C.removeCard(d, { name: 'Sol Ring', set: 'C21', cn: '263' }, 1) === 1 && d.cards.find(c => c.set === 'C21').qty === 2, 'removeCard: una copia');
+  ok(C.removeCard(d, { name: 'Sol Ring', set: 'CMM', cn: '400' }) === 1 && !d.cards.some(c => c.set === 'CMM'), 'removeCard: tutte, la riga sparisce');
+  ok(C.removeCard(d, { name: 'Sol Ring', set: 'ZZZ' }) === 0, 'removeCard: riga che non c\'è');
+  ok(C.moveCard(d, { name: 'Mountain' }, 3, true) === 3 && d.cards.find(c => c.name === 'Mountain').qty === 5 && d.side.find(c => c.name === 'Mountain').qty === 3, 'moveCard: sposta 3 Mountain in sideboard');
+  ok(C.moveCard(d, { name: 'Mountain' }, null, false) === 3 && !d.side.some(c => c.name === 'Mountain') && d.cards.find(c => c.name === 'Mountain').qty === 8, 'moveCard: le rimette tutte nel mazzo');
+  C.addCard(d, { name: 'Lightning Bolt', design: 'dz1' }, 1);
+  ok(C.moveCard(d, { name: 'Lightning Bolt', design: 'dz1' }, null, true) === 1 && d.side.find(c => c.name === 'Lightning Bolt').design === 'dz1', 'moveCard: il design resta');
+  ok(C.moveCard(d, { name: 'Lightning Bolt' }, null, false) === 0, 'moveCard: senza design è un\'altra riga');
+
+  // archivio: il sideboard è fisicamente nel mazzo
+  const arch = C.buildArchive([d]), cn = arch.map ? arch.map[C.keyOf('Counterspell')] : arch.list.find(e => e.key === C.keyOf('Counterspell'));
+  ok(cn && cn.owned === 1 && cn.occupied === 1, 'archivio: le carte del sideboard contano come possedute e in uso');
+  // il bracket guarda solo il mazzo vero
+  ok(!C.bracketText(d).includes('Counterspell') && C.bracketPayload(d).main.every(x => x.card !== 'Counterspell'), 'bracket: il sideboard non conta');
+  const sig = C.deckSig(d); C.addCard(d, { name: 'Brainstorm' }, 1, true); ok(C.deckSig(d) === sig, 'impronta del bracket: invariata dal sideboard');
+  // riuso di carte dal sideboard di un mazzo smontato
+  const free = mkd([cd('Island', 1)], [cd('Swords to Plowshares', 1, 'ME4', '30')], { id: 'ff', name: 'Free', status: 'inactive', active: false });
+  const nd = mkd([cd('Swords to Plowshares', 1, 'ME4', '30')], [], { id: 'nn', name: 'New', status: 'unprinted', active: false });
+  const ru = C.findReusable(nd.cards, [free, nd], {});
+  ok(ru.length === 1 && ru[0].exact === 1, 'riuso: trova la copia nel sideboard di un mazzo smontato');
+  C.applyReuse([free, nd], nd, { [ru[0].key + '|exact']: true }, {});
+  ok(!free.side.length && free.cards.length === 1, 'riuso: la copia esce dal sideboard del mazzo smontato');
+
+  // sanitize e backup
+  const sn = C.sanitizeDeck({ name: 'x', kind: 'deck', cards: [{ name: 'A', qty: 1 }], side: [{ name: ' B ', qty: '2', set: 'abc' }, { name: '' }] });
+  ok(sn.side.length === 1 && sn.side[0].name === 'B' && sn.side[0].qty === 2, 'sanitize: sideboard');
+  ok(C.sanitizeDeck({ name: 'x', cards: [] }).side.length === 0 && C.sanitizeDeck({ name: 'b', kind: 'binder', side: [{ name: 'A', qty: 1 }] }).side.length === 0, 'sanitize: senza sideboard, e le sciolte non ne hanno');
+
+  // export .txt: si rilegge identico
+  const ex = C.exportDeck(d), pe = C.parseList(ex);
+  ok(/^Commander\n1 Kaalia of the Vast \(CMD\) 12\n\nDeck\n/.test(ex) && /\n\nSideboard\n/.test(ex), 'export: sezioni Commander, Deck e Sideboard');
+  ok(ex.includes('2 Sol Ring (C21) 263') && ex.includes('8 Mountain\n') && ex.includes('1 Counterspell'), 'export: quantità, nome, set e numero');
+  ok(pe.hints[0] === 'Kaalia of the Vast' && pe.total === C.countOf(d.cards) && C.countOf(pe.side) === C.countOf(d.side), 'export: rileggendolo si ottiene lo stesso mazzo');
+  ok(pe.cards.find(c => c.name === 'Sol Ring').set === 'C21' && pe.cards.find(c => c.name === 'Sol Ring').cn === '263', 'export: il set resta');
+  ok(C.exportDeck(mkd([cd('Sol Ring', 2)], [], { commander: null })) === '2 Sol Ring\n', 'export: senza commander né sideboard è una lista semplice');
+  ok(C.exportDeck({ name: 'Sciolte', kind: 'binder', cards: [cd('Sol Ring', 1, 'C21', '263')] }) === '1 Sol Ring (C21) 263', 'export: carte sciolte');
+  ok(C.exportFileName({ name: 'Kaalia — Upgrade è fatto!' }) === 'Kaalia-Upgrade-e-fatto.txt' && C.exportFileName({ name: '!!!' }) === 'mazzo.txt', 'nome del file');
+}
+
 console.log('OK, ' + n + ' controlli passati');

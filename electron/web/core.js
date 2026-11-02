@@ -34,7 +34,7 @@
 
   function parseList(text) {
     var lines = String(text || '').replace(/\r/g, '').split('\n');
-    var raw = [], warnings = [], excluded = 0;
+    var raw = [], sideRaw = [], warnings = [], excluded = 0;
     var section = 'main', block = 0, blockHasCards = false;
 
     lines.forEach(function (line0) {
@@ -70,17 +70,21 @@
         name = rest.replace(/\s*\[[^\]]*\]\s*$/, '').trim();
       }
       if (!name || !(qty > 0)) { warnings.push(line0); return; }
-      if (sec === 'side') { excluded += qty; return; }
+      if (sec === 'side') { excluded += qty; sideRaw.push({ name: name, qty: qty, set: set, cn: cn }); return; }
       raw.push({ name: name, qty: qty, set: set, cn: cn, commander: sec === 'commander', block: block });
       blockHasCards = true;
     });
 
-    var map = {}, cards = [];
-    raw.forEach(function (r) {
-      var k = keyOf(r.name) + '|' + r.set + '|' + r.cn;
-      if (map[k]) map[k].qty += r.qty;
-      else { map[k] = { name: r.name, qty: r.qty, set: r.set, cn: r.cn }; cards.push(map[k]); }
-    });
+    function merge(list) {
+      var map = {}, out = [];
+      list.forEach(function (r) {
+        var k = keyOf(r.name) + '|' + r.set + '|' + r.cn;
+        if (map[k]) map[k].qty += r.qty;
+        else { map[k] = { name: r.name, qty: r.qty, set: r.set, cn: r.cn }; out.push(map[k]); }
+      });
+      return out;
+    }
+    var cards = merge(raw), side = merge(sideRaw);
 
     var hints = [];
     function addHint(n) {
@@ -98,7 +102,7 @@
       }
     }
     var total = cards.reduce(function (a, c) { return a + c.qty; }, 0);
-    return { cards: cards, hints: hints, warnings: warnings, excluded: excluded, total: total, unique: cards.length };
+    return { cards: cards, side: side, hints: hints, warnings: warnings, excluded: excluded, total: total, unique: cards.length };
   }
 
   /* ---------- Archivio ---------- */
@@ -109,11 +113,14 @@
   function isPrinted(d) { return statusOf(d) !== 'unprinted'; }
   function isFreeDeck(d) { return statusOf(d) === 'inactive'; }
 
+  /* Le carte fisiche di un mazzo: il mazzo vero e proprio più il sideboard (stessa scatola, stesse carte stampate). */
+  function allCards(d) { return (d.cards || []).concat(d.side || []); }
+
   function buildArchive(decks) {
     var map = {}, list = [];
     decks.forEach(function (d) {
       if (!isPrinted(d)) return;
-      d.cards.forEach(function (c) {
+      allCards(d).forEach(function (c) {
         var k = keyOf(c.name), e = map[k];
         if (!e) {
           e = map[k] = { key: k, name: c.name, basic: isBasic(c.name), owned: 0, occupied: 0, rows: [], sets: [] };
@@ -220,7 +227,7 @@
       var ex = 0, alt = 0, sources = [], altSources = [], busy = {}, busyIn = [];
       others.forEach(function (d) {
         if (!isPrinted(d)) return;
-        d.cards.forEach(function (c) {
+        allCards(d).forEach(function (c) {
           if (keyOf(c.name) !== it.key) return;
           if (inUse(d)) {
             if (!busy[d.id]) { busy[d.id] = { deckId: d.id, deckName: d.name, qty: 0 }; busyIn.push(busy[d.id]); }
@@ -263,6 +270,29 @@
       .map(function (c) {
         return c.qty + ' ' + c.name + (c.set ? ' (' + c.set + ')' + (c.cn ? ' ' + c.cn : '') : '');
       }).join('\n');
+  }
+
+  /* File .txt del mazzo: Commander, Deck e Sideboard con quantità, nome, collezione e numero (si rilegge con l'import). */
+  function exportDeck(deck) {
+    var line = function (c, q) { return q + ' ' + c.name + (c.set ? ' (' + String(c.set).toUpperCase() + ')' + (c.cn ? ' ' + c.cn : '') : ''); };
+    var byName = function (a, b) { return a.name.localeCompare(b.name, 'en'); };
+    var side = (deck.side || []).slice().sort(byName).map(function (c) { return line(c, c.qty); });
+    if (deck.kind === 'binder') return deck.cards.slice().sort(byName).map(function (c) { return line(c, c.qty); }).join('\n');
+    var cmd = deck.commander ? keyOf(deck.commander) : '', taken = !cmd, cmdLine = '', main = [];
+    deck.cards.slice().sort(byName).forEach(function (c) {
+      var q = c.qty;
+      if (!taken && keyOf(c.name) === cmd) { taken = true; cmdLine = line(c, 1); q--; }
+      if (q > 0) main.push(line(c, q));
+    });
+    var out = [];
+    if (cmdLine) out.push('Commander\n' + cmdLine);
+    out.push((cmdLine || side.length ? 'Deck\n' : '') + main.join('\n'));
+    if (side.length) out.push('Sideboard\n' + side.join('\n'));
+    return out.join('\n\n') + '\n';
+  }
+  function exportFileName(deck) {
+    var n = String(deck.name || 'mazzo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    return (n || 'mazzo') + '.txt';
   }
 
   /* Lista per i checker online: sezione Commander e sezione Deck, solo quantità e nome. */
@@ -400,10 +430,13 @@
 
   function removeCopies(deck, key, qty, target) {
     var left = qty;
-    deck.cards.forEach(function (c) {
-      if (left > 0 && !c.design && keyOf(c.name) === key && (!target || samePrint(target, c))) { var t = Math.min(c.qty, left); c.qty -= t; left -= t; }
+    [deck.cards, deck.side || []].forEach(function (list) {
+      list.forEach(function (c) {
+        if (left > 0 && !c.design && keyOf(c.name) === key && (!target || samePrint(target, c))) { var t = Math.min(c.qty, left); c.qty -= t; left -= t; }
+      });
     });
     deck.cards = deck.cards.filter(function (c) { return c.qty > 0; });
+    if (deck.side) deck.side = deck.side.filter(function (c) { return c.qty > 0; });
     return qty - left;
   }
   function addCopies(deck, card, qty) {
@@ -416,6 +449,40 @@
     if (ds) row.design = ds;
     deck.cards.push(row);
   }
+
+
+  /* ---------- Modifica a mano: aggiungere, togliere e spostare carte (mazzo ↔ sideboard) ---------- */
+  function listOf(deck, side) { if (side) { if (!deck.side) deck.side = []; return deck.side; } return deck.cards; }
+  function sameRow(c, card) {
+    return keyOf(c.name) === keyOf(card.name) && (c.set || '') === (card.set || '') && (c.cn || '') === (card.cn || '') && (c.design || '') === (card.design || '');
+  }
+  /* Aggiunge `qty` copie (si fondono con la riga identica); restituisce la riga. */
+  function addCard(deck, card, qty, side) {
+    var list = listOf(deck, side), q = Math.max(1, parseInt(qty, 10) || 1);
+    for (var i = 0; i < list.length; i++) if (sameRow(list[i], card)) { list[i].qty += q; return list[i]; }
+    var row = { name: card.name, qty: q, set: card.set || '', cn: card.cn || '' };
+    if (card.design) row.design = card.design;
+    list.push(row); return row;
+  }
+  /* Toglie `qty` copie di quella riga (tutte se qty manca); restituisce quante ne ha tolte. */
+  function removeCard(deck, card, qty, side) {
+    var list = listOf(deck, side), got = 0;
+    for (var i = 0; i < list.length; i++) {
+      if (!sameRow(list[i], card)) continue;
+      var t = qty == null ? list[i].qty : Math.min(list[i].qty, Math.max(0, parseInt(qty, 10) || 0));
+      list[i].qty -= t; got += t; break;
+    }
+    var left = list.filter(function (c) { return c.qty > 0; });
+    if (side) deck.side = left; else deck.cards = left;
+    return got;
+  }
+  /* Sposta `qty` copie da una lista all'altra (tutte se qty manca); la stampa e il design restano. */
+  function moveCard(deck, card, qty, toSide) {
+    var got = removeCard(deck, card, qty, !toSide);
+    if (got) addCard(deck, card, got, !!toSide);
+    return got;
+  }
+  function countOf(list) { return (list || []).reduce(function (t, c) { return t + c.qty; }, 0); }
 
   /* Applica l'upgrade a `decks` (modificandolo):
    *  - le carte che escono dal mazzo finiscono nelle carte sciolte (si crea la lista se manca);
@@ -488,7 +555,7 @@
       var loose = 0, inactive = [], pool = [];
       decks.forEach(function (d) {
         var q = 0;
-        d.cards.forEach(function (c) {
+        allCards(d).forEach(function (c) {
           if (keyOf(c.name) !== k || c.design) return;
           q += c.qty;
           if ((d.kind === 'binder' || isFreeDeck(d))) pool.push({ deckId: d.id, deckName: d.name, kind: d.kind, set: c.set || '', cn: c.cn || '', left: c.qty });
@@ -575,6 +642,7 @@
       commander: d.commander ? String(d.commander) : null,
       bracket: sanitizeBracket(d.bracket),
       cards: sanitizeCards(d.cards),
+      side: d.kind === 'binder' ? [] : sanitizeCards(d.side),
       upgrades: (Array.isArray(d.upgrades) ? d.upgrades : []).map(function (u) {
         return {
           id: String(u.id || uid('u')), name: String(u.name || 'Upgrade'),
@@ -593,7 +661,7 @@
   return {
     keyOf: keyOf, searchNorm: searchNorm, isBasic: isBasic, uid: uid,
     parseList: parseList, buildArchive: buildArchive, diffUpgrade: diffUpgrade,
-    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, applyReuse: applyReuse, statusOf: statusOf, isPrinted: isPrinted, samePrint: samePrint, clone: cloneJ, exportText: exportText, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, bracketNumber: bracketNumber, deckSig: deckSig, diffText: diffText,
+    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, applyReuse: applyReuse, statusOf: statusOf, isPrinted: isPrinted, samePrint: samePrint, clone: cloneJ, exportText: exportText, exportDeck: exportDeck, exportFileName: exportFileName, allCards: allCards, addCard: addCard, removeCard: removeCard, moveCard: moveCard, countOf: countOf, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, bracketNumber: bracketNumber, deckSig: deckSig, diffText: diffText,
     sanitizeDeck: sanitizeDeck, sanitizeSettings: sanitizeSettings, inUse: inUse
   };
 });

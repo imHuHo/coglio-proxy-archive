@@ -1,6 +1,12 @@
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '4.2.0', date: '2 novembre 2026', title: 'Mazzi che si modificano', items: [
+    { t: 'Aggiungi e togli carte', d: 'Nella pagina del mazzo il pulsante «+ Aggiungi carta» apre un campo con i suggerimenti di Scryfall: scrivi il nome (anche «2 Sol Ring (C21) 263» per scegliere stampa e quantità) e premi Invio. Accanto a ogni carta c\'\u00e8 «\u22ef»: una copia in pi\u00f9, una in meno, rimuovi. Ogni modifica ha il suo «Annulla».' },
+    { t: 'Sideboard', d: 'I mazzi hanno il loro sideboard: con «\u22ef» sposti una carta (o tutte le copie) dal mazzo al sideboard e viceversa, e all\'importazione le righe della sezione Sideboard ora ci finiscono dentro invece di essere scartate. Non conta nel bracket, nelle statistiche e nella pescata; conta nell\'archivio, perch\u00e9 le carte stanno fisicamente nella scatola del mazzo. In Stampa compare con 0 copie: alza la quantit\u00e0 per stamparlo.' },
+    { t: 'Esporta la lista in .txt', d: 'In Gestisci, «Scarica lista .txt» salva un file con Commander, Deck e Sideboard: quantit\u00e0, nome, collezione e numero di ogni carta. Si pu\u00f2 reimportare cos\u00ec com\'\u00e8 (e anche in Moxfield o Archidekt). «Copia lista» mette lo stesso testo negli appunti.' },
+    { t: 'Designer: lo shop non azzera pi\u00f9 la carta', d: 'Se dall\'editor apri lo shop delle cornici, la carta resta aperta (e salvata): in alto c\'\u00e8 «Torna alla carta» e ritrovi tutto com\'era.' },
+  ] },
   { v: '4.1.0', date: '1 novembre 2026', title: 'Il bracket lo calcoliamo noi', items: [
     { t: 'Report del bracket completo', d: 'Il tasto «Verifica bracket» ora apre un report con il bracket stimato e il perché, «Cosa decide il bracket» (Game Changer, turni extra, distruzione di terre di massa, tutor, mana veloce, combo, ognuno con le miniature delle carte), la costanza di pescata e la salute del mazzo. Funziona anche da browser e senza internet dopo il primo scaricamento dei dati.' },
     { t: 'Calcolato in locale', d: 'Game Changer e carte bandite arrivano dai dati di Scryfall già sul dispositivo; turni extra, terre di massa, tutor, accelerazione, rimozioni e pescate si riconoscono dal testo delle carte. I combo restano quelli di Commander Spellbook, dove raggiungibile (app per Windows e Android).' },

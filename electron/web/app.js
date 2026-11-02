@@ -43,7 +43,7 @@
     view: 'archive', deckId: null, upId: null, deckTab: 'cards', deckQ: '',
     q: '', st: 'all', fdeck: '', fset: '', sort: 'name', nobasic: false, open: {}, limit: 150,
     adv: false, help: false, f: { colors: '', cmode: 'any', types: [], cost: [], rar: [], text: '' }, dtab: 'cards',
-    dSort: 'name', dMan: false, dprev: null, dflip: false, crazy: false,
+    dSort: 'name', dMan: false, dprev: null, dflip: false, crazy: false, dmenu: '', dAdd: false, dAddMsg: '', dAddBusy: false, dAddPend: null, dAddSide: false, dSug: [],
     upQ: '', upSt: 'all', draft: null, confirm: null, backupOut: '', restoreText: '', dataMsg: ''
   };
   var upd = { st: 'idle', info: null, err: '', prog: null, saved: '' };
@@ -1451,7 +1451,7 @@
     var meta = d.kind === 'deck' ? (d.commander ? 'Commander: ' + esc(d.commander) : 'Nessun commander scelto') : 'Carte sciolte, sempre disponibili';
     var cc = CARDS.get(), dv = cc && CARDS.enabled() ? cc.valueDeck(d, C.isBasic) : null;
     var worth = dv && dv.ready && dv.cards.length ? ' · <span class="worth" title="Costo se fosse reale, con le stampe del mazzo">' + eurF(dv.total) + '</span>' : '';
-    return '<article class="deckcard' + (on ? ' is-on' : np ? ' is-np' : '') + '"><div class="top"><div><h2>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + worth + '</div></div>' +
+    return '<article class="deckcard' + (on ? ' is-on' : np ? ' is-np' : '') + '"><div class="top"><div><h2>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + (C.countOf(d.side) ? ' + ' + C.countOf(d.side) + ' in sideboard' : '') + worth + '</div></div>' +
       (d.kind === 'deck' ? switchHtml(d) : '') + '</div><div class="foot"><span>' +
       (d.upgrades.length ? '<span class="pill info">' + plural(d.upgrades.length, 'upgrade', 'upgrade') + '</span>' : '<span class="hint">Nessun upgrade</span>') +
       '</span><span class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="open-deck" data-id="' + esc(d.id) + '">Apri</button></span></div></article>';
@@ -1492,7 +1492,8 @@
     artifact: '<path d="M8 1.500l5.200 3v6L8 14.500l-5.200-4v-6z"/><circle cx="8" cy="8" r="2"/>',
     land: '<path d="M1.500 13.500L6 5l3 5 1.500-2.500 4 6z"/>',
     other: '<circle cx="8" cy="8" r="5.500"/><path d="M8 5v3.500M8 11v.1"/>',
-    cmd: '<path d="M2 12.500l1.500-7 3 3L8 3.500l1.500 5 3-3 1.500 7z"/>'
+    cmd: '<path d="M2 12.500l1.500-7 3 3L8 3.500l1.500 5 3-3 1.500 7z"/>',
+    side: '<rect x="2" y="6" width="12" height="7.500" rx="1.500"/><path d="M4.500 3.500h7M3.200 4.800h9.600"/>'
   };
   function dkIcon(k) { return '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (DK_SVG[k] || DK_SVG.other) + '</svg>'; }
   var IC_SWAP = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.500 5.500h9L9.500 3.500M13.500 10.500h-9l2 2"/></svg>';
@@ -1526,16 +1527,31 @@
     CARDS.run('deck', function (prog) { return cc.ensure(ents, {}, prog); });
   }
 
-  function dkRows(d) {
+  function dkRows(d, side) {
     var cc = CARDS.get(), A = getArchive(), q = C.searchNorm(ui.deckQ), out = [];
-    d.cards.forEach(function (c) {
+    (side ? (d.side || []) : d.cards).forEach(function (c) {
       var rec = dkRec(cc, c), pr = dkPriceRec(cc, c), e = A.map[C.keyOf(c.name)];
       out.push({
-        c: c, rec: rec, type: dkIsCmd(d, c) ? 'cmd' : dkType(c, rec), realType: dkType(c, rec), pr: pr, unit: pr ? window.CPACards.unitPrice(pr) : null,
+        c: c, side: !!side, rec: rec, type: side ? 'side' : dkIsCmd(d, c) ? 'cmd' : dkType(c, rec), realType: dkType(c, rec), pr: pr, unit: pr ? window.CPACards.unitPrice(pr) : null,
         others: e ? e.rows.filter(function (r) { return r.deckId !== d.id; }) : [], hit: !q || C.searchNorm(c.name).indexOf(q) >= 0
       });
     });
     return out;
+  }
+  /* una riga si riconosce da nome, stampa, design e lista (mazzo o sideboard) */
+  function dkKey(c, side) { return (side ? 'S' : 'M') + '|' + C.keyOf(c.name) + '|' + (c.set || '') + '|' + (c.cn || '') + '|' + (c.design || ''); }
+  function dkTarget(el) { return { name: el.dataset.n, set: el.dataset.s || '', cn: el.dataset.c || '', design: el.dataset.dz || '' }; }
+  function dkFind(d, p) {
+    if (!p) return null;
+    return d.cards.filter(function (x) { return dkSame(x, p); })[0] || (d.side || []).filter(function (x) { return dkSame(x, p); })[0] || null;
+  }
+  function dkMenu(d, r) {
+    var c = r.c, side = r.side, at = dkAttrs(c) + ' data-dz="' + esc(c.design || '') + '" data-side="' + (side ? 1 : '') + '"', cmd = !side && dkIsCmd(d, c);
+    var b = function (a, k, label, cls) { return '<button class="btn small' + (cls ? ' ' + cls : '') + '" data-a="' + a + '"' + (k != null ? ' data-k="' + k + '"' : '') + at + '>' + label + '</button>'; };
+    return '<div class="drm" role="group" aria-label="Azioni su ' + esc(c.name) + '">' + b('dr-qty', '1', '+ una copia') + b('dr-qty', '-1', c.qty > 1 ? '− una copia' : '− togli') +
+      (d.kind === 'deck' && !cmd ? b('dr-move', '1', side ? '↑ Rimetti nel mazzo' : '↓ Sposta in sideboard') : '') +
+      (d.kind === 'deck' && !cmd && c.qty > 1 ? b('dr-move', '', side ? '↑ Rimetti tutte' : '↓ Sposta tutte') : '') +
+      b('dr-del', null, 'Rimuovi' + (c.qty > 1 ? ' tutte' : ''), 'danger') + '</div>';
   }
   function dkSort(rows) {
     var by = ui.dSort;
@@ -1552,11 +1568,13 @@
     if (!c.design && !basic) pv = r.pr ? (r.unit != null ? '(' + eurF(r.unit) + ')' : '(n.d.)') : (CARDS.enabled() && !st.err ? '(…)' : '');
     var tip = 'Cambia stampa' + (c.set ? ' · ora ' + String(c.set).toUpperCase() + (c.cn ? ' ' + c.cn : '') : ' · stampa non indicata');
     var oth = r.others.length ? '<span class="oth ' + (r.others.some(function (x) { return x.active; }) ? 'use' : 'free') + '" title="' + esc('Anche in ' + r.others.map(function (x) { return x.deckName + ' ×' + x.qty + (x.active ? ' (in uso)' : ' (libera)'); }).join(', ')) + '">+' + r.others.length + '</span>' : '';
-    var sel = dkSame(c, ui.dprev);
-    return '<div class="dr' + (sel ? ' sel' : '') + '" data-a="dr-open" tabindex="0"' + dkAttrs(c) + '>' + seed + '<span class="q">' + c.qty + '</span><span class="n">' + esc(c.name) + '</span>' +
+    var sel = dkSame(c, ui.dprev), open = ui.dmenu === dkKey(c, r.side);
+    return '<div class="dr' + (sel ? ' sel' : '') + (open ? ' mn' : '') + '" data-a="dr-open" tabindex="0"' + dkAttrs(c) + '>' + seed + '<span class="q">' + c.qty + '</span><span class="n">' + esc(c.name) + '</span>' +
       (c.design ? '<span class="tag dzt">Design</span>' : '') + oth +
       (window.CPADesigner ? (c.design ? '<button class="btn small dzb" data-a="dz-unbind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Togli design</button>' : '<button class="btn small dzb" data-a="dz-bind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Design</button>') : '') +
-      (c.design ? '' : '<button class="pb" data-a="dr-prints"' + dkAttrs(c) + ' title="' + esc(tip) + '" aria-label="' + esc('Cambia stampa di ' + c.name) + '">' + IC_SWAP + (pv ? '<span class="pv">' + pv + '</span>' : '') + '</button>') + '</div>';
+      (c.design ? '' : '<button class="pb" data-a="dr-prints"' + dkAttrs(c) + ' title="' + esc(tip) + '" aria-label="' + esc('Cambia stampa di ' + c.name) + '">' + IC_SWAP + (pv ? '<span class="pv">' + pv + '</span>' : '') + '</button>') +
+      '<button class="dmb" data-a="dr-menu"' + dkAttrs(c) + ' data-dz="' + esc(c.design || '') + '" data-side="' + (r.side ? 1 : '') + '" aria-expanded="' + open + '" title="Aggiungi, togli o sposta" aria-label="' + esc('Azioni su ' + c.name) + '">⋯</button></div>' +
+      (open ? dkMenu(d, r) : '');
   }
   function dkGroup(d, key, label, rows) {
     var n = rows.reduce(function (t, r) { return t + r.c.qty; }, 0);
@@ -1571,6 +1589,8 @@
     var onlyOther = Object.keys(by).every(function (k) { return k === 'other' || k === 'cmd'; });
     if (by.cmd) html += dkGroup(d, 'cmd', 'Commander', dkSort(by.cmd));
     DK_TYPES.forEach(function (t) { if (by[t[0]]) html += dkGroup(d, t[0], t[0] === 'other' && onlyOther ? 'Carte' : t[1], dkSort(by[t[0]])); });
+    var srows = dkRows(d, true).filter(function (r) { return r.hit; });
+    if (srows.length) html += dkGroup(d, 'side', 'Sideboard', dkSort(srows));
     el.innerHTML = html || '<p class="hint">Nessuna carta trovata.</p>';
     var st = CARDS.st, line = '';
     if (CARDS.ready() && !CARDS.enabled()) line = '<p class="hint">Senza Scryfall (qui non è raggiungibile) non posso dividere le carte per tipo né mostrare i prezzi.</p>';
@@ -1588,13 +1608,14 @@
     var tys = keys === 1 && cnt.other ? '' : DK_TYPES.filter(function (t) { return cnt[t[0]]; }).map(function (t) {
       return '<span class="ty" title="' + esc(t[1] + ': ' + cnt[t[0]]) + '">' + dkIcon(t[0]) + '<b>' + cnt[t[0]] + '</b><span class="sr">' + esc(t[1]) + '</span></span>';
     }).join('');
-    el.innerHTML = '<span class="tot"><b>' + total + '</b> ' + (total === 1 ? 'carta' : 'carte') + '</span>' + (tys ? '<span class="tys">' + tys + '</span>' : '<span class="tys"></span>') +
+    var ns = C.countOf(d.side), sb = ns ? '<span class="ty sb" title="' + esc('Sideboard: ' + ns) + '">' + dkIcon('side') + '<b>' + ns + '</b><span class="sr">Sideboard</span></span>' : '';
+    el.innerHTML = '<span class="tot"><b>' + total + '</b> ' + (total === 1 ? 'carta' : 'carte') + '</span>' + (tys || sb ? '<span class="tys">' + tys + sb + '</span>' : '<span class="tys"></span>') +
       (CARDS.ready() ? '<button class="calc" data-a="crazy-open">Calcola valore mazzo</button>' : '');
   }
 
   /* anteprima a lato: l'ultima carta su cui si è passati resta lì, così si può usare anche il bottone */
   function dkPrevHtml(d) {
-    var p = ui.dprev, c = p && d.cards.filter(function (x) { return dkSame(x, p); })[0];
+    var p = ui.dprev, c = dkFind(d, p);
     if (!c) return '<div class="pv-empty"><p>Passa il mouse su una carta per vederla qui.</p></div>';
     var cc = CARDS.get(), pr = dkPriceRec(cc, c), unit = pr ? window.CPACards.unitPrice(pr) : null, rec = dkRec(cc, c);
     var back = ui.dflip && IMG.hasBack(c.name, c.set, c.cn);
@@ -1659,11 +1680,11 @@
       (d.kind === 'deck' ? '<button class="chip" data-a="deck-tab" data-v="ups" aria-pressed="' + (ui.deckTab === 'ups') + '">Upgrade (' + d.upgrades.length + ')</button>' : '') +
       (CARDS.ready() ? '<button class="chip" data-a="deck-tab" data-v="prices" aria-pressed="' + (ui.deckTab === 'prices') + '">Prezzi</button>' : '') + '</div>';
     var opt = function (v, l) { return '<option value="' + v + '"' + (ui.dSort === v ? ' selected' : '') + '>' + l + '</option>'; };
-    var tools = '<div class="dk-tools">' + tabs + (cardsTab ? '<div class="search dk-q">' + IC.search + '<input class="input" data-c="deckq" type="search" placeholder="Cerca nelle carte del mazzo" autocomplete="off" aria-label="Cerca nel mazzo" value="' + esc(ui.deckQ) + '"></div>' +
+    var tools = '<div class="dk-tools">' + tabs + (cardsTab ? '<button class="btn small dk-addb" data-a="dadd-toggle" aria-expanded="' + !!ui.dAdd + '" aria-controls="dadd">+ Aggiungi carta</button><div class="search dk-q">' + IC.search + '<input class="input" data-c="deckq" type="search" placeholder="Cerca nelle carte del mazzo" autocomplete="off" aria-label="Cerca nel mazzo" value="' + esc(ui.deckQ) + '"></div>' +
       '<label class="dk-sort">Ordina<select class="select" data-c="dsort" aria-label="Ordina le carte">' + opt('name', 'Nome') + opt('cmc', 'Costo di mana') + opt('price', 'Prezzo') + '</select></label>' : '') + '</div>';
     var man = '<section class="panel dk-man" id="dman"' + (ui.dMan ? '' : ' hidden') + '><label class="lbl">Nome<input class="input" data-c="deck-name" value="' + esc(d.name) + '"></label>' +
       (d.kind === 'deck' ? '<label class="lbl">Commander<select class="select" data-c="deck-cmd">' + cmdOpts + '</select></label><p class="hint">' + statusHint(d) + '</p>' : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
-      '<div class="btns"><button class="btn small" data-a="copy-deck">Copia lista .txt</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina il mazzo') + '</button></div></section>';
+      '<div class="btns"><button class="btn small" data-a="export-deck">Scarica lista .txt</button><button class="btn small" data-a="copy-deck">Copia lista</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina il mazzo') + '</button></div></section>';
     var body;
     if (ui.deckTab === 'prices' && CARDS.ready()) {
       body = '<div id="prices" class="prices dk-narrow"></div>';
@@ -1674,7 +1695,112 @@
     } else {
       body = '<div class="dk-main"><aside class="dk-prev" id="dprev" aria-label="Anteprima della carta">' + dkPrevHtml(d) + '</aside><div class="dk-list"><div id="dstat" hidden></div><div class="dk-cols" id="dlist"></div></div></div>';
     }
-    return '<div class="dk">' + dkHero(d) + man + tools + body + '<div class="dk-bar" id="dbar" role="region" aria-label="Riepilogo del mazzo"></div></div>';
+    return '<div class="dk">' + dkHero(d) + man + tools + (cardsTab ? daddHtml(d) : '') + body + '<div class="dk-bar" id="dbar" role="region" aria-label="Riepilogo del mazzo"></div></div>';
+  }
+
+  /* ---------- aggiungere, togliere e spostare carte a mano ---------- */
+  var dsugTimer = null;
+  function daddHtml(d) {
+    var side = d.kind === 'deck';
+    return '<section class="panel dk-add" id="dadd"' + (ui.dAdd ? '' : ' hidden') + '><div class="dadd-row">' +
+      '<label class="lbl dadd-name">Carta<textarea class="input" rows="1" data-c="dadd-q" id="dadd-q" placeholder="Es. Sol Ring, oppure 2 Sol Ring (C21) 263" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea></label>' +
+      '<label class="lbl dadd-qty">Copie<input class="input" type="number" min="1" max="99" value="1" data-c="dadd-n" id="dadd-n" inputmode="numeric"></label>' +
+      (side ? '<label class="lbl dadd-to">Dove<select class="select" data-c="dadd-to"><option value="main"' + (ui.dAddSide ? '' : ' selected') + '>Mazzo</option><option value="side"' + (ui.dAddSide ? ' selected' : '') + '>Sideboard</option></select></label>' : '') +
+      '<button class="btn primary dadd-go" id="dadd-go" data-a="dadd-go">Aggiungi</button></div><div id="dadd-sug"></div>' +
+      '<div id="dadd-msg" class="dadd-msg" role="status" aria-live="polite"></div></section>';
+  }
+  function daddPaint() {
+    var sg = $('#dadd-sug'), mg = $('#dadd-msg'), go = $('#dadd-go');
+    if (sg) sg.innerHTML = ui.dSug.length ? '<ul class="dadd-sug" aria-label="Suggerimenti">' + ui.dSug.map(function (n) {
+      return '<li><button class="link" data-a="dadd-pick" data-v="' + esc(n) + '">' + esc(n) + '</button></li>';
+    }).join('') + '</ul>' : '';
+    if (mg) mg.innerHTML = ui.dAddBusy ? '<span class="spin" aria-hidden="true"></span> Cerco su Scryfall…' :
+      (ui.dAddMsg ? esc(ui.dAddMsg) + (ui.dAddPend ? ' <button class="link" data-a="dadd-force">Aggiungi comunque</button>' : '') : '');
+    if (go) go.disabled = !!ui.dAddBusy;
+  }
+  function daddSuggest(v) {
+    clearTimeout(dsugTimer);
+    var line = String(v || '').split('\n')[0], name = line.replace(/^\d+\s*[xX]?\s+/, '').replace(/\s+[(\[].*$/, '').trim(), cc = CARDS.get();
+    ui.dAddMsg = ''; ui.dAddPend = null;
+    if (name.length < 2 || /\n/.test(v) || !cc || !CARDS.enabled() || typeof cc.autocomplete !== 'function') { ui.dSug = []; daddPaint(); return; }
+    dsugTimer = setTimeout(function () {
+      cc.autocomplete(name).then(function (list) {
+        var ta = $('#dadd-q'); if (!ta || ta.value.split('\n')[0] !== line) return;
+        ui.dSug = (list || []).filter(function (n) { return C.keyOf(n) !== C.keyOf(name) || n !== name; }).slice(0, 8); daddPaint();
+      }, function () { /* senza suggerimenti si scrive a mano */ });
+    }, 250);
+  }
+  function daddRead(d) {
+    var ta = $('#dadd-q'), ne = $('#dadd-n'), txt = ta ? ta.value.trim() : '';
+    if (!txt) return { err: 'Scrivi il nome della carta.' };
+    var qty = Math.max(1, Math.min(99, parseInt(ne && ne.value, 10) || 1)), lines = txt.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+    var text = lines.length === 1 ? (/^\d+\s*[xX]?\s+\S/.test(lines[0]) ? lines[0] : qty + ' ' + lines[0]) : lines.join('\n');
+    var p = C.parseList(text), out = [];
+    p.cards.forEach(function (c) { out.push({ c: c, side: d.kind === 'deck' && ui.dAddSide }); });
+    (p.side || []).forEach(function (c) { out.push({ c: c, side: d.kind === 'deck' }); });
+    return out.length ? { entries: out } : { err: 'Non riesco a leggere la carta: scrivi il nome, ad esempio «Sol Ring».' };
+  }
+  function daddApply(d, entries) {
+    var cc = CARDS.get(), done = [];
+    entries.forEach(function (e) {
+      var rec = cc ? (e.c.set ? cc.rec(e.c.name, e.c.set, e.c.cn) : (cc.rec(e.c.name, '', '') || cc.any(e.c.name))) : null;
+      if (rec && rec.n && C.keyOf(rec.n) === C.keyOf(e.c.name)) e.c.name = rec.n;
+    });
+    mutate(function () {
+      return 'Aggiunta' + (entries.length > 1 ? 'e ' + entries.length + ' carte' : ': ' + entries[0].c.qty + '× ' + entries[0].c.name) + (entries.every(function (e) { return e.side; }) ? ' al sideboard' : '') + '.';
+    }, function () {
+      entries.forEach(function (e) { C.addCard(d, { name: e.c.name, set: e.c.set, cn: e.c.cn }, e.c.qty, e.side); done.push(e); });
+      d.updatedAt = Date.now();
+    });
+    ui.dAddMsg = ''; ui.dAddPend = null; ui.dSug = []; ui.dmenu = '';
+    var sy = window.scrollY; render(); window.scrollTo(0, sy);
+    var ta = $('#dadd-q'); if (ta) ta.focus();
+  }
+  function daddGo(force) {
+    var d = getDeck(); if (!d || ui.dAddBusy) return;
+    var r = force && ui.dAddPend ? { entries: ui.dAddPend } : daddRead(d);
+    if (r.err) { ui.dAddMsg = r.err; ui.dAddPend = null; daddPaint(); return; }
+    var cc = CARDS.get();
+    if (force || !cc || !CARDS.enabled()) { daddApply(d, r.entries); return; }
+    ui.dAddBusy = true; ui.dAddMsg = ''; ui.dAddPend = null; ui.dSug = []; daddPaint();
+    cc.ensure(r.entries.map(function (e) { return { name: e.c.name, set: e.c.set, cn: e.c.cn }; }), {}).then(function () {
+      ui.dAddBusy = false;
+      var bad = r.entries.filter(function (e) { return !(e.c.set ? cc.rec(e.c.name, e.c.set, e.c.cn) : (cc.rec(e.c.name, '', '') || cc.any(e.c.name))); });
+      if (bad.length) {
+        ui.dAddPend = r.entries;
+        ui.dAddMsg = 'Non trovo ' + bad.slice(0, 3).map(function (e) { return '«' + e.c.name + (e.c.set ? ' (' + e.c.set + ')' : '') + '»'; }).join(', ') + (bad.length > 3 ? '…' : '') + ' su Scryfall: controlla il nome.';
+        daddPaint(); return;
+      }
+      daddApply(d, r.entries);
+    }, function () {
+      ui.dAddBusy = false; ui.dAddPend = r.entries; ui.dAddMsg = 'Non riesco a raggiungere Scryfall per controllare il nome.'; daddPaint();
+    });
+  }
+  /* Dopo ogni modifica: se il commander non c'è più nel mazzo, il mazzo resta senza commander. */
+  function dkAfterEdit(d) {
+    d.updatedAt = Date.now();
+    if (d.commander && !d.cards.some(function (c) { return C.keyOf(c.name) === C.keyOf(d.commander); })) d.commander = null;
+  }
+  function dkEdit(el, kind) {
+    var d = getDeck(); if (!d) return;
+    var t = dkTarget(el), side = !!el.dataset.side, k = el.dataset.k, label = t.name, before = d.commander, base, fn;
+    if (kind === 'qty') {
+      var up = parseInt(k, 10) > 0;
+      base = up ? 'Aggiunta una copia: ' + label + '.' : 'Tolta una copia: ' + label + '.';
+      fn = function () { if (up) C.addCard(d, t, 1, side); else C.removeCard(d, t, 1, side); };
+    } else if (kind === 'del') {
+      base = 'Rimossa dal ' + (side ? 'sideboard' : 'mazzo') + ': ' + label + '.';
+      fn = function () { C.removeCard(d, t, null, side); };
+    } else if (kind === 'move') {
+      if (d.kind !== 'deck' || (!side && dkIsCmd(d, t))) return;
+      base = (side ? 'Rimessa nel mazzo: ' : 'Spostata in sideboard: ') + label + '.';
+      fn = function () { C.moveCard(d, t, k ? 1 : null, !side); };
+    } else return;
+    mutate(function () { return base + (before && !d.commander ? ' Era il commander: il mazzo ora non ne ha uno, scegline un altro in Gestisci.' : ''); }, function () { fn(); dkAfterEdit(d); });
+    var still = (side ? d.side || [] : d.cards).some(function (c) { return dkKey(c, side) === dkKey(t, side); });
+    if (!still) ui.dmenu = '';
+    var sy = window.scrollY; render(); window.scrollTo(0, sy);
+    if (kind === 'qty') { var b = document.querySelector('.drm [data-a="dr-qty"][data-k="' + k + '"]'); if (b) b.focus(); }
   }
 
   /* ---------- «Ma questo risparmio è crazy!» ---------- */
@@ -1881,7 +2007,7 @@
   function reuseSummary() { var el = $('#reuse-sum'); if (el) el.textContent = reuseSumText(); }
   function importStep2(d) {
     var p = d.parsed;
-    return '<header class="vh"><button class="back" data-a="draft-back">← Lista</button><h1>Scegli il commander</h1><p class="sub"><b>' + p.total + '</b> carte (' + p.unique + ' diverse)' + (p.excluded ? ' · ' + p.excluded + ' escluse (sideboard)' : '') + '</p></header>' +
+    return '<header class="vh"><button class="back" data-a="draft-back">← Lista</button><h1>Scegli il commander</h1><p class="sub"><b>' + p.total + '</b> carte (' + p.unique + ' diverse)' + (p.excluded ? (d.mode === 'deck' ? ' · ' + p.excluded + ' in sideboard' : ' · ' + p.excluded + ' escluse (sideboard)') : '') + '</p></header>' +
       '<section class="panel">' +
       (p.total !== 100 ? '<p class="warn">La lista ha ' + p.total + ' carte: un mazzo Commander di solito ne ha 100. Puoi importarla lo stesso.</p>' : '') +
       (p.warnings.length ? '<p class="warn">' + plural(p.warnings.length, 'riga non letta', 'righe non lette') + ': ' + esc(p.warnings.slice(0, 3).join(' | ')) + (p.warnings.length > 3 ? '…' : '') + '</p>' : '') +
@@ -1912,7 +2038,7 @@
     var nd = {
       id: C.uid('d'), name: d.name.trim() || (kind === 'binder' ? 'Carte sciolte' : d.commander || 'Nuovo mazzo'), kind: kind,
       status: kind === 'deck' ? d.status : 'inactive', active: kind === 'deck' && d.status === 'active', commander: kind === 'deck' ? (d.commander || null) : null,
-      cards: C.clone(p.cards), upgrades: [], createdAt: now, updatedAt: now
+      cards: C.clone(p.cards), side: kind === 'deck' ? C.clone(p.side || []) : [], upgrades: [], createdAt: now, updatedAt: now
     };
     var taken = kind === 'deck' ? C.applyReuse(state.decks, nd, d.reuse, state.settings) : [];
     taken.forEach(function (x) { touch(x.deckId); });
@@ -2002,6 +2128,15 @@
       case 'p-fresh': CARDS.st.err = ''; deck = getDeck(); if (deck) { loadPrices([deck], true); renderPrices(); } break;
       case 'p-cheap': CARDS.st.err = ''; deck = getDeck(); if (deck) { loadCheap([deck]); renderPrices(); } break;
       case 'dr-open': dkSelect(el); if (!dkAside()) { var sd = el.querySelector('.th.seed.on'); if (sd) IMG.open(sd); } break;
+      case 'dr-menu': { var mk = dkKey(dkTarget(el), !!el.dataset.side); ui.dmenu = ui.dmenu === mk ? '' : mk; updateDeckList(); var mb = document.querySelector('.dr.mn .dmb'); if (mb) mb.focus(); } break;
+      case 'dr-qty': dkEdit(el, 'qty'); break;
+      case 'dr-del': dkEdit(el, 'del'); break;
+      case 'dr-move': dkEdit(el, 'move'); break;
+      case 'dadd-toggle': ui.dAdd = !ui.dAdd; { var dp = $('#dadd'); if (dp) dp.hidden = !ui.dAdd; el.setAttribute('aria-expanded', ui.dAdd); if (ui.dAdd) { var dq = $('#dadd-q'); if (dq) dq.focus(); } } break;
+      case 'dadd-go': daddGo(false); break;
+      case 'dadd-force': daddGo(true); break;
+      case 'dadd-pick': { var dq2 = $('#dadd-q'); if (dq2) { dq2.value = el.dataset.v; dq2.focus(); } ui.dSug = []; daddPaint(); } break;
+      case 'export-deck': deck = getDeck(); if (deck) { var fn = C.exportFileName(deck); download(fn, C.exportDeck(deck), 'text/plain').then(function (r) { toast(r === 'declined' ? 'Download annullato.' : r ? 'Lista scaricata: ' + fn : 'Download non riuscito: usa «Copia lista» e incolla in un file di testo.'); }); } break;
       case 'dr-prints': IMG.openPrints(el.dataset.n, el.dataset.s, el.dataset.c, ui.deckId); break;
       case 'dr-flip': ui.dflip = !ui.dflip; dprevPaint(); break;
       case 'dr-retry': CARDS.st.err = ''; updateDeckList(); break;
@@ -2029,7 +2164,7 @@
           ui.view = 'decks'; render();
         }); break;
       case 'make-pdf': if (window.CPABuilder) window.CPABuilder.open(id); break;
-      case 'copy-deck': deck = getDeck(); if (deck) copyText(C.exportText(deck)).then(function (ok) { toast(ok ? 'Lista copiata negli appunti.' : 'Copia non riuscita.'); }); break;
+      case 'copy-deck': deck = getDeck(); if (deck) copyText(C.exportDeck(deck)).then(function (ok) { toast(ok ? 'Lista copiata negli appunti.' : 'Copia non riuscita.'); }); break;
       case 'new-up': ui.draft = newDraft('upgrade', ui.deckId); ui.view = 'import'; window.scrollTo(0, 0); render(); break;
       case 'up-st': ui.upSt = el.dataset.v; render(); break;
       case 'open-up': ui.upId = id; ui.upQ = ''; ui.upSt = 'all'; ui.view = 'upgrade'; window.scrollTo(0, 0); render(); break;
@@ -2112,6 +2247,10 @@
     ui.dataMsg = ''; ui.restoreText = ''; render();
   }
 
+  document.addEventListener('keydown', function (ev) {
+    var t = ev.target;
+    if (ev.key === 'Enter' && !ev.shiftKey && t && t.getAttribute && t.getAttribute('data-c') === 'dadd-q') { ev.preventDefault(); daddGo(false); }
+  });
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (ui.crazy) { closeCrazy(); return; } if (window.CPADesigner && ui.view === 'designer' && window.CPADesigner.escape()) return; if (window.CPABuilder && ui.view === 'builder' && window.CPABuilder.escape()) return; if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
   document.addEventListener('mousemove', function (ev) {
     var t = ev.target.closest && ev.target.closest('.th.on');
@@ -2141,6 +2280,7 @@
     else if (c === 'f-text') { ui.f.text = e.target.value; ui.limit = 150; updateArchiveList(); }
     else if (c === 'upq') { ui.upQ = e.target.value; updateUpgradeCols(); }
     else if (c === 'deckq') { ui.deckQ = e.target.value; updateDeckList(); }
+    else if (c === 'dadd-q') daddSuggest(e.target.value);
     else if (c === 'draft-text') ui.draft.text = e.target.value;
     else if (c === 'draft-name') ui.draft.name = e.target.value;
     else if (c === 'restore-text') ui.restoreText = e.target.value;
@@ -2167,6 +2307,7 @@
               d.name + ' non attivo: le sue carte tornano libere.');
           render();
         } break;
+      case 'dadd-to': ui.dAddSide = t.value === 'side'; break;
       case 'deck-name': d = getDeck(); if (d && t.value.trim()) { d.name = t.value.trim(); d.updatedAt = Date.now(); touch(d.id); render(); } break;
       case 'deck-cmd': d = getDeck(); if (d) { d.commander = t.value || null; d.updatedAt = Date.now(); touch(d.id); render(); } break;
       case 'up-name':

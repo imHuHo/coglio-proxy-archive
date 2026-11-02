@@ -417,6 +417,26 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   ok(await page.evaluate(() => CPADesigner.list().every(d => d.frameImg !== 'auto:cc-tst')), 'pacchetto rimosso, i design tornano alla cornice disegnata');
   await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item');
 
+  /* dallo shop si torna alla carta che si stava creando, senza perdere nulla */
+  await page.click('[data-a="dz-new"][data-k="card"]'); await page.waitForSelector('#dz-cv');
+  await page.fill('[data-c="dz-f"][data-k="name"]', 'Carta in corso'); await page.click('[data-a="dz-mana"][data-v="R"][data-k="+"]');
+  await page.fill('[data-c="dz-f"][data-k="rules"]', 'Haste\nPrima riga.');
+  const idBefore = await page.evaluate(() => CPADesigner.state.cur.id), costBefore = await page.evaluate(() => CPADesigner.state.cur.cost);
+  ok(costBefore.includes('R'), 'costo con un rosso: ' + costBefore);
+  await page.evaluate(() => window.scrollTo(0, 300));
+  await page.click('.shop[data-a="dz-catalog"]'); await page.waitForSelector('.dz-catitem');
+  ok(await page.locator('[data-a="dz-cat-back"]').count() === 1 && (await page.textContent('[data-a="dz-cat-back"]')).includes('Carta in corso'), 'nello shop: «Torna alla carta» con il nome della carta');
+  ok(await page.evaluate(() => CPADesigner.state.cur && CPADesigner.state.cur.id) === idBefore, 'aprire lo shop non azzera la carta');
+  ok(await page.evaluate(id => CPADesigner.list().some(d => d.id === id), idBefore), 'la carta in corso è già salvata tra i design');
+  await page.click('[data-a="dz-cat-back"]'); await page.waitForSelector('#dz-cv');
+  ok(await page.inputValue('[data-c="dz-f"][data-k="name"]') === 'Carta in corso' && await page.evaluate(() => CPADesigner.state.cur.cost) === costBefore && (await page.inputValue('[data-c="dz-f"][data-k="rules"]')).includes('Prima riga'), 'tornando: nome, costo e testo sono quelli di prima');
+  ok(await page.evaluate(() => CPADesigner.state.cur.id) === idBefore && await page.evaluate(() => CPADesigner.list().filter(d => d.name === 'Carta in corso').length) === 1, 'stessa carta, nessun duplicato');
+  await page.click('.shop[data-a="dz-catalog"]'); await page.waitForSelector('.dz-catitem'); await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item');
+  ok(await page.locator('[data-a="dz-cat-back"]').count() === 0 && await page.evaluate(() => CPADesigner.state.cur === null), '«I miei design» dallo shop torna comunque alla lista');
+  await page.click('[data-a="dz-catalog"]'); await page.waitForSelector('.dz-catitem');
+  ok(await page.locator('[data-a="dz-cat-back"]').count() === 0, 'lo shop aperto dalla lista non ha «Torna alla carta»');
+  await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item');
+
   /* cornice dedotta dai dati Scryfall + scaricamento su richiesta */
   packFiles['/packs/M15BoxTopper/pack.json'] = JSON.stringify({ app: 'coglio-frames', version: 1, groups: [{ id: 'cc-M15BoxTopper', name: 'Extended Art di prova' }], frames: [{ key: 'C', name: 'Ext C', group: 'cc-M15BoxTopper', ink: 'dark', geo: null, png: 'C.webp', pt: null }] });
   packFiles['/packs/M15BoxTopper/C.webp'] = framePng;

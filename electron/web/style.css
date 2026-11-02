@@ -1008,3 +1008,27 @@ body.on-deck #toast { bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
 .bkr-m u.low { background: #f6c93a; }
 .bkr-m small { grid-column: 1 / -1; }
 @media (max-width: 560px) { .bkr-head { flex-direction: column; align-items: flex-start; } }
+
+/* modifica a mano del mazzo: menu di riga, aggiunta, sideboard */
+.dmb { flex: none; border: 0; background: none; color: var(--muted); font: 800 18px/1 var(--body); width: 30px; min-height: 28px; border-radius: 7px; cursor: pointer; letter-spacing: 1px; }
+.dmb:hover, .dmb:focus-visible, .dr.mn .dmb { background: var(--banana-soft); color: var(--fg); }
+.dr.mn { background: var(--accent-soft); border-bottom-color: transparent; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.drm { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 8px 8px; margin: 0 0 4px; background: var(--accent-soft); border-radius: 0 0 8px 8px; border-bottom: 1px solid var(--line); }
+.drm .btn { min-height: 28px; padding: 2px 10px; font-size: 12.5px; }
+.dg[data-g="side"] h3 { border-bottom-color: #8a8fa6; border-bottom-style: dashed; }
+.dg[data-g="side"] h3 svg { color: #8a8fa6; }
+.dk-tools .dk-addb { background: var(--banana, #f7c52b); color: #1d1d1d; border-color: #a87c00; box-shadow: 0 2px 0 #a87c00; font-weight: 800; }
+.dk-add { margin: 0 0 12px; display: grid; gap: 8px; }
+.dadd-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.dadd-name { flex: 1 1 260px; min-width: 0; }
+.dadd-name textarea { resize: none; min-height: 40px; height: 40px; overflow: hidden; }
+.dadd-qty { flex: 0 0 84px; }
+.dadd-to { flex: 0 0 140px; }
+.dadd-go { min-height: 40px; }
+.dadd-sug { list-style: none; margin: 0; padding: 4px; display: flex; flex-wrap: wrap; gap: 4px 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface2); }
+.dadd-sug li { margin: 0; }
+.dadd-sug .link { padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 13px; text-decoration: none; cursor: pointer; }
+.dadd-sug .link:hover, .dadd-sug .link:focus-visible { background: var(--banana-soft); }
+.dadd-msg { font-size: 13px; color: var(--muted); min-height: 0; }
+.dadd-msg:empty { display: none; }
+.dk-bar .ty.sb { opacity: .85; }

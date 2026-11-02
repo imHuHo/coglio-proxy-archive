@@ -73,7 +73,8 @@
     var d = deckId && H.getDeck(deckId);
     if (d) {
       bd.source = 'deck'; bd.deckId = d.id; bd.deckName = d.name;
-      bd.entries = d.cards.map(mkEntry);
+      /* il sideboard c'è nell'elenco con 0 copie: per stamparlo basta alzare la quantità */
+      bd.entries = d.cards.map(mkEntry).concat((d.side || []).map(function (c) { var e = mkEntry(c); e.qty = 0; e.side = true; return e; }));
       bd.page = 1; bd.report = null; bd.picker = null; bd.msg = '';
     } else {
       bd.source = 'paste'; bd.deckId = null; bd.deckName = '';
@@ -369,7 +370,7 @@
     var tag = e.card ? e.card.set.toUpperCase() + ' ' + e.card.collector_number : (e.set ? e.set + (e.cn ? ' ' + e.cn : '') : '');
     var h = '<div class="bd-row' + (inc(e) ? '' : ' off') + '"><span class="bd-th">' + (th ? '<img src="' + esc(th) + '" alt="" loading="lazy">' : '') + '</span>' +
       '<input class="input bd-q" type="number" min="0" max="99" inputmode="numeric" data-c="bd-qty" data-id="' + e.id + '" value="' + e.qty + '" aria-label="Quantità di ' + esc(e.name) + '">' +
-      '<span class="bd-nm"><b>' + esc(e.name) + '</b><small>' + (tag ? '<span class="tag">' + esc(tag) + '</span>' : '') + (st ? '<span class="bd-st ' + cls + '">' + esc(st) + '</span>' : '') + '</small></span>' +
+      '<span class="bd-nm"><b>' + esc(e.name) + '</b><small>' + (e.side ? '<span class="tag">sideboard</span>' : '') + (tag ? '<span class="tag">' + esc(tag) + '</span>' : '') + (st ? '<span class="bd-st ' + cls + '">' + esc(st) + '</span>' : '') + '</small></span>' +
       '<span class="bd-acts">' +
       (e.card && !e.custom ? '<button class="btn small" data-a="bd-prints" data-id="' + e.id + '" aria-label="Scegli un’altra stampa di ' + esc(e.name) + '">Stampa…</button>' : '') +
       (e.token ? '' : '<label class="btn small">' + (e.custom ? 'Cambia' : 'Tua immagine') + '<input type="file" accept="image/*" hidden data-c="bd-file" data-id="' + e.id + '" data-side="front"></label>') +

@@ -128,6 +128,7 @@
     /* un riassunto qualsiasi della carta (per la ricerca): vale qualunque stampa */
     self.any = function (name) { return byName[keyOf(name)] || null; };
     self.known = function (name, set, cn) { return !!recs[key(name, set, cn)]; };
+    self.autocomplete = function (q) { return proxy.autocomplete(q); };
     self.cheapest = function (name) { var c = cheap[keyOf(name)]; return c && !c.x ? c : null; };
     self.hasCheapest = function (name) { return !!cheap[keyOf(name)]; };
     self.count = function () { return Object.keys(recs).filter(function (k) { return !recs[k].x; }).length; };

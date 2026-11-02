@@ -156,6 +156,11 @@
       });
     };
 
+    /* Suggerimenti sul nome di una carta (almeno 2 lettere): i nomi esatti che Scryfall propone. */
+    self.autocomplete = function (q) {
+      return getJson('/cards/autocomplete?q=' + encodeURIComponent(String(q).trim())).then(function (res) { return (res && res.data) || []; });
+    };
+
     /* Stampe disponibili di una carta (per scegliere un'altra illustrazione). */
     self.printings = function (name) {
       return getJson('/cards/search?q=' + encodeURIComponent('!"' + String(name).replace(/"/g, '') + '"') + '&unique=prints&order=released&dir=desc').then(function (res) {

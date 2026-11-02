@@ -307,7 +307,7 @@
   }
 
   /* ---------- schermata ---------- */
-  function open() { H.ui.view = 'designer'; dz.view = 'list'; dz.cur = null; dz.root = null; dz.picker = null; dz.dlg = null; window.scrollTo(0, 0); load().then(function () { H.render(); }); H.render(); }
+  function open() { H.ui.view = 'designer'; dz.view = 'list'; dz.cur = null; dz.root = null; dz.ret = null; dz.picker = null; dz.dlg = null; window.scrollTo(0, 0); load().then(function () { H.render(); }); H.render(); }
   function editDesign(d) {
     dz.cur = d; dz.root = d; dz.face = 'front'; dz.view = 'edit'; dz.artImg = null; dz.confirm = ''; dz.search = { q: d.alterOf || '', busy: false, msg: '' }; dz.prints = { list: [], busy: false, msg: '' }; dz.dlg = null; dz.printsOpen = false;
     artImage(d.art.id).then(function (a) { if (dz.cur === d) { dz.artImg = a; schedulePreview(); } });
@@ -573,7 +573,8 @@
     gone.forEach(function (id) { delete dz.frameImgs[id]; forgetUrl(id); DB.del('frames', id); });
   }
   function catalogHtml() {
-    var h = '<header class="vh"><button class="back" data-a="dz-back">\u2190 I miei design</button><h1>Catalogo cornici</h1><p class="sub">Cornici estratte da Card Conjurer: aggiungi quelle che ti servono e le trovi nel menu \u00abCornice importata\u00bb dell\u2019editor, con scelta automatica sui colori.</p></header>';
+    var back = dz.cur && dz.ret ? '<button class="back" data-a="dz-cat-back">\u2190 Torna alla carta \u00ab' + esc((dz.root || dz.cur).name || 'Senza nome') + '\u00bb</button> <button class="btn small" data-a="dz-back">I miei design</button>' : '<button class="back" data-a="dz-back">\u2190 I miei design</button>';
+    var h = '<header class="vh">' + back + '<h1>Catalogo cornici</h1><p class="sub">Cornici estratte da Card Conjurer: aggiungi quelle che ti servono e le trovi nel menu \u00abCornice importata\u00bb dell\u2019editor, con scelta automatica sui colori.</p></header>';
     if (!H.available()) return h + '<div class="empty"><p>Il catalogo si scarica da internet: qui dentro non \u00e8 disponibile. Usa l\u2019app per Windows, l\u2019APK o la versione web.</p></div>';
     loadCatalog();
     if (!cat.list) return h + '<p class="hint" role="status">' + esc(cat.msg || 'Carico il catalogo\u2026') + '</p>' + (cat.msg ? '<div class="btns"><button class="btn" data-a="dz-cat-retry">Riprova</button></div>' : '');
@@ -1096,13 +1097,19 @@
           var cc = 'WUBRG'.split('').filter(function (x) { return new RegExp('\\{[^}]*' + x + '[^}]*\\}').test(d.cost.toUpperCase()); }).join('');
           d.colors = cc; saveSoon(); H.render();
         } break;
-      case 'dz-catalog': dz.view = 'catalog'; dz.cur = null; window.scrollTo(0, 0); H.render(); break;
+      case 'dz-catalog':
+        /* dall'editor: la carta resta aperta (e salvata), si torna indietro con «Torna alla carta» */
+        if (dz.view === 'edit' && dz.cur) { saveNow(); dz.ret = { y: window.scrollY }; } else dz.ret = null;
+        dz.view = 'catalog'; window.scrollTo(0, 0); H.render(); break;
+      case 'dz-cat-back':
+        if (dz.cur && dz.ret) { var ry = dz.ret.y; dz.ret = null; dz.view = 'edit'; H.render(); window.scrollTo(0, ry); } else { dz.ret = null; dz.view = 'list'; H.render(); }
+        break;
       case 'dz-cat-retry': cat.msg = ''; cat.list = null; H.render(); break;
       case 'dz-cat-c': cat.c = String(v == null ? '' : v); H.render(); break;
       case 'dz-cat-add': installPack((cat.list || []).filter(function (e) { return e.id === id; })[0]); break;
       case 'dz-cat-del': dropGroup('cc-' + id); H.toast('Pacchetto rimosso.'); H.render(); break;
       case 'dz-open': var t = byId(id); if (t) editDesign(t); break;
-      case 'dz-back': saveNow(); dz.view = 'list'; dz.cur = null; dz.root = null; dz.confirm = ''; window.scrollTo(0, 0); H.render(); break;
+      case 'dz-back': saveNow(); dz.view = 'list'; dz.cur = null; dz.root = null; dz.ret = null; dz.confirm = ''; window.scrollTo(0, 0); H.render(); break;
       case 'dz-dup':
         var src = byId(id) || dz.root || d; if (!src) break;
         saveNow();
@@ -1263,7 +1270,7 @@
     else if (c === 'dz-bcard' && dz.bind) { dz.bind.card = el.value; H.render(); }
   }
   function openPicker(deckId, cardName) {
-    dz.picker = { deckId: deckId, cardName: cardName }; H.ui.view = 'designer'; if (dz.view !== 'list') { dz.view = 'list'; dz.cur = null; }
+    dz.picker = { deckId: deckId, cardName: cardName }; H.ui.view = 'designer'; if (dz.view !== 'list') { dz.view = 'list'; dz.cur = null; dz.ret = null; }
     load().then(function () { H.render(); }); H.render();
   }
   function escape() {
