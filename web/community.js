@@ -78,9 +78,12 @@
   function configured(cfg) { return !!(cfg && /^https:\/\/[^\s/]+/.test(String(cfg.url || '')) && String(cfg.key || '').length > 10); }
   function create(cfg, fetchFn) {
     var base = String((cfg && cfg.url) || '').replace(/\/+$/, ''), key = String((cfg && cfg.key) || '');
+    /* Le chiavi nuove (sb_publishable_…) vanno solo in «apikey»: non sono JWT e come «Bearer» verrebbero rifiutate.
+       La chiave «anon» storica, invece, e' un JWT (inizia per eyJ) e si manda anche come «Bearer». */
+    function headers() { var h = { apikey: key, 'Content-Type': 'application/json' }; if (/^eyJ/.test(key)) h.Authorization = 'Bearer ' + key; return h; }
     function call(fn, body) {
       if (!configured(cfg)) return Promise.reject(fail('unconfigured'));
-      return fetchFn(base + '/rest/v1/rpc/' + fn, { method: 'POST', headers: { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) {
+      return fetchFn(base + '/rest/v1/rpc/' + fn, { method: 'POST', headers: headers(), body: JSON.stringify(body) }).then(function (r) {
         return r.text().then(function (t) {
           var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) { j = null; }
           if (r.ok) return j;

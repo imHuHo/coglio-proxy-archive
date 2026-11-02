@@ -41,7 +41,10 @@ const calls = []; const sf = (body, status) => (u) => { calls.push(u); return Pr
   const seen = []; const srv = (status, body) => (u, o) => { seen.push({ u, o }); return Promise.resolve({ ok: status < 300, status, text: () => Promise.resolve(body === undefined ? '' : typeof body === 'string' ? body : JSON.stringify(body)) }); };
   let cl = C.create(cfg, srv(200, true));
   eq(await cl.free('Simone'), true, 'free');
-  eq([seen[0].u, seen[0].o.method, seen[0].o.headers.apikey, seen[0].o.headers.Authorization, seen[0].o.headers['Content-Type'], JSON.parse(seen[0].o.body)], ['https://abc.supabase.co/rest/v1/rpc/cpa_handle_free', 'POST', 'anon-key-12345', 'Bearer anon-key-12345', 'application/json', { p_handle: 'Simone' }], 'indirizzo, intestazioni e corpo');
+  eq([seen[0].u, seen[0].o.method, seen[0].o.headers.apikey, seen[0].o.headers.Authorization, seen[0].o.headers['Content-Type'], JSON.parse(seen[0].o.body)], ['https://abc.supabase.co/rest/v1/rpc/cpa_handle_free', 'POST', 'anon-key-12345', undefined, 'application/json', { p_handle: 'Simone' }], 'indirizzo, intestazioni e corpo (chiave non JWT: solo apikey)');
+  await C.create({ url: cfg.url, key: 'sb_publishable_AbCdEf123456' }, srv(200, true)).free('x'); eq([seen[seen.length - 1].o.headers.apikey, seen[seen.length - 1].o.headers.Authorization], ['sb_publishable_AbCdEf123456', undefined], 'chiave «publishable»: niente Bearer');
+  await C.create({ url: cfg.url, key: 'eyJhbGciOiJIUzI1NiJ9.e30.abc' }, srv(200, true)).free('x'); eq(seen[seen.length - 1].o.headers.Authorization, 'Bearer eyJhbGciOiJIUzI1NiJ9.e30.abc', 'chiave «anon» storica (JWT): anche Bearer');
+  seen.length = 1;
   cl = C.create(cfg, srv(200, { handle: 'Simone', avatar_name: 'K', avatar_url: art }));
   eq((await cl.register('Simone', 'ABCDE12345FGHJK67890', { name: 'K', url: art })).handle, 'Simone', 'register'); eq(JSON.parse(seen[1].o.body), { p_handle: 'Simone', p_secret: 'ABCDE12345FGHJK67890', p_name: 'K', p_url: art }, 'register: corpo');
   await cl.register('Luca', 'ABCDE12345FGHJK67890'); eq([JSON.parse(seen[2].o.body).p_name, JSON.parse(seen[2].o.body).p_url], ['', ''], 'senza immagine: campi vuoti');

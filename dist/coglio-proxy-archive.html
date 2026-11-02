@@ -4621,9 +4621,12 @@ window.CPA_CHANGELOG = [
   function configured(cfg) { return !!(cfg && /^https:\/\/[^\s/]+/.test(String(cfg.url || '')) && String(cfg.key || '').length > 10); }
   function create(cfg, fetchFn) {
     var base = String((cfg && cfg.url) || '').replace(/\/+$/, ''), key = String((cfg && cfg.key) || '');
+    /* Le chiavi nuove (sb_publishable_…) vanno solo in «apikey»: non sono JWT e come «Bearer» verrebbero rifiutate.
+       La chiave «anon» storica, invece, e' un JWT (inizia per eyJ) e si manda anche come «Bearer». */
+    function headers() { var h = { apikey: key, 'Content-Type': 'application/json' }; if (/^eyJ/.test(key)) h.Authorization = 'Bearer ' + key; return h; }
     function call(fn, body) {
       if (!configured(cfg)) return Promise.reject(fail('unconfigured'));
-      return fetchFn(base + '/rest/v1/rpc/' + fn, { method: 'POST', headers: { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) {
+      return fetchFn(base + '/rest/v1/rpc/' + fn, { method: 'POST', headers: headers(), body: JSON.stringify(body) }).then(function (r) {
         return r.text().then(function (t) {
           var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) { j = null; }
           if (r.ok) return j;
@@ -4675,12 +4678,12 @@ window.CPA_SYNC = {
 <script>
 /* Dove vivono le funzioni community (Codighel ID, e in seguito amici e tavoli condivisi).
  * Si crea gratis un progetto su supabase.com, si incolla supabase/schema.sql nel suo «SQL Editor» e si scrivono qui i due valori
- * (Project Settings > API): l'indirizzo del progetto e la chiave «anon public». Entrambi sono pubblici per natura: la tabella e'
+ * (Settings > API Keys): l'indirizzo del progetto e la chiave «publishable» (sb_publishable_…; va bene anche la vecchia «anon», in «Legacy API keys»). Entrambi sono pubblici per natura: la tabella e'
  * chiusa a tutti e le funzioni controllano il codice di recupero di ognuno (guida nel README, sezione «Community»).
  * Finche' sono vuoti, il pannello Codighel ID in Dati dice che le funzioni non sono ancora attive. */
 window.CPA_COMMUNITY = {
-  url: '',   /* es. https://abcdefghijkl.supabase.co */
-  key: ''    /* la chiave «anon public» (una lunga stringa che inizia per eyJ…) */
+  url: 'https://mvhegxnvqsptzdeusnho.supabase.co',
+  key: ''    /* la chiave «publishable» (inizia per sb_publishable_) oppure la vecchia «anon» (inizia per eyJ) */
 };
 
 </script>

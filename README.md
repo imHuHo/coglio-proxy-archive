@@ -178,7 +178,7 @@ Il pannello **Dati > Codighel ID** dà a ognuno un nome utente unico tra amici, 
 **Attivarlo (una volta sola):**
 1. Su [supabase.com](https://supabase.com) crea un progetto gratuito.
 2. Apri **SQL Editor**, incolla tutto `supabase/schema.sql` e premi **Run** (si puo' rilanciare senza danni).
-3. In **Project Settings > API** copia l'indirizzo del progetto (`https://xxxx.supabase.co`) e la chiave **anon public**, e scrivili in `web/community-config.js` (`url` e `key`). Entrambi sono pubblici per natura.
+3. L'indirizzo del progetto e' `https://<project id>.supabase.co`; in **Settings > API Keys** copia la chiave **publishable** (`sb_publishable_…`; va bene anche la vecchia `anon` in «Legacy API keys»). Scrivili in `web/community-config.js` (`url` e `key`): sono pubblici per natura. La chiave **secret** (`sb_secret_…`) NON va mai messa nell'app.
 4. Ricostruisci (`python3 tools/build.py`) e pubblica.
 
 **Come funziona.** Il codice di recupero (20 caratteri, 100 bit di casualita', alfabeto senza I, L, O, U) si genera sul dispositivo (`crypto.getRandomValues`); al server arriva solo per dimostrare chi sei e li' ne resta l'impronta SHA-256. La tabella `cpa_profiles` e' chiusa a tutti (RLS senza policy, nessun permesso all'`anon`): tutto passa dalle funzioni `cpa_*` (`handle_free`, `profile`, `register`, `login`, `set_avatar`, `rename`, `delete`), che controllano il codice e accettano come immagine solo indirizzi `https://cards.scryfall.io/...`. Gli ID sono 3-20 caratteri `[A-Za-z0-9_.-]`, unici senza badare alle maiuscole, con qualche nome riservato (admin, botto, ...). Chi perde il codice perde il profilo: non c'e' recupero. Il profilo (ID e codice) sta in `localStorage` (`cpa:community:v1`) e **non** entra nei backup ne' nella sincronizzazione.
