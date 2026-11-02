@@ -290,13 +290,13 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   ok(await page.locator('#dlist [data-a="dz-bind"]').count() === 2, 'pulsanti «Design» sulle altre');
 
   /* scegliere un design per una carta dal mazzo */
-  await page.locator('#dlist .dr', { hasText: 'Sol Ring' }).hover(); await page.locator('#dlist .dr', { hasText: 'Sol Ring' }).locator('[data-a="dz-bind"]').click();
+  await page.locator('#dlist .dr', { hasText: 'Sol Ring' }).hover(); await page.locator('#dprev [data-a="dz-bind"]').click();
   await page.waitForSelector('.dz-pickit');
   await page.locator('.dz-pickit').first().click();
   await page.waitForFunction(() => /sostituisce Sol Ring/.test(document.body.innerText) || /Designer/.test(document.body.innerText));
   await nav('decks'); await page.click('[data-a="open-deck"]'); await page.waitForSelector('#dlist .dr');
   ok(await page.locator('#dlist .tag.dzt').count() === 3, 'terza carta con design');
-  await page.locator('#dlist .dr', { hasText: 'Sol Ring' }).hover(); await page.locator('#dlist .dr', { hasText: 'Sol Ring' }).locator('[data-a="dz-unbind"]').click();
+  await page.locator('#dlist .dr', { hasText: 'Sol Ring' }).hover(); await page.locator('#dprev [data-a="dz-unbind"]').click();
   await page.waitForFunction(() => document.querySelectorAll('#dlist .tag.dzt').length === 2);
   ok(true, 'design tolto da una carta');
 

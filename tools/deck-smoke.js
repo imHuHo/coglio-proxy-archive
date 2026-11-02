@@ -133,6 +133,22 @@ function scry(name, set, cn, eurOverride) {
   ok((await page.textContent('#dprev .pv-meta')).includes('1,50'), 'prezzo nell\'anteprima');
   await shot('deck-top');
 
+  /* passando il mouse sulle righe l'impaginazione a colonne non si muove (prima il bottone Design strozzava il nome e le colonne si ribilanciavano) */
+  await page.setViewportSize({ width: 1880, height: 915 });
+  await page.waitForTimeout(200);
+  const layout = () => page.$$eval('.dg', gs => JSON.stringify(gs.map(g => { const r = g.getBoundingClientRect(); return [g.dataset.g, Math.round(r.left), Math.round(r.top + scrollY), Math.round(r.height)]; })));
+  const before = await layout(), rows = await page.$$('#dlist .dr');
+  let moved = 0, narrow = 0;
+  for (let i = 0; i < rows.length; i += 3) {
+    await rows[i].hover(); await page.waitForTimeout(30);
+    if ((await layout()) !== before) moved++;
+    if (await rows[i].$eval('.n', e => e.getBoundingClientRect().width) < 40) narrow++;
+  }
+  ok(moved === 0, 'passando il mouse sulle righe i gruppi non si spostano (' + moved + ' spostamenti)');
+  ok(narrow === 0, 'il nome della carta non si riduce a niente al passaggio del mouse (' + narrow + ')');
+  ok(await page.locator('#dprev [data-a="dz-bind"]').count() === 1, 'il bottone Design resta nell\'anteprima');
+  await page.setViewportSize({ width: vp[0], height: vp[1] });
+
   /* ordinamento */
   await page.selectOption('[data-c="dsort"]', 'price');
   const firstCreature = await page.$eval('.dg[data-g="creature"] .dr .n', e => e.textContent);
