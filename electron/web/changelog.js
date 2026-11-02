@@ -1,6 +1,9 @@
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '6.0.1', date: '2 novembre 2026', title: 'Un solo pulsante per il link', items: [
+    { t: 'Link amico: un pulsante solo', d: 'In Dati, «Condividi il mio link» e «Copia il link» facevano la stessa cosa: ora c\'è un solo pulsante. Sul telefono apre il menu di condivisione del sistema, altrove copia direttamente il link.' },
+  ] },
   { v: '6.0.0', date: '2 novembre 2026', title: 'Coglio community creation', items: [
     { t: 'Nasce la community di Coglio', d: 'Il più grande aggiornamento finora: un Codighel ID tuo, gli amici, i tavoli del Pescher condivisi con classifiche che si sincronizzano tra tutti. Niente email né password: basta un ID e un codice di recupero. Le funzioni community sono facoltative, e senza di loro l\'app funziona come sempre, tutto sul dispositivo.' },
     { t: 'Fine partita con vincitore e mazzo', d: 'Il tasto «Fine partita» chiede chi ha vinto (o nessuno, per un pareggio) e, se vuoi, con quale mazzo: ti suggerisce i tuoi mazzi attivi e quelli già scritti. La partita si salva e torni alla preparazione del tavolo, che resta com\'è. Si può eliminare una partita con una doppia pressione.' },
