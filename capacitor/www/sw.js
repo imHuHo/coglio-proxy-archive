@@ -1,8 +1,8 @@
 /* Service worker: l'app funziona offline dopo il primo caricamento. Cambia CACHE a ogni rilascio. */
-const CACHE = 'cpa-v41';
-const ASSETS = ['./', 'index.html', 'style.css', 'version.js', 'changelog.js', 'core.js', 'pdf.js', 'proxy.js', 'search.js', 'cards.js', 'bracket.js', 'mpc.js', 'sync-config.js', 'sync.js', 'app.js', 'builder.js', 'cardrender.js', 'designer.js', 'manifest.webmanifest', 'icon.svg',
+const CACHE = 'cpa-v42';
+const ASSETS = ['./', 'index.html', 'style.css', 'version.js', 'changelog.js', 'core.js', 'pdf.js', 'proxy.js', 'search.js', 'cards.js', 'bracket.js', 'mpc.js', 'analysis.js', 'pescher.js', 'sync-config.js', 'sync.js', 'app.js', 'builder.js', 'cardrender.js', 'designer.js', 'pescher-ui.js', 'manifest.webmanifest', 'icon.svg',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
-  'mana/w.svg', 'mana/u.svg', 'mana/b.svg', 'mana/r.svg', 'mana/g.svg', 'mana/c.svg',
+  'mana/w.svg', 'mana/u.svg', 'mana/b.svg', 'mana/r.svg', 'mana/g.svg', 'mana/c.svg', 'mana/botto.svg',
   'fonts/cinzel-latin-600-normal.woff2', 'fonts/cinzel-latin-700-normal.woff2', 'fonts/syne-latin-700-normal.woff2', 'fonts/syne-latin-800-normal.woff2', 'fonts/manrope-latin-wght-normal.woff2',
   'fonts/jetbrains-mono-latin-400-normal.woff2', 'fonts/jetbrains-mono-latin-500-normal.woff2', 'fonts/jetbrains-mono-latin-600-normal.woff2'];
 self.addEventListener('install', e => {

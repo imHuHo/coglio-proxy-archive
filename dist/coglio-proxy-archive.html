@@ -95,7 +95,7 @@ a { color: var(--accent); }
 .main { padding: 8px var(--gx2) 112px var(--gx); max-width: 880px; margin: 0 auto; width: 100%; min-width: 0; }
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-  display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px;
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px;
   background: var(--surface); border-top: 1px solid var(--line);
   padding: 6px var(--gx2) calc(6px + env(safe-area-inset-bottom, 0px)) var(--gx);
 }
@@ -752,6 +752,7 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
 .shell[data-view="designer"] { --sec: url("mana/r.svg"); }
 .shell[data-view="builder"] { --sec: url("mana/w.svg"); }
 .shell[data-view="data"] { --sec: url("mana/c.svg"); }
+.shell[data-view="pescher"] { --sec: url("mana/botto.svg"); }
 .vh h1::before { content: ""; display: inline-block; width: .84em; height: .84em; margin-right: .5em; vertical-align: -.07em; border-radius: 50%;
   background: var(--sec, none) center / contain no-repeat; box-shadow: 0 1.5px 3px rgba(15, 29, 58, .4); }
 .empty-mana { display: flex; gap: 7px; margin: -2px 0 0; }
@@ -1077,17 +1078,280 @@ body.on-deck #toast { bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
 .dr .mpl { order: 9; flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 6px; padding: 0 0 3px calc(1.7em + 6px); }
 .dr .mpl .tag { flex: none; white-space: nowrap; }
 
+/* ----- Analisi del piscio ----- */
+.an { align-items: start; overflow: auto; }
+.an-box { background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 18px 50px #0008; width: min(920px, 100%); margin: auto; padding: 16px; display: grid; gap: 12px; }
+.an-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.an-head div { display: grid; min-width: 0; }
+.an-head small { font: 700 10.5px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.an-head strong { font: 700 20px/1.2 var(--display); overflow-wrap: anywhere; }
+.an-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+.an-v { display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; min-height: 52px; border-radius: 14px; font: 800 15px var(--body); border: 1.5px solid; }
+.an-v i { font-style: normal; font-size: 18px; line-height: 1; }
+.an-v.ok { background: var(--free-bg); color: var(--free); border-color: var(--free); }
+.an-v.warn { background: var(--part-bg); color: var(--part); border-color: var(--part); }
+.an-v.bad { background: var(--busy-bg); color: var(--busy); border-color: var(--busy); }
+.an-stat { flex: 1 1 72px; display: grid; align-content: center; justify-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 6px 10px; min-height: 52px; }
+.an-stat b { font: 800 22px/1.1 var(--display); }
+.an-stat span { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.an-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.an-card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 10px; align-content: start; min-width: 0; box-shadow: var(--shadow); }
+.an-card.wide { grid-column: 1 / -1; }
+.an-card h3 { margin: 0; font: 700 15px var(--display); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.an-card h3 small { font: 600 11px var(--mono); color: var(--muted); }
+.an-card p { margin: 0; }
+.an-foot { font-size: 12px; color: var(--muted); }
+.an-none { color: var(--muted); font-size: 13.5px; }
+.an-svg { width: 100%; height: auto; display: block; }
+.an-svg:not(.don) { max-width: 520px; margin: 0 auto; }
+.an-avgk { display: inline-block; width: 16px; border-top: 2px dashed var(--fg); vertical-align: middle; opacity: .7; }
+.an-svg.don { max-width: 170px; flex: none; }
+.an-axis { stroke: var(--line2); stroke-width: 1.5; }
+.an-bar .b { fill: var(--accent); }
+.an-bar.peak .b { fill: var(--banana); stroke: var(--banana-deep); stroke-width: 1.5; }
+.an-bar .hit { fill: transparent; }
+.an-bar:hover .b { fill: var(--chip-on); }
+.an-bar.peak:hover .b { fill: var(--banana-hi); }
+.an-tick { font: 700 11px var(--mono); fill: var(--muted); text-anchor: middle; }
+.an-val { font: 800 12px var(--mono); fill: var(--fg); text-anchor: middle; }
+.an-avg { stroke: var(--fg); stroke-width: 1.5; stroke-dasharray: 4 3; opacity: .7; }
+.an-avgl { font: 700 10.5px var(--mono); fill: var(--fg); }
+.an-cmd { fill: var(--banana); stroke: var(--banana-deep); stroke-width: 1.2; }
+.an-cmdk { color: var(--banana-deep); }
+.an-pie { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.an-seg { fill: none; stroke-width: 24; }
+.an-seg.mW { stroke: var(--m-w); } .an-seg.mU { stroke: var(--m-u); } .an-seg.mB { stroke: var(--m-b); } .an-seg.mR { stroke: var(--m-r); } .an-seg.mG { stroke: var(--m-g); }
+.an-big { font: 800 26px var(--display); fill: var(--fg); text-anchor: middle; }
+.an-small { font: 700 10px var(--mono); fill: var(--muted); text-anchor: middle; text-transform: uppercase; }
+.an-leg { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; flex: 1 1 140px; }
+.an-leg li { display: grid; grid-template-columns: 22px 1fr auto 40px; gap: 8px; align-items: center; font-size: 13.5px; }
+.an-leg b { font: 800 13px var(--mono); }
+.an-leg i { font: 600 12px var(--mono); color: var(--muted); font-style: normal; text-align: right; }
+.an-leg .pip, .an-src .pip { width: 20px; height: 20px; }
+.an-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.an-bars li { display: grid; grid-template-columns: 96px 1fr 30px; gap: 8px; align-items: center; font-size: 13.5px; }
+.an-bars i { height: 12px; border-radius: 6px; background: var(--surface2); overflow: hidden; display: block; }
+.an-bars u { display: block; height: 100%; border-radius: 6px; background: var(--accent); }
+.an-bars u.land { background: var(--m-g); }
+.an-bars b { font: 800 13px var(--mono); text-align: right; }
+.an-src { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.an-src li { display: grid; grid-template-columns: 22px 62px 1fr 28px; grid-template-areas: "p n bar v" ". sm sm sm"; gap: 2px 8px; align-items: center; font-size: 13.5px; }
+.an-src li .pip { grid-area: p; } .an-src .n { grid-area: n; font-weight: 700; } .an-src i { grid-area: bar; } .an-src b { grid-area: v; text-align: right; font: 800 13px var(--mono); }
+.an-src small { grid-area: sm; font-size: 11.5px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.an-src i { height: 12px; border-radius: 6px; background: var(--surface2); overflow: hidden; display: flex; }
+.an-src u { display: block; height: 100%; }
+.an-src u.l { background: var(--m-g); } .an-src u.o { background: var(--banana); }
+.an-src li.low b { color: var(--busy); }
+.an-flag { font: 800 10px var(--mono); font-style: normal; text-transform: uppercase; padding: 1px 6px; border-radius: 6px; background: var(--busy-bg); color: var(--busy); }
+.an-key { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.an-key span.l, .an-key span.o { display: inline-block; width: 12px; height: 12px; border-radius: 4px; background: var(--m-g); }
+.an-key span.o { background: var(--banana); }
+.an-id { display: flex; gap: 12px; align-items: center; }
+.an-id div:last-child { display: grid; min-width: 0; }
+.an-id b { overflow-wrap: anywhere; } .an-id span { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.an-idp { display: flex; gap: 4px; flex: none; }
+.an-idp .pip { width: 26px; height: 26px; }
+.an-colorless { font: 800 11px var(--mono); padding: 4px 8px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--line2); }
+.an-ok, .an-bad { display: flex; gap: 8px; align-items: center; font-weight: 700; font-size: 13.5px; border-radius: 10px; padding: 8px 12px; }
+.an-ok { background: var(--free-bg); color: var(--free); }
+.an-bad { background: var(--busy-bg); color: var(--busy); }
+.an-ok.big { font-size: 14.5px; padding: 12px 14px; }
+.an-list { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 13.5px; }
+.an-list em { font-style: normal; font: 700 11px var(--mono); color: var(--busy); margin-left: 4px; }
+.an-issues { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.an-issues li { display: flex; gap: 10px; align-items: flex-start; border-radius: 10px; padding: 8px 12px; font-size: 13.5px; }
+.an-issues li.error { background: var(--busy-bg); color: var(--busy); }
+.an-issues li.warn { background: var(--part-bg); color: var(--part); }
+.an-issues .ic { font-weight: 800; width: 16px; flex: none; text-align: center; }
+.an-issues li p { font-weight: 500; font-size: 12.5px; margin-top: 2px; color: var(--fg); overflow-wrap: anywhere; }
+.an .bkr-thumbs .th { width: 40px; height: 56px; }
+@media (max-width: 720px) {
+  .an { padding: 8px; }
+  .an-grid { grid-template-columns: minmax(0, 1fr); }
+  .an-box { padding: 12px; border-radius: 14px; }
+  .an-v { flex: 1 1 100%; justify-content: center; }
+  .an-bars li { grid-template-columns: 82px 1fr 28px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .an-box { animation: an-in .18s ease-out; }
+  @keyframes an-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+}
+
+/* ----- The Pescher ----- */
+.shell[data-view="pescher"] .main { max-width: 1240px; }
+.pe { display: grid; gap: 12px; }
+.btn.big { min-height: 52px; padding: 8px 28px; font-size: 17px; font-weight: 800; }
+.btn.bracket.small { color: #2a2100; }
+
+/* preparazione */
+.pe-setup { display: grid; gap: 12px; }
+.pe-opts { grid-template-columns: repeat(auto-fit, minmax(220px, auto)); align-items: center; gap: 12px 24px; margin-bottom: 0; }
+.pe-opt { display: grid; gap: 6px; }
+.pe-opt b { font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.pe-chk { display: flex; gap: 10px; align-items: center; font-size: 14px; cursor: pointer; }
+.pe-chk input { width: 18px; height: 18px; flex: none; }
+.pe-seats { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+.pe-seat { background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--seat); border-radius: 14px; padding: 12px; display: grid; gap: 10px; align-content: start; box-shadow: var(--shadow); }
+.pe-seat-h { display: flex; gap: 10px; align-items: center; }
+.pe-n { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--seat); color: #111d3a; font: 800 14px var(--body); flex: none; box-shadow: inset 0 0 0 2px #0002; }
+.pe-name { flex: 1; min-width: 0; font: 700 16px var(--body); color: var(--fg); background: var(--surface2); border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+.pe-name:focus-visible, .pe-deck select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pe-deck { display: grid; gap: 4px; }
+.pe-deck span, .pe-bkr > span { font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.pe-deck select { font: 600 14px var(--body); color: var(--fg); background: var(--surface2); border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 10px; min-width: 0; width: 100%; }
+.pe-bkr { display: grid; gap: 4px; }
+.pe-bks { display: flex; gap: 6px; }
+.pe-bk { --b: #8a8fa6; flex: 1; min-height: 40px; border-radius: 9px; border: 2px solid var(--line2); background: var(--surface2); color: var(--fg); font: 800 16px var(--body); }
+.pe-bk.b1 { --b: #5aa9ff; } .pe-bk.b2 { --b: #43c59e; } .pe-bk.b3 { --b: #f6c93a; } .pe-bk.b4 { --b: #ff9a3c; } .pe-bk.b5 { --b: #ef5b5b; }
+.pe-bk[aria-pressed="true"] { background: var(--b); border-color: rgba(15, 29, 58, .55); color: #1d1d1d; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .5); }
+.pe-ask { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pe-sug { display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap; background: var(--banana-soft); border: 1.5px solid var(--banana-deep); border-radius: 12px; padding: 10px 12px; color: var(--fg); }
+.pe-sug > div:first-child { display: grid; min-width: 0; }
+.pe-sug small { font: 700 10.5px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.pe-sug b { font: 700 16px var(--display); overflow-wrap: anywhere; }
+.pe-sug span { font-size: 12.5px; color: var(--muted); }
+.pe-sug-b { display: flex; gap: 8px; align-items: center; }
+.pe-sug.none { margin: 0; font-size: 13.5px; color: var(--muted); }
+.pe-go { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.pe-go .btn.big { background: var(--banana); border-color: var(--banana-deep); color: var(--banana-ink); box-shadow: 0 3px 0 var(--banana-deep); }
+.pe-go .btn.big:hover { background: var(--banana-hi); }
+
+/* avviso di squilibrio */
+.pe-bal { margin: 0; display: flex; gap: 10px; align-items: flex-start; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 600; border: 1.5px solid; }
+.pe-bal .ic { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font: 800 13px var(--body); background: currentColor; }
+.pe-bal .ic { color: inherit; position: relative; }
+.pe-bal .ic::before { content: attr(data-x); }
+.pe-bal.ok { background: var(--free-bg); color: var(--free); border-color: transparent; }
+.pe-bal.warn { background: var(--part-bg); color: var(--part); border-color: var(--part); }
+.pe-bal.bad { background: var(--busy-bg); color: var(--busy); border-color: var(--busy); }
+.pe-bal.unknown { background: var(--surface); color: var(--muted); border-color: var(--line); }
+.pe-bal.slim { padding: 7px 12px; font-size: 13px; }
+.pe-bal .ic { background: none; width: 20px; height: 20px; font-size: 17px; line-height: 1; }
+
+/* partita */
+.pe-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
+.pe-turn { font-size: 15px; color: var(--muted); }
+.pe-turn b { color: var(--fg); font: 700 18px var(--display); }
+.pe-turn.won b { font-size: 22px; }
+.pe-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.pe-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(210px, 1fr); min-height: calc(100dvh - 190px); }
+.pe-grid[data-n="2"] { grid-template-columns: minmax(0, 1fr); }
+.pe-tile { align-content: space-between; position: relative; background: var(--surface); border: 1.5px solid var(--line); border-top: 7px solid var(--seat); border-radius: 18px; padding: 10px 12px 12px; display: grid; grid-template-rows: auto 1fr auto auto; gap: 8px; box-shadow: var(--shadow); min-width: 0; overflow: hidden; }
+.pe-tile.turn { box-shadow: 0 0 0 3px var(--banana), var(--shadow); }
+.pe-tile.won { box-shadow: 0 0 0 3px var(--free), var(--shadow); }
+.pe-tile.flip { transform: rotate(180deg); }
+.pe-tile > header { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; min-width: 0; }
+.pe-tile .pe-nm { font: 700 16px var(--display); overflow-wrap: anywhere; }
+.pe-tile .pe-dk { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; flex: 1 1 auto; min-width: 0; }
+.pe-tile .bk-badge { margin: 0; min-width: 24px; height: 24px; font-size: 13px; }
+.pe-t { margin-left: auto; font: 800 10.5px var(--mono); text-transform: uppercase; letter-spacing: .06em; padding: 2px 8px; border-radius: 999px; background: var(--banana); color: var(--banana-ink); }
+.pe-t.win { background: var(--free); color: #fff; }
+.pe-life { position: relative; display: grid; place-items: center; min-height: clamp(92px, 17vh, 150px); border-radius: 16px; background: var(--surface2); border: 1.5px solid var(--line); overflow: hidden; }
+.pe-lb { position: absolute; top: 0; bottom: 0; width: 50%; border: 0; border-radius: 0; background: transparent; color: var(--muted); font: 600 36px/1 var(--body); display: flex; align-items: center; padding: 0 12%; touch-action: manipulation; transition: background .12s; }
+.pe-lb:first-child { left: 0; justify-content: flex-start; }
+.pe-lb:last-child { right: 0; justify-content: flex-end; }
+.pe-lb:hover { background: var(--accent-soft); color: var(--fg); }
+.pe-lb:active { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+.pe-lb:focus-visible, .pe-fast button:focus-visible, .pe-chip:focus-visible, .pe-step button:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+.pe-lv { position: relative; z-index: 1; pointer-events: none; font: 800 clamp(52px, 9vw, 104px)/1 var(--display); font-variant-numeric: tabular-nums; text-align: center; color: var(--fg); }
+.pe-lv.low { color: var(--busy); }
+.pe-grid[data-n="5"] .pe-lv, .pe-grid[data-n="6"] .pe-lv { font-size: clamp(44px, 8vw, 76px); }
+.pe-grid[data-n="5"] .pe-life, .pe-grid[data-n="6"] .pe-life { min-height: clamp(74px, 12vh, 110px); }
+.pe-fast { display: flex; gap: 8px; justify-content: center; }
+.pe-fast button { min-width: 64px; min-height: 36px; border-radius: 10px; border: 1.5px solid var(--line); background: none; color: var(--muted); font: 700 14px var(--mono); touch-action: manipulation; }
+.pe-fast button:hover { background: var(--surface2); color: var(--fg); }
+.pe-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pe-chip { display: flex; align-items: center; gap: 6px; justify-content: center; min-height: 40px; padding: 4px 8px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface2); color: var(--muted); font: 700 13px var(--body); min-width: 0; touch-action: manipulation; }
+.pe-chip svg { width: 17px; height: 17px; flex: none; }
+.pe-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pe-chip b { font: 800 14px var(--mono); color: var(--fg); }
+.pe-chip.on { border-color: var(--part); background: var(--part-bg); color: var(--part); }
+.pe-chip.on b { color: var(--part); }
+.pe-chip.bad { border-color: var(--busy); background: var(--busy-bg); color: var(--busy); }
+.pe-chip.bad b { color: var(--busy); }
+.pe-chip[aria-expanded="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.pe-panel { display: grid; gap: 6px; background: var(--surface2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+.pe-row { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.pe-from { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; font-size: 13.5px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.pe-from i { width: 11px; height: 11px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px #0003; flex: none; }
+.pe-from small { color: var(--muted); font: 500 11px var(--mono); flex-basis: 100%; }
+.pe-from i + small { flex-basis: auto; }
+.pe-step { display: flex; align-items: center; gap: 6px; flex: none; }
+.pe-step button { width: 40px; height: 40px; border-radius: 10px; border: 1.5px solid var(--line2); background: var(--surface); color: var(--fg); font: 700 20px/1 var(--body); touch-action: manipulation; }
+.pe-step output { min-width: 3.6ch; text-align: center; font: 800 17px var(--mono); }
+.pe-step output small { font: 500 11px var(--mono); color: var(--muted); }
+.pe-step output.bad { color: var(--busy); }
+.pe-tile.out > *:not(.pe-out):not(header) { opacity: .45; }
+.pe-tile.out { filter: saturate(.5); }
+.pe-out { position: absolute; left: -4%; right: -4%; top: 38%; display: grid; justify-items: center; gap: 2px; padding: 6px 12px; background: var(--busy-bg); color: var(--busy); border: 2px solid var(--busy); transform: rotate(-4deg) scale(1.04); box-shadow: 0 4px 12px #0004; pointer-events: none; }
+.pe-out b { font: 800 18px var(--display); letter-spacing: .08em; text-transform: uppercase; }
+.pe-out span { font-size: 12px; font-weight: 600; text-align: center; }
+
+/* pop-up */
+.pe-box { width: min(560px, 100%); }
+.pe-dice { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 8px; }
+.pe-dice .btn { min-height: 52px; font-size: 16px; font-weight: 800; }
+.pe-res { min-height: 120px; border-radius: 16px; background: var(--surface); border: 1.5px dashed var(--line2); display: grid; place-items: center; align-content: center; padding: 10px; text-align: center; color: var(--muted); }
+.pe-res.has { border-style: solid; border-color: var(--banana-deep); background: var(--banana-soft); color: var(--fg); }
+.pe-res small { font: 700 12px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.pe-res b { font: 800 clamp(48px, 14vw, 84px)/1.05 var(--display); overflow-wrap: anywhere; }
+.pe-hist { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
+.pe-hist b { color: var(--fg); font-family: var(--mono); }
+.pe-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 50vh; overflow: auto; }
+.pe-log li { display: flex; gap: 10px; font-size: 13.5px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.pe-log time { font: 500 11.5px var(--mono); color: var(--muted); flex: none; padding-top: 2px; }
+.pe-popbar { display: flex; flex-wrap: wrap; gap: 8px; }
+.pe-menu { display: grid; gap: 14px; }
+@media (prefers-reduced-motion: no-preference) {
+  .pe-res.pop b { animation: pe-pop .28s cubic-bezier(.2, 1.4, .4, 1); }
+  @keyframes pe-pop { from { transform: scale(.6); opacity: .2; } to { transform: none; opacity: 1; } }
+}
+
+/* schermi larghi: tavolo a colonne */
+@media (min-width: 860px) {
+  .pe-grid[data-n="2"], .pe-grid[data-n="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pe-grid[data-n="3"], .pe-grid[data-n="5"], .pe-grid[data-n="6"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .pe-seats { grid-template-columns: minmax(0, 1fr); }
+  .pe-tools .btn { flex: 1 1 auto; }
+  .pe-tile { padding: 8px 8px 10px; }
+  .pe-lv { font-size: clamp(44px, 14vw, 60px); }
+  .pe-lb { font-size: 28px; padding: 0 9%; }
+  .pe-chip span { display: none; }
+  .pe-tile.open { grid-column: 1 / -1; }
+  .pe-grid { min-height: calc(100dvh - 230px); }
+  .pe-grid[data-n="5"] .pe-lv, .pe-grid[data-n="6"] .pe-lv { font-size: clamp(38px, 11vw, 50px); }
+}
+
+/* modalità focus: solo il tavolo */
+body.pe-focus .side, body.pe-focus .tabs, body.pe-focus .mobile-brand, body.pe-focus .vh { display: none !important; }
+body.pe-focus .shell { display: block; }
+body.pe-focus .main { padding: 8px; max-width: none; }
+body.pe-focus .shell::after { display: none; }
+body.pe-focus .pe-grid { min-height: calc(100dvh - 64px); }
+
 </style>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <script>
-window.CPA_VERSION = '4.3.0';
+window.CPA_VERSION = '5.0.0';
 
 </script>
 <script>
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '5.0.0', date: '2 novembre 2026', title: 'Analisi del piscio e The Pescher', items: [
+    { t: 'Analisi del piscio', d: 'Nella pagina di un mazzo, accanto a «Verifica bracket», c\'è il nuovo tasto «Analisi del piscio»: un pop-up con la curva di mana (il picco in banana, la media tratteggiata, il costo del commander), la torta dei simboli di mana per colore, il conteggio per tipo, il costo medio, le fonti di mana per colore (con l\'avviso «poche fonti» e le terre che cercano terre base), il controllo dell\'identità di colore e la legalità in Commander. Tutto dai dati di Scryfall già sul dispositivo: se mancano, li scarica lui. Ogni grafico ha la sua descrizione scritta per chi non li vede.' },
+    { t: 'Legalità in chiaro', d: 'Il verdetto in cima dice «Legale» oppure elenca i problemi: carte bandite o non legali, copie doppie, carte fuori dall\'identità del commander (con le miniature), commander che non può esserlo, mazzo che non fa cento carte. Il sideboard non conta. Non sostituisce il giudizio al tavolo: le regole di casa non le conosce.' },
+    { t: 'The Pescher: il compagno di partita', d: 'Nuova voce nel menu, con l\'icona di Botto. Contatore vite da 2 a 6 giocatori (20, 30 o 40 di vita): tocchi la metà sinistra o destra del riquadro per togliere o aggiungere, e −5 / +5 per i colpi grossi. Veleno (10 = fuori) e danno da comandante per avversario (21 = fuori, e toglie anche vita come da regola, si può spegnere). Chi è fuori lo dice perché; rialzando i numeri si rientra.' },
+    { t: 'Che mazzo uso stasera?', d: 'Dalla preparazione del tavolo: scegli i bracket degli altri posti e The Pescher ti consiglia, tra i tuoi mazzi attivi, quello più vicino al livello del tavolo (o a caso, se non sai nulla). «Un altro» passa al successivo. Se scegli un mazzo, il suo bracket entra da solo.' },
+    { t: 'Avviso di squilibrio', d: 'Se al tavolo ci sono bracket molto diversi, un riquadro lo dice con nomi e numeri: da 2 livelli di distanza è un avviso («vale la pena dirselo»), da 3 uno squilibrio forte. Un 2 e un 3 si giocano benissimo, quindi lì non dice nulla.' },
+    { t: 'Dadi, turni, registro e annulla', d: 'D4, D6, D8, D10, D12, D20, moneta e «Chi inizia?» col caso vero del dispositivo. «Passa il turno» salta chi è fuori. Ogni passaggio finisce nel registro e si annulla con «Annulla». La partita si salva da sola sul dispositivo e sopravvive al ricaricamento; lo schermo resta acceso finché giochi.' },
+    { t: 'Telefono al centro del tavolo', d: 'Dal menu: «Gira i giocatori in alto» ruota i riquadri di chi siede di fronte, e la modalità focus nasconde il resto dell\'app (Esc per uscire).' },
+    { t: 'Pagina del mazzo più stabile', d: 'Passando il mouse sulle righe (terre comprese) il pulsante «Design» non strozza più il nome della carta e le colonne non si ribilanciano più sotto il cursore.' },
+  ] },
   { v: '4.3.0', date: '2 novembre 2026', title: 'Stampe della comunità, fino a 1200 dpi', items: [
     { t: 'MPC Fill nel «Cambia stampa»', d: 'Nell\'app per Windows e per Android, il dialogo di scelta della stampa ha una nuova scheda «MPC Fill · comunità»: cerchi la carta su mpcfill.com e scegli tra le immagini fatte da artisti e stampatori. Dal browser il sito è bloccato, quindi la scheda lo spiega e basta.' },
     { t: 'I dpi bene in vista', d: 'Ogni immagine ha il suo numero di dpi in alto (verde da 1000 in su, blu da 600, giallo da 300), l\'archivio che l\'ha caricata e il peso del file. Puoi filtrare per risoluzione minima (anche dal server) e ordinare per dpi.' },
@@ -3312,7 +3576,8 @@ window.CPA_CHANGELOG = [
       o: card.oracle_text != null ? card.oracle_text : fs.map(function (f) { return f.oracle_text || ''; }).join('\n//\n'),
       s: card.set || '', cn: String(card.collector_number || ''),
       p: num(pr.eur), pf: num(pr.eur_foil), ts: 0,
-      gc: card.game_changer ? 1 : 0, bn: card.legalities && card.legalities.commander === 'banned' ? 1 : 0
+      gc: card.game_changer ? 1 : 0, bn: card.legalities && card.legalities.commander === 'banned' ? 1 : 0,
+      nl: card.legalities && card.legalities.commander === 'not_legal' ? 1 : 0
     };
     var pw = card.power != null ? card.power : f0.power, tg = card.toughness != null ? card.toughness : f0.toughness;
     if (pw != null) r.pw = String(pw);
@@ -3833,6 +4098,326 @@ window.CPA_CHANGELOG = [
   };
 });
 
+/* Coglio Proxy Archive - analisi di un mazzo Commander (nessun accesso al DOM).
+ * Parte dai dati delle carte già scaricati da Scryfall (cards.js): curva di mana, simboli di mana per colore, conteggio per tipo,
+ * costo medio, fonti di mana, identità di colore del commander e legalità. Quello che non si può sapere senza dati
+ * (carte non ancora scaricate) viene dichiarato, mai inventato. */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.CPAAnalysis = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var COLORS = ['W', 'U', 'B', 'R', 'G'];
+  var BASIC = { plains: 'W', island: 'U', swamp: 'B', mountain: 'R', forest: 'G', wastes: '' };
+  /* Carte che possono stare in qualunque numero di copie in un mazzo Commander. */
+  var ANY_NUMBER = ['relentless rats', 'rat colony', 'shadowborn apostle', 'persistent petitioners', 'dragon\'s approach', 'slime against humanity', 'hare apparent', 'tempest hawk', 'templar knight'];
+  var LIMIT = { 'seven dwarves': 7 };
+  var TYPES = [['creature', 'Creature'], ['planeswalker', 'Planeswalker'], ['battle', 'Battaglie'], ['sorcery', 'Stregonerie'], ['instant', 'Istantanei'],
+    ['artifact', 'Artefatti'], ['enchantment', 'Incantesimi'], ['land', 'Terre'], ['other', 'Altre carte']];
+
+  function lc(s) { return String(s == null ? '' : s).toLowerCase(); }
+  function front(t) { return lc(t).split('//')[0]; }
+  function baseName(name) { return lc(String(name).replace(/^snow-covered /i, '')); }
+
+  /* Tipo con la stessa precedenza della pagina del mazzo: una creatura artefatto è una creatura. */
+  function typeOf(t) {
+    t = front(t);
+    return /creature/.test(t) ? 'creature' : /land/.test(t) ? 'land' : /planeswalker/.test(t) ? 'planeswalker' : /battle/.test(t) ? 'battle' :
+      /artifact/.test(t) ? 'artifact' : /enchantment/.test(t) ? 'enchantment' : /sorcery/.test(t) ? 'sorcery' : /instant/.test(t) ? 'instant' : 'other';
+  }
+
+  /* Simboli di mana colorati di un costo come «{2}{W}{W/U}{G/P}». Un simbolo ibrido conta per entrambi i colori. */
+  function pips(cost) {
+    var out = { W: 0, U: 0, B: 0, R: 0, G: 0 };
+    (String(cost || '').match(/\{[^}]+\}/g) || []).forEach(function (s) {
+      var seen = {};
+      s.slice(1, -1).split('/').forEach(function (p) { p = p.toUpperCase(); if (out[p] !== undefined && !seen[p]) { seen[p] = 1; out[p]++; } });
+    });
+    return out;
+  }
+
+  /* Che cosa è una riga del mazzo: dati Scryfall (rec) o, per le terre base, il nome. */
+  function info(card, rec, isBasic) {
+    var r = { name: card.name, qty: card.qty, known: false, basic: false, type: 'other', cmc: 0, mc: '', c: [], ci: [], pm: '', land: false, legendary: false, creature: false, search: false, bn: false, nl: false, text: '' };
+    if (isBasic && isBasic(card.name)) {
+      var col = BASIC[baseName(card.name)];
+      r.basic = true; r.known = true; r.land = true; r.type = 'land'; r.pm = col || 'C'; r.ci = col ? [col] : [];
+      return r;
+    }
+    if (!rec) return r;
+    var t = front(rec.t);
+    r.known = true; r.type = typeOf(rec.t); r.cmc = rec.v || 0; r.mc = rec.mc || ''; r.c = String(rec.c || '').split('').filter(Boolean); r.ci = String(rec.ci || '').split('').filter(Boolean);
+    r.pm = rec.pm || ''; r.land = r.type === 'land'; r.legendary = /legendary/.test(t); r.creature = /creature/.test(t);
+    r.bn = !!rec.bn; r.nl = !!rec.nl; r.text = lc(rec.o);
+    r.search = r.land && /search your library for (?:a|an|up to \w+) (?:basic )?(?:snow )?(?:land|plains|island|swamp|mountain|forest)/.test(r.text);
+    return r;
+  }
+
+  function analyze(deck, ctx) {
+    var keyOf = ctx.keyOf, cmdKey = deck.commander ? keyOf(deck.commander) : '', rows = [], cmd = null, missing = [];
+    (deck.cards || []).forEach(function (c) {
+      var r = info(c, ctx.rec(c), ctx.isBasic);
+      r.isCmd = !!cmdKey && keyOf(c.name) === cmdKey;
+      if (r.isCmd) cmd = r; else rows.push(r);
+      if (!r.known) missing.push(c.name);
+    });
+    var out = { commander: cmd ? cmd.name : (deck.commander || ''), hasData: rows.some(function (r) { return r.known; }) || !!(cmd && cmd.known), missing: missing, total: 0, rows: rows.length };
+
+    var spells = rows.filter(function (r) { return r.known && !r.land; });
+    var nSpells = spells.reduce(function (t, r) { return t + r.qty; }, 0);
+
+    /* curva: carte non terra senza il commander, per costo convertito (7 = «7 o più») */
+    var curve = [0, 0, 0, 0, 0, 0, 0, 0], cmcSum = 0;
+    spells.forEach(function (r) { var b = Math.min(7, Math.max(0, Math.floor(r.cmc))); curve[b] += r.qty; cmcSum += r.cmc * r.qty; });
+    out.curve = curve; out.spells = nSpells; out.avgCmc = nSpells ? cmcSum / nSpells : 0;
+    out.cmdCmc = cmd && cmd.known ? cmd.cmc : null;
+    out.peak = curve.indexOf(Math.max.apply(null, curve));
+
+    /* colori: simboli di mana nei costi, e carte per colore */
+    var pp = { W: 0, U: 0, B: 0, R: 0, G: 0 }, byColor = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0, multi: 0 };
+    spells.forEach(function (r) {
+      var p = pips(r.mc); COLORS.forEach(function (k) { pp[k] += p[k] * r.qty; });
+      if (!r.c.length) byColor.C += r.qty; else { r.c.forEach(function (k) { if (byColor[k] !== undefined) byColor[k] += r.qty; }); if (r.c.length > 1) byColor.multi += r.qty; }
+    });
+    out.pips = pp; out.pipTotal = COLORS.reduce(function (t, k) { return t + pp[k]; }, 0); out.byColor = byColor;
+    out.cmdPips = cmd && cmd.known ? pips(cmd.mc) : null;
+
+    /* tipi (il commander a parte) */
+    var types = {}; TYPES.forEach(function (t) { types[t[0]] = 0; });
+    rows.forEach(function (r) { if (r.known) types[r.type] += r.qty; });
+    out.types = TYPES.map(function (t) { return { k: t[0], label: t[1], n: types[t[0]] }; }).filter(function (t) { return t.n > 0; });
+    out.lands = types.land;
+    out.total = rows.reduce(function (t, r) { return t + r.qty; }, 0) + (cmd ? cmd.qty : 0);
+
+    /* fonti di mana: terre e altre carte che producono mana, per colore */
+    var src = {}; COLORS.concat(['C']).forEach(function (k) { src[k] = { land: 0, other: 0 }; });
+    var other = 0, searchers = 0;
+    rows.forEach(function (r) {
+      if (!r.known) return;
+      if (r.search) searchers += r.qty;
+      var seen = {}; r.pm.split('').forEach(function (k) { if (src[k] && !seen[k]) { seen[k] = 1; src[k][r.land ? 'land' : 'other'] += r.qty; } });
+      if (!r.land && r.pm) other += r.qty;
+    });
+    out.sources = COLORS.concat(['C']).map(function (k) { return { k: k, land: src[k].land, other: src[k].other, n: src[k].land + src[k].other, pips: pp[k] === undefined ? 0 : pp[k] }; });
+    out.rocks = other; out.searchers = searchers;
+    var tot = out.pipTotal;
+    out.sources.forEach(function (s) {
+      s.share = tot && s.pips ? s.pips / tot : 0;
+      s.flag = '';
+      if (s.k !== 'C' && s.pips) {
+        var main = s.share >= 0.2;
+        if (s.n < (main ? 12 : 8)) s.flag = 'low';
+      }
+    });
+
+    /* identità di colore del commander */
+    var id = { applies: !!(cmd && cmd.known), colors: cmd && cmd.known ? cmd.ci.slice() : [], bad: [] };
+    if (id.applies) {
+      rows.forEach(function (r) {
+        if (!r.known) return;
+        var extra = r.ci.filter(function (k) { return id.colors.indexOf(k) < 0; });
+        if (extra.length) id.bad.push({ name: r.name, qty: r.qty, extra: extra });
+      });
+    }
+    out.identity = id;
+
+    /* legalità Commander (secondo Scryfall) */
+    var issues = [], names = {};
+    rows.concat(cmd ? [cmd] : []).forEach(function (r) { var k = keyOf(r.name); names[k] = names[k] || { name: r.name, qty: 0, basic: r.basic }; names[k].qty += r.qty; });
+    var dup = Object.keys(names).map(function (k) { return { k: k, n: names[k] }; }).filter(function (x) {
+      if (x.n.basic) return false;
+      var lim = LIMIT[lc(x.n.name)] || (ANY_NUMBER.indexOf(lc(x.n.name)) >= 0 ? 0 : 1);
+      return lim > 0 && x.n.qty > lim;
+    }).map(function (x) { return x.n.name + ' ×' + x.n.qty; });
+    var banned = rows.concat(cmd ? [cmd] : []).filter(function (r) { return r.bn; }).map(function (r) { return r.name; });
+    var notLegal = rows.concat(cmd ? [cmd] : []).filter(function (r) { return r.nl; }).map(function (r) { return r.name; });
+    var cmdOk = null;
+    if (cmd && cmd.known) cmdOk = (cmd.legendary && (cmd.creature || /vehicle|spacecraft/.test(cmd.text || ''))) || /can be your commander|partner|choose a background/.test(cmd.text);
+    function add(sev, k, text, list) { issues.push({ sev: sev, k: k, text: text, names: list || [] }); }
+    if (!deck.commander) add('warn', 'cmd', 'Nessun commander scelto: non posso controllare l’identità di colore.');
+    else if (cmdOk === false) add('error', 'cmd', 'Il commander non risulta una creatura leggendaria (né dice di poter essere commander).', [out.commander]);
+    if (out.total !== 100) add('warn', 'size', 'Il mazzo ha ' + out.total + ' carte: in Commander ne servono 100, commander compreso.');
+    if (dup.length) add('error', 'single', 'Copie doppie (si può averne una sola, tranne le terre base e poche carte speciali).', dup);
+    if (banned.length) add('error', 'ban', 'Carte bandite in Commander.', banned);
+    if (notLegal.length) add('error', 'nl', 'Carte non legali in Commander.', notLegal);
+    if (id.bad.length) add('error', 'id', 'Fuori dall’identità di colore del commander (' + (id.colors.join('') || 'incolore') + ').', id.bad.map(function (b) { return b.name + ' (' + b.extra.join('') + ')'; }));
+    if (missing.length) add('warn', 'data', 'Per ' + missing.length + (missing.length === 1 ? ' carta' : ' carte') + ' non ho ancora i dati: il controllo è parziale.', missing.slice(0, 10));
+    out.legality = { issues: issues, ok: !issues.some(function (i) { return i.sev === 'error'; }), clean: issues.length === 0 };
+    return out;
+  }
+
+  return { analyze: analyze, pips: pips, typeOf: typeOf, COLORS: COLORS, TYPES: TYPES };
+});
+
+/* Coglio Proxy Archive - The Pescher, il compagno di partita (nessun accesso al DOM).
+ * Tiene la partita: vite, veleno, danno da comandante, annulla, registro, dadi, chi inizia, e due consigli che solo noi
+ * possiamo dare perché conosciamo i mazzi: «che mazzo uso stasera?» e l'avviso quando al tavolo ci sono bracket molto diversi.
+ * Stato semplice (JSON) così si salva e si ripristina; il caso entra come funzione `rng` per poterlo provare. */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.CPAPescher = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var MIN = 2, MAX = 6, LIVES = [20, 30, 40], POISON_OUT = 10, CMD_OUT = 21, HIST = 60, LOG = 80;
+  var DICE = { d4: 4, d6: 6, d8: 8, d10: 10, d12: 12, d20: 20 };
+
+  function clampInt(n, lo, hi, d) { n = parseInt(n, 10); return n === n ? Math.max(lo, Math.min(hi, n)) : d; }
+  function rnd(rng, n) { var x = (typeof rng === 'function' ? rng() : Math.random()); return Math.min(n - 1, Math.floor(x * n)); }
+  function plain(g) { return { players: g.players, turn: g.turn, first: g.first }; }
+
+  /* ----- partita ----- */
+  function newGame(o) {
+    o = o || {};
+    var n = clampInt(o.players, MIN, MAX, 4), life = clampInt(o.life, 1, 999, 40), players = [];
+    for (var i = 0; i < n; i++) {
+      var nm = o.names && o.names[i] ? String(o.names[i]).slice(0, 24) : (i === 0 ? 'Io' : 'Giocatore ' + (i + 1));
+      players.push({ id: 'p' + (i + 1), name: nm, life: life, poison: 0, cmd: {}, deck: null, bracket: 0 });
+    }
+    return { v: 1, started: false, start: life, cmdLife: o.cmdLife !== false, players: players, turn: -1, first: -1, log: [], hist: [], t: Date.now() };
+  }
+  function player(g, id) { for (var i = 0; i < g.players.length; i++) if (g.players[i].id === id) return g.players[i]; return null; }
+  function say(g, text) { g.log.unshift({ t: Date.now(), text: text }); if (g.log.length > LOG) g.log.length = LOG; }
+  function push(g) { g.hist.push(JSON.stringify(plain(g))); if (g.hist.length > HIST) g.hist.shift(); }
+
+  /* Chi è fuori, e perché: lo si ricava sempre dai numeri, quindi rialzando la vita si torna in gioco. */
+  function status(g, p) {
+    var why = [];
+    if (p.life <= 0) why.push({ k: 'life', text: 'vita a ' + p.life });
+    if (p.poison >= POISON_OUT) why.push({ k: 'poison', text: p.poison + ' segnalini veleno' });
+    Object.keys(p.cmd || {}).forEach(function (from) {
+      if (p.cmd[from] >= CMD_OUT) { var f = player(g, from); why.push({ k: 'cmd', from: from, text: p.cmd[from] + ' danni da comandante di ' + (f ? f.name : '?') }); }
+    });
+    return { out: why.length > 0, why: why };
+  }
+  function alive(g) { return g.players.filter(function (p) { return !status(g, p).out; }); }
+  function winner(g) { var a = alive(g); return g.players.length > 1 && a.length === 1 ? a[0] : null; }
+
+  /* ----- azioni (ognuna si può annullare) ----- */
+  function life(g, id, d) {
+    var p = player(g, id); if (!p || !d) return false;
+    push(g); p.life += d; say(g, p.name + (d > 0 ? ' guadagna ' + d : ' perde ' + (-d)) + ' vita (' + p.life + ')'); return true;
+  }
+  function poison(g, id, d) {
+    var p = player(g, id); if (!p || !d) return false;
+    var to = Math.max(0, p.poison + d); if (to === p.poison) return false;
+    push(g); p.poison = to; say(g, p.name + ': veleno a ' + to); return true;
+  }
+  /* Danno da comandante: per regola è danno da combattimento, quindi toglie anche vita (si può spegnere). */
+  function cmd(g, id, from, d) {
+    var p = player(g, id), f = player(g, from); if (!p || !f || id === from || !d) return false;
+    var cur = p.cmd[from] || 0, to = Math.max(0, cur + d), real = to - cur; if (!real) return false;
+    push(g); p.cmd[from] = to; if (g.cmdLife) p.life -= real;
+    say(g, p.name + ' subisce ' + (real > 0 ? real : 'meno ' + (-real)) + ' da comandante di ' + f.name + ' (' + to + ')'); return true;
+  }
+  function setLife(g, id, v) { var p = player(g, id); v = parseInt(v, 10); if (!p || v !== v || v === p.life) return false; push(g); say(g, p.name + ': vita impostata a ' + v); p.life = v; return true; }
+  function rename(g, id, name) { var p = player(g, id); name = String(name || '').trim().slice(0, 24); if (!p || !name) return false; p.name = name; return true; }
+  function setDeck(g, id, deck) {
+    var p = player(g, id); if (!p) return false;
+    p.deck = deck ? { id: String(deck.id || ''), name: String(deck.name || ''), commander: String(deck.commander || ''), n: clampInt(deck.n, 0, 5, 0) } : null;
+    if (p.deck && p.deck.n) p.bracket = p.deck.n; else if (!p.deck) p.bracket = 0;
+    return true;
+  }
+  /* Prima di iniziare: quanti posti e con quanta vita. */
+  function resize(g, n) {
+    n = clampInt(n, MIN, MAX, g.players.length);
+    while (g.players.length > n) g.players.pop();
+    while (g.players.length < n) { var i = g.players.length; g.players.push({ id: 'p' + (i + 1), name: 'Giocatore ' + (i + 1), life: g.start, poison: 0, cmd: {}, deck: null, bracket: 0 }); }
+    g.players.forEach(function (p) { Object.keys(p.cmd).forEach(function (k) { if (!player(g, k)) delete p.cmd[k]; }); });
+    return g;
+  }
+  function setStart(g, v) { g.start = clampInt(v, 1, 999, 40); g.players.forEach(function (p) { p.life = g.start; }); return g; }
+  function setBracket(g, id, n) { var p = player(g, id); if (!p) return false; p.bracket = clampInt(n, 0, 5, 0); return true; }
+  function undo(g) {
+    if (!g.hist.length) return false;
+    var s = JSON.parse(g.hist.pop()); g.players = s.players; g.turn = s.turn; g.first = s.first; say(g, 'Annullato l’ultimo passaggio'); return true;
+  }
+  function reset(g) {
+    g.players.forEach(function (p) { p.life = g.start; p.poison = 0; p.cmd = {}; });
+    g.hist = []; g.log = []; g.turn = -1; g.first = -1; g.started = true; g.t = Date.now();
+  }
+  function begin(g, rng) { reset(g); var i = rnd(rng, g.players.length); g.first = i; g.turn = i; say(g, 'Inizia ' + g.players[i].name); return g.players[i]; }
+  function nextTurn(g) {
+    if (g.turn < 0) return null;
+    var n = g.players.length, i = g.turn;
+    for (var k = 0; k < n; k++) { i = (i + 1) % n; if (!status(g, g.players[i]).out) break; }
+    push(g); g.turn = i; return g.players[i];
+  }
+
+  /* ----- dadi ----- */
+  function roll(kind, rng) {
+    if (kind === 'coin') { var h = rnd(rng, 2) === 0; return { kind: 'coin', value: h ? 'Testa' : 'Croce', text: 'Moneta: ' + (h ? 'testa' : 'croce') }; }
+    var sides = DICE[kind]; if (!sides) return null;
+    var v = rnd(rng, sides) + 1; return { kind: kind, value: v, sides: sides, text: kind.toUpperCase() + ': ' + v };
+  }
+  function pickFirst(g, rng) { var i = rnd(rng, g.players.length); return { index: i, player: g.players[i], text: 'Inizia ' + g.players[i].name }; }
+
+  /* ----- bracket al tavolo ----- */
+  /* 1–2 di distanza va bene (un 2 e un 3 si giocano), da 2 in su si avvisa, da 3 in su è uno squilibrio forte. */
+  function balance(g) {
+    var known = g.players.filter(function (p) { return p.bracket >= 1; }).map(function (p) { return { id: p.id, name: p.name, n: p.bracket }; });
+    var unknown = g.players.filter(function (p) { return !(p.bracket >= 1); }).map(function (p) { return p.name; });
+    var out = { known: known, unknown: unknown, level: 'unknown', spread: 0, min: 0, max: 0, lows: [], highs: [], text: '' };
+    if (known.length < 2) { out.text = known.length ? 'Serve il bracket di almeno un altro mazzo per confrontarli.' : 'Scegli i mazzi o imposta i bracket per controllare il bilanciamento.'; return out; }
+    var ns = known.map(function (k) { return k.n; }); out.min = Math.min.apply(null, ns); out.max = Math.max.apply(null, ns); out.spread = out.max - out.min;
+    out.lows = known.filter(function (k) { return k.n === out.min; }); out.highs = known.filter(function (k) { return k.n === out.max; });
+    var names = function (l) { return l.map(function (k) { return k.name; }).join(', '); };
+    if (out.spread <= 1) { out.level = 'ok'; out.text = out.spread ? 'Tavolo equilibrato: bracket ' + out.min + ' e ' + out.max + '.' : 'Tavolo equilibrato: tutti al bracket ' + out.min + '.'; }
+    else {
+      out.level = out.spread >= 3 ? 'bad' : 'warn';
+      out.text = (out.spread >= 3 ? 'Squilibrio forte' : 'Bracket diversi') + ': ' + names(out.highs) + ' (bracket ' + out.max + ') contro ' + names(out.lows) + ' (bracket ' + out.min + '). ' +
+        (out.spread >= 3 ? 'Meglio parlarne prima di giocare o cambiare mazzo.' : 'Vale la pena dirselo prima di iniziare.');
+    }
+    return out;
+  }
+
+  /* ----- «che mazzo uso stasera?» ----- */
+  /* decks: [{id,name,commander,n}] solo i mazzi attivi. others: bracket degli altri posti. taken: id già scelti al tavolo.
+   * Con altri bracket noti si preferisce il più vicino alla mediana; senza, o a parità, decide il caso. */
+  function median(a) { var s = a.slice().sort(function (x, y) { return x - y; }), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+  function suggest(decks, o, rng) {
+    o = o || {};
+    var others = (o.others || []).filter(function (n) { return n >= 1; }), taken = o.taken || [], target = others.length ? median(others) : null;
+    var list = decks.filter(function (d) { return taken.indexOf(d.id) < 0; }).map(function (d) {
+      var s = 0, why;
+      if (target == null) why = d.n ? 'bracket ' + d.n : 'bracket non calcolato';
+      else if (!d.n) { s = -2.5; why = 'bracket non calcolato'; }
+      else { s = -Math.abs(d.n - target); why = 'bracket ' + d.n + (s === 0 ? ', come il tavolo' : ' contro ' + (target % 1 ? String(target).replace('.', ',') : target) + ' del tavolo'); }
+      return { deck: d, score: s, why: why, tie: typeof rng === 'function' ? rng() : Math.random() };
+    });
+    list.sort(function (a, b) { return (b.score - a.score) || (a.tie - b.tie); });
+    return { ranked: list, pick: list.length ? list[0] : null, target: target };
+  }
+
+  /* ----- salvataggio ----- */
+  function serialize(g) { return JSON.stringify(g); }
+  function restore(raw) {
+    var g; try { g = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return null; }
+    if (!g || g.v !== 1 || !Array.isArray(g.players) || g.players.length < MIN || g.players.length > MAX) return null;
+    var ids = {};
+    g.players = g.players.map(function (p, i) {
+      var id = 'p' + (i + 1); ids[p.id] = id;
+      return { id: id, name: String(p.name || 'Giocatore ' + (i + 1)).slice(0, 24), life: clampInt(p.life, -999, 9999, 40), poison: clampInt(p.poison, 0, 99, 0), cmd: p.cmd && typeof p.cmd === 'object' ? p.cmd : {},
+        deck: p.deck && typeof p.deck === 'object' ? { id: String(p.deck.id || ''), name: String(p.deck.name || ''), commander: String(p.deck.commander || ''), n: clampInt(p.deck.n, 0, 5, 0) } : null, bracket: clampInt(p.bracket, 0, 5, 0) };
+    });
+    g.players.forEach(function (p) { var c = {}; Object.keys(p.cmd).forEach(function (k) { if (ids[k]) c[ids[k]] = clampInt(p.cmd[k], 0, 999, 0); }); p.cmd = c; });
+    g.start = clampInt(g.start, 1, 999, 40); g.cmdLife = g.cmdLife !== false; g.started = !!g.started;
+    g.turn = clampInt(g.turn, -1, g.players.length - 1, -1); g.first = clampInt(g.first, -1, g.players.length - 1, -1);
+    g.log = Array.isArray(g.log) ? g.log.slice(0, LOG).filter(function (l) { return l && typeof l.text === 'string'; }) : [];
+    g.hist = Array.isArray(g.hist) ? g.hist.slice(-HIST).filter(function (h) { return typeof h === 'string'; }) : [];
+    g.v = 1; g.t = Number(g.t) || Date.now();
+    return g;
+  }
+
+  return {
+    MIN: MIN, MAX: MAX, LIVES: LIVES, POISON_OUT: POISON_OUT, CMD_OUT: CMD_OUT, DICE: Object.keys(DICE),
+    newGame: newGame, player: player, status: status, alive: alive, winner: winner,
+    resize: resize, setStart: setStart, life: life, poison: poison, cmd: cmd, setLife: setLife, rename: rename, setDeck: setDeck, setBracket: setBracket, undo: undo, reset: reset, begin: begin, nextTurn: nextTurn,
+    roll: roll, pickFirst: pickFirst, balance: balance, suggest: suggest, serialize: serialize, restore: restore
+  };
+});
+
 </script>
 <script>
 /* Chiavi per la sincronizzazione. Si creano gratis una volta sola (guida nel README, sezione «Sincronizzazione»).
@@ -4207,6 +4792,7 @@ window.CPA_SYNC = {
     builder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="7" y="13" width="10" height="8" rx="1"/></svg>',
     designer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="13" height="18" rx="2"/><path d="M7 15l3-4 2 2 2-3M18 9l3 3-6 6-3.5.5.5-3.5z"/></svg>',
     data: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.500 4h11l3.500 5-9 11L3 9z"/><path d="M3 9h18M9.500 4 8 9l4 11 4-11-1.500-5"/></svg>',
+    pescher: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12.8,1.2 14.3,4.3 17.4,2.6 17.4,6.1 20.9,5.9 19.4,9.0 22.7,10.3 20.0,12.6 22.3,15.1 18.9,16.0 20.0,19.3 16.5,18.6 16.0,22.0 13.2,19.9 11.2,22.8 9.7,19.7 6.6,21.4 6.6,17.9 3.1,18.1 4.6,15.0 1.3,13.7 4.0,11.4 1.7,8.9 5.1,8.0 4.0,4.7 7.5,5.4 8.0,2.0 10.8,4.1"/><path d="M12 8.600v5.400"/><path d="M12 16.700v.1" stroke-width="2.400"/></svg>',
     search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
     filter: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg>'
   };
@@ -4793,6 +5379,143 @@ window.CPA_SYNC = {
     return { available: available, start: start, web: web, close: close, isOpen: isOpen, set: set };
   })();
 
+  /* ---------- Analisi del piscio: il mazzo sotto la lente (dati di Scryfall già sul dispositivo) ---------- */
+  var AN = (function () {
+    var box = null, run = 0, last = null, MANA = { W: 'Bianco', U: 'Blu', B: 'Nero', R: 'Rosso', G: 'Verde', C: 'Incolore' };
+    function close() { if (box) { box.remove(); box = null; run++; } }
+    function isOpen() { return !!box; }
+    function nf(x, d) { return Number(x).toFixed(d == null ? 1 : d).replace('.', ','); }
+    function shell(deck, inner) {
+      if (!box) {
+        box = document.createElement('div'); box.id = 'an'; box.className = 'lb bk an'; box.setAttribute('data-a', 'an-close');
+        box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Analisi del piscio di ' + deck.name);
+        document.body.appendChild(box);
+      }
+      box.innerHTML = '<div class="an-box" data-a="an-keep"><div class="an-head"><div><small>Analisi del piscio</small><strong>' + esc(deck.name) + '</strong></div>' +
+        '<button class="btn small" data-a="an-close" id="anx">Chiudi</button></div>' + inner + '</div>';
+      var x = box.querySelector('#anx'); if (x) x.focus();
+    }
+    function card(title, sub, inner, cls) {
+      return '<section class="an-card' + (cls ? ' ' + cls : '') + '"><h3>' + title + (sub ? '<small>' + sub + '</small>' : '') + '</h3>' + inner + '</section>';
+    }
+
+    /* curva: istogramma in SVG, il picco in banana, la media come linea tratteggiata */
+    function curveSvg(a) {
+      var W = 340, H = 168, base = 134, top = 22, bw = 30, gap = 9, x0 = 12, max = Math.max.apply(null, a.curve) || 1;
+      var out = '<svg class="an-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Curva di mana: ' + a.curve.map(function (n, i) { return n + ' carte a costo ' + (i === 7 ? '7 o più' : i); }).join(', ') + '">';
+      out += '<line x1="6" y1="' + base + '" x2="' + (W - 6) + '" y2="' + base + '" class="an-axis"/>';
+      a.curve.forEach(function (n, i) {
+        var h = n ? Math.max(4, Math.round((base - top) * n / max)) : 0, x = x0 + i * (bw + gap), peak = i === a.peak && n > 0;
+        out += '<g class="an-bar' + (peak ? ' peak' : '') + '"><title>' + n + (n === 1 ? ' carta' : ' carte') + ' a costo ' + (i === 7 ? '7 o più' : i) + '</title>' +
+          '<rect x="' + (x - 3) + '" y="' + top + '" width="' + (bw + 6) + '" height="' + (base - top) + '" class="hit"/>' +
+          (h ? '<path d="M' + x + ' ' + base + 'V' + (base - h + 4) + 'a4 4 0 0 1 4 -4h' + (bw - 8) + 'a4 4 0 0 1 4 4V' + base + 'Z" class="b"/>' : '') +
+          (peak ? '<text x="' + (x + bw / 2) + '" y="' + (base - h - 5) + '" class="an-val">' + n + '</text>' : '') +
+          '<text x="' + (x + bw / 2) + '" y="' + (base + 16) + '" class="an-tick">' + (i === 7 ? '7+' : i) + '</text></g>';
+      });
+      if (a.spells) {
+        var mx = Math.max(10, Math.min(W - 10, x0 + a.avgCmc * (bw + gap) + bw / 2));
+        out += '<line x1="' + mx + '" y1="' + (top - 8) + '" x2="' + mx + '" y2="' + base + '" class="an-avg"><title>Costo medio ' + nf(a.avgCmc, 2) + '</title></line>';
+      }
+      if (a.cmdCmc != null) {
+        var cx = x0 + Math.min(7, a.cmdCmc) * (bw + gap) + bw / 2;
+        out += '<path d="M' + cx + ' ' + (base + 24) + 'l5 5 -5 5 -5 -5z" class="an-cmd"><title>Commander: costo ' + a.cmdCmc + '</title></path>';
+      }
+      return out + '</svg>';
+    }
+    /* torta (ciambella) dei simboli di mana per colore: spicchi nei colori del mana, nome e conteggio sempre scritti accanto */
+    function donut(a) {
+      var tot = a.pipTotal; if (!tot) return '<p class="an-none">Nessun simbolo di mana colorato nei costi.</p>';
+      var R = 58, Cc = 2 * Math.PI * R, acc = 0, segs = '';
+      var list = ['W', 'U', 'B', 'R', 'G'].filter(function (k) { return a.pips[k] > 0; });
+      list.forEach(function (k) {
+        var frac = a.pips[k] / tot, len = Math.max(0, Cc * frac - (list.length > 1 ? 3 : 0));
+        segs += '<circle class="an-seg m' + k + '" cx="80" cy="80" r="' + R + '" stroke-dasharray="' + len.toFixed(2) + ' ' + (Cc - len).toFixed(2) + '" stroke-dashoffset="' + (-acc * Cc + 0).toFixed(2) + '"><title>' + MANA[k] + ': ' + a.pips[k] + ' simboli (' + Math.round(frac * 100) + '%)</title></circle>';
+        acc += frac;
+      });
+      var legend = list.map(function (k) {
+        return '<li>' + pip(k) + '<span>' + MANA[k] + '</span><b>' + a.pips[k] + '</b><i>' + Math.round(a.pips[k] / tot * 100) + '%</i></li>';
+      }).join('');
+      var bc = a.byColor, cards = [];
+      if (bc.multi) cards.push(bc.multi + ' multicolore'); if (bc.C) cards.push(bc.C + ' incolori');
+      return '<div class="an-pie"><svg class="an-svg don" viewBox="0 0 160 160" role="img" aria-label="Simboli di mana per colore: ' + list.map(function (k) { return MANA[k] + ' ' + a.pips[k]; }).join(', ') + '">' +
+        '<g transform="rotate(-90 80 80)">' + segs + '</g><text x="80" y="78" class="an-big">' + tot + '</text><text x="80" y="96" class="an-small">simboli</text></svg><ul class="an-leg">' + legend + '</ul></div>' +
+        (cards.length ? '<p class="an-foot">Carte: ' + cards.join(' · ') + '.</p>' : '');
+    }
+    function typesBars(a) {
+      var max = Math.max.apply(null, a.types.map(function (t) { return t.n; })) || 1;
+      return '<ul class="an-bars">' + a.types.map(function (t) {
+        return '<li><span>' + esc(t.label) + '</span><i><u class="' + (t.k === 'land' ? 'land' : '') + '" style="width:' + Math.max(2, Math.round(t.n / max * 100)) + '%"></u></i><b>' + t.n + '</b></li>';
+      }).join('') + '</ul>' + (a.commander ? '<p class="an-foot">Più il commander: ' + esc(a.commander) + '.</p>' : '');
+    }
+    function sourcesRows(a) {
+      var max = Math.max.apply(null, a.sources.map(function (s) { return s.n; })) || 1;
+      var rows = a.sources.filter(function (s) { return s.k === 'C' ? s.n > 0 : (s.n > 0 || s.pips > 0); }).map(function (s) {
+        var lw = Math.round(s.land / max * 100), ow = Math.round(s.other / max * 100);
+        return '<li class="' + (s.flag ? 'low' : '') + '">' + pip(s.k) + '<span class="n">' + MANA[s.k] + '</span><i><u class="l" style="width:' + lw + '%"></u><u class="o" style="width:' + ow + '%"></u></i><b>' + s.n + '</b>' +
+          '<small>' + (s.k === 'C' ? 'senza colore' : s.pips + ' simboli · ' + Math.round(s.share * 100) + '%') + '</small>' + (s.flag ? '<em class="an-flag" title="Regola pratica: servono circa 12 fonti per il colore principale, 8 per gli altri">poche fonti</em>' : '') + '</li>';
+      }).join('');
+      return '<ul class="an-src">' + rows + '</ul><p class="an-key"><span class="l"></span> terre <span class="o"></span> altre carte' + (a.searchers ? ' · <span>+ ' + a.searchers + ' ' + (a.searchers === 1 ? 'terra che cerca' : 'terre che cercano') + ' una terra base</span>' : '') + '</p>' +
+        '<p class="an-foot">Contano le carte che producono quel colore (una terra doppia vale per due). Regola pratica, non un verdetto.</p>';
+    }
+    function thumbsFor(deck, names) {
+      return '<div class="bkr-thumbs">' + names.slice(0, 8).map(function (nm) { var c = deck.cards.filter(function (x) { return x.name === nm; })[0]; return c ? IMG.thumb(c.name, c.set, c.cn) : ''; }).join('') + '</div>';
+    }
+    function identity(deck, a) {
+      var id = a.identity;
+      if (!id.applies) return '<p class="an-none">' + (deck.commander ? 'Non ho ancora i dati del commander.' : 'Scegli un commander per controllare l’identità di colore.') + '</p>';
+      var chips = id.colors.length ? id.colors.map(pip).join('') : '<span class="an-colorless">Incolore</span>';
+      var head = '<div class="an-id"><div class="an-idp">' + chips + '</div><div><b>' + esc(a.commander) + '</b><span>identità ' + (id.colors.join('') || 'incolore') + '</span></div></div>';
+      if (!id.bad.length) return head + '<p class="an-ok"><span aria-hidden="true">✓</span> Tutte le carte rientrano nell’identità di colore.</p>';
+      var names = id.bad.map(function (b) { return b.name; });
+      return head + '<p class="an-bad"><span aria-hidden="true">✕</span> ' + plural(id.bad.length, 'carta fuori identità', 'carte fuori identità') + '</p>' + thumbsFor(deck, names) +
+        '<ul class="an-list">' + id.bad.map(function (b) { return '<li>' + esc(b.name) + (b.qty > 1 ? ' ×' + b.qty : '') + ' <em>' + b.extra.map(function (k) { return MANA[k]; }).join(', ') + '</em></li>'; }).join('') + '</ul>';
+    }
+    function legality(a) {
+      var L = a.legality;
+      if (L.clean) return '<p class="an-ok big"><span aria-hidden="true">✓</span> Legale in Commander: cento carte, tutte singole, nessuna bandita, tutte nell’identità.</p>';
+      return '<ul class="an-issues">' + L.issues.map(function (i) {
+        return '<li class="' + i.sev + '"><span class="ic" aria-hidden="true">' + (i.sev === 'error' ? '✕' : '!') + '</span><div><b>' + esc(i.text) + '</b>' + (i.names.length ? '<p>' + i.names.slice(0, 12).map(esc).join(' · ') + (i.names.length > 12 ? ' · …' : '') + '</p>' : '') + '</div></li>';
+      }).join('') + '</ul>' + (L.ok ? '<p class="an-foot">Nessun errore: restano solo gli avvisi qui sopra.</p>' : '');
+    }
+    function show(deck, a) {
+      var L = a.legality, errs = L.issues.filter(function (i) { return i.sev === 'error'; }).length, warns = L.issues.length - errs;
+      var verdict = L.clean ? '<span class="an-v ok"><i aria-hidden="true">✓</i>Legale</span>' : !L.ok ? '<span class="an-v bad"><i aria-hidden="true">✕</i>' + plural(errs, 'problema', 'problemi') + '</span>' : '<span class="an-v warn"><i aria-hidden="true">!</i>' + plural(warns, 'avviso', 'avvisi') + '</span>';
+      var top = '<div class="an-top">' + verdict +
+        '<div class="an-stat"><b>' + a.total + '</b><span>carte</span></div><div class="an-stat"><b>' + (a.spells ? nf(a.avgCmc, 2) : '—') + '</b><span>costo medio</span></div>' +
+        '<div class="an-stat"><b>' + a.lands + '</b><span>terre</span></div><div class="an-stat"><b>' + a.rocks + '</b><span>acceleratori</span></div></div>';
+      var miss = a.missing.length ? '<p class="lb-warn">Per ' + plural(a.missing.length, 'carta', 'carte') + ' non ho i dati (' + a.missing.slice(0, 4).map(esc).join(', ') + (a.missing.length > 4 ? '…' : '') + '): sono fuori dai conteggi.</p>' : '';
+      shell(deck, top + miss + '<div class="an-grid">' +
+        card('Curva di mana', 'non terre, commander escluso', curveSvg(a) + '<p class="an-foot">' + (a.spells ? '<span class="an-avgk"></span> costo medio ' + nf(a.avgCmc, 2) + '. ' : '') + (a.cmdCmc != null ? '<span class="an-cmdk">◆</span> commander a costo ' + a.cmdCmc + '. ' : '') + 'Il picco è a costo ' + (a.peak === 7 ? '7 o più' : a.peak) + '.</p>', 'wide') +
+        card('Colori', 'simboli di mana nei costi', donut(a)) +
+        card('Tipi', 'conteggio per tipo', typesBars(a)) +
+        card('Fonti di mana', 'per colore', sourcesRows(a), 'wide') +
+        card('Identità di colore', 'controllo sul commander', identity(deck, a)) +
+        card('Legalità', 'Commander, secondo Scryfall', legality(a)) + '</div>' +
+        '<p class="bk-foot">Dati delle carte da Scryfall, già sul dispositivo. Il sideboard non conta. La legalità segue le regole Commander (cento carte, carte singole, identità di colore, banlist) e non tiene conto di regole di casa.</p>');
+      IMG.hydrate();
+    }
+    function need(deck) {
+      var cc = CARDS.get(); if (!cc) return [];
+      return cc.pricedCards(deck, C.isBasic).filter(function (c) { var r = dkRec(cc, c); return !r || r.nl === undefined; }).map(function (c) { return { name: c.name, set: c.set, cn: c.cn }; });
+    }
+    function open(deck) {
+      last = deck; var my = ++run, cc = CARDS.get();
+      if (!window.CPAAnalysis || !cc || !CARDS.enabled()) { shell(deck, '<p class="lb-warn">Per l’analisi servono i dati delle carte di Scryfall, che da qui non sono raggiungibili.</p>'); return; }
+      function finish() {
+        if (my !== run || !box) return;
+        var a = window.CPAAnalysis.analyze(deck, { rec: function (c) { return dkRec(cc, c); }, isBasic: C.isBasic, keyOf: C.keyOf });
+        if (!a.hasData) { shell(deck, '<p class="lb-warn">Non ho ancora i dati di nessuna carta: controlla la connessione e riprova.</p>'); return; }
+        show(deck, a);
+      }
+      shell(deck, '<p class="lb-wait bk-wait" id="anw">Analizzo «' + esc(deck.name) + '»…</p>');
+      var n = need(deck);
+      if (!n.length) { finish(); return; }
+      cc.ensure(n, { force: true }, function (p) { var w = box && box.querySelector('#anw'); if (w && p.total) w.textContent = 'Scarico i dati delle carte da Scryfall: ' + p.done + ' su ' + p.total + '…'; })
+        .then(finish, function () { if (my === run && box) { var a2 = window.CPAAnalysis.analyze(deck, { rec: function (c) { return dkRec(cc, c); }, isBasic: C.isBasic, keyOf: C.keyOf }); if (a2.hasData) show(deck, a2); else shell(deck, '<p class="lb-warn">Non riesco a scaricare i dati delle carte: controlla la connessione e riprova.</p>'); } });
+    }
+    return { open: open, close: close, isOpen: isOpen };
+  })();
+
   function applyTheme() {
     var t = state.settings.theme, r = document.documentElement;
     if (t === 'light' || t === 'dark') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme');
@@ -5261,7 +5984,7 @@ window.CPA_SYNC = {
   })();
 
   /* ---------- Struttura generale ---------- */
-  var NAV = [['archive', 'Archivio'], ['decks', 'Mazzi'], ['import', 'Importa'], ['designer', 'Designer'], ['builder', 'Stampa'], ['data', 'Dati']];
+  var NAV = [['archive', 'Archivio'], ['decks', 'Mazzi'], ['import', 'Importa'], ['designer', 'Designer'], ['builder', 'Stampa'], ['pescher', 'Pescher'], ['data', 'Dati']];
   function navBtn(v, label) {
     var cur = ui.view === v || (v === 'decks' && (ui.view === 'deck' || ui.view === 'upgrade'));
     return '<button class="nav" data-a="nav" data-v="' + v + '"' + (cur ? ' aria-current="page"' : '') + '>' + IC[v] + '<span>' + label + '</span></button>';
@@ -5280,6 +6003,7 @@ window.CPA_SYNC = {
     if (ui.view === 'upgrade') updateUpgradeCols();
     if (ui.view === 'builder' && window.CPABuilder) window.CPABuilder.after();
     if (ui.view === 'designer' && window.CPADesigner) window.CPADesigner.after();
+    if (window.CPAPescherUI) { if (ui.view === 'pescher') window.CPAPescherUI.after(); else window.CPAPescherUI.idle(); }
   }
   function viewHtml() {
     switch (ui.view) {
@@ -5289,6 +6013,7 @@ window.CPA_SYNC = {
       case 'import': return importView();
       case 'builder': return window.CPABuilder ? window.CPABuilder.html() : decksView();
       case 'designer': return window.CPADesigner ? window.CPADesigner.html() : archiveView();
+      case 'pescher': return window.CPAPescherUI ? window.CPAPescherUI.html() : archiveView();
       case 'data': return dataView();
       default: return archiveView();
     }
@@ -5795,6 +6520,9 @@ window.CPA_SYNC = {
     return '<span class="bk-badge b' + b.n + (stale ? ' stale' : '') + '" title="' + esc(b.n ? 'Bracket ' + b.n : 'Contiene carte bandite') +
       (b.manual ? ' (impostato a mano)' : stale ? ' (calcolato prima delle ultime modifiche al mazzo: ricalcola)' : '') + '" aria-label="' + esc(b.n ? 'Bracket ' + b.n : 'Carte bandite') + '">' + txt + '</span>';
   }
+  function analysisBtn(d) {
+    return '<button class="btn small" data-a="analysis" data-id="' + esc(d.id) + '" title="Curva di mana, colori, tipi, fonti, identità e legalità">Analisi del piscio</button>';
+  }
   function bracketBtn(d) {
     return '<button class="btn small bracket" data-a="bracket" data-id="' + esc(d.id) + '" title="Calcola il bracket del mazzo">Verifica bracket</button>';
   }
@@ -5999,7 +6727,7 @@ window.CPA_SYNC = {
       '<div class="dk-meta"><span class="hc fmt">' + (d.kind === 'deck' ? 'Commander' : 'Carte sciolte') + '</span>' +
       (d.kind === 'deck' ? (d.commander ? '<span class="hc">' + esc(d.commander) + '</span>' : '<span class="hc">Nessun commander</span>') + switchHtml(d) : '') +
       (ago ? '<span class="hc dim">aggiornato ' + ago + '</span>' : '') + '</div>' +
-      '<div class="dk-hact">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="make-pdf" data-id="' + esc(d.id) + '">Crea PDF</button>' +
+      '<div class="dk-hact">' + (d.kind === 'deck' ? bracketBtn(d) + analysisBtn(d) : '') + '<button class="btn small" data-a="make-pdf" data-id="' + esc(d.id) + '">Crea PDF</button>' +
       '<button class="btn small" data-a="deck-man" aria-expanded="' + !!ui.dMan + '" aria-controls="dman">Gestisci</button></div></header>';
   }
   function deckView() {
@@ -6438,6 +7166,7 @@ window.CPA_SYNC = {
     if (!el.dataset.cf) ui.confirm = null;
     if (a.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.click(a, el); return; }
     if (a.indexOf('dz-') === 0 && window.CPADesigner) { if (el.dataset.cf) ui.confirm = null; window.CPADesigner.click(a, el); return; }
+    if (a.indexOf('pe-') === 0 && window.CPAPescherUI) { window.CPAPescherUI.click(a, el); return; }
     var deck;
     switch (a) {
       case 'nav': go(el.dataset.v); break;
@@ -6552,6 +7281,9 @@ window.CPA_SYNC = {
         if (deck) BK.web(deck);
         break;
       case 'bk-set': BK.set(parseInt(el.dataset.n, 10)); break;
+      case 'analysis': deck = getDeck(id); if (deck) AN.open(deck); break;
+      case 'an-close': AN.close(); break;
+      case 'an-keep': break;
       case 'bk-close': BK.close(); break;
       case 'bk-keep': break;
       case 'lb-close': IMG.close(); break;
@@ -6588,7 +7320,7 @@ window.CPA_SYNC = {
     var t = ev.target;
     if (ev.key === 'Enter' && !ev.shiftKey && t && t.getAttribute && t.getAttribute('data-c') === 'dadd-q') { ev.preventDefault(); daddGo(false); }
   });
-  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (ui.crazy) { closeCrazy(); return; } if (window.CPADesigner && ui.view === 'designer' && window.CPADesigner.escape()) return; if (window.CPABuilder && ui.view === 'builder' && window.CPABuilder.escape()) return; if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (ui.crazy) { closeCrazy(); return; } if (window.CPADesigner && ui.view === 'designer' && window.CPADesigner.escape()) return; if (window.CPABuilder && ui.view === 'builder' && window.CPABuilder.escape()) return; if (window.CPAPescherUI && ui.view === 'pescher' && window.CPAPescherUI.escape()) return; if (AN.isOpen()) AN.close(); else if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
   document.addEventListener('mousemove', function (ev) {
     var t = ev.target.closest && ev.target.closest('.th.on');
     if (!t && ev.target.closest && ui.view === 'deck') { var dr = ev.target.closest('.dr'); if (dr && !dkAside()) t = dr.querySelector('.th.seed.on'); }
@@ -6613,6 +7345,7 @@ window.CPA_SYNC = {
     var c = e.target.dataset && e.target.dataset.c; if (!c) return;
     if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.input(c, e.target); return; }
     if (c.indexOf('dz-') === 0 && window.CPADesigner) { window.CPADesigner.input(c, e.target); return; }
+    if (c.indexOf('pe-') === 0 && window.CPAPescherUI) { window.CPAPescherUI.input(c, e.target); return; }
     if (c === 'q') { ui.q = e.target.value; ui.limit = 150; updateArchiveList(); }
     else if (c === 'f-text') { ui.f.text = e.target.value; ui.limit = 150; updateArchiveList(); }
     else if (c === 'upq') { ui.upQ = e.target.value; updateUpgradeCols(); }
@@ -6628,6 +7361,7 @@ window.CPA_SYNC = {
     var t = e.target, c = t.dataset && t.dataset.c; if (!c) return;
     if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.change(c, t); return; }
     if (c.indexOf('dz-') === 0 && window.CPADesigner) { window.CPADesigner.change(c, t); return; }
+    if (c.indexOf('pe-') === 0 && window.CPAPescherUI) { window.CPAPescherUI.change(c, t); return; }
     var d;
     switch (c) {
       case 'fdeck': ui.fdeck = t.value; ui.limit = 150; render(); break;
@@ -9228,6 +9962,264 @@ window.CPA_SYNC = {
     open: open, html: html, after: after, click: click, input: input, change: change, escape: escape, renderBlob: renderBlob,
     ready: load, get: byId, list: function () { return dz.designs.slice(); }, openPicker: openPicker, state: dz, assetsFor: assetsFor, wantFrame: wantFrame, applyFrameFor: applyFrameFor, flip: flip, hasBack: function (id) { var d = byId(id); return !!(d && d.back); }
   };
+})();
+
+</script>
+<script>
+/* Coglio Proxy Archive - The Pescher: la schermata di gioco.
+ * Logica in pescher.js; qui ci sono solo il tavolo, i pop-up e il salvataggio della partita (localStorage, sul dispositivo).
+ * Ridisegna solo il proprio contenitore (#pe), così un tocco sulla vita non rifà tutta l'app e non perde il fuoco della tastiera. */
+(function () {
+  'use strict';
+  var H = window.CPAHost, P = window.CPAPescher;
+  if (!H || !P) return;
+  var esc = H.esc, KEY = 'cpa:pescher:v1';
+  var g = null, wake = null;
+  var ux = { open: {}, pop: '', sug: null, rolls: [], confirm: '' };
+  var SEAT = ['var(--m-u)', 'var(--m-r)', 'var(--m-g)', 'var(--m-w)', 'var(--m-b)', 'var(--banana)'];
+
+  /* ---------- salvataggio ---------- */
+  function load() { try { var raw = localStorage.getItem(KEY); return raw ? P.restore(raw) : null; } catch (e) { return null; } }
+  function save() { try { g.mirror = !!g.mirror; localStorage.setItem(KEY, P.serialize(g)); } catch (e) { /* il tavolo funziona anche senza salvataggio */ } }
+  function ensure() { if (!g) g = load() || P.newGame({ players: 4, life: 40 }); return g; }
+  function rng() { try { var a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; } catch (e) { return Math.random(); } }
+
+  /* ---------- mazzi attivi ---------- */
+  function myDecks() {
+    return H.decks().filter(function (d) { return d.kind === 'deck' && d.active; }).map(function (d) {
+      return { id: d.id, name: d.name, commander: d.commander || '', n: d.bracket && d.bracket.n > 0 ? d.bracket.n : 0 };
+    });
+  }
+  function bdg(n, extra) { return n > 0 ? '<span class="bk-badge b' + n + (extra ? ' ' + extra : '') + '" title="Bracket ' + n + '" aria-label="Bracket ' + n + '">' + n + '</span>' : ''; }
+
+  /* ---------- pezzi di interfaccia ---------- */
+  var ICON = {
+    drop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z"/></svg>',
+    crown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18h18l-1.500-10-4.500 4-3-7-3 7-4.500-4z"/></svg>'
+  };
+  function seg(items, cur, act, label) {
+    return '<div class="seg" role="group" aria-label="' + esc(label) + '">' + items.map(function (v) { return '<button type="button" data-a="' + act + '" data-v="' + v + '" aria-pressed="' + (v === cur) + '">' + v + '</button>'; }).join('') + '</div>';
+  }
+  function banner(b, cls) {
+    if (b.level === 'unknown') return '<p class="pe-bal unknown' + (cls ? ' ' + cls : '') + '" role="status"><span class="ic" aria-hidden="true">i</span>' + esc(b.text) + '</p>';
+    return '<p class="pe-bal ' + b.level + (cls ? ' ' + cls : '') + '" role="status"><span class="ic" aria-hidden="true">' + (b.level === 'ok' ? '✓' : '!') + '</span>' + esc(b.text) + '</p>';
+  }
+
+  /* ---------- preparazione del tavolo ---------- */
+  function seatHtml(p, i, decks) {
+    var d = p.deck, opts = '<option value="">Nessun mazzo (bracket a mano)</option>' + decks.map(function (x) {
+      return '<option value="' + esc(x.id) + '"' + (d && d.id === x.id ? ' selected' : '') + '>' + esc(x.name) + (x.n ? ' · bracket ' + x.n : '') + '</option>';
+    }).join('');
+    var chips = [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" class="pe-bk b' + n + '" data-a="pe-bkt" data-p="' + p.id + '" data-v="' + n + '" aria-pressed="' + (p.bracket === n) + '" aria-label="Bracket ' + n + '">' + n + '</button>'; }).join('');
+    var sug = '';
+    if (i === 0) {
+      sug = '<div class="pe-ask"><button type="button" class="btn small bracket" data-a="pe-sug">Che mazzo uso stasera?</button>' +
+        (decks.length ? '' : '<span class="hint">Nessun mazzo attivo: attiva quelli che hai montato nella sezione Mazzi.</span>') + '</div>';
+      if (ux.sug && ux.sug.list.length) {
+        var cur = ux.sug.list[ux.sug.i % ux.sug.list.length];
+        sug += '<div class="pe-sug" role="status"><div><small>Stasera ti consiglio</small><b>' + esc(cur.deck.name) + '</b><span>' + esc(cur.why) + (cur.deck.commander ? ' · ' + esc(cur.deck.commander) : '') + '</span></div>' +
+          '<div class="pe-sug-b">' + bdg(cur.deck.n) + '<button type="button" class="btn small primary" data-a="pe-sug-use">Usa questo</button>' +
+          (ux.sug.list.length > 1 ? '<button type="button" class="btn small" data-a="pe-sug-next">Un altro</button>' : '') + '</div></div>';
+      } else if (ux.sug) sug += '<p class="pe-sug none" role="status">Non ho nessun mazzo attivo da proporti.</p>';
+    }
+    return '<div class="pe-seat" data-p="' + p.id + '" style="--seat:' + SEAT[i] + '"><div class="pe-seat-h"><span class="pe-n" aria-hidden="true">' + (i + 1) + '</span>' +
+      '<input class="pe-name" data-c="pe-name" data-p="' + p.id + '" value="' + esc(p.name) + '" maxlength="24" aria-label="Nome del posto ' + (i + 1) + '" autocomplete="off"></div>' +
+      '<label class="pe-deck"><span>Mazzo</span><select data-c="pe-deck" data-p="' + p.id + '">' + opts + '</select></label>' +
+      '<div class="pe-bkr"><span>Bracket</span><div class="pe-bks" role="group" aria-label="Bracket del posto ' + (i + 1) + '">' + chips + '</div></div>' + sug + '</div>';
+  }
+  function setupHtml() {
+    var decks = myDecks(), b = P.balance(g);
+    return '<header class="vh"><h1>The Pescher</h1><p class="sub">Il compagno di partita: vite, veleno, danno da comandante e dadi. Conosce i tuoi mazzi e i loro bracket.</p></header>' +
+      '<section class="pe-setup"><div class="pe-opts panel">' +
+      '<div class="pe-opt"><b>Giocatori</b>' + seg([2, 3, 4, 5, 6], g.players.length, 'pe-count', 'Numero di giocatori') + '</div>' +
+      '<div class="pe-opt"><b>Vita iniziale</b>' + seg(P.LIVES, g.start, 'pe-start', 'Vita iniziale') + '</div>' +
+      '<label class="pe-chk"><input type="checkbox" data-c="pe-cmdlife"' + (g.cmdLife ? ' checked' : '') + '> Il danno da comandante toglie anche vita</label></div>' +
+      '<div class="pe-seats">' + g.players.map(function (p, i) { return seatHtml(p, i, decks); }).join('') + '</div>' +
+      banner(b) +
+      '<div class="pe-go"><button type="button" class="btn primary big" data-a="pe-begin">Inizia la partita</button><span class="hint">Il primo giocatore lo decide il caso.</span></div></section>';
+  }
+
+  /* ---------- partita ---------- */
+  function tileHtml(p, i) {
+    var st = P.status(g, p), w = P.winner(g), isTurn = g.turn === i && !w;
+    var maxC = 0; Object.keys(p.cmd).forEach(function (k) { if (p.cmd[k] > maxC) maxC = p.cmd[k]; });
+    var open = ux.open[p.id] || '', flip = g.mirror && i < Math.floor(g.players.length / 2);
+    var life = '<div class="pe-life"><button type="button" class="pe-lb" data-a="pe-life" data-p="' + p.id + '" data-d="-1" aria-label="Togli 1 vita a ' + esc(p.name) + '">−</button>' +
+      '<output class="pe-lv' + (p.life <= 10 ? ' low' : '') + '" aria-live="polite" aria-label="Vita di ' + esc(p.name) + '">' + p.life + '</output>' +
+      '<button type="button" class="pe-lb" data-a="pe-life" data-p="' + p.id + '" data-d="1" aria-label="Aggiungi 1 vita a ' + esc(p.name) + '">+</button></div>' +
+      '<div class="pe-fast"><button type="button" data-a="pe-life" data-p="' + p.id + '" data-d="-5" aria-label="Togli 5 vita a ' + esc(p.name) + '">−5</button><button type="button" data-a="pe-life" data-p="' + p.id + '" data-d="5" aria-label="Aggiungi 5 vita a ' + esc(p.name) + '">+5</button></div>';
+    var chips = '<div class="pe-chips"><button type="button" class="pe-chip' + (p.poison >= P.POISON_OUT ? ' bad' : p.poison ? ' on' : '') + '" data-a="pe-tog" data-p="' + p.id + '" data-k="poison" aria-expanded="' + (open === 'poison') + '" aria-label="Veleno: ' + p.poison + '">' + ICON.drop + '<span>Veleno</span><b>' + p.poison + '</b></button>' +
+      '<button type="button" class="pe-chip' + (maxC >= P.CMD_OUT ? ' bad' : maxC ? ' on' : '') + '" data-a="pe-tog" data-p="' + p.id + '" data-k="cmd" aria-expanded="' + (open === 'cmd') + '" aria-label="Danno da comandante: ' + maxC + '">' + ICON.crown + '<span>Comandante</span><b>' + maxC + '</b></button></div>';
+    var panel = '';
+    if (open === 'poison') {
+      panel = '<div class="pe-panel"><div class="pe-row"><span class="pe-from">Segnalini veleno <small>' + P.POISON_OUT + ' = fuori</small></span>' +
+        step(p, 'pe-poison', '', p.poison, P.POISON_OUT) + '</div></div>';
+    } else if (open === 'cmd') {
+      panel = '<div class="pe-panel">' + g.players.filter(function (o) { return o.id !== p.id; }).map(function (o) {
+        var oi = g.players.indexOf(o), n = p.cmd[o.id] || 0;
+        return '<div class="pe-row"><span class="pe-from"><i style="background:' + SEAT[oi] + '"></i>da ' + esc(o.name) + '<small>' + P.CMD_OUT + ' = fuori</small></span>' + step(p, 'pe-cmd', o.id, n, P.CMD_OUT) + '</div>';
+      }).join('') + '</div>';
+    }
+    var dk = p.deck && p.deck.name ? '<span class="pe-dk">' + esc(p.deck.name) + '</span>' : '';
+    return '<article class="pe-tile' + (isTurn ? ' turn' : '') + (st.out ? ' out' : '') + (open ? ' open' : '') + (w && w.id === p.id ? ' won' : '') + (flip ? ' flip' : '') + '" data-p="' + p.id + '" style="--seat:' + SEAT[i] + '">' +
+      '<header><b class="pe-nm">' + esc(p.name) + '</b>' + dk + bdg(p.bracket) + (isTurn ? '<span class="pe-t">Turno</span>' : '') + (w && w.id === p.id ? '<span class="pe-t win">Vince</span>' : '') + '</header>' +
+      life + chips + panel +
+      (st.out ? '<div class="pe-out" role="status"><b>Fuori</b><span>' + esc(st.why.map(function (x) { return x.text; }).join(' · ')) + '</span></div>' : '') + '</article>';
+  }
+  function step(p, act, from, n, max) {
+    var a = ' data-a="' + act + '" data-p="' + p.id + '"' + (from ? ' data-from="' + from + '"' : '');
+    return '<div class="pe-step"><button type="button"' + a + ' data-d="-1" aria-label="Meno">−</button><output class="' + (n >= max ? 'bad' : '') + '">' + n + '<small>/' + max + '</small></output><button type="button"' + a + ' data-d="1" aria-label="Più">+</button></div>';
+  }
+  function playHtml() {
+    var w = P.winner(g), b = P.balance(g), cur = g.turn >= 0 ? g.players[g.turn] : null;
+    var head = w ? '<div class="pe-turn won"><b>Ha vinto ' + esc(w.name) + '!</b></div>' : cur ? '<div class="pe-turn">Turno di <b>' + esc(cur.name) + '</b></div>' : '<div class="pe-turn"><b>Partita in corso</b></div>';
+    var bar = '<div class="pe-bar">' + head + '<div class="pe-tools">' +
+      (cur && !w ? '<button type="button" class="btn small primary" data-a="pe-next">Passa il turno</button>' : '') +
+      '<button type="button" class="btn small" data-a="pe-dice">Dadi</button>' +
+      '<button type="button" class="btn small" data-a="pe-undo"' + (g.hist.length ? '' : ' disabled') + '>Annulla</button>' +
+      '<button type="button" class="btn small" data-a="pe-log">Registro</button>' +
+      '<button type="button" class="btn small" data-a="pe-menu" aria-haspopup="dialog">Menu</button></div></div>';
+    return bar + (b.level === 'warn' || b.level === 'bad' ? banner(b, 'slim') : '') +
+      '<div class="pe-grid" data-n="' + g.players.length + '">' + g.players.map(tileHtml).join('') + '</div>';
+  }
+  function inner() { ensure(); return g.started ? playHtml() : setupHtml(); }
+  function html() { return '<div class="pe" id="pe">' + inner() + '</div>'; }
+
+  /* ---------- ridisegno mirato ---------- */
+  function focusKey() {
+    var a = document.activeElement; if (!a || !a.closest || !a.closest('#pe')) return null;
+    var attrs = ['data-a', 'data-c', 'data-p', 'data-d', 'data-k', 'data-v', 'data-from'], sel = a.tagName.toLowerCase();
+    attrs.forEach(function (n) { if (a.hasAttribute(n)) sel += '[' + n + '="' + a.getAttribute(n) + '"]'; });
+    return sel;
+  }
+  function repaint() {
+    var el = document.getElementById('pe'); if (!el) return;
+    var k = focusKey(); el.innerHTML = inner(); document.body.classList.toggle('pe-play', !!g.started);
+    if (k) { try { var n = el.querySelector(k); if (n && !n.disabled) n.focus({ preventScroll: true }); } catch (e) { /* selettore non valido: pazienza */ } }
+    save(); syncWake();
+  }
+
+  /* schermo acceso mentre si gioca */
+  function syncWake() {
+    if (!(g && g.started) || !navigator.wakeLock || wake) return;
+    try { navigator.wakeLock.request('screen').then(function (l) { wake = l; l.addEventListener('release', function () { wake = null; }); }, function () { /* non concesso */ }); } catch (e) { /* non supportato */ }
+  }
+  function unwake() { try { if (wake) wake.release(); } catch (e) { /* già rilasciato */ } wake = null; }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && document.getElementById('pe')) syncWake(); });
+
+  function after() { document.body.classList.toggle('pe-play', !!(g && g.started)); document.body.classList.toggle('pe-focus', !!(g && g.focus && g.started)); syncWake(); }
+  function idle() { closePop(); unwake(); document.body.classList.remove('pe-play', 'pe-focus'); }
+
+  /* ---------- pop-up: dadi, registro, menu ---------- */
+  var pop = null;
+  function closePop() { if (pop) { pop.remove(); pop = null; } ux.pop = ''; ux.confirm = ''; }
+  function popBody() {
+    if (ux.pop === 'dice') {
+      var last = ux.rolls[0];
+      return '<div class="an-head"><div><small>Il caso decide</small><strong>Dadi</strong></div><button type="button" class="btn small" data-a="pe-close" id="pex">Chiudi</button></div>' +
+        '<div class="pe-dice">' + P.DICE.map(function (d) { return '<button type="button" class="btn" data-a="pe-roll" data-k="' + d + '">' + d.toUpperCase() + '</button>'; }).join('') +
+        '<button type="button" class="btn" data-a="pe-roll" data-k="coin">Moneta</button><button type="button" class="btn bracket" data-a="pe-first">Chi inizia?</button></div>' +
+        '<div class="pe-res' + (last ? ' has' : '') + '" role="status" aria-live="polite">' + (last ? '<small>' + esc(last.label) + '</small><b>' + esc(String(last.value)) + '</b>' : '<span>Scegli un dado.</span>') + '</div>' +
+        (ux.rolls.length > 1 ? '<ol class="pe-hist" aria-label="Lanci precedenti">' + ux.rolls.slice(1, 7).map(function (r) { return '<li>' + esc(r.label) + ': <b>' + esc(String(r.value)) + '</b></li>'; }).join('') + '</ol>' : '');
+    }
+    if (ux.pop === 'log') {
+      return '<div class="an-head"><div><small>Cosa è successo</small><strong>Registro</strong></div><button type="button" class="btn small" data-a="pe-close" id="pex">Chiudi</button></div>' +
+        (g.log.length ? '<ol class="pe-log">' + g.log.map(function (l) { var d = new Date(l.t); return '<li><time>' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2) + '</time><span>' + esc(l.text) + '</span></li>'; }).join('') + '</ol>' : '<p class="an-none">Ancora niente: tocca una vita per iniziare.</p>') +
+        '<div class="pe-popbar"><button type="button" class="btn" data-a="pe-undo"' + (g.hist.length ? '' : ' disabled') + '>Annulla l’ultimo</button></div>';
+    }
+    if (ux.pop === 'menu') {
+      var c = ux.confirm;
+      return '<div class="an-head"><div><small>The Pescher</small><strong>Menu</strong></div><button type="button" class="btn small" data-a="pe-close" id="pex">Chiudi</button></div>' +
+        '<div class="pe-menu"><label class="pe-chk"><input type="checkbox" data-c="pe-cmdlife"' + (g.cmdLife ? ' checked' : '') + '> Il danno da comandante toglie anche vita</label>' +
+        '<label class="pe-chk"><input type="checkbox" data-c="pe-mirror"' + (g.mirror ? ' checked' : '') + '> Gira i giocatori in alto (telefono al centro del tavolo)</label>' +
+        '<label class="pe-chk"><input type="checkbox" data-c="pe-focus"' + (g.focus ? ' checked' : '') + '> Modalità focus: nasconde il resto dell’app</label>' +
+        '<div class="pe-popbar"><button type="button" class="btn' + (c === 'again' ? ' danger' : '') + '" data-a="pe-again">' + (c === 'again' ? 'Sicuro? Tocca di nuovo' : 'Nuova partita (stesso tavolo)') + '</button>' +
+        '<button type="button" class="btn' + (c === 'setup' ? ' danger' : '') + '" data-a="pe-setup">' + (c === 'setup' ? 'Sicuro? Tocca di nuovo' : 'Cambia tavolo') + '</button></div></div>';
+    }
+    return '';
+  }
+  function openPop(kind) {
+    ux.pop = kind; ux.confirm = '';
+    if (!pop) {
+      pop = document.createElement('div'); pop.id = 'pe-pop'; pop.className = 'lb bk an pe-pop'; pop.setAttribute('data-a', 'pe-close'); pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true');
+      pop.setAttribute('aria-label', kind === 'dice' ? 'Dadi' : kind === 'log' ? 'Registro' : 'Menu'); document.body.appendChild(pop);
+    }
+    paintPop(true);
+  }
+  function paintPop(focus) {
+    if (!pop) return;
+    pop.innerHTML = '<div class="an-box pe-box" data-a="pe-keep">' + popBody() + '</div>';
+    if (focus) { var x = pop.querySelector('#pex'); if (x) x.focus(); }
+  }
+
+  /* ---------- azioni ---------- */
+  function others() { return g.players.slice(1).map(function (p) { return p.bracket; }); }
+  function takenIds() { return g.players.slice(1).map(function (p) { return p.deck && p.deck.id; }).filter(Boolean); }
+  function toast(m) { if (H.toast) H.toast(m); }
+
+  function click(a, el) {
+    var id = el.dataset.p, d = parseInt(el.dataset.d, 10), v = el.dataset.v;
+    ensure();
+    switch (a) {
+      case 'pe-count': P.resize(g, parseInt(v, 10)); ux.sug = null; repaint(); break;
+      case 'pe-start': P.setStart(g, parseInt(v, 10)); repaint(); break;
+      case 'pe-bkt': P.setBracket(g, id, P.player(g, id).bracket === parseInt(v, 10) ? 0 : v); repaint(); break;
+      case 'pe-sug': {
+        var r = P.suggest(myDecks(), { others: others(), taken: takenIds() }, rng);
+        ux.sug = { list: r.ranked, i: 0 }; repaint(); break;
+      }
+      case 'pe-sug-next': if (ux.sug) { ux.sug.i++; repaint(); } break;
+      case 'pe-sug-use': if (ux.sug && ux.sug.list.length) { P.setDeck(g, 'p1', ux.sug.list[ux.sug.i % ux.sug.list.length].deck); ux.sug = null; repaint(); } break;
+      case 'pe-begin': { var f = P.begin(g, rng); ux.open = {}; ux.rolls = []; repaint(); toast('Inizia ' + f.name + '.'); break; }
+      case 'pe-life': P.life(g, id, d); repaint(); break;
+      case 'pe-poison': P.poison(g, id, d); repaint(); break;
+      case 'pe-cmd': P.cmd(g, id, el.dataset.from, d); repaint(); break;
+      case 'pe-tog': ux.open[id] = ux.open[id] === el.dataset.k ? '' : el.dataset.k; repaint(); break;
+      case 'pe-next': { var n = P.nextTurn(g); repaint(); if (n) toast('Tocca a ' + n.name + '.'); break; }
+      case 'pe-undo': if (P.undo(g)) { repaint(); if (pop) paintPop(); } break;
+      case 'pe-dice': openPop('dice'); break;
+      case 'pe-log': openPop('log'); break;
+      case 'pe-menu': openPop('menu'); break;
+      case 'pe-roll': { var rr = P.roll(el.dataset.k, rng); if (rr) { ux.rolls.unshift({ label: rr.kind === 'coin' ? 'Moneta' : rr.kind.toUpperCase(), value: rr.value }); ux.rolls.length = Math.min(ux.rolls.length, 12); } paintPop(); var rs = pop && pop.querySelector('.pe-res'); if (rs) { rs.classList.remove('pop'); void rs.offsetWidth; rs.classList.add('pop'); } break; }
+      case 'pe-first': { var pf = P.pickFirst(g, rng); ux.rolls.unshift({ label: 'Chi inizia', value: pf.player.name }); paintPop(); break; }
+      case 'pe-close': closePop(); break;
+      case 'pe-keep': break;
+      case 'pe-again':
+        if (ux.confirm !== 'again') { ux.confirm = 'again'; paintPop(); break; }
+        closePop(); ux.open = {}; P.begin(g, rng); repaint(); toast('Nuova partita.'); break;
+      case 'pe-setup':
+        if (ux.confirm !== 'setup') { ux.confirm = 'setup'; paintPop(); break; }
+        closePop(); g.started = false; g.focus = false; P.reset(g); g.started = false; ux.open = {}; ux.sug = null; after(); repaint(); break;
+    }
+  }
+  function input(c, t) {
+    ensure();
+    if (c === 'pe-name') { P.rename(g, t.dataset.p, t.value); save(); }
+  }
+  function change(c, t) {
+    ensure();
+    switch (c) {
+      case 'pe-deck': {
+        var dk = myDecks().filter(function (x) { return x.id === t.value; })[0] || null;
+        P.setDeck(g, t.dataset.p, dk); repaint(); break;
+      }
+      case 'pe-cmdlife': g.cmdLife = t.checked; save(); break;
+      case 'pe-mirror': g.mirror = t.checked; repaint(); break;
+      case 'pe-focus':
+        g.focus = t.checked; after(); save();
+        try { if (g.focus && document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(function () { /* niente schermo intero */ }); else if (!g.focus && document.fullscreenElement) document.exitFullscreen(); } catch (e) { /* idem */ }
+        break;
+    }
+  }
+  /* Esc: chiude il pop-up, poi esce dal focus. Restituisce true se ha fatto qualcosa. */
+  function escape() {
+    if (pop) { closePop(); return true; }
+    if (g && g.focus && document.getElementById('pe')) { g.focus = false; after(); save(); try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { /* idem */ } return true; }
+    return false;
+  }
+  function isOpen() { return !!pop; }
+
+  window.CPAPescherUI = { html: html, after: after, idle: idle, click: click, input: input, change: change, escape: escape, isOpen: isOpen, state: function () { return ensure(); } };
 })();
 
 </script>

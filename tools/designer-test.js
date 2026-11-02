@@ -76,7 +76,7 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   const px = () => page.evaluate(() => { const c = document.getElementById('dz-cv'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let s = 0, t = 0; for (let i = 0; i < d.length; i += 4 * 97) { s += d[i] + d[i + 1] * 3 + d[i + 2] * 7; t += d[i + 3]; } return { s, t }; });
 
   await go();
-  ok(await page.locator('.side .nav').count() === 6, 'sei voci di menu');
+  ok(await page.locator('.side .nav').count() === 7, 'sette voci di menu (con The Pescher)');
   ok(/Designer/.test(await page.innerText('.side')), 'voce Designer nel menu');
 
   /* mazzo di prova */
@@ -557,7 +557,7 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   /* mobile: sei voci nel menu in basso */
   await page.setViewportSize({ width: 390, height: 800 });
   const tabs = await page.evaluate(() => { const t = document.querySelector('.tabs'); return { n: t.querySelectorAll('.nav').length, w: t.scrollWidth, cw: t.clientWidth }; });
-  ok(tabs.n === 6 && tabs.w <= tabs.cw + 1, 'menu mobile senza overflow');
+  ok(tabs.n === 7 && tabs.w <= tabs.cw + 1, 'menu mobile senza overflow');
   await page.screenshot({ path: '/tmp/claude-0/dz/mobile.png' });
 
   ok(errors.length === 0, 'nessun errore JS: ' + errors.join(' | '));

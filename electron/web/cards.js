@@ -28,7 +28,8 @@
       o: card.oracle_text != null ? card.oracle_text : fs.map(function (f) { return f.oracle_text || ''; }).join('\n//\n'),
       s: card.set || '', cn: String(card.collector_number || ''),
       p: num(pr.eur), pf: num(pr.eur_foil), ts: 0,
-      gc: card.game_changer ? 1 : 0, bn: card.legalities && card.legalities.commander === 'banned' ? 1 : 0
+      gc: card.game_changer ? 1 : 0, bn: card.legalities && card.legalities.commander === 'banned' ? 1 : 0,
+      nl: card.legalities && card.legalities.commander === 'not_legal' ? 1 : 0
     };
     var pw = card.power != null ? card.power : f0.power, tg = card.toughness != null ? card.toughness : f0.toughness;
     if (pw != null) r.pw = String(pw);

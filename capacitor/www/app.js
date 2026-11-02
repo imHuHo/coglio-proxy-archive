@@ -24,6 +24,7 @@
     builder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="7" y="13" width="10" height="8" rx="1"/></svg>',
     designer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="13" height="18" rx="2"/><path d="M7 15l3-4 2 2 2-3M18 9l3 3-6 6-3.5.5.5-3.5z"/></svg>',
     data: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.500 4h11l3.500 5-9 11L3 9z"/><path d="M3 9h18M9.500 4 8 9l4 11 4-11-1.500-5"/></svg>',
+    pescher: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12.8,1.2 14.3,4.3 17.4,2.6 17.4,6.1 20.9,5.9 19.4,9.0 22.7,10.3 20.0,12.6 22.3,15.1 18.9,16.0 20.0,19.3 16.5,18.6 16.0,22.0 13.2,19.9 11.2,22.8 9.7,19.7 6.6,21.4 6.6,17.9 3.1,18.1 4.6,15.0 1.3,13.7 4.0,11.4 1.7,8.9 5.1,8.0 4.0,4.7 7.5,5.4 8.0,2.0 10.8,4.1"/><path d="M12 8.600v5.400"/><path d="M12 16.700v.1" stroke-width="2.400"/></svg>',
     search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
     filter: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg>'
   };
@@ -610,6 +611,143 @@
     return { available: available, start: start, web: web, close: close, isOpen: isOpen, set: set };
   })();
 
+  /* ---------- Analisi del piscio: il mazzo sotto la lente (dati di Scryfall già sul dispositivo) ---------- */
+  var AN = (function () {
+    var box = null, run = 0, last = null, MANA = { W: 'Bianco', U: 'Blu', B: 'Nero', R: 'Rosso', G: 'Verde', C: 'Incolore' };
+    function close() { if (box) { box.remove(); box = null; run++; } }
+    function isOpen() { return !!box; }
+    function nf(x, d) { return Number(x).toFixed(d == null ? 1 : d).replace('.', ','); }
+    function shell(deck, inner) {
+      if (!box) {
+        box = document.createElement('div'); box.id = 'an'; box.className = 'lb bk an'; box.setAttribute('data-a', 'an-close');
+        box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Analisi del piscio di ' + deck.name);
+        document.body.appendChild(box);
+      }
+      box.innerHTML = '<div class="an-box" data-a="an-keep"><div class="an-head"><div><small>Analisi del piscio</small><strong>' + esc(deck.name) + '</strong></div>' +
+        '<button class="btn small" data-a="an-close" id="anx">Chiudi</button></div>' + inner + '</div>';
+      var x = box.querySelector('#anx'); if (x) x.focus();
+    }
+    function card(title, sub, inner, cls) {
+      return '<section class="an-card' + (cls ? ' ' + cls : '') + '"><h3>' + title + (sub ? '<small>' + sub + '</small>' : '') + '</h3>' + inner + '</section>';
+    }
+
+    /* curva: istogramma in SVG, il picco in banana, la media come linea tratteggiata */
+    function curveSvg(a) {
+      var W = 340, H = 168, base = 134, top = 22, bw = 30, gap = 9, x0 = 12, max = Math.max.apply(null, a.curve) || 1;
+      var out = '<svg class="an-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Curva di mana: ' + a.curve.map(function (n, i) { return n + ' carte a costo ' + (i === 7 ? '7 o più' : i); }).join(', ') + '">';
+      out += '<line x1="6" y1="' + base + '" x2="' + (W - 6) + '" y2="' + base + '" class="an-axis"/>';
+      a.curve.forEach(function (n, i) {
+        var h = n ? Math.max(4, Math.round((base - top) * n / max)) : 0, x = x0 + i * (bw + gap), peak = i === a.peak && n > 0;
+        out += '<g class="an-bar' + (peak ? ' peak' : '') + '"><title>' + n + (n === 1 ? ' carta' : ' carte') + ' a costo ' + (i === 7 ? '7 o più' : i) + '</title>' +
+          '<rect x="' + (x - 3) + '" y="' + top + '" width="' + (bw + 6) + '" height="' + (base - top) + '" class="hit"/>' +
+          (h ? '<path d="M' + x + ' ' + base + 'V' + (base - h + 4) + 'a4 4 0 0 1 4 -4h' + (bw - 8) + 'a4 4 0 0 1 4 4V' + base + 'Z" class="b"/>' : '') +
+          (peak ? '<text x="' + (x + bw / 2) + '" y="' + (base - h - 5) + '" class="an-val">' + n + '</text>' : '') +
+          '<text x="' + (x + bw / 2) + '" y="' + (base + 16) + '" class="an-tick">' + (i === 7 ? '7+' : i) + '</text></g>';
+      });
+      if (a.spells) {
+        var mx = Math.max(10, Math.min(W - 10, x0 + a.avgCmc * (bw + gap) + bw / 2));
+        out += '<line x1="' + mx + '" y1="' + (top - 8) + '" x2="' + mx + '" y2="' + base + '" class="an-avg"><title>Costo medio ' + nf(a.avgCmc, 2) + '</title></line>';
+      }
+      if (a.cmdCmc != null) {
+        var cx = x0 + Math.min(7, a.cmdCmc) * (bw + gap) + bw / 2;
+        out += '<path d="M' + cx + ' ' + (base + 24) + 'l5 5 -5 5 -5 -5z" class="an-cmd"><title>Commander: costo ' + a.cmdCmc + '</title></path>';
+      }
+      return out + '</svg>';
+    }
+    /* torta (ciambella) dei simboli di mana per colore: spicchi nei colori del mana, nome e conteggio sempre scritti accanto */
+    function donut(a) {
+      var tot = a.pipTotal; if (!tot) return '<p class="an-none">Nessun simbolo di mana colorato nei costi.</p>';
+      var R = 58, Cc = 2 * Math.PI * R, acc = 0, segs = '';
+      var list = ['W', 'U', 'B', 'R', 'G'].filter(function (k) { return a.pips[k] > 0; });
+      list.forEach(function (k) {
+        var frac = a.pips[k] / tot, len = Math.max(0, Cc * frac - (list.length > 1 ? 3 : 0));
+        segs += '<circle class="an-seg m' + k + '" cx="80" cy="80" r="' + R + '" stroke-dasharray="' + len.toFixed(2) + ' ' + (Cc - len).toFixed(2) + '" stroke-dashoffset="' + (-acc * Cc + 0).toFixed(2) + '"><title>' + MANA[k] + ': ' + a.pips[k] + ' simboli (' + Math.round(frac * 100) + '%)</title></circle>';
+        acc += frac;
+      });
+      var legend = list.map(function (k) {
+        return '<li>' + pip(k) + '<span>' + MANA[k] + '</span><b>' + a.pips[k] + '</b><i>' + Math.round(a.pips[k] / tot * 100) + '%</i></li>';
+      }).join('');
+      var bc = a.byColor, cards = [];
+      if (bc.multi) cards.push(bc.multi + ' multicolore'); if (bc.C) cards.push(bc.C + ' incolori');
+      return '<div class="an-pie"><svg class="an-svg don" viewBox="0 0 160 160" role="img" aria-label="Simboli di mana per colore: ' + list.map(function (k) { return MANA[k] + ' ' + a.pips[k]; }).join(', ') + '">' +
+        '<g transform="rotate(-90 80 80)">' + segs + '</g><text x="80" y="78" class="an-big">' + tot + '</text><text x="80" y="96" class="an-small">simboli</text></svg><ul class="an-leg">' + legend + '</ul></div>' +
+        (cards.length ? '<p class="an-foot">Carte: ' + cards.join(' · ') + '.</p>' : '');
+    }
+    function typesBars(a) {
+      var max = Math.max.apply(null, a.types.map(function (t) { return t.n; })) || 1;
+      return '<ul class="an-bars">' + a.types.map(function (t) {
+        return '<li><span>' + esc(t.label) + '</span><i><u class="' + (t.k === 'land' ? 'land' : '') + '" style="width:' + Math.max(2, Math.round(t.n / max * 100)) + '%"></u></i><b>' + t.n + '</b></li>';
+      }).join('') + '</ul>' + (a.commander ? '<p class="an-foot">Più il commander: ' + esc(a.commander) + '.</p>' : '');
+    }
+    function sourcesRows(a) {
+      var max = Math.max.apply(null, a.sources.map(function (s) { return s.n; })) || 1;
+      var rows = a.sources.filter(function (s) { return s.k === 'C' ? s.n > 0 : (s.n > 0 || s.pips > 0); }).map(function (s) {
+        var lw = Math.round(s.land / max * 100), ow = Math.round(s.other / max * 100);
+        return '<li class="' + (s.flag ? 'low' : '') + '">' + pip(s.k) + '<span class="n">' + MANA[s.k] + '</span><i><u class="l" style="width:' + lw + '%"></u><u class="o" style="width:' + ow + '%"></u></i><b>' + s.n + '</b>' +
+          '<small>' + (s.k === 'C' ? 'senza colore' : s.pips + ' simboli · ' + Math.round(s.share * 100) + '%') + '</small>' + (s.flag ? '<em class="an-flag" title="Regola pratica: servono circa 12 fonti per il colore principale, 8 per gli altri">poche fonti</em>' : '') + '</li>';
+      }).join('');
+      return '<ul class="an-src">' + rows + '</ul><p class="an-key"><span class="l"></span> terre <span class="o"></span> altre carte' + (a.searchers ? ' · <span>+ ' + a.searchers + ' ' + (a.searchers === 1 ? 'terra che cerca' : 'terre che cercano') + ' una terra base</span>' : '') + '</p>' +
+        '<p class="an-foot">Contano le carte che producono quel colore (una terra doppia vale per due). Regola pratica, non un verdetto.</p>';
+    }
+    function thumbsFor(deck, names) {
+      return '<div class="bkr-thumbs">' + names.slice(0, 8).map(function (nm) { var c = deck.cards.filter(function (x) { return x.name === nm; })[0]; return c ? IMG.thumb(c.name, c.set, c.cn) : ''; }).join('') + '</div>';
+    }
+    function identity(deck, a) {
+      var id = a.identity;
+      if (!id.applies) return '<p class="an-none">' + (deck.commander ? 'Non ho ancora i dati del commander.' : 'Scegli un commander per controllare l’identità di colore.') + '</p>';
+      var chips = id.colors.length ? id.colors.map(pip).join('') : '<span class="an-colorless">Incolore</span>';
+      var head = '<div class="an-id"><div class="an-idp">' + chips + '</div><div><b>' + esc(a.commander) + '</b><span>identità ' + (id.colors.join('') || 'incolore') + '</span></div></div>';
+      if (!id.bad.length) return head + '<p class="an-ok"><span aria-hidden="true">✓</span> Tutte le carte rientrano nell’identità di colore.</p>';
+      var names = id.bad.map(function (b) { return b.name; });
+      return head + '<p class="an-bad"><span aria-hidden="true">✕</span> ' + plural(id.bad.length, 'carta fuori identità', 'carte fuori identità') + '</p>' + thumbsFor(deck, names) +
+        '<ul class="an-list">' + id.bad.map(function (b) { return '<li>' + esc(b.name) + (b.qty > 1 ? ' ×' + b.qty : '') + ' <em>' + b.extra.map(function (k) { return MANA[k]; }).join(', ') + '</em></li>'; }).join('') + '</ul>';
+    }
+    function legality(a) {
+      var L = a.legality;
+      if (L.clean) return '<p class="an-ok big"><span aria-hidden="true">✓</span> Legale in Commander: cento carte, tutte singole, nessuna bandita, tutte nell’identità.</p>';
+      return '<ul class="an-issues">' + L.issues.map(function (i) {
+        return '<li class="' + i.sev + '"><span class="ic" aria-hidden="true">' + (i.sev === 'error' ? '✕' : '!') + '</span><div><b>' + esc(i.text) + '</b>' + (i.names.length ? '<p>' + i.names.slice(0, 12).map(esc).join(' · ') + (i.names.length > 12 ? ' · …' : '') + '</p>' : '') + '</div></li>';
+      }).join('') + '</ul>' + (L.ok ? '<p class="an-foot">Nessun errore: restano solo gli avvisi qui sopra.</p>' : '');
+    }
+    function show(deck, a) {
+      var L = a.legality, errs = L.issues.filter(function (i) { return i.sev === 'error'; }).length, warns = L.issues.length - errs;
+      var verdict = L.clean ? '<span class="an-v ok"><i aria-hidden="true">✓</i>Legale</span>' : !L.ok ? '<span class="an-v bad"><i aria-hidden="true">✕</i>' + plural(errs, 'problema', 'problemi') + '</span>' : '<span class="an-v warn"><i aria-hidden="true">!</i>' + plural(warns, 'avviso', 'avvisi') + '</span>';
+      var top = '<div class="an-top">' + verdict +
+        '<div class="an-stat"><b>' + a.total + '</b><span>carte</span></div><div class="an-stat"><b>' + (a.spells ? nf(a.avgCmc, 2) : '—') + '</b><span>costo medio</span></div>' +
+        '<div class="an-stat"><b>' + a.lands + '</b><span>terre</span></div><div class="an-stat"><b>' + a.rocks + '</b><span>acceleratori</span></div></div>';
+      var miss = a.missing.length ? '<p class="lb-warn">Per ' + plural(a.missing.length, 'carta', 'carte') + ' non ho i dati (' + a.missing.slice(0, 4).map(esc).join(', ') + (a.missing.length > 4 ? '…' : '') + '): sono fuori dai conteggi.</p>' : '';
+      shell(deck, top + miss + '<div class="an-grid">' +
+        card('Curva di mana', 'non terre, commander escluso', curveSvg(a) + '<p class="an-foot">' + (a.spells ? '<span class="an-avgk"></span> costo medio ' + nf(a.avgCmc, 2) + '. ' : '') + (a.cmdCmc != null ? '<span class="an-cmdk">◆</span> commander a costo ' + a.cmdCmc + '. ' : '') + 'Il picco è a costo ' + (a.peak === 7 ? '7 o più' : a.peak) + '.</p>', 'wide') +
+        card('Colori', 'simboli di mana nei costi', donut(a)) +
+        card('Tipi', 'conteggio per tipo', typesBars(a)) +
+        card('Fonti di mana', 'per colore', sourcesRows(a), 'wide') +
+        card('Identità di colore', 'controllo sul commander', identity(deck, a)) +
+        card('Legalità', 'Commander, secondo Scryfall', legality(a)) + '</div>' +
+        '<p class="bk-foot">Dati delle carte da Scryfall, già sul dispositivo. Il sideboard non conta. La legalità segue le regole Commander (cento carte, carte singole, identità di colore, banlist) e non tiene conto di regole di casa.</p>');
+      IMG.hydrate();
+    }
+    function need(deck) {
+      var cc = CARDS.get(); if (!cc) return [];
+      return cc.pricedCards(deck, C.isBasic).filter(function (c) { var r = dkRec(cc, c); return !r || r.nl === undefined; }).map(function (c) { return { name: c.name, set: c.set, cn: c.cn }; });
+    }
+    function open(deck) {
+      last = deck; var my = ++run, cc = CARDS.get();
+      if (!window.CPAAnalysis || !cc || !CARDS.enabled()) { shell(deck, '<p class="lb-warn">Per l’analisi servono i dati delle carte di Scryfall, che da qui non sono raggiungibili.</p>'); return; }
+      function finish() {
+        if (my !== run || !box) return;
+        var a = window.CPAAnalysis.analyze(deck, { rec: function (c) { return dkRec(cc, c); }, isBasic: C.isBasic, keyOf: C.keyOf });
+        if (!a.hasData) { shell(deck, '<p class="lb-warn">Non ho ancora i dati di nessuna carta: controlla la connessione e riprova.</p>'); return; }
+        show(deck, a);
+      }
+      shell(deck, '<p class="lb-wait bk-wait" id="anw">Analizzo «' + esc(deck.name) + '»…</p>');
+      var n = need(deck);
+      if (!n.length) { finish(); return; }
+      cc.ensure(n, { force: true }, function (p) { var w = box && box.querySelector('#anw'); if (w && p.total) w.textContent = 'Scarico i dati delle carte da Scryfall: ' + p.done + ' su ' + p.total + '…'; })
+        .then(finish, function () { if (my === run && box) { var a2 = window.CPAAnalysis.analyze(deck, { rec: function (c) { return dkRec(cc, c); }, isBasic: C.isBasic, keyOf: C.keyOf }); if (a2.hasData) show(deck, a2); else shell(deck, '<p class="lb-warn">Non riesco a scaricare i dati delle carte: controlla la connessione e riprova.</p>'); } });
+    }
+    return { open: open, close: close, isOpen: isOpen };
+  })();
+
   function applyTheme() {
     var t = state.settings.theme, r = document.documentElement;
     if (t === 'light' || t === 'dark') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme');
@@ -1078,7 +1216,7 @@
   })();
 
   /* ---------- Struttura generale ---------- */
-  var NAV = [['archive', 'Archivio'], ['decks', 'Mazzi'], ['import', 'Importa'], ['designer', 'Designer'], ['builder', 'Stampa'], ['data', 'Dati']];
+  var NAV = [['archive', 'Archivio'], ['decks', 'Mazzi'], ['import', 'Importa'], ['designer', 'Designer'], ['builder', 'Stampa'], ['pescher', 'Pescher'], ['data', 'Dati']];
   function navBtn(v, label) {
     var cur = ui.view === v || (v === 'decks' && (ui.view === 'deck' || ui.view === 'upgrade'));
     return '<button class="nav" data-a="nav" data-v="' + v + '"' + (cur ? ' aria-current="page"' : '') + '>' + IC[v] + '<span>' + label + '</span></button>';
@@ -1097,6 +1235,7 @@
     if (ui.view === 'upgrade') updateUpgradeCols();
     if (ui.view === 'builder' && window.CPABuilder) window.CPABuilder.after();
     if (ui.view === 'designer' && window.CPADesigner) window.CPADesigner.after();
+    if (window.CPAPescherUI) { if (ui.view === 'pescher') window.CPAPescherUI.after(); else window.CPAPescherUI.idle(); }
   }
   function viewHtml() {
     switch (ui.view) {
@@ -1106,6 +1245,7 @@
       case 'import': return importView();
       case 'builder': return window.CPABuilder ? window.CPABuilder.html() : decksView();
       case 'designer': return window.CPADesigner ? window.CPADesigner.html() : archiveView();
+      case 'pescher': return window.CPAPescherUI ? window.CPAPescherUI.html() : archiveView();
       case 'data': return dataView();
       default: return archiveView();
     }
@@ -1612,6 +1752,9 @@
     return '<span class="bk-badge b' + b.n + (stale ? ' stale' : '') + '" title="' + esc(b.n ? 'Bracket ' + b.n : 'Contiene carte bandite') +
       (b.manual ? ' (impostato a mano)' : stale ? ' (calcolato prima delle ultime modifiche al mazzo: ricalcola)' : '') + '" aria-label="' + esc(b.n ? 'Bracket ' + b.n : 'Carte bandite') + '">' + txt + '</span>';
   }
+  function analysisBtn(d) {
+    return '<button class="btn small" data-a="analysis" data-id="' + esc(d.id) + '" title="Curva di mana, colori, tipi, fonti, identità e legalità">Analisi del piscio</button>';
+  }
   function bracketBtn(d) {
     return '<button class="btn small bracket" data-a="bracket" data-id="' + esc(d.id) + '" title="Calcola il bracket del mazzo">Verifica bracket</button>';
   }
@@ -1816,7 +1959,7 @@
       '<div class="dk-meta"><span class="hc fmt">' + (d.kind === 'deck' ? 'Commander' : 'Carte sciolte') + '</span>' +
       (d.kind === 'deck' ? (d.commander ? '<span class="hc">' + esc(d.commander) + '</span>' : '<span class="hc">Nessun commander</span>') + switchHtml(d) : '') +
       (ago ? '<span class="hc dim">aggiornato ' + ago + '</span>' : '') + '</div>' +
-      '<div class="dk-hact">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="make-pdf" data-id="' + esc(d.id) + '">Crea PDF</button>' +
+      '<div class="dk-hact">' + (d.kind === 'deck' ? bracketBtn(d) + analysisBtn(d) : '') + '<button class="btn small" data-a="make-pdf" data-id="' + esc(d.id) + '">Crea PDF</button>' +
       '<button class="btn small" data-a="deck-man" aria-expanded="' + !!ui.dMan + '" aria-controls="dman">Gestisci</button></div></header>';
   }
   function deckView() {
@@ -2255,6 +2398,7 @@
     if (!el.dataset.cf) ui.confirm = null;
     if (a.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.click(a, el); return; }
     if (a.indexOf('dz-') === 0 && window.CPADesigner) { if (el.dataset.cf) ui.confirm = null; window.CPADesigner.click(a, el); return; }
+    if (a.indexOf('pe-') === 0 && window.CPAPescherUI) { window.CPAPescherUI.click(a, el); return; }
     var deck;
     switch (a) {
       case 'nav': go(el.dataset.v); break;
@@ -2369,6 +2513,9 @@
         if (deck) BK.web(deck);
         break;
       case 'bk-set': BK.set(parseInt(el.dataset.n, 10)); break;
+      case 'analysis': deck = getDeck(id); if (deck) AN.open(deck); break;
+      case 'an-close': AN.close(); break;
+      case 'an-keep': break;
       case 'bk-close': BK.close(); break;
       case 'bk-keep': break;
       case 'lb-close': IMG.close(); break;
@@ -2405,7 +2552,7 @@
     var t = ev.target;
     if (ev.key === 'Enter' && !ev.shiftKey && t && t.getAttribute && t.getAttribute('data-c') === 'dadd-q') { ev.preventDefault(); daddGo(false); }
   });
-  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (ui.crazy) { closeCrazy(); return; } if (window.CPADesigner && ui.view === 'designer' && window.CPADesigner.escape()) return; if (window.CPABuilder && ui.view === 'builder' && window.CPABuilder.escape()) return; if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { if (ui.crazy) { closeCrazy(); return; } if (window.CPADesigner && ui.view === 'designer' && window.CPADesigner.escape()) return; if (window.CPABuilder && ui.view === 'builder' && window.CPABuilder.escape()) return; if (window.CPAPescherUI && ui.view === 'pescher' && window.CPAPescherUI.escape()) return; if (AN.isOpen()) AN.close(); else if (BK.isOpen()) BK.close(); else if (IMG.isOpen()) IMG.close(); } });
   document.addEventListener('mousemove', function (ev) {
     var t = ev.target.closest && ev.target.closest('.th.on');
     if (!t && ev.target.closest && ui.view === 'deck') { var dr = ev.target.closest('.dr'); if (dr && !dkAside()) t = dr.querySelector('.th.seed.on'); }
@@ -2430,6 +2577,7 @@
     var c = e.target.dataset && e.target.dataset.c; if (!c) return;
     if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.input(c, e.target); return; }
     if (c.indexOf('dz-') === 0 && window.CPADesigner) { window.CPADesigner.input(c, e.target); return; }
+    if (c.indexOf('pe-') === 0 && window.CPAPescherUI) { window.CPAPescherUI.input(c, e.target); return; }
     if (c === 'q') { ui.q = e.target.value; ui.limit = 150; updateArchiveList(); }
     else if (c === 'f-text') { ui.f.text = e.target.value; ui.limit = 150; updateArchiveList(); }
     else if (c === 'upq') { ui.upQ = e.target.value; updateUpgradeCols(); }
@@ -2445,6 +2593,7 @@
     var t = e.target, c = t.dataset && t.dataset.c; if (!c) return;
     if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.change(c, t); return; }
     if (c.indexOf('dz-') === 0 && window.CPADesigner) { window.CPADesigner.change(c, t); return; }
+    if (c.indexOf('pe-') === 0 && window.CPAPescherUI) { window.CPAPescherUI.change(c, t); return; }
     var d;
     switch (c) {
       case 'fdeck': ui.fdeck = t.value; ui.limit = 150; render(); break;
