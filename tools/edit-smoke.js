@@ -162,6 +162,7 @@ function scry(name, set, cn, eurOverride) {
   await page.click('.drm [data-a="dr-del"]');
   await page.waitForFunction(() => ![...document.querySelectorAll('.dr')].some(r => /Carta mai vista/.test(r.textContent)));
   ok(await qtyOf('Carta mai vista') === 0, 'Rimuovi toglie la carta dal mazzo');
+  ok((await page.textContent('#toast')).startsWith('Codighel! Ma è sparita') && await page.locator('#toast [data-a="undo"]').count() === 1, 'rimuovendo una carta: «Codighel! Ma è sparita…» (con Annulla)');
   await shot('edit-2');
 
   /* il commander non va in sideboard; toglierlo lo svuota (con Annulla) */

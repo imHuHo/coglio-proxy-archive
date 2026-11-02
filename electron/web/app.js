@@ -1781,15 +1781,17 @@
     d.updatedAt = Date.now();
     if (d.commander && !d.cards.some(function (c) { return C.keyOf(c.name) === C.keyOf(d.commander); })) d.commander = null;
   }
+  var GONE = 'Codighel! Ma è sparita…';
   function dkEdit(el, kind) {
     var d = getDeck(); if (!d) return;
     var t = dkTarget(el), side = !!el.dataset.side, k = el.dataset.k, label = t.name, before = d.commander, base, fn;
     if (kind === 'qty') {
       var up = parseInt(k, 10) > 0;
-      base = up ? 'Aggiunta una copia: ' + label + '.' : 'Tolta una copia: ' + label + '.';
+      var row = (side ? d.side || [] : d.cards).filter(function (c) { return dkKey(c, side) === dkKey(t, side); })[0];
+      base = up ? 'Aggiunta una copia: ' + label + '.' : row && row.qty <= 1 ? GONE : 'Tolta una copia: ' + label + '.';
       fn = function () { if (up) C.addCard(d, t, 1, side); else C.removeCard(d, t, 1, side); };
     } else if (kind === 'del') {
-      base = 'Rimossa dal ' + (side ? 'sideboard' : 'mazzo') + ': ' + label + '.';
+      base = GONE;
       fn = function () { C.removeCard(d, t, null, side); };
     } else if (kind === 'move') {
       if (d.kind !== 'deck' || (!side && dkIsCmd(d, t))) return;

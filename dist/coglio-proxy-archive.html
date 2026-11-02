@@ -1049,7 +1049,7 @@ window.CPA_VERSION = '4.2.0';
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
   { v: '4.2.0', date: '2 novembre 2026', title: 'Mazzi che si modificano', items: [
-    { t: 'Aggiungi e togli carte', d: 'Nella pagina del mazzo il pulsante «+ Aggiungi carta» apre un campo con i suggerimenti di Scryfall: scrivi il nome (anche «2 Sol Ring (C21) 263» per scegliere stampa e quantità) e premi Invio. Accanto a ogni carta c\'\u00e8 «\u22ef»: una copia in pi\u00f9, una in meno, rimuovi. Ogni modifica ha il suo «Annulla».' },
+    { t: 'Aggiungi e togli carte', d: 'Nella pagina del mazzo il pulsante «+ Aggiungi carta» apre un campo con i suggerimenti di Scryfall: scrivi il nome (anche «2 Sol Ring (C21) 263» per scegliere stampa e quantità) e premi Invio. Accanto a ogni carta c\'\u00e8 «\u22ef»: una copia in pi\u00f9, una in meno, rimuovi. Ogni modifica ha il suo «Annulla», e quando una carta sparisce ti avvisa un bel «Codighel! Ma è sparita…».' },
     { t: 'Sideboard', d: 'I mazzi hanno il loro sideboard: con «\u22ef» sposti una carta (o tutte le copie) dal mazzo al sideboard e viceversa, e all\'importazione le righe della sezione Sideboard ora ci finiscono dentro invece di essere scartate. Non conta nel bracket, nelle statistiche e nella pescata; conta nell\'archivio, perch\u00e9 le carte stanno fisicamente nella scatola del mazzo. In Stampa compare con 0 copie: alza la quantit\u00e0 per stamparlo.' },
     { t: 'Esporta la lista in .txt', d: 'In Gestisci, «Scarica lista .txt» salva un file con Commander, Deck e Sideboard: quantit\u00e0, nome, collezione e numero di ogni carta. Si pu\u00f2 reimportare cos\u00ec com\'\u00e8 (e anche in Moxfield o Archidekt). «Copia lista» mette lo stesso testo negli appunti.' },
     { t: 'Designer: lo shop non azzera pi\u00f9 la carta', d: 'Se dall\'editor apri lo shop delle cornici, la carta resta aperta (e salvata): in alto c\'\u00e8 «Torna alla carta» e ritrovi tutto com\'era.' },
@@ -5731,15 +5731,17 @@ window.CPA_SYNC = {
     d.updatedAt = Date.now();
     if (d.commander && !d.cards.some(function (c) { return C.keyOf(c.name) === C.keyOf(d.commander); })) d.commander = null;
   }
+  var GONE = 'Codighel! Ma è sparita…';
   function dkEdit(el, kind) {
     var d = getDeck(); if (!d) return;
     var t = dkTarget(el), side = !!el.dataset.side, k = el.dataset.k, label = t.name, before = d.commander, base, fn;
     if (kind === 'qty') {
       var up = parseInt(k, 10) > 0;
-      base = up ? 'Aggiunta una copia: ' + label + '.' : 'Tolta una copia: ' + label + '.';
+      var row = (side ? d.side || [] : d.cards).filter(function (c) { return dkKey(c, side) === dkKey(t, side); })[0];
+      base = up ? 'Aggiunta una copia: ' + label + '.' : row && row.qty <= 1 ? GONE : 'Tolta una copia: ' + label + '.';
       fn = function () { if (up) C.addCard(d, t, 1, side); else C.removeCard(d, t, 1, side); };
     } else if (kind === 'del') {
-      base = 'Rimossa dal ' + (side ? 'sideboard' : 'mazzo') + ': ' + label + '.';
+      base = GONE;
       fn = function () { C.removeCard(d, t, null, side); };
     } else if (kind === 'move') {
       if (d.kind !== 'deck' || (!side && dkIsCmd(d, t))) return;
