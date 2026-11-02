@@ -13,6 +13,8 @@
   var COUNTERS = { exp: 'Esperienza', eng: 'Energia', tax: 'Lanci del comandante' };
   var HOLDERS = { monarch: 'Monarca', initiative: 'Iniziativa' };
 
+  var UID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  function uid(v) { v = String(v == null ? '' : v).toLowerCase(); return UID_RE.test(v) ? v : ''; }
   function clampInt(n, lo, hi, d) { n = parseInt(n, 10); return n === n ? Math.max(lo, Math.min(hi, n)) : d; }
   function rnd(rng, n) { var x = (typeof rng === 'function' ? rng() : Math.random()); return Math.min(n - 1, Math.floor(x * n)); }
   function plain(g) { return { players: g.players, turn: g.turn, first: g.first, round: g.round, monarch: g.monarch, initiative: g.initiative }; }
@@ -81,7 +83,18 @@
     else { g[kind] = id; say(g, p.name + (kind === 'monarch' ? ' diventa il monarca' : ' prende l’iniziativa')); }
     return true;
   }
-  function rename(g, id, name) { var p = player(g, id); name = String(name || '').trim().slice(0, 24); if (!p || !name) return false; p.name = name; return true; }
+  /* Cambiare a mano il nome di un posto lo rende di nuovo un nome libero: non è più quell'amico. */
+  function rename(g, id, name) { var p = player(g, id); name = String(name || '').trim().slice(0, 24); if (!p || !name) return false; if (p.name !== name) delete p.u; p.name = name; return true; }
+  /* Siede un amico (id del server + il suo ID) al posto; u vuoto = torna nome libero. Un amico solo per tavolo. */
+  function seatUser(g, id, u, name) {
+    var p = player(g, id); u = uid(u); name = String(name || '').trim().slice(0, 24); if (!p) return false;
+    if (!u) { delete p.u; return true; }
+    if (!name || g.players.some(function (o) { return o !== p && o.u === u; })) return false;
+    p.u = u; p.name = name; return true;
+  }
+  /* I posti come li vuole il server: amici per id, ospiti per nome. */
+  function roster(g) { return g.players.map(function (p) { return p.u ? { name: p.name, u: p.u } : { name: p.name }; }); }
+  function hasFriends(g) { return g.players.some(function (p) { return !!p.u; }); }
   function undo(g) {
     if (!g.hist.length) return false;
     var s = JSON.parse(g.hist.pop()); g.players = s.players; g.turn = s.turn; g.first = s.first; g.round = s.round || 1; g.monarch = s.monarch || ''; g.initiative = s.initiative || '';
@@ -124,32 +137,34 @@
   function clean(t, n) { return String(t == null ? '' : t).replace(/\s+/g, ' ').trim().slice(0, n); }
   /* Chiude la partita: chi ha vinto (o nessuno) e con quale mazzo. Restituisce il record da conservare. */
   function finish(g, winnerId, deck, now) {
-    var w = winnerId ? player(g, winnerId) : null; now = now || Date.now();
-    return {
+    var w = winnerId ? player(g, winnerId) : null, rec; now = now || Date.now();
+    rec = {
       id: 'g' + now.toString(36) + Math.floor(Math.random() * 46656).toString(36), t: now, ms: Math.max(0, now - (g.t || now)), rounds: g.round || 1, start: g.start,
-      players: g.players.map(function (p) { return { name: p.name, life: p.life, out: status(g, p).out }; }),
-      winner: w ? w.name : '', deck: w ? clean(deck, 60) : '', table: clean(g.table, 24)
+      players: g.players.map(function (p) { var o = { name: p.name, life: p.life, out: status(g, p).out }; if (p.u) o.u = p.u; return o; }),
+      winner: w ? w.name : '', deck: w ? clean(deck, 60) : '', table: clean(g.table, 40)
     };
+    if (w && w.u) rec.wu = w.u; return rec;
   }
   function restoreHistory(raw) {
     var a; try { a = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return []; }
     if (!Array.isArray(a)) return [];
     return a.filter(function (r) { return r && Array.isArray(r.players) && r.players.length >= MIN; }).slice(0, HISTORY_MAX).map(function (r) {
       return { id: clean(r.id, 24) || 'g' + Math.random().toString(36).slice(2, 8), t: Number(r.t) || 0, ms: Math.max(0, Number(r.ms) || 0), rounds: clampInt(r.rounds, 1, 9999, 1), start: clampInt(r.start, 1, 999, 40),
-        players: r.players.slice(0, MAX).map(function (p) { return { name: clean(p && p.name, 24) || '?', life: clampInt(p && p.life, -999, 9999, 0), out: !!(p && p.out) }; }),
-        winner: clean(r.winner, 24), deck: clean(r.deck, 60), table: clean(r.table, 24) };
+        players: r.players.slice(0, MAX).map(function (p) { var o = { name: clean(p && p.name, 24) || '?', life: clampInt(p && p.life, -999, 9999, 0), out: !!(p && p.out) }, u = uid(p && p.u); if (u) o.u = u; return o; }),
+        winner: clean(r.winner, 24), wu: uid(r.wu), deck: clean(r.deck, 60), table: clean(r.table, 40) };
     });
   }
   /* Le partite di un tavolo (id vuoto = partite senza tavolo). La classifica ha senso solo dentro un tavolo. */
   function forTable(history, id) { id = id || ''; return history.filter(function (r) { return (r.table || '') === id; }); }
-  /* Classifica per nome (senza badare alle maiuscole): partite, vittorie e il mazzo con cui vinci di più. */
+  /* Classifica per giocatore: gli amici si riconoscono dal loro id (anche se cambiano ID), gli altri per nome (senza badare alle maiuscole): partite, vittorie e il mazzo con cui vinci di più. */
   function tally(history) {
     var by = {}, order = [];
     history.forEach(function (r) {
+      var wk = r.wu ? 'u:' + r.wu : r.winner ? 'n:' + r.winner.toLowerCase() : '';
       r.players.forEach(function (p) {
-        var k = p.name.toLowerCase(); if (!by[k]) { by[k] = { name: p.name, games: 0, wins: 0, decks: {} }; order.push(k); }
+        var k = p.u ? 'u:' + p.u : 'n:' + p.name.toLowerCase(); if (!by[k]) { by[k] = { name: p.name, games: 0, wins: 0, decks: {} }; order.push(k); }
         by[k].games++;
-        if (r.winner && r.winner.toLowerCase() === k) { by[k].wins++; if (r.deck) by[k].decks[r.deck] = (by[k].decks[r.deck] || 0) + 1; }
+        if (wk === k) { by[k].wins++; if (r.deck) by[k].decks[r.deck] = (by[k].decks[r.deck] || 0) + 1; }
       });
     });
     return order.map(function (k) {
@@ -169,13 +184,13 @@
   function applyTable(g, tb) {
     if (!tb) return g;
     resize(g, tb.players.length); g.start = clampInt(tb.start, 1, 999, 40); g.cmdLife = tb.cmdLife !== false;
-    g.players.forEach(function (p, i) { p.life = g.start; p.name = clean(tb.players[i], 24) || p.name; });
+    g.players.forEach(function (p, i) { p.life = g.start; p.name = clean(tb.players[i], 24) || p.name; var u = tb.users && uid(tb.users[i]); if (u) p.u = u; else delete p.u; });
     g.table = tb.id; return g;
   }
   /* Il tavolo di partenza è ancora quello che si vede nella preparazione? (nomi, posti, vita) */
   function sameTable(g, tb) {
     if (!tb || tb.players.length !== g.players.length || tb.start !== g.start || (tb.cmdLife !== false) !== !!g.cmdLife) return false;
-    return tb.players.every(function (n, i) { return n === g.players[i].name; });
+    return tb.players.every(function (n, i) { return n === g.players[i].name && (!tb.users || (uid(tb.users[i]) || '') === (g.players[i].u || '')); });
   }
   function restoreTables(raw) {
     var a; try { a = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return []; }
@@ -195,15 +210,16 @@
     g.players = g.players.map(function (p, i) {
       var id = 'p' + (i + 1); ids[p.id] = id;
       return { id: id, name: String(p.name || 'Giocatore ' + (i + 1)).slice(0, 24), life: clampInt(p.life, -999, 9999, 40), poison: clampInt(p.poison, 0, 99, 0),
-        exp: clampInt(p.exp, 0, 99, 0), eng: clampInt(p.eng, 0, 99, 0), tax: clampInt(p.tax, 0, 99, 0), cmd: p.cmd && typeof p.cmd === 'object' ? p.cmd : {} };
+        exp: clampInt(p.exp, 0, 99, 0), eng: clampInt(p.eng, 0, 99, 0), tax: clampInt(p.tax, 0, 99, 0), cmd: p.cmd && typeof p.cmd === 'object' ? p.cmd : {}, u: uid(p.u) };
     });
+    g.players.forEach(function (p) { if (!p.u) delete p.u; });
     g.players.forEach(function (p) { var c = {}; Object.keys(p.cmd).forEach(function (k) { if (ids[k]) c[ids[k]] = clampInt(p.cmd[k], 0, 999, 0); }); p.cmd = c; });
     g.start = clampInt(g.start, 1, 999, 40); g.cmdLife = g.cmdLife !== false; g.started = !!g.started;
     g.turn = clampInt(g.turn, -1, g.players.length - 1, -1); g.first = clampInt(g.first, -1, g.players.length - 1, -1); g.round = clampInt(g.round, 1, 9999, 1);
     g.monarch = ids[g.monarch] || ''; g.initiative = ids[g.initiative] || '';
     g.log = Array.isArray(g.log) ? g.log.slice(0, LOG).filter(function (l) { return l && typeof l.text === 'string'; }) : [];
     g.hist = Array.isArray(g.hist) ? g.hist.slice(-HIST).filter(function (h) { return typeof h === 'string'; }) : [];
-    g.table = clean(g.table, 24); g.v = 1; g.t = Number(g.t) || Date.now();
+    g.table = clean(g.table, 40); g.v = 1; g.t = Number(g.t) || Date.now();
     return g;
   }
 
@@ -212,6 +228,6 @@
     newGame: newGame, player: player, status: status, alive: alive, winner: winner, resize: resize, setStart: setStart,
     life: life, setLife: setLife, poison: poison, cmd: cmd, counter: counter, taxOf: taxOf, holder: holder, rename: rename, undo: undo, reset: reset, begin: begin, nextTurn: nextTurn,
     roll: roll, pickFirst: pickFirst, serialize: serialize, restore: restore, finish: finish, tally: tally, forTable: forTable, restoreHistory: restoreHistory, HISTORY_MAX: HISTORY_MAX,
-    makeTable: makeTable, applyTable: applyTable, sameTable: sameTable, restoreTables: restoreTables, TABLES_MAX: TABLES_MAX
+    makeTable: makeTable, seatUser: seatUser, roster: roster, hasFriends: hasFriends, uid: uid, applyTable: applyTable, sameTable: sameTable, restoreTables: restoreTables, TABLES_MAX: TABLES_MAX
   };
 });

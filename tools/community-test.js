@@ -60,7 +60,7 @@ const calls = []; const sf = (body, status) => (u) => { calls.push(u); return Pr
 
   /* amici */
   const art2 = 'https://cards.scryfall.io/art_crop/front/1/2/aaa.jpg?1';
-  eq(C.cleanFriends({ friends: [{ handle: 'Anna', avatar_name: 'K', avatar_url: art2 }, { handle: 'no!' }, null, { handle: 'Bru', avatar_url: 'https://evil.example/x.jpg' }], incoming: 'boh' }), { friends: [{ handle: 'Anna', avatar_name: 'K', avatar_url: art2 }, { handle: 'Bru', avatar_name: '', avatar_url: '' }], incoming: [], outgoing: [] }, 'elenco ripulito: ID non validi e immagini esterne scartati');
+  eq(C.cleanFriends({ friends: [{ handle: 'Anna', avatar_name: 'K', avatar_url: art2 }, { handle: 'no!' }, null, { handle: 'Bru', avatar_url: 'https://evil.example/x.jpg' }], incoming: 'boh' }), { friends: [{ id: '', handle: 'Anna', avatar_name: 'K', avatar_url: art2 }, { id: '', handle: 'Bru', avatar_name: '', avatar_url: '' }], incoming: [], outgoing: [] }, 'elenco ripulito: ID non validi e immagini esterne scartati');
   eq(C.cleanFriends(null), { friends: [], incoming: [], outgoing: [] }, 'senza risposta, elenco vuoto');
   const seen2 = []; const srv2 = (body) => (u, o) => { seen2.push({ u, o }); return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify(body)) }); };
   let fc = C.create(cfg, srv2({ friends: [{ handle: 'Anna' }], incoming: [], outgoing: [] }));
@@ -70,13 +70,48 @@ const calls = []; const sf = (body, status) => (u) => { calls.push(u); return Pr
   eq(seen2.slice(2).map(x => [x.u.split('/').pop(), JSON.parse(x.o.body)]), [['cpa_friend_respond', { p_handle: 'Simone', p_secret: 'S', p_from: 'Anna', p_accept: true }], ['cpa_friend_respond', { p_handle: 'Simone', p_secret: 'S', p_from: 'Anna', p_accept: false }], ['cpa_friend_remove', { p_handle: 'Simone', p_secret: 'S', p_other: 'Anna' }]], 'respond (sì e no) e remove');
   for (const m of ['no_such_user', 'self', 'no_request', 'too_many']) await rej(C.create(cfg, srv(400, { message: m })).friendRequest('a', 'b', 'c'), m, 'errore amici: ' + m);
   ok(['no_such_user', 'self', 'no_request', 'too_many'].every(c => C.messageOf({ code: c }).length > 10), 'messaggi per gli errori degli amici');
+
+  /* tavoli condivisi: pulizia dei dati e chiamate */
+  const U1 = '11111111-1111-1111-1111-111111111111', U2 = '22222222-2222-2222-2222-222222222222', T1 = '33333333-3333-3333-3333-333333333333', G1 = '44444444-4444-4444-4444-444444444444';
+  eq([C.uid(U1), C.uid(U1.toUpperCase()), C.uid('x'), C.uid(null), C.uid(U1 + '0')], [U1, U1, '', '', ''], 'id: solo uuid validi');
+  eq(C.cleanFriends({ friends: [{ id: U1, handle: 'Anna' }, { id: 'xx', handle: 'Bru' }] }).friends.map(x => x.id), [U1, ''], 'degli amici si tiene l\'id, se valido');
+  const tsrv = { id: T1, name: '  Il   venerdì ', owner: 'Elena', mine: true, start: 30, cmd_life: false, players: [{ name: 'Elena', u: U1, avatar_url: art2 }, { name: 'Ospite', u: null, avatar_url: null }, { name: 'x'.repeat(40), u: 'brutto', avatar_url: 'https://evil.example/a.jpg' }] };
+  const ct = C.cleanTable(tsrv);
+  eq(ct, { id: T1, name: 'Il venerdì', owner: 'Elena', mine: true, start: 30, cmdLife: false, players: [{ name: 'Elena', u: U1, avatar: art2 }, { name: 'Ospite', u: '', avatar: '' }, { name: 'x'.repeat(24), u: '', avatar: '' }] }, 'tavolo ripulito (immagini esterne, id brutti e testi lunghi scartati)');
+  eq([C.cleanTable(null), C.cleanTable({ id: 'x', players: [1, 2] }), C.cleanTable({ id: T1, players: [{ name: 'a' }] }), C.cleanTable({ id: T1, players: 'boh' })], [null, null, null, null], 'tavoli non validi scartati');
+  eq(C.cleanTable(ct), ct, 'ripulire due volte non cambia nulla (copia sul dispositivo)'); eq(C.cleanTable({ ...tsrv, cmd_life: true }).cmdLife, true, 'regola del comandante');
+  const gsrv = { gid: G1, t: 1000, ms: 5000, rounds: 3, start: 40, winner: ' Elena ', wu: U1, deck: 'Kaalia', players: [{ name: 'Elena', u: U1, life: 12, out: false }, { name: 'Ospite', u: null, life: -3, out: true }, { name: '', life: 'x', out: 1 }] };
+  const cg = C.cleanGame(gsrv);
+  eq(cg, { id: G1, t: 1000, ms: 5000, rounds: 3, start: 40, players: [{ name: 'Elena', u: U1, life: 12, out: false }, { name: 'Ospite', u: '', life: -3, out: true }, { name: '?', u: '', life: 0, out: true }], winner: 'Elena', wu: U1, deck: 'Kaalia', table: '' }, 'partita ripulita (id = id sul server)');
+  eq([C.cleanGame(null), C.cleanGame({ gid: 'x', players: [1, 2] }), C.cleanGame({ gid: G1, players: [{}] })], [null, null, null], 'partite non valide scartate'); eq(C.cleanGame(cg), cg, 'anche le partite: due volte lo stesso');
+  const old = { ...cg, players: [{ name: 'Vecchio', u: U1, life: 1, out: false }, { name: 'Ospite', u: '', life: 2, out: false }], winner: 'Vecchio' };
+  const nn = C.namesNow(old, ct); eq([nn.players[0].name, nn.players[1].name, nn.winner, old.players[0].name], ['Elena', 'Ospite', 'Elena', 'Vecchio'], 'chi ha cambiato ID si vede col nome di oggi (senza toccare l\'originale)');
+  eq(C.namesNow({ ...old, wu: '', winner: 'Ospite' }, ct).winner, 'Ospite', 'un vincitore senza id resta com\'era'); eq(C.namesNow(old, null).players[0].name, 'Vecchio', 'senza tavolo, nomi com\'erano');
+  const sh0 = { acct: 'abc', handle: 'Simone', t: 5, tables: [tsrv, { id: 'no' }], games: { [T1]: [gsrv, null, { gid: 'x' }], 'no': [gsrv] }, gt: { [T1]: 9 } };
+  const rs = C.restoreShared(JSON.stringify(sh0)); eq([rs.acct, rs.handle, rs.t, rs.tables.length, Object.keys(rs.games), rs.games[T1].length, rs.gt[T1]], ['abc', 'Simone', 5, 1, [T1], 1, 9], 'copia dei tavoli ripristinata e ripulita');
+  eq([C.restoreShared('rotto'), C.restoreShared(null), C.restoreShared({ handle: 'a' })], [null, null, null], 'copia rotta: niente'); eq(C.restoreShared(JSON.stringify(rs)), rs, 'andata e ritorno della copia');
+  const seen3 = []; const srv3 = (body) => (u, o) => { seen3.push({ f: u.split('/').pop(), b: JSON.parse(o.body) }); return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify(body)) }); };
+  let tc = C.create(cfg, srv3([tsrv, { id: 'no' }, null]));
+  eq((await tc.tables('Simone', 'S')).map(t => t.id), [T1], 'tables: solo quelli validi'); eq(seen3[0], { f: 'cpa_table_list', b: { p_handle: 'Simone', p_secret: 'S' } }, 'tables: chiamata');
+  tc = C.create(cfg, srv3({ id: T1, name: 'Nuovo', owner: 'Simone', mine: true, start: 40, cmd_life: true, players: [{ name: 'A', u: U1 }, { name: 'B' }] }));
+  eq((await tc.tableSave('Simone', 'S', { name: 'Nuovo', players: [{ name: 'Ignorato', u: U1 }, { name: ' Ospite ', u: 'brutto' }], start: 40 })).name, 'Nuovo', 'tableSave');
+  eq(seen3[1], { f: 'cpa_table_save', b: { p_handle: 'Simone', p_secret: 'S', p_id: null, p_name: 'Nuovo', p_players: JSON.stringify([{ u: U1 }, { name: 'Ospite' }]), p_start: 40, p_cmd_life: true } }, 'tableSave: amici per id (senza nome), ospiti per nome, nuovo = id nullo');
+  await tc.tableSave('Simone', 'S', { id: T1, name: 'N', players: [{ name: 'a' }, { name: 'b' }], start: 20, cmdLife: false }); eq([seen3[2].b.p_id, seen3[2].b.p_start, seen3[2].b.p_cmd_life], [T1, 20, false], 'tableSave: aggiornamento');
+  await rej(C.create(cfg, srv3({})).tableSave('S', 'S', { name: 'x', players: [] }), 'server', 'tableSave: risposta strana');
+  tc = C.create(cfg, srv3([gsrv, { gid: 'x' }]));
+  eq((await tc.tableGames('Simone', 'S', T1)).map(x => x.id), [G1], 'tableGames: solo partite valide'); eq(seen3[4], { f: 'cpa_table_games', b: { p_handle: 'Simone', p_secret: 'S', p_id: T1 } }, 'tableGames: chiamata');
+  tc = C.create(cfg, srv3({ gid: G1 })); const rec = { t: 1, players: [{ name: 'a' }, { name: 'b' }] };
+  eq((await tc.gameAdd('Simone', 'S', T1, rec)).gid, G1, 'gameAdd'); eq(seen3[5], { f: 'cpa_game_add', b: { p_handle: 'Simone', p_secret: 'S', p_table: T1, p_rec: JSON.stringify(rec) } }, 'gameAdd: chiamata');
+  tc = C.create(cfg, srv3(true)); await tc.gameDelete('Simone', 'S', T1, G1); await tc.tableDelete('Simone', 'S', T1); await tc.tableLeave('Simone', 'S', T1);
+  eq(seen3.slice(6).map(x => [x.f, x.b]), [['cpa_game_delete', { p_handle: 'Simone', p_secret: 'S', p_table: T1, p_game: G1 }], ['cpa_table_delete', { p_handle: 'Simone', p_secret: 'S', p_id: T1 }], ['cpa_table_leave', { p_handle: 'Simone', p_secret: 'S', p_id: T1 }]], 'gameDelete, tableDelete, tableLeave');
+  for (const m of ['not_friend', 'bad_data', 'no_table', 'not_owner', 'is_owner']) { await rej(C.create(cfg, srv(400, { message: m })).tableSave('a', 'b', { name: 'x', players: [] }), m, 'errore tavoli: ' + m); ok(C.messageOf({ code: m }).length > 10, 'messaggio: ' + m); }
   /* link */
   eq(C.friendLink('Simone'), 'https://imHuHo.github.io/coglio-proxy-archive/#amico=Simone', 'link amicizia'); eq(C.friendLink('@Kaalia.99', 'http://localhost:8080/x/#vecchio'), 'http://localhost:8080/x/#amico=Kaalia.99', 'con un altro indirizzo, senza altri #');
   eq([C.parseFriendHash('#amico=Simone'), C.parseFriendHash('amico=Simone'), C.parseFriendHash('#amico=Simo%20ne'), C.parseFriendHash('#amico=%E0%A4%A'), C.parseFriendHash('#amico='), C.parseFriendHash('#altro=Simone'), C.parseFriendHash(''), C.parseFriendHash(null), C.parseFriendHash('#amico=<script>')], ['Simone', 'Simone', '', '', '', '', '', '', ''], 'il link si legge solo se contiene un ID valido');
   eq(C.parseFriendHash(C.friendLink('Kaalia-99_x').split('/').pop()), 'Kaalia-99_x', 'andata e ritorno'); eq(C.parseFriendHash('#amico=Simone&x=1'), 'Simone', 'ignora il resto');
 
   /* profilo sul dispositivo */
-  const loc = { handle: 'Simone', secret: 'ABCDE12345FGHJK67890', avatar: { name: 'K', url: art } };
+  const loc = { id: '', handle: 'Simone', secret: 'ABCDE12345FGHJK67890', avatar: { name: 'K', url: art } };
   eq(C.restoreLocal(JSON.stringify(loc)), loc, 'profilo locale ripristinato'); eq(C.restoreLocal('rotto'), null, 'testo rotto'); eq(C.restoreLocal({ handle: 'ok1', secret: 'corto' }), null, 'codice non valido'); eq(C.restoreLocal({ handle: 'a', secret: loc.secret }), null, 'ID non valido');
   eq(C.restoreLocal({ handle: 'Simone', secret: loc.secret, avatar: { name: 'x', url: 'https://evil.example/a.jpg' } }).avatar.url, '', 'immagine esterna scartata'); eq(C.restoreLocal({ handle: 'Simone', secret: loc.secret }).avatar, { name: '', url: '' }, 'senza immagine');
   console.log('community-test: ' + n + ' controlli ok');

@@ -141,4 +141,35 @@ eq(P.restoreHistory(Array.from({ length: 300 }, (_, i) => mk(['A', 'B'], 'A', ''
   eq(P.restoreTables('rotto'), [], 'elenco rotto'); eq(P.restoreTables({}), [], 'non è una lista');
   eq(P.restoreTables(Array.from({ length: 40 }, (_, i) => ({ id: 't' + i, name: 'x', players: ['A', 'B'] }))).length, P.TABLES_MAX, 'al massimo 20 tavoli');
 }
+
+/* amici seduti al tavolo (id del server) e classifica condivisa */
+{
+  const U1 = '11111111-1111-1111-1111-111111111111', U2 = '22222222-2222-2222-2222-222222222222';
+  const g = P.newGame({ players: 3 });
+  eq([P.hasFriends(g), P.roster(g)], [false, [{ name: 'Io' }, { name: 'Giocatore 2' }, { name: 'Giocatore 3' }]], 'all\'inizio nessun amico: posti con il solo nome');
+  eq(P.seatUser(g, 'p1', U1.toUpperCase(), '  Elena '), true, 'seduta Elena'); eq([g.players[0].name, g.players[0].u, P.hasFriends(g)], ['Elena', U1, true], 'nome e id');
+  eq([P.seatUser(g, 'p2', U1, 'Elena'), P.seatUser(g, 'p2', 'xx', 'Bru'), P.seatUser(g, 'p2', U2, ''), P.seatUser(g, 'p9', U2, 'Bru')], [false, true, false, false], 'lo stesso amico due volte, id brutto (= nome libero), senza nome, posto inesistente');
+  eq('u' in g.players[1], false, 'un id brutto toglie l\'amico'); P.seatUser(g, 'p2', U2, 'Fabio'); eq(P.roster(g), [{ name: 'Elena', u: U1 }, { name: 'Fabio', u: U2 }, { name: 'Giocatore 3' }], 'posti come li vuole il server');
+  P.rename(g, 'p2', 'Fabio'); eq(g.players[1].u, U2, 'stesso nome: resta l\'amico'); P.rename(g, 'p2', 'Fab'); eq('u' in g.players[1], false, 'nome cambiato a mano: torna libero'); P.seatUser(g, 'p2', U2, 'Fabio');
+  eq(P.seatUser(g, 'p2', '', ''), true, 'togliere l\'amico'); eq(g.players[1].name, 'Fabio', 'il nome resta'); P.seatUser(g, 'p2', U2, 'Fabio');
+  const back = P.restore(P.serialize(g)); eq(back.players.map(p => p.u || ''), [U1, U2, ''], 'gli amici sopravvivono al salvataggio');
+  eq(P.restore(JSON.stringify(Object.assign(JSON.parse(P.serialize(g)), { players: g.players.map((p, i) => Object.assign({}, p, { u: i ? 'boh' : U1 })) }))).players.map(p => 'u' in p), [true, false, false], 'id sporchi ripuliti');
+  P.resize(g, 2); eq(g.players.map(p => p.u || ''), [U1, U2], 'togliere un posto non tocca gli altri'); P.resize(g, 3); eq('u' in g.players[2], false, 'il nuovo posto è libero');
+  P.begin(g, () => 0); P.cmd(g, 'p2', 'p1', 21); const rec = P.finish(g, 'p1', 'Kaalia', 5000);
+  eq([rec.players.map(p => p.u || ''), rec.wu, rec.winner], [[U1, U2, ''], U1, 'Elena'], 'la partita ricorda chi è chi'); eq(P.finish(g, '', '', 5000).wu, undefined, 'senza vincitore, niente id'); eq(P.finish(g, 'p3', '', 5000).wu, undefined, 'vincitore ospite: niente id');
+  eq(P.restoreHistory([rec])[0].wu, U1, 'l\'id del vincitore sopravvive'); eq(P.restoreHistory([rec])[0].players.map(p => p.u || ''), [U1, U2, ''], 'e quello dei giocatori'); eq(P.restoreHistory([Object.assign({}, rec, { wu: 'x' })])[0].wu, '', 'id sporco');
+  /* la classifica segue l'id: se un amico cambia nome resta la stessa persona */
+  const mk = (names, w, wu) => ({ id: 'g' + Math.random(), t: 1, ms: 1, rounds: 1, start: 40, players: names.map(([n, u]) => ({ name: n, life: 1, out: false, u: u || undefined })), winner: w, wu: wu || '', deck: 'D', table: '' });
+  const tl = P.tally([mk([['Elena', U1], ['Fab', U2]], 'Fab', U2), mk([['Elena', U1], ['Fab', U2]], 'Fab', U2), mk([['Elena', U1], ['Fabio', U2]], 'Elena', U1)]);
+  eq(tl.map(x => [x.name, x.wins, x.games]), [['Fab', 2, 3], ['Elena', 1, 3]], 'stesso id = stessa persona, anche con nomi diversi (vale il nome della partita più recente, la prima dell\'elenco)');
+  eq(P.tally([mk([['Ugo'], ['Elena', U1]], 'Ugo'), mk([['ugo'], ['Elena', U1]], 'ugo')]).map(x => [x.name, x.wins, x.games]), [['Ugo', 2, 2], ['Elena', 0, 2]], 'gli ospiti si riconoscono dal nome, senza badare alle maiuscole');
+  eq(P.tally([mk([['Elena', U1], ['Ugo']], 'Ugo')]).map(x => [x.name, x.wins]), [['Ugo', 1], ['Elena', 0]], 'un ospite che si chiama come un amico non lo ruba');
+  /* tavoli con amici */
+  const tbl = { id: 't-uuid', name: 'Venerdì', players: ['Elena', 'Fabio', 'Marta'], users: [U1, U2, ''], start: 30, cmdLife: false };
+  const g4 = P.newGame({ players: 4 }); P.applyTable(g4, tbl); eq([g4.players.map(p => p.name), g4.players.map(p => p.u || ''), g4.start, g4.cmdLife, g4.table], [['Elena', 'Fabio', 'Marta'], [U1, U2, ''], 30, false, 't-uuid'], 'tavolo condiviso applicato: posti, amici, vita');
+  eq(P.sameTable(g4, tbl), true, 'uguale'); P.seatUser(g4, 'p3', U1, 'x'); eq(P.sameTable(g4, tbl), true, 'amico già seduto: non cambia'); P.rename(g4, 'p2', 'Fab'); eq(P.sameTable(g4, tbl), false, 'nome cambiato');
+  P.applyTable(g4, tbl); P.seatUser(g4, 'p3', '', ''); P.seatUser(g4, 'p2', '', ''); eq(P.sameTable(g4, tbl), false, 'amico tolto: il tavolo condiviso non è più lo stesso');
+  const loc = { id: 't1', name: 'L', players: ['Elena', 'Fabio', 'Marta'], start: 30, cmdLife: false }; P.applyTable(g4, loc); eq(g4.players.map(p => p.u || ''), ['', '', ''], 'un tavolo del dispositivo ha solo nomi: niente amici'); P.seatUser(g4, 'p1', U1, 'Elena'); eq(P.sameTable(g4, loc), true, 'e di amici non si accorge');
+  eq(P.restoreTables([Object.assign({}, tbl)]).length, 1, 'ripristino tavoli locali: ok'); eq(P.restore(JSON.stringify(Object.assign(P.newGame({}), { table: 'x'.repeat(60) }))).table.length, 40, 'id tavolo lungo (uuid) non tagliato a 24');
+}
 console.log('pescher-test: ' + n + ' controlli ok');

@@ -1,4 +1,4 @@
--- Coglio Proxy Archive · Codighel ID (tappa 1) e amici (tappa 2)
+-- Coglio Proxy Archive · Codighel ID (tappa 1), amici (tappa 2) e tavoli condivisi (tappa 4)
 --
 -- Si incolla UNA volta nel «SQL Editor» di Supabase e si preme Run (si può rilanciare senza danni).
 -- Niente account, niente email: ogni profilo ha un ID (il nome utente) e un codice di recupero lungo e casuale
@@ -81,7 +81,7 @@ begin
   if cpa_reserved(lower(p_handle)) then raise exception 'handle_taken'; end if;
   insert into cpa_profiles (handle, handle_key, secret_hash, avatar_name, avatar_url)
   values (p_handle, lower(p_handle), cpa_hash(p_secret), left(coalesce(p_name, ''), 160), coalesce(p_url, ''));
-  return json_build_object('handle', p_handle, 'avatar_name', left(coalesce(p_name, ''), 160), 'avatar_url', coalesce(p_url, ''));
+  return json_build_object('id', (select id from cpa_profiles where handle_key = lower(p_handle)), 'handle', p_handle, 'avatar_name', left(coalesce(p_name, ''), 160), 'avatar_url', coalesce(p_url, ''));
 exception when unique_violation then raise exception 'handle_taken';
 end $$;
 
@@ -91,7 +91,7 @@ declare v uuid; r cpa_profiles;
 begin
   v := cpa_auth(p_handle, p_secret);
   update cpa_profiles set seen_at = now() where id = v returning * into r;
-  return json_build_object('handle', r.handle, 'avatar_name', r.avatar_name, 'avatar_url', r.avatar_url);
+  return json_build_object('id', r.id, 'handle', r.handle, 'avatar_name', r.avatar_name, 'avatar_url', r.avatar_url);
 end $$;
 
 create or replace function public.cpa_set_avatar(p_handle text, p_secret text, p_name text, p_url text) returns json
@@ -213,29 +213,223 @@ declare me uuid;
 begin
   me := cpa_auth(p_handle, p_secret);
   return json_build_object(
-    'friends', coalesce((select json_agg(json_build_object('handle', p.handle, 'avatar_name', p.avatar_name, 'avatar_url', p.avatar_url) order by p.handle_key)
+    'friends', coalesce((select json_agg(json_build_object('id', p.id, 'handle', p.handle, 'avatar_name', p.avatar_name, 'avatar_url', p.avatar_url) order by p.handle_key)
       from cpa_friends f join cpa_profiles p on p.id = case when f.a = me then f.b else f.a end where (f.a = me or f.b = me) and f.status = 'accepted'), '[]'::json),
-    'incoming', coalesce((select json_agg(json_build_object('handle', p.handle, 'avatar_name', p.avatar_name, 'avatar_url', p.avatar_url) order by p.handle_key)
+    'incoming', coalesce((select json_agg(json_build_object('id', p.id, 'handle', p.handle, 'avatar_name', p.avatar_name, 'avatar_url', p.avatar_url) order by p.handle_key)
       from cpa_friends f join cpa_profiles p on p.id = f.a where f.b = me and f.status = 'pending'), '[]'::json),
-    'outgoing', coalesce((select json_agg(json_build_object('handle', p.handle, 'avatar_name', p.avatar_name, 'avatar_url', p.avatar_url) order by p.handle_key)
+    'outgoing', coalesce((select json_agg(json_build_object('id', p.id, 'handle', p.handle, 'avatar_name', p.avatar_name, 'avatar_url', p.avatar_url) order by p.handle_key)
       from cpa_friends f join cpa_profiles p on p.id = f.b where f.a = me and f.status = 'pending'), '[]'::json));
+end $$;
+
+-- ============ Tavoli condivisi (tappa 4) ============
+-- Un tavolo ha un proprietario, dei posti (nomi liberi oppure amici con un Codighel ID) e le sue partite.
+-- Lo vedono e ci registrano le partite il proprietario e gli amici seduti al tavolo; lo cambia o lo elimina solo il proprietario.
+create table if not exists public.cpa_tables (
+  id         uuid primary key default gen_random_uuid(),
+  owner      uuid not null references public.cpa_profiles(id) on delete cascade,
+  name       text not null,
+  data       jsonb not null,                 -- {players: [{name, u}], start, cmd_life}
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint cpa_tables_name check (char_length(name) between 1 and 30)
+);
+create table if not exists public.cpa_table_members (
+  table_id   uuid not null references public.cpa_tables(id) on delete cascade,
+  profile_id uuid not null references public.cpa_profiles(id) on delete cascade,
+  primary key (table_id, profile_id)
+);
+create index if not exists cpa_table_members_p on public.cpa_table_members (profile_id);
+create table if not exists public.cpa_games (
+  id         uuid primary key default gen_random_uuid(),
+  table_id   uuid not null references public.cpa_tables(id) on delete cascade,
+  author     uuid references public.cpa_profiles(id) on delete set null,
+  t          bigint not null default 0,
+  rec        jsonb not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists cpa_games_table on public.cpa_games (table_id, t desc);
+alter table public.cpa_tables enable row level security;
+alter table public.cpa_table_members enable row level security;
+alter table public.cpa_games enable row level security;
+revoke all on public.cpa_tables, public.cpa_table_members, public.cpa_games from public;
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'anon') then revoke all on public.cpa_tables, public.cpa_table_members, public.cpa_games from anon; end if;
+  if exists (select 1 from pg_roles where rolname = 'authenticated') then revoke all on public.cpa_tables, public.cpa_table_members, public.cpa_games from authenticated; end if;
+end $$;
+
+create or replace function public.cpa_uuid_or_null(s text) returns uuid
+language plpgsql immutable as $$
+begin return s::uuid; exception when others then return null; end $$;
+
+create or replace function public.cpa_is_member(p_table uuid, me uuid) returns boolean
+language sql stable security definer set search_path = public as $$ select exists (select 1 from cpa_table_members where table_id = p_table and profile_id = me) $$;
+
+-- Il tavolo come lo vede l'app: i posti con l'ID attuale degli amici.
+create or replace function public.cpa_table_doc(p_id uuid, me uuid) returns json
+language plpgsql security definer set search_path = public as $$
+declare t cpa_tables;
+begin
+  select * into t from cpa_tables where id = p_id;
+  if not found then return null; end if;
+  return json_build_object('id', t.id, 'name', t.name, 'owner', (select handle from cpa_profiles where id = t.owner), 'mine', t.owner = me,
+    'start', (t.data->>'start')::int, 'cmd_life', coalesce((t.data->>'cmd_life')::boolean, true),
+    'players', coalesce((select json_agg(case when pr.id is not null then json_build_object('name', pr.handle, 'u', pr.id, 'avatar_url', pr.avatar_url)
+        else json_build_object('name', e.p->>'name', 'u', null, 'avatar_url', '') end order by e.ord)
+      from jsonb_array_elements(t.data->'players') with ordinality as e(p, ord) left join cpa_profiles pr on pr.id::text = e.p->>'u'), '[]'::json));
+end $$;
+
+-- Controlla i posti: 2-6, nomi liberi o amici del proprietario (o gia' al tavolo). Errori: bad_data, not_friend.
+create or replace function public.cpa_roster(p_players json, p_owner uuid, p_keep uuid[]) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare o jsonb := '[]'::jsonb; e json; u uuid; nm text; seen uuid[] := '{}';
+begin
+  if p_players is null or json_typeof(p_players) <> 'array' or json_array_length(p_players) < 2 or json_array_length(p_players) > 6 then raise exception 'bad_data'; end if;
+  for e in select value from json_array_elements(p_players) loop
+    nm := left(btrim(coalesce(e->>'name', '')), 24); u := null;
+    if coalesce(e->>'u', '') <> '' then
+      u := cpa_uuid_or_null(e->>'u'); nm := null;
+      if u is not null then select handle into nm from cpa_profiles where id = u; end if;
+      if nm is null or u = any(seen) then raise exception 'bad_data'; end if;
+      if not (u = p_owner or u = any(p_keep) or exists (select 1 from cpa_friends f where f.status = 'accepted' and ((f.a = p_owner and f.b = u) or (f.a = u and f.b = p_owner)))) then raise exception 'not_friend'; end if;
+      seen := seen || u;
+    elsif nm = '' then raise exception 'bad_data';
+    end if;
+    o := o || jsonb_build_array(jsonb_build_object('name', nm, 'u', u));
+  end loop;
+  return o;
+end $$;
+
+-- Crea (p_id nullo) o aggiorna un tavolo; solo il proprietario lo aggiorna. Restituisce il tavolo.
+-- Errori: bad_data, not_friend, no_table, not_owner, too_many (al massimo 20 tavoli propri).
+create or replace function public.cpa_table_save(p_handle text, p_secret text, p_id uuid, p_name text, p_players json, p_start int, p_cmd_life boolean) returns json
+language plpgsql security definer set search_path = public as $$
+declare me uuid; t cpa_tables; tid uuid; nm text; roster jsonb; keep uuid[]; cnt int;
+begin
+  me := cpa_auth(p_handle, p_secret);
+  nm := left(btrim(coalesce(p_name, '')), 30);
+  if nm = '' or p_start is null or p_start < 1 or p_start > 999 then raise exception 'bad_data'; end if;
+  if p_id is null then
+    select count(*) into cnt from cpa_tables where owner = me; if cnt >= 20 then raise exception 'too_many'; end if;
+    roster := cpa_roster(p_players, me, '{}');
+    insert into cpa_tables (owner, name, data) values (me, nm, jsonb_build_object('players', roster, 'start', p_start, 'cmd_life', coalesce(p_cmd_life, true))) returning id into tid;
+  else
+    select * into t from cpa_tables where id = p_id;
+    if not found or not cpa_is_member(p_id, me) then raise exception 'no_table'; end if;
+    if t.owner <> me then raise exception 'not_owner'; end if;
+    select coalesce(array_agg(profile_id), '{}') into keep from cpa_table_members where table_id = p_id;
+    roster := cpa_roster(p_players, me, keep); tid := p_id;
+    update cpa_tables set name = nm, data = jsonb_build_object('players', roster, 'start', p_start, 'cmd_life', coalesce(p_cmd_life, true)), updated_at = now() where id = tid;
+  end if;
+  delete from cpa_table_members where table_id = tid;
+  insert into cpa_table_members (table_id, profile_id) select tid, me union select tid, (e->>'u')::uuid from jsonb_array_elements(roster) e where e->>'u' is not null;
+  return cpa_table_doc(tid, me);
+end $$;
+
+-- I tavoli di cui faccio parte.
+create or replace function public.cpa_table_list(p_handle text, p_secret text) returns json
+language plpgsql security definer set search_path = public as $$
+declare me uuid;
+begin
+  me := cpa_auth(p_handle, p_secret);
+  return coalesce((select json_agg(cpa_table_doc(t.id, me) order by t.created_at, t.id) from cpa_tables t join cpa_table_members m on m.table_id = t.id where m.profile_id = me), '[]'::json);
+end $$;
+
+-- Le ultime 200 partite di un tavolo.
+create or replace function public.cpa_table_games(p_handle text, p_secret text, p_id uuid) returns json
+language plpgsql security definer set search_path = public as $$
+declare me uuid;
+begin
+  me := cpa_auth(p_handle, p_secret);
+  if p_id is null or not cpa_is_member(p_id, me) then raise exception 'no_table'; end if;
+  return coalesce((select jsonb_agg(g.rec || jsonb_build_object('gid', g.id) order by g.t desc, g.created_at desc)::json
+    from (select * from cpa_games where table_id = p_id order by t desc, created_at desc limit 200) g), '[]'::json);
+end $$;
+
+-- Registra una partita (ripulita qui: al massimo 6 giocatori, testi corti, ID solo di chi e' al tavolo). Tiene le ultime 500.
+create or replace function public.cpa_game_add(p_handle text, p_secret text, p_table uuid, p_rec json) returns json
+language plpgsql security definer set search_path = public as $$
+declare me uuid; r jsonb; mem uuid[]; clean jsonb; gid uuid; wu uuid;
+begin
+  me := cpa_auth(p_handle, p_secret);
+  if p_table is null or not cpa_is_member(p_table, me) then raise exception 'no_table'; end if;
+  select array_agg(profile_id) into mem from cpa_table_members where table_id = p_table;
+  begin
+    r := p_rec::jsonb;
+    if jsonb_typeof(r) <> 'object' or length(r::text) > 8000 or jsonb_typeof(r->'players') <> 'array' or jsonb_array_length(r->'players') not between 2 and 6 then raise exception 'bad_data'; end if;
+    wu := cpa_uuid_or_null(r->>'wu'); if wu is not null and not (wu = any(mem)) then wu := null; end if;
+    clean := jsonb_build_object(
+      't', greatest(0, coalesce((r->>'t')::bigint, 0)), 'ms', greatest(0, coalesce((r->>'ms')::bigint, 0)),
+      'rounds', greatest(1, least(9999, coalesce((r->>'rounds')::int, 1))), 'start', greatest(1, least(999, coalesce((r->>'start')::int, 40))),
+      'players', (select jsonb_agg(jsonb_build_object('name', coalesce(nullif(left(btrim(coalesce(p->>'name', '')), 24), ''), '?'),
+          'u', (select x from (select cpa_uuid_or_null(p->>'u') as x) q where x = any(mem)),
+          'life', greatest(-999, least(9999, coalesce((p->>'life')::int, 0))), 'out', coalesce((p->>'out')::boolean, false))) from jsonb_array_elements(r->'players') p),
+      'winner', left(btrim(coalesce(r->>'winner', '')), 24), 'wu', wu, 'deck', left(btrim(coalesce(r->>'deck', '')), 60));
+  exception when others then raise exception 'bad_data';
+  end;
+  insert into cpa_games (table_id, author, t, rec) values (p_table, me, (clean->>'t')::bigint, clean) returning id into gid;
+  delete from cpa_games where table_id = p_table and id not in (select id from cpa_games where table_id = p_table order by t desc, created_at desc limit 500);
+  return json_build_object('gid', gid);
+end $$;
+
+create or replace function public.cpa_game_delete(p_handle text, p_secret text, p_table uuid, p_game uuid) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare me uuid; n int;
+begin
+  me := cpa_auth(p_handle, p_secret);
+  if p_table is null or not cpa_is_member(p_table, me) then raise exception 'no_table'; end if;
+  delete from cpa_games where id = p_game and table_id = p_table;
+  get diagnostics n = row_count; return n > 0;
+end $$;
+
+-- Elimina il tavolo con le sue partite (solo il proprietario).
+create or replace function public.cpa_table_delete(p_handle text, p_secret text, p_id uuid) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare me uuid; t cpa_tables;
+begin
+  me := cpa_auth(p_handle, p_secret);
+  select * into t from cpa_tables where id = p_id;
+  if not found or not cpa_is_member(p_id, me) then raise exception 'no_table'; end if;
+  if t.owner <> me then raise exception 'not_owner'; end if;
+  delete from cpa_tables where id = p_id; return true;
+end $$;
+
+-- Lascia un tavolo che non e' tuo: il tuo posto resta come nome libero. Errore: is_owner.
+create or replace function public.cpa_table_leave(p_handle text, p_secret text, p_id uuid) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare me uuid; t cpa_tables;
+begin
+  me := cpa_auth(p_handle, p_secret);
+  select * into t from cpa_tables where id = p_id;
+  if not found or not cpa_is_member(p_id, me) then raise exception 'no_table'; end if;
+  if t.owner = me then raise exception 'is_owner'; end if;
+  update cpa_tables set data = jsonb_set(data, '{players}', (select jsonb_agg(case when e.p->>'u' = me::text then jsonb_build_object('name', (select handle from cpa_profiles where id = me), 'u', null) else e.p end order by e.ord)
+    from jsonb_array_elements(data->'players') with ordinality as e(p, ord))), updated_at = now() where id = p_id;
+  delete from cpa_table_members where table_id = p_id and profile_id = me;
+  return true;
 end $$;
 
 -- Chi può chiamare cosa: l'app usa la chiave «anon», e basta; i controlli interni non si chiamano da fuori.
 revoke all on function public.cpa_reserved(text), public.cpa_hash(text), public.cpa_check(text, text, text), public.cpa_auth(text, text) from public;
 revoke all on function public.cpa_handle_free(text), public.cpa_profile(text), public.cpa_register(text, text, text, text), public.cpa_login(text, text),
   public.cpa_set_avatar(text, text, text, text), public.cpa_rename(text, text, text), public.cpa_delete(text, text),
-  public.cpa_friend_request(text, text, text), public.cpa_friend_respond(text, text, text, boolean), public.cpa_friend_remove(text, text, text), public.cpa_friend_list(text, text) from public;
+  public.cpa_friend_request(text, text, text), public.cpa_friend_respond(text, text, text, boolean), public.cpa_friend_remove(text, text, text), public.cpa_friend_list(text, text),
+  public.cpa_table_save(text, text, uuid, text, json, int, boolean), public.cpa_table_list(text, text), public.cpa_table_games(text, text, uuid), public.cpa_game_add(text, text, uuid, json),
+  public.cpa_game_delete(text, text, uuid, uuid), public.cpa_table_delete(text, text, uuid), public.cpa_table_leave(text, text, uuid) from public;
+revoke all on function public.cpa_uuid_or_null(text), public.cpa_is_member(uuid, uuid), public.cpa_table_doc(uuid, uuid), public.cpa_roster(json, uuid, uuid[]) from public;
 do $$ begin
   if exists (select 1 from pg_roles where rolname = 'anon') then
     grant execute on function public.cpa_handle_free(text), public.cpa_profile(text), public.cpa_register(text, text, text, text), public.cpa_login(text, text),
       public.cpa_set_avatar(text, text, text, text), public.cpa_rename(text, text, text), public.cpa_delete(text, text),
-      public.cpa_friend_request(text, text, text), public.cpa_friend_respond(text, text, text, boolean), public.cpa_friend_remove(text, text, text), public.cpa_friend_list(text, text) to anon;
+      public.cpa_friend_request(text, text, text), public.cpa_friend_respond(text, text, text, boolean), public.cpa_friend_remove(text, text, text), public.cpa_friend_list(text, text),
+      public.cpa_table_save(text, text, uuid, text, json, int, boolean), public.cpa_table_list(text, text), public.cpa_table_games(text, text, uuid), public.cpa_game_add(text, text, uuid, json),
+      public.cpa_game_delete(text, text, uuid, uuid), public.cpa_table_delete(text, text, uuid), public.cpa_table_leave(text, text, uuid) to anon;
   end if;
   if exists (select 1 from pg_roles where rolname = 'authenticated') then
     grant execute on function public.cpa_handle_free(text), public.cpa_profile(text), public.cpa_register(text, text, text, text), public.cpa_login(text, text),
       public.cpa_set_avatar(text, text, text, text), public.cpa_rename(text, text, text), public.cpa_delete(text, text),
-      public.cpa_friend_request(text, text, text), public.cpa_friend_respond(text, text, text, boolean), public.cpa_friend_remove(text, text, text), public.cpa_friend_list(text, text) to authenticated;
+      public.cpa_friend_request(text, text, text), public.cpa_friend_respond(text, text, text, boolean), public.cpa_friend_remove(text, text, text), public.cpa_friend_list(text, text),
+      public.cpa_table_save(text, text, uuid, text, json, int, boolean), public.cpa_table_list(text, text), public.cpa_table_games(text, text, uuid), public.cpa_game_add(text, text, uuid, json),
+      public.cpa_game_delete(text, text, uuid, uuid), public.cpa_table_delete(text, text, uuid), public.cpa_table_leave(text, text, uuid) to authenticated;
   end if;
 end $$;
 

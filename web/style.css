@@ -1208,6 +1208,28 @@ body.on-deck #toast { bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
 .pe-esave { display: grid; gap: 8px; }
 .pe-tnote { margin: 0; font-size: 14px; color: var(--muted); }
 .pe-tnote b { color: var(--fg); }
+.pe-tc { display: inline-flex; align-items: center; gap: 7px; }
+.pe-tc svg { width: 16px; height: 16px; flex: none; }
+.pe-seat.fr { border-left-style: double; border-left-width: 8px; }
+.pe-seat .pe-name { flex: 1 1 auto; min-width: 0; }
+.pe-pick { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; border: 1.5px solid var(--line2); background: var(--surface); color: var(--muted); touch-action: manipulation; }
+.pe-pick svg { width: 20px; height: 20px; }
+.pe-pick:hover { border-color: var(--accent); color: var(--accent); }
+.pe-pick[aria-pressed="true"] { background: var(--banana); border-color: var(--banana-deep); color: var(--banana-ink); }
+.pe-pick:focus-visible, .pe-pf:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.pe-fhint { margin: -4px 0 0; }
+.pe-sync { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.pe-sst { font-size: 13px; color: var(--muted); }
+.pe-sst.err { color: var(--danger, #c0392b); font-weight: 600; }
+.pe-towner { flex: 1 1 200px; font-size: 15px; }
+.pe-pend { display: inline-block; justify-self: start; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--banana-ink); background: var(--banana); border-radius: 999px; padding: 1px 8px; }
+.pe-pfs { display: grid; gap: 8px; max-height: 50vh; overflow: auto; }
+.pe-pf { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; min-height: 48px; padding: 6px 12px; border-radius: 12px; border: 1.5px solid var(--line2); background: var(--surface); color: var(--fg); font: 600 15px var(--body); touch-action: manipulation; }
+.pe-pf b { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.pe-pf small { color: var(--muted); font-weight: 500; }
+.pe-pf:hover:not(:disabled) { border-color: var(--accent); }
+.pe-pf[aria-pressed="true"] { background: var(--banana); border-color: var(--banana-deep); color: var(--banana-ink); }
+.pe-pf:disabled { opacity: .5; }
 
 /* partita */
 .pe-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }

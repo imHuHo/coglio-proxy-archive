@@ -83,7 +83,7 @@
     if (!refreshed) {
       refreshed = true;
       client().login(me.handle, me.secret).then(function (r) {
-        me.handle = r.handle; me.avatar = { name: r.avatar_name || '', url: r.avatar_url || '' }; save(); ux.err = ''; repaint();
+        me.handle = r.handle; me.id = C.uid(r.id) || me.id || ''; me.avatar = { name: r.avatar_name || '', url: r.avatar_url || '' }; save(); ux.err = ''; repaint();
       }, function (e) { if (e.code === 'bad_login') { ux.err = 'Questo profilo non risulta più sul server (eliminato, o l’ID è stato cambiato da un altro dispositivo). Se hai il codice, esci e usa «Ho già un ID».'; repaint(); } });
     }
     if (!fr.loaded) loadFriends();
@@ -234,7 +234,7 @@
         if (p) { setStatus('bad', p); var inp = document.getElementById('cm-handle'); if (inp) inp.focus(); break; }
         var secret = C.newSecret(); ux.busy = 'create'; repaint();
         client().register(h, secret, ux.avatar).then(function (r) {
-          me = { handle: r.handle, secret: secret, avatar: { name: r.avatar_name || '', url: r.avatar_url || '' } }; save(); ux.busy = ''; ux.handle = ''; ux.avatar = null; ux.st = { k: '', t: '' }; ux.first = true; refreshed = true; fr = { data: { friends: [], incoming: [], outgoing: [] }, busy: false, err: '', msg: '', loaded: true }; repaint(); openPop('code'); toast('Codighel ID creato: salva il codice di recupero.'); sendPending();
+          me = { id: C.uid(r.id), handle: r.handle, secret: secret, avatar: { name: r.avatar_name || '', url: r.avatar_url || '' } }; save(); ux.busy = ''; ux.handle = ''; ux.avatar = null; ux.st = { k: '', t: '' }; ux.first = true; refreshed = true; fr = { data: { friends: [], incoming: [], outgoing: [] }, busy: false, err: '', msg: '', loaded: true }; repaint(); openPop('code'); toast('Codighel ID creato: salva il codice di recupero.'); sendPending();
         }, function (e) { ux.busy = ''; if (e.code === 'handle_taken') { ux.st = { k: 'bad', t: '«' + h + '» è già preso.' }; } else ux.err = C.messageOf(e); repaint(); });
         break;
       }
@@ -247,7 +247,7 @@
         if (!C.validHandle(lh) || !C.validSecret(lc)) { ux.perr = C.validHandle(lh) ? 'Il codice è di 20 caratteri (cifre e lettere, senza I, L, O, U).' : 'Scrivi il tuo ID.'; paintPop(C.validHandle(lh) ? 'cm-lc' : 'cm-lh'); break; }
         ux.busy = 'login'; ux.perr = ''; paintPop();
         client().login(lh, lc).then(function (r) {
-          me = { handle: r.handle, secret: lc, avatar: { name: r.avatar_name || '', url: r.avatar_url || '' } }; save(); ux.busy = ''; ux.err = ''; ux.lc = ''; refreshed = true; fr = { data: null, busy: false, err: '', msg: '', loaded: false }; closePop(); repaint(); toast('Bentornato, @' + r.handle + '.'); if (ux.pendingInvite) sendPending(); loadFriends();
+          me = { id: C.uid(r.id), handle: r.handle, secret: lc, avatar: { name: r.avatar_name || '', url: r.avatar_url || '' } }; save(); ux.busy = ''; ux.err = ''; ux.lc = ''; refreshed = true; fr = { data: null, busy: false, err: '', msg: '', loaded: false }; closePop(); repaint(); toast('Bentornato, @' + r.handle + '.'); if (ux.pendingInvite) sendPending(); loadFriends();
         }, function (e) { ux.busy = ''; ux.perr = C.messageOf(e); paintPop('cm-lc'); });
         break;
       }
@@ -330,5 +330,15 @@
     }, 100);
   })();
 
-  window.CPACommunityUI = { html: html, after: after, click: click, input: input, change: change, escape: escape, isOpen: isOpen, state: function () { return load(); } };
+  /* Per il Pescher: profilo, client del server e (con ready) il mio id e la lista amici. Nulla se non c'è un ID su questo dispositivo. */
+  function api() {
+    if (!on() || !load()) return null;
+    return { me: me, cli: client(), friends: fr.data ? fr.data.friends : null, ready: ready };
+  }
+  function ready() {
+    if (!on() || !load()) return Promise.reject({ code: 'unconfigured' });
+    var who = me, p = who.id ? Promise.resolve() : client().login(who.handle, who.secret).then(function (r) { if (me === who) { who.id = C.uid(r.id); save(); } });
+    return p.then(function () { return fr.data || client().friends(who.handle, who.secret).then(function (d) { if (me === who) fr.data = d; return d; }); });
+  }
+  window.CPACommunityUI = { html: html, after: after, click: click, input: input, change: change, escape: escape, isOpen: isOpen, state: function () { return load(); }, api: api };
 })();
