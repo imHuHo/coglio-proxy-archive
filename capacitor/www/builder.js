@@ -10,12 +10,12 @@
 
   /* ---------- stato e preferenze ---------- */
   function fresh() {
-    return { source: 'paste', deckId: null, deckName: '', text: '', entries: [], opts: JSON.parse(JSON.stringify(P.DEFAULTS)), upBleed: '0',
+    return { source: 'paste', deckId: null, deckName: '', text: '', entries: [], opts: JSON.parse(JSON.stringify(P.DEFAULTS)), upBleed: '0', mpcDpi: 600,
       tokens: false, tokList: [], tokSig: null, tokBusy: false, tokDirty: false, nobasic: false, busy: '', progress: '', page: 1, report: null, picker: null, pickList: null, presets: {}, presetName: '', msg: '' };
   }
   function prefs() { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch (e) { return {}; } }
   function savePrefs() {
-    try { localStorage.setItem(LS, JSON.stringify({ opts: bd.opts, upBleed: bd.upBleed, tokens: bd.tokens, nobasic: bd.nobasic, presets: bd.presets })); } catch (e) { /* ignorato */ }
+    try { localStorage.setItem(LS, JSON.stringify({ opts: bd.opts, upBleed: bd.upBleed, mpcDpi: bd.mpcDpi, tokens: bd.tokens, nobasic: bd.nobasic, presets: bd.presets })); } catch (e) { /* ignorato */ }
   }
   function init() {
     if (bd) return;
@@ -23,6 +23,7 @@
     var p = prefs();
     if (p.opts && typeof p.opts === 'object') for (var k in bd.opts) if (p.opts[k] !== undefined) bd.opts[k] = p.opts[k];
     if (p.upBleed != null) bd.upBleed = String(p.upBleed);
+    if (p.mpcDpi === 300 || p.mpcDpi === 600 || p.mpcDpi === 1200) bd.mpcDpi = p.mpcDpi;
     bd.tokens = !!p.tokens; bd.nobasic = !!p.nobasic;
     if (p.presets && typeof p.presets === 'object') bd.presets = p.presets;
   }
@@ -38,7 +39,7 @@
   function available() { return H.available(); }
 
   /* ---------- carte ---------- */
-  function mkEntry(c) { var e = { id: ++seq, name: c.name, qty: c.qty == null ? 1 : c.qty, set: c.set || '', cn: c.cn || '', card: null, nf: false }; if (c.design) e.design = c.design; return e; }
+  function mkEntry(c) { var e = { id: ++seq, name: c.name, qty: c.qty == null ? 1 : c.qty, set: c.set || '', cn: c.cn || '', card: null, nf: false }; if (c.design) e.design = c.design; if (c.mpc) { e.mpc = c.mpc; e.mdpi = c.mdpi || 0; e.muo = c.muo ? 1 : 0; e.msrc = c.msrc || ''; } return e; }
   /* Le carte con un design del Designer si stampano con l'immagine disegnata (angoli quadri, 300 dpi) al posto di quella di Scryfall. */
   function attachDesigns() {
     var D = window.CPADesigner, list = bd.entries.filter(function (e) { return e.design && !e.custom; });
@@ -89,7 +90,7 @@
   }
 
   function resolveAll() {
-    var todo = bd.entries.filter(function (e) { return !e.card && !e.nf && !e.custom && !e.design; });
+    var todo = bd.entries.filter(function (e) { return !e.card && !e.nf && !e.custom && !e.design && !e.mpc; });
     if (!todo.length || bd.busy) return;
     var my = ++runId;
     bd.busy = 'resolve'; bd.progress = 'Cerco le carte su Scryfall…';
@@ -120,7 +121,7 @@
   function syncTokens() {
     if (!bd || !bd.tokens || !available()) return;
     if (bd.tokBusy) { bd.tokDirty = true; return; }
-    var pend = bd.entries.filter(function (e) { return (e.design || e.fromDesign) && !e.card && !e.tokCard && !e.tokNf; });
+    var pend = bd.entries.filter(function (e) { return (e.design || e.fromDesign || e.mpc) && !e.card && !e.tokCard && !e.tokNf; });
     bd.tokBusy = true; bd.tokDirty = false; softRender();
     var r = getResolver(), pre = pend.length ? r.resolve(pend).then(function (found) { pend.forEach(function (e) { var c = found[r.keyFor(e)]; if (c) e.tokCard = c; else e.tokNf = true; }); }, function () { pend.forEach(function (e) { e.tokNf = true; }); }) : Promise.resolve();
     pre.then(function () {
@@ -183,7 +184,7 @@
   function ownFile(e, file, side) {
     X.fromFile(file, P.parseJpeg).then(function (img) {
       var thumb = null; try { thumb = URL.createObjectURL(file); } catch (er) { thumb = null; }
-      if (side === 'back') { e.customBack = img; e.thumbBack = thumb; } else { e.custom = img; e.thumb = thumb; e.nf = false; }
+      if (side === 'back') { e.customBack = img; e.thumbBack = thumb; } else { e.custom = img; e.thumb = thumb; e.nf = false; delete e.mpc; e.fromMpc = false; }
       H.render();
     }, function (err) { H.toast('«' + file.name + '»: ' + (err && err.message ? err.message : 'immagine non leggibile') + '.'); });
   }
@@ -205,17 +206,61 @@
     var up = parseFloat(String(bd.upBleed).replace(',', '.')) || 0;
     return bd.entries.filter(inc).map(function (e) {
       var o = { name: e.name, qty: e.qty, set: e.set, cn: e.cn, card: e.card, nf: e.nf };
-      if (e.custom) { e.custom.bleed = up; o.front = e.custom; }
+      if (e.custom) { e.custom.bleed = e.fromMpc ? (window.CPAMpc ? window.CPAMpc.BLEED_MM : 3) : up; o.front = e.custom; }
       if (e.customBack) { e.customBack.bleed = up; o.back = e.customBack; o.backName = e.name + ' (retro)'; }
       return o;
     }).concat(bd.tokens ? bd.tokList.filter(inc).map(function (e) { return { name: e.name, qty: e.qty, set: e.set, cn: e.cn, card: e.card, nf: false }; }) : []);
   }
+  /* ---------- stampe MPC Fill: si scaricano alla qualità scelta solo al momento di creare il PDF ---------- */
+  function mpcBlob(url) {
+    if (window.cpaNet && typeof window.cpaNet.image === 'function') {
+      return window.cpaNet.image(url).then(function (r) {
+        if (!r || !r.ok) throw new Error((r && r.error) || 'rete');
+        return new Blob([r.data], { type: r.type || 'image/png' });
+      });
+    }
+    /* sul telefono le immagini sono binarie: serve il fetch originale della pagina, non quello nativo */
+    return (window.CapacitorWebFetch || window.fetch).call(window, url).then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.blob(); });
+  }
+  function mpcPending() { return bd.entries.filter(function (e) { return inc(e) && e.mpc && !(e.custom && e.mpcQ === bd.mpcDpi); }); }
+  function loadMpc() {
+    var M = window.CPAMpc, list = M ? mpcPending() : [];
+    if (!list.length) return Promise.resolve();
+    var px = M.pxForDpi(bd.mpcDpi), done = 0, bad = 0, i = 0;
+    function one() {
+      var e = list[i++]; if (!e) return Promise.resolve();
+      return mpcBlob(M.imageUrl(e.mpc, px)).then(function (blob) { return X.fromFile(blob, P.parseJpeg); }).then(function (img) {
+        e.custom = img; e.fromMpc = true; e.mpcQ = bd.mpcDpi; e.mpcFail = false;
+      }).catch(function () { e.custom = null; e.fromMpc = false; e.mpcFail = true; bad++; }).then(function () {
+        done++; bd.progress = 'Scarico le stampe MPC Fill: ' + done + ' / ' + list.length;
+        var el = document.getElementById('bd-prog'); if (el) el.textContent = bd.progress;
+        return one();
+      });
+    }
+    bd.progress = 'Scarico le stampe MPC Fill: 0 / ' + list.length; softRender();
+    return Promise.all([one(), one()]).then(function () {
+      if (bad) H.toast(bad === 1 ? 'Una stampa MPC Fill non si è scaricata: uso quella di Scryfall.' : bad + ' stampe MPC Fill non si sono scaricate: uso quelle di Scryfall.', null, true);
+    });
+  }
+  /* finito il lavoro le immagini grandi si buttano via: erano solo per il PDF */
+  function releaseMpc() { bd.entries.forEach(function (e) { if (e.fromMpc) { e.custom = null; e.fromMpc = false; e.mpcQ = 0; } }); }
+  function mpcPanel() {
+    var list = bd.entries.filter(function (e) { return inc(e) && e.mpc; });
+    if (!list.length) return '';
+    var uo = list.filter(function (e) { return e.muo; }).length, q = bd.mpcDpi, n = list.reduce(function (t, e) { return t + e.qty; }, 0);
+    var mbEach = q >= 1200 ? 5 : q >= 600 ? 1.6 : 0.5, est = Math.round(list.length * mbEach);
+    return '<div class="bd-mpc"><label class="lbl">Qualità delle stampe MPC Fill<select class="select" data-c="bd-mpcq">' + [[300, '300 dpi · leggero'], [600, '600 dpi · consigliato'], [1200, '1200 dpi · massimo']].map(function (o) {
+      return '<option value="' + o[0] + '"' + (o[0] === q ? ' selected' : '') + '>' + o[1] + '</option>';
+    }).join('') + '</select></label><p class="hint">' + plural(list.length, 'carta usa', 'carte usano') + ' una stampa della comunità (' + n + ' copie): l’immagine si scarica da Google a ' + q + ' dpi, con 3 mm di abbondanza già compresi. PDF stimato: circa ' + est + ' MB' + (q >= 1200 && list.length > 25 ? ' — molto pesante, meglio 600 dpi' : '') + '.' +
+      (uo ? ' <b>' + plural(uo, 'stampa è non ufficiale', 'stampe sono non ufficiali') + '</b> (arte o cornice fatte dalla comunità).' : '') + '</p></div>';
+  }
+
   function prepareJob(label) {
     if (!available()) { H.toast('Il builder ha bisogno di internet per scaricare le immagini: non funziona dentro Claude.'); return Promise.reject(new Error('na')); }
     var ents = jobEntries();
     if (!ents.length) { H.toast('Non ci sono carte da stampare.'); return Promise.reject(new Error('empty')); }
     bd.busy = 'gen'; bd.report = null; bd.progress = label; softRender();
-    return getResolver().prepare(ents, { parse: P.parseJpeg, tokens: false }, function (p) {
+    return loadMpc().then(function () { ents = jobEntries(); return getResolver().prepare(ents, { parse: P.parseJpeg, tokens: false }, function (p) {
       bd.progress = p.phase === 'cards' ? 'Cerco le carte: ' + p.found + ' / ' + p.total : 'Scarico le immagini: ' + p.done + ' / ' + p.total;
       var el = document.getElementById('bd-prog'); if (el) el.textContent = bd.progress;
     }).then(function (res) {
@@ -224,7 +269,7 @@
         var e = bd.entries.filter(inc)[i]; if (e && !e.card && o.card) e.card = o.card; else if (e && !e.card && !o.front && !e.custom) e.nf = true;
       });
       return res;
-    });
+    }); });
   }
   function fileName(ext) {
     var base = (bd.source === 'deck' && bd.deckName ? bd.deckName : 'proxy').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'proxy';
@@ -239,10 +284,10 @@
     return out.concat(extra || []);
   }
   function plural(n, a, b) { return n + ' ' + (n === 1 ? a : b); }
-  function finish(msg, items) { bd.busy = ''; bd.progress = ''; bd.report = { msg: msg, items: items || [] }; softRender(); }
+  function finish(msg, items) { releaseMpc(); bd.busy = ''; bd.progress = ''; bd.report = { msg: msg, items: items || [] }; softRender(); }
   function fail(err) {
     if (err && (err.message === 'na' || err.message === 'empty')) { bd.busy = ''; bd.progress = ''; softRender(); return; }
-    bd.busy = ''; bd.progress = '';
+    releaseMpc(); bd.busy = ''; bd.progress = '';
     H.toast('Qualcosa non ha funzionato' + (err && err.status ? ' (errore ' + err.status + ')' : '') + ': controlla la connessione e riprova.' + (err && err.message && !err.status ? ' (' + err.message + ')' : ''), null, true);
     softRender();
   }
@@ -290,7 +335,8 @@
     var items = bd.entries.filter(inc).concat(bd.tokens ? bd.tokList.filter(inc) : []).map(function (e) {
       var fs = e.card ? X.faces(e.card, 'normal') : [], bord = e.card ? X.borderOf(e.card) : '#000000';
       var front, back = null;
-      if (e.custom) front = { thumb: e.thumb || '', width: e.custom.width, height: e.custom.height, border: e.custom.border, cornerPatch: false, bleed: up };
+      if (e.mpc && window.CPAMpc) front = { thumb: window.CPAMpc.thumbUrl(e.mpc), width: 690, height: 940, border: '#000000', cornerPatch: false, bleed: window.CPAMpc.BLEED_MM };
+      else if (e.custom) front = { thumb: e.thumb || '', width: e.custom.width, height: e.custom.height, border: e.custom.border, cornerPatch: false, bleed: up };
       else if (e.nf) front = null;
       else front = { thumb: fs[0] ? fs[0].url : '', width: 488, height: 680, border: bord };
       if (e.customBack) back = { thumb: e.thumbBack || '', width: e.customBack.width, height: e.customBack.height, border: e.customBack.border, cornerPatch: false, bleed: up };
@@ -357,8 +403,9 @@
   function cardSizes() { return Object.keys(P.CARD_SIZES).map(function (k) { return [k, P.CARD_SIZES[k].label]; }); }
 
   function rowHtml(e) {
-    var fs = e.card ? X.faces(e.card, 'small') : [], th = e.custom ? e.thumb : (fs[0] && fs[0].url), st = '', cls = '';
+    var fs = e.card ? X.faces(e.card, 'small') : [], th = e.mpc && window.CPAMpc ? window.CPAMpc.thumbUrl(e.mpc) : e.custom ? e.thumb : (fs[0] && fs[0].url), st = '', cls = '';
     if (e.token) { st = 'token di ' + e.from.slice(0, 3).join(', ') + (e.from.length > 3 ? ' e altre ' + (e.from.length - 3) : ''); cls = 'info'; }
+    else if (e.mpc) { st = 'MPC Fill' + (e.mdpi ? ' · ' + e.mdpi + ' dpi' : '') + (e.muo ? ' · non ufficiale' : ''); cls = e.muo ? 'warn' : 'own'; }
     else if (e.custom) { st = e.fromDesign ? 'design Coglio' : 'immagine tua'; cls = 'own'; }
     else if (e.nf) { st = 'non trovata'; cls = 'err'; }
     else if (e.card) {
@@ -372,7 +419,7 @@
       '<input class="input bd-q" type="number" min="0" max="99" inputmode="numeric" data-c="bd-qty" data-id="' + e.id + '" value="' + e.qty + '" aria-label="Quantità di ' + esc(e.name) + '">' +
       '<span class="bd-nm"><b>' + esc(e.name) + '</b><small>' + (e.side ? '<span class="tag">sideboard</span>' : '') + (tag ? '<span class="tag">' + esc(tag) + '</span>' : '') + (st ? '<span class="bd-st ' + cls + '">' + esc(st) + '</span>' : '') + '</small></span>' +
       '<span class="bd-acts">' +
-      (e.card && !e.custom ? '<button class="btn small" data-a="bd-prints" data-id="' + e.id + '" aria-label="Scegli un’altra stampa di ' + esc(e.name) + '">Stampa…</button>' : '') +
+      (e.card && !e.custom && !e.mpc ? '<button class="btn small" data-a="bd-prints" data-id="' + e.id + '" aria-label="Scegli un’altra stampa di ' + esc(e.name) + '">Stampa…</button>' : '') +
       (e.token ? '' : '<label class="btn small">' + (e.custom ? 'Cambia' : 'Tua immagine') + '<input type="file" accept="image/*" hidden data-c="bd-file" data-id="' + e.id + '" data-side="front"></label>') +
       (e.custom && !e.token ? '<label class="btn small">' + (e.customBack ? 'Cambia retro' : 'Retro') + '<input type="file" accept="image/*" hidden data-c="bd-file" data-id="' + e.id + '" data-side="back"></label>' : '') +
       (e.token ? '' : '<button class="btn small danger" data-a="bd-del" data-id="' + e.id + '" aria-label="Togli ' + esc(e.name) + '">×</button>') + '</span></div>';
@@ -410,6 +457,7 @@
     var list = '<section class="panel"><div class="bd-head"><h2>Carte <span class="cnt">' + total() + '</span></h2><div class="bd-opts">' +
       chk('nobasic', 'Escludi le terre base', bd.nobasic, 'bd-top') + chk('tokens', 'Aggiungi i token', bd.tokens, 'bd-top') + '</div></div>' +
       (bd.source === 'deck' ? '<div class="btns"><label class="btn small">Aggiungi tue immagini<input type="file" accept="image/*" multiple hidden data-c="bd-addfiles"></label></div>' : '') +
+      mpcPanel() +
       '<div class="bd-list">' + (rows || '<p class="hint">Nessuna carta: incolla una lista e premi «Leggi la lista».</p>') + '</div></section>';
     if (bd.tokens) {
       list += '<section class="panel" id="bd-tok"><div class="bd-head"><h2>Token <span class="cnt">' + tokTotal() + '</span></h2></div>' +
@@ -512,6 +560,7 @@
     switch (c) {
       case 'bd-opt': bd.opts[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value; savePrefs(); H.render(); break;
       case 'bd-up': bd.upBleed = el.value; savePrefs(); H.render(); break;
+      case 'bd-mpcq': bd.mpcDpi = [300, 600, 1200].indexOf(parseInt(el.value, 10)) >= 0 ? parseInt(el.value, 10) : 600; savePrefs(); H.render(); break;
       case 'bd-top': bd[el.dataset.k] = el.checked; savePrefs(); H.render(); if (el.dataset.k === 'tokens' || el.dataset.k === 'nobasic') { bd.tokSig = null; syncTokens(); } break;
       case 'bd-qty': if (e) { var q = parseInt(el.value, 10); e.qty = isFinite(q) && q > 0 ? Math.min(q, 99) : 0; H.render(); if (!e.token) { bd.tokSig = null; syncTokens(); } } break;
       case 'bd-file': if (e && el.files && el.files[0]) ownFile(e, el.files[0], el.dataset.side); break;

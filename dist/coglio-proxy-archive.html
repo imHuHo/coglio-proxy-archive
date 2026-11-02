@@ -1037,17 +1037,62 @@ body.on-deck #toast { bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
 .dadd-msg:empty { display: none; }
 .dk-bar .ty.sb { opacity: .85; }
 
+/* ---------- MPC Fill: stampe della comunità ---------- */
+.tag.mpt { background: var(--surface2); color: var(--ink); font-weight: 700; }
+.tag.mpt.hi { background: #1f7a46; border-color: #1f7a46; color: #fff; }
+.tag.mpt.mid { background: #2f6fb4; border-color: #2f6fb4; color: #fff; }
+.tag.mpt.ok { background: var(--banana-soft); border-color: var(--banana-deep); color: var(--banana-ink); }
+.tag.mpt.lo { background: #8a8f9a; border-color: #8a8f9a; color: #fff; }
+.tag.uot { background: #c0392b; border-color: #c0392b; color: #fff; font-weight: 700; }
+.pv-mpc { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; margin: 4px 0; }
+.pv-by { font-size: 12px; color: var(--muted); }
+.lb-box.wide { max-height: calc(100vh - 32px); overflow: auto; align-content: start; }
+.lb-tabs { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; width: 100%; }
+.lb-tabs .btn.on { background: var(--banana); color: var(--banana-ink); border-color: var(--banana-deep); }
+.mpcbox { width: 100%; display: grid; gap: 10px; color: #fff; }
+.mpcbox[hidden] { display: none; }
+.mpc-intro, .mpc-cur { font-size: 13px; line-height: 1.45; background: #ffffff14; border-radius: 8px; padding: 8px 12px; }
+.mpc-ctl { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.mpc-ctl .lbl { color: #fff; display: grid; gap: 4px; font-size: 12px; }
+.mpc-ctl .chk { display: flex; gap: 6px; align-items: center; font-size: 13px; color: #fff; }
+.mpc-count { margin: 0; font-size: 12.5px; opacity: .85; }
+.mpc-grid { max-height: min(54vh, 640px); }
+.pr.mp { align-content: start; }
+.pr.mp .mp-img { position: relative; display: block; }
+.pr.mp .mp-img img { aspect-ratio: 69 / 94; }
+.pr.mp .dpi { position: absolute; left: 6px; top: 6px; font: 800 13px var(--mono); padding: 2px 7px; border-radius: 6px; color: #fff; background: #8a8f9a; box-shadow: 0 2px 6px #0007; }
+.pr.mp .dpi.hi { background: #1f7a46; }
+.pr.mp .dpi.mid { background: #2f6fb4; }
+.pr.mp .dpi.ok { background: var(--banana); color: var(--banana-ink); }
+.pr.mp .uob { position: absolute; left: 6px; bottom: 6px; right: 6px; font: 700 11px var(--mono); font-style: normal; text-transform: uppercase; letter-spacing: .04em; padding: 2px 6px; border-radius: 5px; color: #fff; background: #c0392b; box-shadow: 0 2px 6px #0007; }
+.pr.mp.uo { border-color: #c0392b66; }
+.pr.mp .ms { font: 500 11px var(--mono); opacity: .75; overflow-wrap: anywhere; }
+.pr.mp .mtg { font: 500 11px var(--ui, inherit); opacity: .85; overflow-wrap: anywhere; }
+.pr.mp .mtg.none { opacity: .5; font-style: italic; }
+.bd-mpc { display: grid; gap: 6px; margin: 8px 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface2); } .bd-mpc .hint { margin: 0; }
+
+.dr.mpr { flex-wrap: wrap; }
+.dr .mpl { order: 9; flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 6px; padding: 0 0 3px calc(1.7em + 6px); }
+.dr .mpl .tag { flex: none; white-space: nowrap; }
+
 </style>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <script>
-window.CPA_VERSION = '4.2.0';
+window.CPA_VERSION = '4.3.0';
 
 </script>
 <script>
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '4.3.0', date: '2 novembre 2026', title: 'Stampe della comunità, fino a 1200 dpi', items: [
+    { t: 'MPC Fill nel «Cambia stampa»', d: 'Nell\'app per Windows e per Android, il dialogo di scelta della stampa ha una nuova scheda «MPC Fill · comunità»: cerchi la carta su mpcfill.com e scegli tra le immagini fatte da artisti e stampatori. Dal browser il sito è bloccato, quindi la scheda lo spiega e basta.' },
+    { t: 'I dpi bene in vista', d: 'Ogni immagine ha il suo numero di dpi in alto (verde da 1000 in su, blu da 600, giallo da 300), l\'archivio che l\'ha caricata e il peso del file. Puoi filtrare per risoluzione minima (anche dal server) e ordinare per dpi.' },
+    { t: 'Segnalate le non ufficiali', d: 'Arte cambiata, remaster con IA, cornici inventate e scansioni ingrandite hanno il bollino rosso «non ufficiale» (lo leggiamo dalle etichette della comunità), si possono nascondere in un tocco, e il bollino resta sulla riga del mazzo e nell\'anteprima. Le immagini senza etichette sono segnate come tali: non sono garantite ufficiali.' },
+    { t: 'In stampa, la qualità la scegli tu', d: 'Nel builder le carte con stampa MPC hanno un pannello: 300, 600 (consigliato) o 1200 dpi. L\'immagine si scarica solo quando crei il PDF, con i 3 mm di abbondanza già compresi, e viene buttata via subito dopo. A 1200 dpi il PDF pesa molto: il pannello ne stima la dimensione.' },
+    { t: 'Una copia o tutte', d: 'Puoi dare la stampa MPC a tutte le copie di una carta o a una sola (la riga si divide), toglierla quando vuoi con «Torna alla stampa Scryfall», e Annulla funziona come sempre.' },
+  ] },
   { v: '4.2.0', date: '2 novembre 2026', title: 'Mazzi che si modificano', items: [
     { t: 'Aggiungi e togli carte', d: 'Nella pagina del mazzo il pulsante «+ Aggiungi carta» apre un campo con i suggerimenti di Scryfall: scrivi il nome (anche «2 Sol Ring (C21) 263» per scegliere stampa e quantità) e premi Invio. Accanto a ogni carta c\'\u00e8 «\u22ef»: una copia in pi\u00f9, una in meno, rimuovi. Ogni modifica ha il suo «Annulla», e quando una carta sparisce ti avvisa un bel «Codighel! Ma è sparita…».' },
     { t: 'Sideboard', d: 'I mazzi hanno il loro sideboard: con «\u22ef» sposti una carta (o tutte le copie) dal mazzo al sideboard e viceversa, e all\'importazione le righe della sezione Sideboard ora ci finiscono dentro invece di essere scartate. Non conta nel bracket, nelle statistiche e nella pescata; conta nell\'archivio, perch\u00e9 le carte stanno fisicamente nella scatola del mazzo. In Stampa compare con 0 copie: alza la quantit\u00e0 per stamparlo.' },
@@ -1591,21 +1636,34 @@ window.CPA_CHANGELOG = [
     var left = qty;
     [deck.cards, deck.side || []].forEach(function (list) {
       list.forEach(function (c) {
-        if (left > 0 && !c.design && keyOf(c.name) === key && (!target || samePrint(target, c))) { var t = Math.min(c.qty, left); c.qty -= t; left -= t; }
+        if (left > 0 && !c.design && !c.mpc && keyOf(c.name) === key && (!target || samePrint(target, c))) { var t = Math.min(c.qty, left); c.qty -= t; left -= t; }
       });
     });
     deck.cards = deck.cards.filter(function (c) { return c.qty > 0; });
     if (deck.side) deck.side = deck.side.filter(function (c) { return c.qty > 0; });
     return qty - left;
   }
+  /* Stampa della comunita' (MPC Fill): id dell'immagine + dpi, archivio e se e' non ufficiale, per mostrarli senza internet. */
+  function mpcOf(card) {
+    var o = {};
+    if (card && typeof card.mpc === 'string' && card.mpc) {
+      o.mpc = card.mpc;
+      var d = Math.round(Number(card.mdpi) || 0); if (d > 0) o.mdpi = d;
+      if (card.muo) o.muo = 1;
+      if (card.msrc) o.msrc = String(card.msrc).slice(0, 60);
+      if (card.mnm) o.mnm = String(card.mnm).slice(0, 120);
+    }
+    return o;
+  }
   function addCopies(deck, card, qty) {
-    var k = keyOf(card.name), set = card.set || '', cn = card.cn || '', ds = card.design || '';
+    var k = keyOf(card.name), set = card.set || '', cn = card.cn || '', ds = card.design || '', mp = card.mpc || '';
     for (var i = 0; i < deck.cards.length; i++) {
       var c = deck.cards[i];
-      if (keyOf(c.name) === k && c.set === set && c.cn === cn && (c.design || '') === ds) { c.qty += qty; return; }
+      if (keyOf(c.name) === k && c.set === set && c.cn === cn && (c.design || '') === ds && (c.mpc || '') === mp) { c.qty += qty; return; }
     }
     var row = { name: card.name, qty: qty, set: set, cn: cn };
     if (ds) row.design = ds;
+    Object.assign(row, mpcOf(card));
     deck.cards.push(row);
   }
 
@@ -1613,7 +1671,7 @@ window.CPA_CHANGELOG = [
   /* ---------- Modifica a mano: aggiungere, togliere e spostare carte (mazzo ↔ sideboard) ---------- */
   function listOf(deck, side) { if (side) { if (!deck.side) deck.side = []; return deck.side; } return deck.cards; }
   function sameRow(c, card) {
-    return keyOf(c.name) === keyOf(card.name) && (c.set || '') === (card.set || '') && (c.cn || '') === (card.cn || '') && (c.design || '') === (card.design || '');
+    return keyOf(c.name) === keyOf(card.name) && (c.set || '') === (card.set || '') && (c.cn || '') === (card.cn || '') && (c.design || '') === (card.design || '') && (c.mpc || '') === (card.mpc || '');
   }
   /* Aggiunge `qty` copie (si fondono con la riga identica); restituisce la riga. */
   function addCard(deck, card, qty, side) {
@@ -1621,6 +1679,7 @@ window.CPA_CHANGELOG = [
     for (var i = 0; i < list.length; i++) if (sameRow(list[i], card)) { list[i].qty += q; return list[i]; }
     var row = { name: card.name, qty: q, set: card.set || '', cn: card.cn || '' };
     if (card.design) row.design = card.design;
+    Object.assign(row, mpcOf(card));
     list.push(row); return row;
   }
   /* Toglie `qty` copie di quella riga (tutte se qty manca); restituisce quante ne ha tolte. */
@@ -1637,9 +1696,23 @@ window.CPA_CHANGELOG = [
   }
   /* Sposta `qty` copie da una lista all'altra (tutte se qty manca); la stampa e il design restano. */
   function moveCard(deck, card, qty, toSide) {
+    var from = listOf(deck, !toSide), src = null;
+    for (var i = 0; i < from.length; i++) if (sameRow(from[i], card)) { src = Object.assign({}, from[i]); break; }
     var got = removeCard(deck, card, qty, !toSide);
-    if (got) addCard(deck, card, got, !!toSide);
+    if (got) addCard(deck, src || card, got, !!toSide);
     return got;
+  }
+  /* Assegna (o toglie, con info nullo) la stampa MPC Fill a una riga: a tutte le copie, o a una sola (la riga si divide). Restituisce la riga nuova. */
+  function setMpc(deck, card, info, side, one) {
+    var list = listOf(deck, side), row = null, i;
+    for (i = 0; i < list.length; i++) if (sameRow(list[i], card)) { row = list[i]; break; }
+    if (!row) return null;
+    var plain = { name: row.name, set: row.set || '', cn: row.cn || '' };
+    if (row.design) plain.design = row.design;
+    var want = info ? Object.assign(plain, mpcOf(info)) : plain;
+    if (one && row.qty > 1) { row.qty -= 1; return addCard(deck, want, 1, side); }
+    list.splice(i, 1);
+    return addCard(deck, want, row.qty, side);
   }
   function countOf(list) { return (list || []).reduce(function (t, c) { return t + c.qty; }, 0); }
 
@@ -1691,9 +1764,10 @@ window.CPA_CHANGELOG = [
     if (binder) rep.binderName = binder.name;
 
     var kept = {};
-    deck.cards.forEach(function (c) { if (c.design) kept[keyOf(c.name)] = c.design; });
+    var keptM = {};
+    deck.cards.forEach(function (c) { if (c.design) kept[keyOf(c.name)] = c.design; else if (c.mpc && !keptM[keyOf(c.name)]) keptM[keyOf(c.name)] = mpcOf(c); });
     deck.cards = cloneJ(up.cards);
-    deck.cards.forEach(function (c) { var k = keyOf(c.name); if (kept[k]) { c.design = kept[k]; delete kept[k]; } });
+    deck.cards.forEach(function (c) { var k = keyOf(c.name); if (kept[k]) { c.design = kept[k]; delete kept[k]; } else if (keptM[k]) { Object.assign(c, keptM[k]); delete keptM[k]; } });
     if (up.commander) deck.commander = up.commander;
     deck.upgrades = deck.upgrades.filter(function (u) { return u.id !== upgradeId; });
     deck.updatedAt = now;
@@ -1715,7 +1789,7 @@ window.CPA_CHANGELOG = [
       decks.forEach(function (d) {
         var q = 0;
         allCards(d).forEach(function (c) {
-          if (keyOf(c.name) !== k || c.design) return;
+          if (keyOf(c.name) !== k || c.design || c.mpc) return;
           q += c.qty;
           if ((d.kind === 'binder' || isFreeDeck(d))) pool.push({ deckId: d.id, deckName: d.name, kind: d.kind, set: c.set || '', cn: c.cn || '', left: c.qty });
         });
@@ -1769,11 +1843,11 @@ window.CPA_CHANGELOG = [
           var left = got, moved = [];
           deck.cards.forEach(function (c) {
             if (left > 0 && keyOf(c.name) === it.key && (kind === 'other' || samePrint(row, c))) {
-              var t = Math.min(c.qty, left); c.qty -= t; left -= t; moved.push({ name: c.name, set: c.set, cn: c.cn, qty: t, design: c.design });
+              var t = Math.min(c.qty, left); c.qty -= t; left -= t; moved.push(Object.assign({ name: c.name, set: c.set, cn: c.cn, qty: t, design: c.design }, mpcOf(c)));
             }
           });
           deck.cards = deck.cards.filter(function (c) { return c.qty > 0; });
-          moved.forEach(function (m) { addCopies(deck, { name: m.name, set: row.set || m.set, cn: row.set ? row.cn : m.cn, design: m.design }, m.qty); });
+          moved.forEach(function (m) { addCopies(deck, Object.assign({ name: m.name, set: row.set || m.set, cn: row.set ? row.cn : m.cn, design: m.design }, mpcOf(m)), m.qty); });
           done.push({ name: it.name, qty: got, deckId: src.id, deckName: src.name, kind: src.kind, from: kind, set: row.set, cn: row.cn });
         });
       });
@@ -1789,6 +1863,7 @@ window.CPA_CHANGELOG = [
         set: String(c && c.set || ''), cn: String(c && c.cn || '')
       };
       if (c && typeof c.design === 'string' && c.design) o.design = c.design;
+      Object.assign(o, mpcOf(c));
       return o;
     }).filter(function (c) { return c.name; });
   }
@@ -1820,7 +1895,7 @@ window.CPA_CHANGELOG = [
   return {
     keyOf: keyOf, searchNorm: searchNorm, isBasic: isBasic, uid: uid,
     parseList: parseList, buildArchive: buildArchive, diffUpgrade: diffUpgrade,
-    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, applyReuse: applyReuse, statusOf: statusOf, isPrinted: isPrinted, samePrint: samePrint, clone: cloneJ, exportText: exportText, exportDeck: exportDeck, exportFileName: exportFileName, allCards: allCards, addCard: addCard, removeCard: removeCard, moveCard: moveCard, countOf: countOf, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, bracketNumber: bracketNumber, deckSig: deckSig, diffText: diffText,
+    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, applyReuse: applyReuse, statusOf: statusOf, isPrinted: isPrinted, samePrint: samePrint, clone: cloneJ, exportText: exportText, exportDeck: exportDeck, exportFileName: exportFileName, allCards: allCards, addCard: addCard, removeCard: removeCard, moveCard: moveCard, setMpc: setMpc, mpcOf: mpcOf, countOf: countOf, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, bracketNumber: bracketNumber, deckSig: deckSig, diffText: diffText,
     sanitizeDeck: sanitizeDeck, sanitizeSettings: sanitizeSettings, inUse: inUse
   };
 });
@@ -3600,6 +3675,162 @@ window.CPA_CHANGELOG = [
   return { analyze: analyze, classify: classify, draws: draws, verdict: verdict, HEALTH_REF: HEALTH_REF, FAST: FAST, rng: rng };
 });
 
+/* MPC Fill: stampe della comunita' (mpcfill.com) per le carte dei mazzi.
+ *
+ * Il sito e' un indice di immagini ad alta risoluzione (fino a 1200 dpi) caricate da artisti e stampatori su Google Drive.
+ * Qui: ricerca per nome, dpi, riconoscimento delle stampe NON ufficiali dai tag della comunita', indirizzi delle immagini.
+ *
+ * Le richieste all'API partono dall'app (Windows/Android), non dalla pagina: mpcfill.com accetta solo certe origini (CORS).
+ * Le immagini invece arrivano da Google (lh4.googleusercontent.com) e si possono leggere ovunque.
+ * Nessun accesso a siti diversi da questi due, e nessuna dipendenza dal DOM: si prova con Node.
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.CPAMpc = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var BASE = 'https://mpcfill.com';
+  var IMG = 'https://lh4.googleusercontent.com/d/';
+  var PAGE = 75;                       // il server accetta al massimo 75 carte per richiesta
+  var CARD_H = 1110;                   // altezza in pixel di una carta MPC (con abbondanza) a 300 dpi
+  var BLEED_MM = 3;                    // l'immagine MPC e' 69 x 94 mm: 3 mm di abbondanza per lato
+
+  /* Qualita' di stampa proposte: dpi -> altezza richiesta a Google. */
+  var QUALITY = [300, 600, 1200];
+  function pxForDpi(dpi) { return Math.round(Math.max(72, dpi) * CARD_H / 300); }
+  function imageUrl(id, px) { return IMG + encodeURIComponent(String(id)) + '=h' + Math.max(64, Math.min(5000, parseInt(px, 10) || 800)); }
+  function thumbUrl(id) { return imageUrl(id, 400); }
+  function viewUrl(id) { return 'https://drive.google.com/file/d/' + encodeURIComponent(String(id)) + '/view'; }
+
+  /* ----- tag della comunita' -----
+   * "custom": la carta non e' un'immagine ufficiale Wizards (arte cambiata, IA, cornice inventata, scansione ingrandita).
+   * "official-variant": trattamento che esiste davvero in stampa (bordo pieno, arte estesa, showcase, promo...).
+   * Un'immagine senza tag NON e' garantita ufficiale: chi la carica puo' non aver messo nulla. */
+  var CUSTOM_RE = /(altered|custom|\bai\b|ai[ -]?(art|remaster|frame)|artist art|switched art|pixel|pop-?out|sketch|upscal|fan[ -]?made|homebrew|reimagin|redesign|re-?frame)/i;
+  var VARIANT_RE = /(borderless|extended|showcase|full[ -]?art|fnm|promo|foil[ -]?etched|retro|old[ -]?frame|textless|serialized|galaxy|etched|surge|confetti|ripple|step-and-compleat|alternate|japanese|anime|secret lair|judge)/i;
+
+  function classify(tags) {
+    var list = Array.isArray(tags) ? tags.map(String) : [];
+    var custom = list.filter(function (t) { return CUSTOM_RE.test(t); });
+    var variant = list.filter(function (t) { return !CUSTOM_RE.test(t) && VARIANT_RE.test(t); });
+    return { unofficial: custom.length > 0, custom: custom, variant: variant, tagged: list.length > 0 };
+  }
+
+  /* Nome del file/carta come lo mettono gli autori: "Sol Ring (2XM0354)", "Sol Ring [Full Art Extended E]"... */
+  function setHint(name) {
+    var t = String(name || ''), m;
+    if ((m = /[(\[]\s*([A-Z0-9]{3,5})[\s-]+(\d{1,4}[a-z]?)\s*[)\]]/.exec(t))) return m[1] + ' ' + m[2];      // (CMD 263)
+    if ((m = /[(\[]\s*([A-Z0-9]{3,4}?)(\d{2,4}[a-z]?)\s*[)\]]/.exec(t))) return m[1] + ' ' + m[2];        // (2XM0354)
+    return '';
+  }
+
+  function parseCard(c) {
+    if (!c || typeof c !== 'object' || !c.identifier) return null;
+    var tags = Array.isArray(c.tags) ? c.tags.map(String) : [];
+    var k = classify(tags), dpi = Math.round(Number(c.dpi) || 0);
+    return {
+      id: String(c.identifier), name: String(c.name || ''), dpi: dpi, size: Number(c.size) || 0, ext: String(c.extension || '').toLowerCase(),
+      src: String(c.sourceName || c.source || ''), srcType: String(c.sourceType || ''), lang: String(c.language || '').toLowerCase(),
+      tags: tags, unofficial: k.unofficial, custom: k.custom, variant: k.variant, tagged: k.tagged,
+      hint: setHint(c.name), date: String(c.dateCreated || '').slice(0, 10)
+    };
+  }
+
+  function mb(bytes) { return bytes ? (bytes / 1048576 >= 10 ? Math.round(bytes / 1048576) : Math.round(bytes / 104857.6) / 10) + ' MB' : ''; }
+
+  /* Un nome di carta a due facce si cerca con la prima faccia. */
+  function queryName(name) { return String(name || '').split(/\s*\/\/\s*/)[0].trim().toLowerCase(); }
+
+  function create(opt) {
+    opt = opt || {};
+    var http = opt.http, cache = opt.cache || null, now = opt.now || Date.now, gap = opt.gap != null ? opt.gap : 150;
+    var sources = null, sourcesAt = 0, gate = Promise.resolve();
+    var TTL = 24 * 3600e3;
+
+    function available() { return typeof http === 'function'; }
+    function pause() { return new Promise(function (r) { setTimeout(r, gap); }); }
+    function call(req) {
+      if (!available()) return Promise.reject(err('app', 'Le stampe MPC Fill si cercano solo nell’app Windows o Android.'));
+      var p = gate.then(function () {
+        return Promise.resolve(http(req)).then(function (r) {
+          if (!r || !r.status) throw err('net', 'Non riesco a contattare MPC Fill.');
+          var text = r.text || '';
+          if (r.status === 403 || r.status === 503 || /^\s*</.test(text)) throw err('guard', 'MPC Fill ha bloccato la richiesta (protezione anti-bot). Riprova tra poco.');
+          if (r.status === 429) throw err('rate', 'MPC Fill chiede di rallentare: riprova tra un minuto.');
+          if (r.status < 200 || r.status >= 300) throw err('http', 'MPC Fill ha risposto con errore ' + r.status + '.');
+          try { return JSON.parse(text); } catch (e) { throw err('json', 'Risposta di MPC Fill non leggibile.'); }
+        });
+      });
+      gate = p.then(pause, pause);
+      return p;
+    }
+    function err(code, msg) { var e = new Error(msg); e.code = code; return e; }
+    function post(path, body) { return call({ url: BASE + path, method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) }); }
+
+    /* Elenco degli archivi (ogni autore e' una "source"): si cerca in tutti. */
+    function getSources() {
+      if (sources && now() - sourcesAt < TTL) return Promise.resolve(sources);
+      var hit = cache && cache.get('sources');
+      if (hit && hit.t && now() - hit.t < 7 * TTL && Array.isArray(hit.v) && hit.v.length) { sources = hit.v; sourcesAt = hit.t; return Promise.resolve(sources); }
+      return call({ url: BASE + '/2/sources/', method: 'GET', headers: { Accept: 'application/json' } }).then(function (r) {
+        var res = (r && r.results) || {}, list = Object.keys(res).map(function (k) { return parseInt(res[k] && res[k].pk != null ? res[k].pk : k, 10); }).filter(function (n) { return n === n; });
+        if (!list.length) throw err('json', 'MPC Fill non ha restituito gli archivi.');
+        sources = list; sourcesAt = now();
+        if (cache) cache.set('sources', { t: sourcesAt, v: list });
+        return list;
+      });
+    }
+
+    /* opts: { minDpi } -> sessione { name, q, ids, total, cards, next } da riempire con more(). */
+    function search(name, opts) {
+      opts = opts || {};
+      var q = queryName(name), minDpi = Math.max(0, parseInt(opts.minDpi, 10) || 0);
+      if (!q) return Promise.reject(err('empty', 'Nessun nome da cercare.'));
+      var ck = 'q:' + q + '|' + minDpi, hit = cache && cache.get(ck);
+      if (hit && hit.t && now() - hit.t < TTL && Array.isArray(hit.ids)) return Promise.resolve({ name: name, q: q, minDpi: minDpi, ids: hit.ids, cards: [], next: 0 });
+      return getSources().then(function (src) {
+        return post('/2/editorSearch/', {
+          queries: [{ query: q, cardType: 'CARD' }],
+          searchSettings: {
+            searchTypeSettings: { fuzzySearch: false, filterCardbacks: false },
+            sourceSettings: { sources: src.map(function (pk) { return [pk, true]; }) },
+            filterSettings: { minimumDPI: minDpi, maximumDPI: 1500, maximumSize: 30, languages: [], includesTags: [], excludesTags: [] }
+          }
+        });
+      }).then(function (r) {
+        var by = (r && r.results) || {}, row = by[q] || by[Object.keys(by)[0]] || {}, ids = Array.isArray(row.CARD) ? row.CARD.map(String) : [];
+        if (cache) cache.set(ck, { t: now(), ids: ids.slice(0, 600) });
+        return { name: name, q: q, minDpi: minDpi, ids: ids, cards: [], next: 0 };
+      }).then(function (s) { s.total = s.ids.length; return s; });
+    }
+
+    /* Carica altre `n` carte della sessione (75 alla volta). */
+    function more(s, n) {
+      var take = s.ids.slice(s.next, s.next + Math.max(1, Math.min(n || PAGE, PAGE))), have = {};
+      if (!take.length) return Promise.resolve(s);
+      var need = [];
+      take.forEach(function (id) { var c = cache && cache.get('c:' + id); if (c && c.v) have[id] = c.v; else need.push(id); });
+      var step = need.length ? post('/2/cards/', { cardIdentifiers: need }).then(function (r) {
+        var res = (r && r.results) || {};
+        need.forEach(function (id) { var c = parseCard(res[id]); if (c) { have[id] = c; if (cache) cache.set('c:' + id, { t: now(), v: c }); } });
+      }) : Promise.resolve();
+      return step.then(function () {
+        take.forEach(function (id) { if (have[id]) s.cards.push(have[id]); });
+        s.next += take.length;
+        return s;
+      });
+    }
+
+    return { available: available, search: search, more: more, sources: getSources, PAGE: PAGE };
+  }
+
+  return {
+    create: create, parseCard: parseCard, classify: classify, setHint: setHint, queryName: queryName,
+    imageUrl: imageUrl, thumbUrl: thumbUrl, viewUrl: viewUrl, pxForDpi: pxForDpi, mb: mb, QUALITY: QUALITY, BLEED_MM: BLEED_MM, BASE: BASE
+  };
+});
+
 </script>
 <script>
 /* Chiavi per la sincronizzazione. Si creano gratis una volta sola (guida nel README, sezione «Sincronizzazione»).
@@ -4569,6 +4800,50 @@ window.CPA_SYNC = {
   /* Dato nome e collezione, l'immagine si ricava da api.scryfall.com. Le richieste partono a lotti (fino a 75
      carte) solo per le righe che si vedono, con una pausa fra una chiamata e l'altra come chiede Scryfall.
      L'indirizzo trovato resta salvato sul dispositivo, quindi ogni carta si cerca una volta sola. */
+  /* ---------- MPC Fill: stampe della comunità (fino a 1200 dpi), solo nelle app Windows e Android ---------- */
+  var MPCM = window.CPAMpc || null, MPCI = null;
+  function mpcHttp() {
+    var cap = window.Capacitor, nat = cap && cap.Plugins && cap.Plugins.CapacitorHttp;
+    if (window.cpaNet && typeof window.cpaNet.mpc === 'function') {
+      return function (req) { return window.cpaNet.mpc(req).then(function (r) { return { status: (r && r.status) || 0, text: (r && r.text) || '' }; }); };
+    }
+    if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform() && nat) {
+      return function (req) {
+        var data; try { data = req.body ? JSON.parse(req.body) : undefined; } catch (e) { data = req.body; }
+        return nat.request({ url: req.url, method: req.method || 'GET', headers: req.headers || {}, data: data, responseType: 'text' }).then(function (r) {
+          return { status: r.status, text: typeof r.data === 'string' ? r.data : JSON.stringify(r.data) };
+        });
+      };
+    }
+    return null;
+  }
+  function mpcCache() {
+    var LS = 'cpa:mpc:v1', mem = null;
+    function load() { if (!mem) { try { mem = JSON.parse(localStorage.getItem(LS)) || {}; } catch (e) { mem = {}; } } return mem; }
+    var t = null;
+    function save() {
+      clearTimeout(t);
+      t = setTimeout(function () {
+        var m = load(), ks = Object.keys(m);
+        if (ks.length > 900) { ks.sort(function (a, b) { return (m[a].t || 0) - (m[b].t || 0); }).slice(0, ks.length - 700).forEach(function (k) { delete m[k]; }); }
+        try { localStorage.setItem(LS, JSON.stringify(m)); } catch (e) { /* spazio finito: pazienza */ }
+      }, 800);
+    }
+    return { get: function (k) { return load()[k] || null; }, set: function (k, v) { load()[k] = v; if (v && !v.t) v.t = Date.now(); save(); }, clear: function () { mem = {}; try { localStorage.removeItem(LS); } catch (e) { /* ignorato */ } } };
+  }
+  function mpcInst() {
+    if (!MPCM) return null;
+    if (!MPCI) MPCI = MPCM.create({ http: mpcHttp(), cache: mpcCache(), gap: window.CPA_API_GAP != null ? window.CPA_API_GAP : 150 });
+    return MPCI;
+  }
+  function mpcOn() { var m = mpcInst(); return !!(m && m.available()); }
+  /* etichetta e colori dei dpi: più sono alti, più la stampa regge l'ingrandimento */
+  function dpiClass(n) { return n >= 1000 ? 'hi' : n >= 600 ? 'mid' : n >= 300 ? 'ok' : 'lo'; }
+  function mpcTags(c) {
+    return (c.mdpi ? '<span class="tag mpt ' + dpiClass(c.mdpi) + '" title="Stampa MPC Fill' + (c.msrc ? ' · ' + esc(c.msrc) : '') + '">' + c.mdpi + ' dpi</span>' : '<span class="tag mpt">MPC</span>') +
+      (c.muo ? '<span class="tag uot" title="Immagine della comunità: arte o cornice non ufficiale">non ufficiale</span>' : '');
+  }
+
   var IMG = (function () {
     var API = 'https://api.scryfall.com', HOST = 'https://cards.scryfall.io/', LS = 'cpa:img:v1';
     var cache = null, queue = {}, drainT = null, running = false, saveT = null;
@@ -4789,11 +5064,11 @@ window.CPA_SYNC = {
       var h = get(el.getAttribute('data-thk')); if (!h || !h.u) return;
       closeLb();
       var name = el.getAttribute('data-thn'), set = el.getAttribute('data-ths'), cn = el.getAttribute('data-thc');
-      var t = side && h.b ? h.b : h.u;
+      var t = side && h.b ? h.b : h.u, mpid = el.getAttribute('data-thm') || '';
       lb = document.createElement('div'); lb.id = 'lb'; lb.className = 'lb'; lb.setAttribute('data-a', 'lb-close');
       lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', 'Anteprima di ' + name);
       lb._el = el; lb._side = side ? 1 : 0;
-      lb.innerHTML = '<div class="lb-box" data-a="lb-keep"><img src="' + esc(url(t, 'normal')) + '" alt="' + esc(name) + '">' +
+      lb.innerHTML = '<div class="lb-box" data-a="lb-keep"><img src="' + esc(mpid && MPCM ? MPCM.imageUrl(mpid, 1000) : url(t, 'normal')) + '" alt="' + esc(name) + '"' + (mpid ? ' referrerpolicy="no-referrer"' : '') + '>' +
         '<div class="lb-bar"><span class="lb-name">' + esc(name) + (set ? ' · ' + esc(set.toUpperCase()) + (cn ? ' ' + esc(cn) : '') : ' · stampa predefinita') + '</span>' +
         (el.getAttribute('data-thd') ? '<button class="btn small" data-a="lb-prints">Cambia stampa</button>' : '') +
         (h.b ? '<button class="btn small" data-a="lb-flip">Gira</button>' : '') + '<button class="btn small" data-a="lb-close" id="lbx">Chiudi</button></div></div>';
@@ -4808,9 +5083,12 @@ window.CPA_SYNC = {
     function printsLb() {
       if (!lb || !lb._el) return;
       var el = lb._el, name = el.getAttribute('data-thn'), set0 = (el.getAttribute('data-ths') || '').toLowerCase(), cn0 = (el.getAttribute('data-thc') || '').toLowerCase();
+      var hasDeck = !!el.getAttribute('data-thd') && !!MPCM;
+      mp.tab = 'sf'; if (mp.name !== name) { mp.s = null; mp.err = ''; mp.busy = false; mp.name = name; }
       lb.innerHTML = '<div class="lb-box wide" data-a="lb-keep"><div class="lb-bar"><span class="lb-name">Scegli la stampa che hai: ' + esc(name) + '</span>' +
         '<button class="btn small" data-a="lb-back">Indietro</button><button class="btn small" data-a="lb-close" id="lbx">Chiudi</button></div>' +
-        '<div class="pr-grid" id="prgrid"><p class="lb-wait">Cerco le stampe su Scryfall…</p></div></div>';
+        (hasDeck ? '<div class="lb-tabs" role="tablist"><button class="btn small on" role="tab" data-a="lb-tab" data-t="sf" aria-selected="true">Scryfall · stampe ufficiali</button><button class="btn small" role="tab" data-a="lb-tab" data-t="mpc" aria-selected="false">MPC Fill · comunità, fino a 1200 dpi</button></div>' : '') +
+        '<div class="pr-grid" id="prgrid"><p class="lb-wait">Cerco le stampe su Scryfall…</p></div><div class="mpcbox" id="mpcbox" hidden></div></div>';
       var q = '!"' + String(name).replace(/"/g, '') + '"';
       var mine = lb;
       getJson('/cards/search?q=' + encodeURIComponent(q) + '&unique=prints&order=released&dir=desc').then(function (res) {
@@ -4834,11 +5112,112 @@ window.CPA_SYNC = {
         lb.querySelector('#prgrid').innerHTML = '<p class="lb-wait">Non riesco a contattare Scryfall. Riprova tra poco.</p>';
       });
     }
+    /* ----- MPC Fill nel dialogo "Cambia stampa" ----- */
+    var mp = { tab: 'sf', name: '', s: null, minDpi: 0, hide: false, sort: 'dpi', one: false, busy: false, err: '', view: [] };
+    function mpcRow() {
+      if (!lb || !lb._el) return null;
+      var el = lb._el, d = getDeck(el.getAttribute('data-thd')); if (!d) return null;
+      var k = C.keyOf(el.getAttribute('data-thn')), st = (el.getAttribute('data-ths') || '').toLowerCase(), cn = (el.getAttribute('data-thc') || '').toLowerCase(), m = el.getAttribute('data-thm') || '';
+      var same = function (x) { return !x.design && C.keyOf(x.name) === k && (x.set || '').toLowerCase() === st && (x.cn || '').toLowerCase() === cn && (x.mpc || '') === m; };
+      var row = d.cards.filter(same)[0], side = false;
+      if (!row) { row = (d.side || []).filter(same)[0]; side = !!row; }
+      return row ? { d: d, row: row, side: side } : null;
+    }
+    function mpcPaint() {
+      var box = lb && lb.querySelector('#mpcbox'); if (!box) return;
+      var cur = mpcRow(), h = '';
+      if (!mpcOn()) {
+        box.innerHTML = '<p class="lb-wait">Le stampe di MPC Fill (fino a 1200 dpi) si cercano solo nell’app per Windows o Android: da una pagina web il sito le blocca.</p>'; return;
+      }
+      h += '<div class="mpc-intro"><b>Stampe della comunità</b> (mpcfill.com): immagini fatte da artisti e stampatori. Il numero in alto è la risoluzione; il bollino rosso segna arte o cornici <b>non ufficiali</b>. Le immagini senza etichette non sono garantite ufficiali.</div>';
+      if (cur && cur.row.mpc) h += '<div class="mpc-cur">Ora usi una stampa MPC' + (cur.row.mdpi ? ' da ' + cur.row.mdpi + ' dpi' : '') + (cur.row.muo ? ' (non ufficiale)' : '') + '. <button class="btn small" data-a="mpc-clear">Torna alla stampa Scryfall</button></div>';
+      if (!mp.s && !mp.busy) {
+        h += '<div class="btns"><button class="btn primary" data-a="mpc-go">Cerca «' + esc(mp.name) + '» su MPC Fill</button></div>' + (mp.err ? '<p class="err">' + esc(mp.err) + '</p>' : '');
+        box.innerHTML = h; return;
+      }
+      h += '<div class="mpc-ctl"><label class="lbl">Risoluzione minima<select class="select" data-c="mpc-min">' + [[0, 'Tutte'], [300, '300 dpi o più'], [600, '600 dpi o più'], [1200, '1200 dpi o più']].map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === mp.minDpi ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' +
+        '<label class="lbl">Ordina<select class="select" data-c="mpc-sort"><option value="dpi"' + (mp.sort === 'dpi' ? '' : ' selected') + '>Più dpi prima</option><option value="off"' + (mp.sort === 'off' ? ' selected' : '') + '>Ufficiali prima</option></select></label>' +
+        '<label class="chk"><input type="checkbox" data-c="mpc-hide"' + (mp.hide ? ' checked' : '') + '> Nascondi le non ufficiali</label>' +
+        (cur && cur.row.qty > 1 ? '<label class="chk"><input type="checkbox" data-c="mpc-one"' + (mp.one ? ' checked' : '') + '> Solo per una copia (ne hai ' + cur.row.qty + ')</label>' : '') + '</div>';
+      if (mp.busy && !(mp.s && mp.s.cards.length)) { box.innerHTML = h + '<p class="lb-wait"><span class="spin" aria-hidden="true"></span> Cerco su MPC Fill…</p>'; return; }
+      var all = mp.s ? mp.s.cards : [], list = all.filter(function (c) { return !(mp.hide && c.unofficial); });
+      list.sort(function (a, b) { return mp.sort === 'off' ? ((a.unofficial ? 1 : 0) - (b.unofficial ? 1 : 0)) || (b.dpi - a.dpi) : (b.dpi - a.dpi) || ((a.unofficial ? 1 : 0) - (b.unofficial ? 1 : 0)); });
+      mp.view = list;
+      var left = mp.s ? mp.s.total - mp.s.next : 0;
+      h += '<p class="mpc-count">' + (mp.s ? mp.s.total + ' ' + (mp.s.total === 1 ? 'stampa trovata' : 'stampe trovate') + (all.length < mp.s.total ? ' · ne mostro ' + all.length : '') : '') + '</p>';
+      if (!list.length) h += '<p class="lb-wait">' + (mp.s && mp.s.total ? 'Nessuna tra quelle caricate corrisponde ai filtri.' : 'Nessuna stampa trovata su MPC Fill.') + '</p>';
+      else h += '<div class="pr-grid mpc-grid">' + list.map(function (c, i) {
+        var use = cur && cur.row.mpc === c.id;
+        return '<button class="pr mp' + (use ? ' cur' : '') + (c.unofficial ? ' uo' : '') + '" data-a="mpc-pick" data-i="' + i + '" title="' + esc(c.name + (c.tags.length ? ' · ' + c.tags.join(', ') : '')) + '">' +
+          '<span class="mp-img"><img src="' + esc(MPCM.thumbUrl(c.id)) + '" alt="' + esc(c.name) + '" loading="lazy" referrerpolicy="no-referrer"><b class="dpi ' + dpiClass(c.dpi) + '">' + (c.dpi || '?') + ' dpi</b>' + (c.unofficial ? '<i class="uob">non ufficiale</i>' : '') + '</span>' +
+          '<span class="pn">' + esc(c.name) + '</span><span class="ms">' + esc(c.src) + (c.hint ? ' · ' + esc(c.hint) : '') + (c.size ? ' · ' + MPCM.mb(c.size) : '') + '</span>' +
+          (c.tags.length ? '<span class="mtg">' + c.tags.slice(0, 3).map(esc).join(' · ') + '</span>' : '<span class="mtg none">nessuna etichetta</span>') + '</button>';
+      }).join('') + '</div>';
+      if (left > 0) h += '<div class="btns"><button class="btn" data-a="mpc-more"' + (mp.busy ? ' disabled' : '') + '>' + (mp.busy ? 'Carico…' : 'Carica altre (' + Math.min(left, 75) + ' di ' + left + ')') + '</button></div>';
+      if (mp.err) h += '<p class="err">' + esc(mp.err) + '</p>';
+      var keep = box.querySelector('.mpc-grid'), top = keep ? keep.scrollTop : 0;
+      box.innerHTML = h;
+      var g2 = box.querySelector('.mpc-grid'); if (g2 && top) g2.scrollTop = top;
+    }
+    function mpcFail(e) { mp.busy = false; mp.err = (e && e.message) || 'Non riesco a contattare MPC Fill.'; mpcPaint(); }
+    function mpcGo() {
+      var m = mpcInst(), mine = lb; if (!m || !m.available() || !mine) return;
+      mp.busy = true; mp.err = ''; mp.s = null; mpcPaint();
+      m.search(mp.name, { minDpi: mp.minDpi }).then(function (s) { if (lb !== mine) throw null; mp.s = s; return m.more(s, 75); }).then(function () {
+        if (lb !== mine) return; mp.busy = false; mpcPaint();
+      }).catch(function (e) { if (lb !== mine || !e) return; mpcFail(e); });
+    }
+    function mpcMore() {
+      var m = mpcInst(), mine = lb; if (!m || !mp.s || mp.busy) return;
+      mp.busy = true; mp.err = ''; mpcPaint();
+      m.more(mp.s, 75).then(function () { if (lb !== mine) return; mp.busy = false; mpcPaint(); }).catch(function (e) { if (lb === mine) mpcFail(e); });
+    }
+    function tabLb(t) {
+      if (!lb) return;
+      mp.tab = t === 'mpc' ? 'mpc' : 'sf';
+      var g = lb.querySelector('#prgrid'), b = lb.querySelector('#mpcbox');
+      if (g) g.hidden = mp.tab === 'mpc'; if (b) b.hidden = mp.tab !== 'mpc';
+      [].forEach.call(lb.querySelectorAll('.lb-tabs [data-t]'), function (x) { var on = x.getAttribute('data-t') === mp.tab; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); });
+      if (mp.tab === 'mpc') { mpcPaint(); }
+    }
+    function mpcPick(i) {
+      var c = mp.view[i], cur = mpcRow(); if (!c || !cur) return;
+      var label = cur.row.name + ' · MPC ' + (c.dpi ? c.dpi + ' dpi' : 'Fill') + (c.unofficial ? ' (non ufficiale)' : '');
+      var deckId = cur.d.id, one = mp.one && cur.row.qty > 1, side = cur.side, row = { name: cur.row.name, set: cur.row.set, cn: cur.row.cn, mpc: cur.row.mpc };
+      closeLb();
+      mutate('Stampa scelta: ' + label, function () {
+        var d = getDeck(deckId); if (!d) return;
+        C.setMpc(d, row, { mpc: c.id, mdpi: c.dpi, muo: c.unofficial ? 1 : 0, msrc: c.src, mnm: c.name }, side, one);
+        d.updatedAt = Date.now();
+      });
+      render();
+    }
+    function mpcClear() {
+      var cur = mpcRow(); if (!cur || !cur.row.mpc) return;
+      var deckId = cur.d.id, side = cur.side, row = { name: cur.row.name, set: cur.row.set, cn: cur.row.cn, mpc: cur.row.mpc }, one = mp.one && cur.row.qty > 1;
+      closeLb();
+      mutate('Stampa Scryfall ripristinata: ' + row.name, function () { var d = getDeck(deckId); if (!d) return; C.setMpc(d, row, null, side, one); d.updatedAt = Date.now(); });
+      render();
+    }
+    function mpcClick(a, el) {
+      switch (a) {
+        case 'mpc-go': mpcGo(); break;
+        case 'mpc-more': mpcMore(); break;
+        case 'mpc-pick': mpcPick(parseInt(el.dataset.i, 10)); break;
+        case 'mpc-clear': mpcClear(); break;
+      }
+    }
+    function mpcChange(c, t) {
+      if (c === 'mpc-min') { mp.minDpi = parseInt(t.value, 10) || 0; mp.s = null; mpcGo(); }
+      else if (c === 'mpc-sort') { mp.sort = t.value; mpcPaint(); }
+      else if (c === 'mpc-hide') { mp.hide = t.checked; mpcPaint(); }
+      else if (c === 'mpc-one') { mp.one = t.checked; }
+    }
     function backLb() { if (!lb || !lb._el) return; var h = get(lb._el.getAttribute('data-thk')); if (h && h.u) showLb(lb._el, false); else closeLb(); }
     /* Apre direttamente la scelta della stampa (senza passare dall'anteprima grande). */
-    function openPrints(name, set, cn, deckId) {
+    function openPrints(name, set, cn, deckId, mpcId) {
       closeLb();
-      var at = { 'data-thn': name, 'data-ths': set || '', 'data-thc': cn || '', 'data-thd': deckId || '', 'data-thk': key(name, set, cn) };
+      var at = { 'data-thn': name, 'data-ths': set || '', 'data-thc': cn || '', 'data-thd': deckId || '', 'data-thm': mpcId || '', 'data-thk': key(name, set, cn) };
       lb = document.createElement('div'); lb.id = 'lb'; lb.className = 'lb'; lb.setAttribute('data-a', 'lb-close');
       lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', 'Stampe di ' + name);
       lb._el = { getAttribute: function (a) { return at[a] == null ? null : at[a]; } }; lb._side = 0;
@@ -4854,7 +5233,8 @@ window.CPA_SYNC = {
       closeLb();
       mutate('Stampa scelta: ' + label, function () {
         var d = getDeck(deckId); if (!d) return;
-        var card = d.cards.filter(function (c) { return C.keyOf(c.name) === C.keyOf(nm) && (c.set || '') === s0 && (c.cn || '') === c0; })[0];
+        var m0 = el.getAttribute('data-thm') || '';
+        var card = d.cards.filter(function (c) { return C.keyOf(c.name) === C.keyOf(nm) && (c.set || '') === s0 && (c.cn || '') === c0 && (c.mpc || '') === m0; })[0] || (d.side || []).filter(function (c) { return C.keyOf(c.name) === C.keyOf(nm) && (c.set || '') === s0 && (c.cn || '') === c0 && (c.mpc || '') === m0; })[0];
         if (card) { card.set = set.toUpperCase(); card.cn = String(cn); d.updatedAt = Date.now(); }
       });
       render();
@@ -4875,7 +5255,7 @@ window.CPA_SYNC = {
     }
 
     return { enabled: enabled, thumb: thumb, hydrate: hydrate, get: get, key: key, count: count, clear: clear,
-      open: function (el) { showLb(el, false); }, flip: flipLb, prints: printsLb, openPrints: openPrints, pic: pic, hasBack: hasBack, onFill: function (f) { fillFns.push(f); }, back: backLb, pick: pickLb, close: closeLb, hover: hover, isOpen: function () { return !!lb; } };
+      open: function (el) { showLb(el, false); }, flip: flipLb, prints: printsLb, openPrints: openPrints, pic: pic, hasBack: hasBack, onFill: function (f) { fillFns.push(f); }, back: backLb, pick: pickLb, close: closeLb, hover: hover, tab: tabLb, mpcClick: mpcClick, mpcChange: mpcChange, isOpen: function () { return !!lb; } };
   })();
 
   /* ---------- Struttura generale ---------- */
@@ -5459,14 +5839,14 @@ window.CPA_SYNC = {
   function dkRec(cc, c) { return cc ? ((c.set ? cc.rec(c.name, c.set, c.cn) : cc.rec(c.name, '', '')) || cc.any(c.name)) : null; }
   function dkPriceRec(cc, c) { return cc ? (c.set ? cc.rec(c.name, c.set, c.cn) : (cc.rec(c.name, '', '') || cc.any(c.name))) : null; }
   function dkIsCmd(d, c) { return d.kind === 'deck' && !!d.commander && C.keyOf(d.commander) === C.keyOf(c.name); }
-  function dkSame(c, p) { return p && C.keyOf(c.name) === C.keyOf(p.n) && (c.set || '') === (p.s || '') && (c.cn || '') === (p.c || ''); }
+  function dkSame(c, p) { return p && C.keyOf(c.name) === C.keyOf(p.n) && (c.set || '') === (p.s || '') && (c.cn || '') === (p.c || '') && (c.mpc || '') === (p.m || ''); }
   function dkAside() { return !!(window.matchMedia && window.matchMedia('(min-width: 1100px)').matches); }
   function dkAgo(ts) {
     if (!ts) return '';
     var n = Math.floor((Date.now() - ts) / 864e5);
     return n <= 0 ? 'oggi' : n === 1 ? 'ieri' : n + ' giorni fa';
   }
-  function dkAttrs(c) { return ' data-n="' + esc(c.name) + '" data-s="' + esc(c.set || '') + '" data-c="' + esc(c.cn || '') + '"'; }
+  function dkAttrs(c) { return ' data-n="' + esc(c.name) + '" data-s="' + esc(c.set || '') + '" data-c="' + esc(c.cn || '') + '"' + (c.mpc ? ' data-mp="' + esc(c.mpc) + '"' : ''); }
 
   /* Scarica una volta sola i dati delle carte che mancano (tipo e prezzo della stampa del mazzo). */
   function dkAuto(d) {
@@ -5489,8 +5869,8 @@ window.CPA_SYNC = {
     return out;
   }
   /* una riga si riconosce da nome, stampa, design e lista (mazzo o sideboard) */
-  function dkKey(c, side) { return (side ? 'S' : 'M') + '|' + C.keyOf(c.name) + '|' + (c.set || '') + '|' + (c.cn || '') + '|' + (c.design || ''); }
-  function dkTarget(el) { return { name: el.dataset.n, set: el.dataset.s || '', cn: el.dataset.c || '', design: el.dataset.dz || '' }; }
+  function dkKey(c, side) { return (side ? 'S' : 'M') + '|' + C.keyOf(c.name) + '|' + (c.set || '') + '|' + (c.cn || '') + '|' + (c.design || '') + '|' + (c.mpc || ''); }
+  function dkTarget(el) { return { name: el.dataset.n, set: el.dataset.s || '', cn: el.dataset.c || '', design: el.dataset.dz || '', mpc: el.dataset.mp || '' }; }
   function dkFind(d, p) {
     if (!p) return null;
     return d.cards.filter(function (x) { return dkSame(x, p); })[0] || (d.side || []).filter(function (x) { return dkSame(x, p); })[0] || null;
@@ -5514,13 +5894,14 @@ window.CPA_SYNC = {
   function dkRow(d, r) {
     var c = r.c, cc = CARDS.get(), basic = C.isBasic(c.name), st = CARDS.st;
     var seed = IMG.thumb(c.name, c.set, c.cn, d.id).replace('class="th', 'class="th seed');
+    if (c.mpc) seed = seed.replace('<span class="th', '<span data-thm="' + esc(c.mpc) + '" class="th');
     var pv = '';
     if (!c.design && !basic) pv = r.pr ? (r.unit != null ? '(' + eurF(r.unit) + ')' : '(n.d.)') : (CARDS.enabled() && !st.err ? '(…)' : '');
     var tip = 'Cambia stampa' + (c.set ? ' · ora ' + String(c.set).toUpperCase() + (c.cn ? ' ' + c.cn : '') : ' · stampa non indicata');
     var oth = r.others.length ? '<span class="oth ' + (r.others.some(function (x) { return x.active; }) ? 'use' : 'free') + '" title="' + esc('Anche in ' + r.others.map(function (x) { return x.deckName + ' ×' + x.qty + (x.active ? ' (in uso)' : ' (libera)'); }).join(', ')) + '">+' + r.others.length + '</span>' : '';
     var sel = dkSame(c, ui.dprev), open = ui.dmenu === dkKey(c, r.side);
-    return '<div class="dr' + (sel ? ' sel' : '') + (open ? ' mn' : '') + '" data-a="dr-open" tabindex="0"' + dkAttrs(c) + '>' + seed + '<span class="q">' + c.qty + '</span><span class="n">' + esc(c.name) + '</span>' +
-      (c.design ? '<span class="tag dzt">Design</span>' : '') + oth +
+    return '<div class="dr' + (sel ? ' sel' : '') + (open ? ' mn' : '') + (c.mpc ? ' mpr' : '') + '" data-a="dr-open" tabindex="0"' + dkAttrs(c) + '>' + seed + '<span class="q">' + c.qty + '</span><span class="n">' + esc(c.name) + '</span>' +
+      (c.design ? '<span class="tag dzt">Design</span>' : '') + (c.mpc ? '<span class="mpl">' + mpcTags(c) + '</span>' : '') + oth +
       (window.CPADesigner ? (c.design ? '<button class="btn small dzb" data-a="dz-unbind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Togli design</button>' : '<button class="btn small dzb" data-a="dz-bind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Design</button>') : '') +
       (c.design ? '' : '<button class="pb" data-a="dr-prints"' + dkAttrs(c) + ' title="' + esc(tip) + '" aria-label="' + esc('Cambia stampa di ' + c.name) + '">' + IC_SWAP + (pv ? '<span class="pv">' + pv + '</span>' : '') + '</button>') +
       '<button class="dmb" data-a="dr-menu"' + dkAttrs(c) + ' data-dz="' + esc(c.design || '') + '" data-side="' + (r.side ? 1 : '') + '" aria-expanded="' + open + '" title="Aggiungi, togli o sposta" aria-label="' + esc('Azioni su ' + c.name) + '">⋯</button></div>' +
@@ -5569,11 +5950,11 @@ window.CPA_SYNC = {
     if (!c) return '<div class="pv-empty"><p>Passa il mouse su una carta per vederla qui.</p></div>';
     var cc = CARDS.get(), pr = dkPriceRec(cc, c), unit = pr ? window.CPACards.unitPrice(pr) : null, rec = dkRec(cc, c);
     var back = ui.dflip && IMG.hasBack(c.name, c.set, c.cn);
-    var big = IMG.pic(c.name, c.set, c.cn, 'normal', back);
+    var big = c.mpc && MPCM ? MPCM.imageUrl(c.mpc, 900) : IMG.pic(c.name, c.set, c.cn, 'normal', back);
     var A = getArchive(), e = A.map[C.keyOf(c.name)], others = e ? e.rows.filter(function (r) { return r.deckId !== d.id; }) : [];
-    return '<div class="pv-img">' + (big ? '<img src="' + esc(big) + '" alt="' + esc(c.name) + '"' + (IMG.hasBack(c.name, c.set, c.cn) ? ' data-a="dr-flip" title="Gira la carta"' : '') + '>' : '<div class="pv-ph"><span>' + esc(c.name) + '</span></div>') + '</div>' +
+    return '<div class="pv-img">' + (big ? '<img src="' + esc(big) + '" alt="' + esc(c.name) + '"' + (c.mpc ? ' referrerpolicy="no-referrer"' : '') + (IMG.hasBack(c.name, c.set, c.cn) ? ' data-a="dr-flip" title="Gira la carta"' : '') + '>' : '<div class="pv-ph"><span>' + esc(c.name) + '</span></div>') + '</div>' +
       '<div class="pv-name">' + esc(c.name) + '</div>' +
-      '<div class="pv-meta">' + (c.set ? esc(String(c.set).toUpperCase()) + (c.cn ? ' ' + esc(c.cn) : '') : 'stampa non indicata') + (!c.design && !C.isBasic(c.name) && unit != null ? ' · ' + eurF(unit) : '') + '</div>' +
+      (c.mpc ? '<div class="pv-mpc">' + mpcTags(c) + (c.msrc ? '<span class="pv-by">di ' + esc(c.msrc) + '</span>' : '') + '</div>' : '') + '<div class="pv-meta">' + (c.set ? esc(String(c.set).toUpperCase()) + (c.cn ? ' ' + esc(c.cn) : '') : 'stampa non indicata') + (!c.design && !C.isBasic(c.name) && unit != null ? ' · ' + eurF(unit) : '') + '</div>' +
       (rec && rec.t ? '<div class="pv-type">' + esc(rec.t) + '</div>' : '') +
       (others.length ? '<div class="pv-oth">' + others.map(function (r) {
         return '<span class="pill ' + (r.active ? 'use' : 'free') + '">anche in ' + esc(r.deckName) + ' ×' + r.qty + (r.active ? ' · in uso' : ' · libera') + '</span>';
@@ -5583,8 +5964,8 @@ window.CPA_SYNC = {
   }
   function dprevPaint() { var el = $('#dprev'), d = getDeck(); if (el && d) el.innerHTML = dkPrevHtml(d); }
   function dkSelect(row) {
-    var p = { n: row.dataset.n, s: row.dataset.s, c: row.dataset.c };
-    if (ui.dprev && ui.dprev.n === p.n && ui.dprev.s === p.s && ui.dprev.c === p.c) return;
+    var p = { n: row.dataset.n, s: row.dataset.s, c: row.dataset.c, m: row.dataset.mp || '' };
+    if (ui.dprev && ui.dprev.n === p.n && ui.dprev.s === p.s && ui.dprev.c === p.c && (ui.dprev.m || '') === p.m) return;
     ui.dprev = p; ui.dflip = false;
     [].forEach.call(document.querySelectorAll('.dr.sel'), function (x) { x.classList.remove('sel'); });
     row.classList.add('sel');
@@ -6089,7 +6470,9 @@ window.CPA_SYNC = {
       case 'dadd-force': daddGo(true); break;
       case 'dadd-pick': { var dq2 = $('#dadd-q'); if (dq2) { dq2.value = el.dataset.v; dq2.focus(); } ui.dSug = []; daddPaint(); } break;
       case 'export-deck': deck = getDeck(); if (deck) { var fn = C.exportFileName(deck); download(fn, C.exportDeck(deck), 'text/plain').then(function (r) { toast(r === 'declined' ? 'Download annullato.' : r ? 'Lista scaricata: ' + fn : 'Download non riuscito: usa «Copia lista» e incolla in un file di testo.'); }); } break;
-      case 'dr-prints': IMG.openPrints(el.dataset.n, el.dataset.s, el.dataset.c, ui.deckId); break;
+      case 'dr-prints': IMG.openPrints(el.dataset.n, el.dataset.s, el.dataset.c, ui.deckId, el.dataset.mp || ''); break;
+      case 'lb-tab': IMG.tab(el.dataset.t); break;
+      case 'mpc-go': case 'mpc-more': case 'mpc-pick': case 'mpc-clear': IMG.mpcClick(a, el); break;
       case 'dr-flip': ui.dflip = !ui.dflip; dprevPaint(); break;
       case 'dr-retry': CARDS.st.err = ''; updateDeckList(); break;
       case 'deck-man': ui.dMan = !ui.dMan; { var mp = $('#dman'); if (mp) mp.hidden = !ui.dMan; el.setAttribute('aria-expanded', ui.dMan); } break;
@@ -6260,6 +6643,7 @@ window.CPA_SYNC = {
           render();
         } break;
       case 'dadd-to': ui.dAddSide = t.value === 'side'; break;
+      case 'mpc-min': case 'mpc-sort': case 'mpc-hide': case 'mpc-one': IMG.mpcChange(c, t); break;
       case 'deck-name': d = getDeck(); if (d && t.value.trim()) { d.name = t.value.trim(); d.updatedAt = Date.now(); touch(d.id); render(); } break;
       case 'deck-cmd': d = getDeck(); if (d) { d.commander = t.value || null; d.updatedAt = Date.now(); touch(d.id); render(); } break;
       case 'up-name':
@@ -6329,12 +6713,12 @@ window.CPA_SYNC = {
 
   /* ---------- stato e preferenze ---------- */
   function fresh() {
-    return { source: 'paste', deckId: null, deckName: '', text: '', entries: [], opts: JSON.parse(JSON.stringify(P.DEFAULTS)), upBleed: '0',
+    return { source: 'paste', deckId: null, deckName: '', text: '', entries: [], opts: JSON.parse(JSON.stringify(P.DEFAULTS)), upBleed: '0', mpcDpi: 600,
       tokens: false, tokList: [], tokSig: null, tokBusy: false, tokDirty: false, nobasic: false, busy: '', progress: '', page: 1, report: null, picker: null, pickList: null, presets: {}, presetName: '', msg: '' };
   }
   function prefs() { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch (e) { return {}; } }
   function savePrefs() {
-    try { localStorage.setItem(LS, JSON.stringify({ opts: bd.opts, upBleed: bd.upBleed, tokens: bd.tokens, nobasic: bd.nobasic, presets: bd.presets })); } catch (e) { /* ignorato */ }
+    try { localStorage.setItem(LS, JSON.stringify({ opts: bd.opts, upBleed: bd.upBleed, mpcDpi: bd.mpcDpi, tokens: bd.tokens, nobasic: bd.nobasic, presets: bd.presets })); } catch (e) { /* ignorato */ }
   }
   function init() {
     if (bd) return;
@@ -6342,6 +6726,7 @@ window.CPA_SYNC = {
     var p = prefs();
     if (p.opts && typeof p.opts === 'object') for (var k in bd.opts) if (p.opts[k] !== undefined) bd.opts[k] = p.opts[k];
     if (p.upBleed != null) bd.upBleed = String(p.upBleed);
+    if (p.mpcDpi === 300 || p.mpcDpi === 600 || p.mpcDpi === 1200) bd.mpcDpi = p.mpcDpi;
     bd.tokens = !!p.tokens; bd.nobasic = !!p.nobasic;
     if (p.presets && typeof p.presets === 'object') bd.presets = p.presets;
   }
@@ -6357,7 +6742,7 @@ window.CPA_SYNC = {
   function available() { return H.available(); }
 
   /* ---------- carte ---------- */
-  function mkEntry(c) { var e = { id: ++seq, name: c.name, qty: c.qty == null ? 1 : c.qty, set: c.set || '', cn: c.cn || '', card: null, nf: false }; if (c.design) e.design = c.design; return e; }
+  function mkEntry(c) { var e = { id: ++seq, name: c.name, qty: c.qty == null ? 1 : c.qty, set: c.set || '', cn: c.cn || '', card: null, nf: false }; if (c.design) e.design = c.design; if (c.mpc) { e.mpc = c.mpc; e.mdpi = c.mdpi || 0; e.muo = c.muo ? 1 : 0; e.msrc = c.msrc || ''; } return e; }
   /* Le carte con un design del Designer si stampano con l'immagine disegnata (angoli quadri, 300 dpi) al posto di quella di Scryfall. */
   function attachDesigns() {
     var D = window.CPADesigner, list = bd.entries.filter(function (e) { return e.design && !e.custom; });
@@ -6408,7 +6793,7 @@ window.CPA_SYNC = {
   }
 
   function resolveAll() {
-    var todo = bd.entries.filter(function (e) { return !e.card && !e.nf && !e.custom && !e.design; });
+    var todo = bd.entries.filter(function (e) { return !e.card && !e.nf && !e.custom && !e.design && !e.mpc; });
     if (!todo.length || bd.busy) return;
     var my = ++runId;
     bd.busy = 'resolve'; bd.progress = 'Cerco le carte su Scryfall…';
@@ -6439,7 +6824,7 @@ window.CPA_SYNC = {
   function syncTokens() {
     if (!bd || !bd.tokens || !available()) return;
     if (bd.tokBusy) { bd.tokDirty = true; return; }
-    var pend = bd.entries.filter(function (e) { return (e.design || e.fromDesign) && !e.card && !e.tokCard && !e.tokNf; });
+    var pend = bd.entries.filter(function (e) { return (e.design || e.fromDesign || e.mpc) && !e.card && !e.tokCard && !e.tokNf; });
     bd.tokBusy = true; bd.tokDirty = false; softRender();
     var r = getResolver(), pre = pend.length ? r.resolve(pend).then(function (found) { pend.forEach(function (e) { var c = found[r.keyFor(e)]; if (c) e.tokCard = c; else e.tokNf = true; }); }, function () { pend.forEach(function (e) { e.tokNf = true; }); }) : Promise.resolve();
     pre.then(function () {
@@ -6502,7 +6887,7 @@ window.CPA_SYNC = {
   function ownFile(e, file, side) {
     X.fromFile(file, P.parseJpeg).then(function (img) {
       var thumb = null; try { thumb = URL.createObjectURL(file); } catch (er) { thumb = null; }
-      if (side === 'back') { e.customBack = img; e.thumbBack = thumb; } else { e.custom = img; e.thumb = thumb; e.nf = false; }
+      if (side === 'back') { e.customBack = img; e.thumbBack = thumb; } else { e.custom = img; e.thumb = thumb; e.nf = false; delete e.mpc; e.fromMpc = false; }
       H.render();
     }, function (err) { H.toast('«' + file.name + '»: ' + (err && err.message ? err.message : 'immagine non leggibile') + '.'); });
   }
@@ -6524,17 +6909,61 @@ window.CPA_SYNC = {
     var up = parseFloat(String(bd.upBleed).replace(',', '.')) || 0;
     return bd.entries.filter(inc).map(function (e) {
       var o = { name: e.name, qty: e.qty, set: e.set, cn: e.cn, card: e.card, nf: e.nf };
-      if (e.custom) { e.custom.bleed = up; o.front = e.custom; }
+      if (e.custom) { e.custom.bleed = e.fromMpc ? (window.CPAMpc ? window.CPAMpc.BLEED_MM : 3) : up; o.front = e.custom; }
       if (e.customBack) { e.customBack.bleed = up; o.back = e.customBack; o.backName = e.name + ' (retro)'; }
       return o;
     }).concat(bd.tokens ? bd.tokList.filter(inc).map(function (e) { return { name: e.name, qty: e.qty, set: e.set, cn: e.cn, card: e.card, nf: false }; }) : []);
   }
+  /* ---------- stampe MPC Fill: si scaricano alla qualità scelta solo al momento di creare il PDF ---------- */
+  function mpcBlob(url) {
+    if (window.cpaNet && typeof window.cpaNet.image === 'function') {
+      return window.cpaNet.image(url).then(function (r) {
+        if (!r || !r.ok) throw new Error((r && r.error) || 'rete');
+        return new Blob([r.data], { type: r.type || 'image/png' });
+      });
+    }
+    /* sul telefono le immagini sono binarie: serve il fetch originale della pagina, non quello nativo */
+    return (window.CapacitorWebFetch || window.fetch).call(window, url).then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.blob(); });
+  }
+  function mpcPending() { return bd.entries.filter(function (e) { return inc(e) && e.mpc && !(e.custom && e.mpcQ === bd.mpcDpi); }); }
+  function loadMpc() {
+    var M = window.CPAMpc, list = M ? mpcPending() : [];
+    if (!list.length) return Promise.resolve();
+    var px = M.pxForDpi(bd.mpcDpi), done = 0, bad = 0, i = 0;
+    function one() {
+      var e = list[i++]; if (!e) return Promise.resolve();
+      return mpcBlob(M.imageUrl(e.mpc, px)).then(function (blob) { return X.fromFile(blob, P.parseJpeg); }).then(function (img) {
+        e.custom = img; e.fromMpc = true; e.mpcQ = bd.mpcDpi; e.mpcFail = false;
+      }).catch(function () { e.custom = null; e.fromMpc = false; e.mpcFail = true; bad++; }).then(function () {
+        done++; bd.progress = 'Scarico le stampe MPC Fill: ' + done + ' / ' + list.length;
+        var el = document.getElementById('bd-prog'); if (el) el.textContent = bd.progress;
+        return one();
+      });
+    }
+    bd.progress = 'Scarico le stampe MPC Fill: 0 / ' + list.length; softRender();
+    return Promise.all([one(), one()]).then(function () {
+      if (bad) H.toast(bad === 1 ? 'Una stampa MPC Fill non si è scaricata: uso quella di Scryfall.' : bad + ' stampe MPC Fill non si sono scaricate: uso quelle di Scryfall.', null, true);
+    });
+  }
+  /* finito il lavoro le immagini grandi si buttano via: erano solo per il PDF */
+  function releaseMpc() { bd.entries.forEach(function (e) { if (e.fromMpc) { e.custom = null; e.fromMpc = false; e.mpcQ = 0; } }); }
+  function mpcPanel() {
+    var list = bd.entries.filter(function (e) { return inc(e) && e.mpc; });
+    if (!list.length) return '';
+    var uo = list.filter(function (e) { return e.muo; }).length, q = bd.mpcDpi, n = list.reduce(function (t, e) { return t + e.qty; }, 0);
+    var mbEach = q >= 1200 ? 5 : q >= 600 ? 1.6 : 0.5, est = Math.round(list.length * mbEach);
+    return '<div class="bd-mpc"><label class="lbl">Qualità delle stampe MPC Fill<select class="select" data-c="bd-mpcq">' + [[300, '300 dpi · leggero'], [600, '600 dpi · consigliato'], [1200, '1200 dpi · massimo']].map(function (o) {
+      return '<option value="' + o[0] + '"' + (o[0] === q ? ' selected' : '') + '>' + o[1] + '</option>';
+    }).join('') + '</select></label><p class="hint">' + plural(list.length, 'carta usa', 'carte usano') + ' una stampa della comunità (' + n + ' copie): l’immagine si scarica da Google a ' + q + ' dpi, con 3 mm di abbondanza già compresi. PDF stimato: circa ' + est + ' MB' + (q >= 1200 && list.length > 25 ? ' — molto pesante, meglio 600 dpi' : '') + '.' +
+      (uo ? ' <b>' + plural(uo, 'stampa è non ufficiale', 'stampe sono non ufficiali') + '</b> (arte o cornice fatte dalla comunità).' : '') + '</p></div>';
+  }
+
   function prepareJob(label) {
     if (!available()) { H.toast('Il builder ha bisogno di internet per scaricare le immagini: non funziona dentro Claude.'); return Promise.reject(new Error('na')); }
     var ents = jobEntries();
     if (!ents.length) { H.toast('Non ci sono carte da stampare.'); return Promise.reject(new Error('empty')); }
     bd.busy = 'gen'; bd.report = null; bd.progress = label; softRender();
-    return getResolver().prepare(ents, { parse: P.parseJpeg, tokens: false }, function (p) {
+    return loadMpc().then(function () { ents = jobEntries(); return getResolver().prepare(ents, { parse: P.parseJpeg, tokens: false }, function (p) {
       bd.progress = p.phase === 'cards' ? 'Cerco le carte: ' + p.found + ' / ' + p.total : 'Scarico le immagini: ' + p.done + ' / ' + p.total;
       var el = document.getElementById('bd-prog'); if (el) el.textContent = bd.progress;
     }).then(function (res) {
@@ -6543,7 +6972,7 @@ window.CPA_SYNC = {
         var e = bd.entries.filter(inc)[i]; if (e && !e.card && o.card) e.card = o.card; else if (e && !e.card && !o.front && !e.custom) e.nf = true;
       });
       return res;
-    });
+    }); });
   }
   function fileName(ext) {
     var base = (bd.source === 'deck' && bd.deckName ? bd.deckName : 'proxy').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'proxy';
@@ -6558,10 +6987,10 @@ window.CPA_SYNC = {
     return out.concat(extra || []);
   }
   function plural(n, a, b) { return n + ' ' + (n === 1 ? a : b); }
-  function finish(msg, items) { bd.busy = ''; bd.progress = ''; bd.report = { msg: msg, items: items || [] }; softRender(); }
+  function finish(msg, items) { releaseMpc(); bd.busy = ''; bd.progress = ''; bd.report = { msg: msg, items: items || [] }; softRender(); }
   function fail(err) {
     if (err && (err.message === 'na' || err.message === 'empty')) { bd.busy = ''; bd.progress = ''; softRender(); return; }
-    bd.busy = ''; bd.progress = '';
+    releaseMpc(); bd.busy = ''; bd.progress = '';
     H.toast('Qualcosa non ha funzionato' + (err && err.status ? ' (errore ' + err.status + ')' : '') + ': controlla la connessione e riprova.' + (err && err.message && !err.status ? ' (' + err.message + ')' : ''), null, true);
     softRender();
   }
@@ -6609,7 +7038,8 @@ window.CPA_SYNC = {
     var items = bd.entries.filter(inc).concat(bd.tokens ? bd.tokList.filter(inc) : []).map(function (e) {
       var fs = e.card ? X.faces(e.card, 'normal') : [], bord = e.card ? X.borderOf(e.card) : '#000000';
       var front, back = null;
-      if (e.custom) front = { thumb: e.thumb || '', width: e.custom.width, height: e.custom.height, border: e.custom.border, cornerPatch: false, bleed: up };
+      if (e.mpc && window.CPAMpc) front = { thumb: window.CPAMpc.thumbUrl(e.mpc), width: 690, height: 940, border: '#000000', cornerPatch: false, bleed: window.CPAMpc.BLEED_MM };
+      else if (e.custom) front = { thumb: e.thumb || '', width: e.custom.width, height: e.custom.height, border: e.custom.border, cornerPatch: false, bleed: up };
       else if (e.nf) front = null;
       else front = { thumb: fs[0] ? fs[0].url : '', width: 488, height: 680, border: bord };
       if (e.customBack) back = { thumb: e.thumbBack || '', width: e.customBack.width, height: e.customBack.height, border: e.customBack.border, cornerPatch: false, bleed: up };
@@ -6676,8 +7106,9 @@ window.CPA_SYNC = {
   function cardSizes() { return Object.keys(P.CARD_SIZES).map(function (k) { return [k, P.CARD_SIZES[k].label]; }); }
 
   function rowHtml(e) {
-    var fs = e.card ? X.faces(e.card, 'small') : [], th = e.custom ? e.thumb : (fs[0] && fs[0].url), st = '', cls = '';
+    var fs = e.card ? X.faces(e.card, 'small') : [], th = e.mpc && window.CPAMpc ? window.CPAMpc.thumbUrl(e.mpc) : e.custom ? e.thumb : (fs[0] && fs[0].url), st = '', cls = '';
     if (e.token) { st = 'token di ' + e.from.slice(0, 3).join(', ') + (e.from.length > 3 ? ' e altre ' + (e.from.length - 3) : ''); cls = 'info'; }
+    else if (e.mpc) { st = 'MPC Fill' + (e.mdpi ? ' · ' + e.mdpi + ' dpi' : '') + (e.muo ? ' · non ufficiale' : ''); cls = e.muo ? 'warn' : 'own'; }
     else if (e.custom) { st = e.fromDesign ? 'design Coglio' : 'immagine tua'; cls = 'own'; }
     else if (e.nf) { st = 'non trovata'; cls = 'err'; }
     else if (e.card) {
@@ -6691,7 +7122,7 @@ window.CPA_SYNC = {
       '<input class="input bd-q" type="number" min="0" max="99" inputmode="numeric" data-c="bd-qty" data-id="' + e.id + '" value="' + e.qty + '" aria-label="Quantità di ' + esc(e.name) + '">' +
       '<span class="bd-nm"><b>' + esc(e.name) + '</b><small>' + (e.side ? '<span class="tag">sideboard</span>' : '') + (tag ? '<span class="tag">' + esc(tag) + '</span>' : '') + (st ? '<span class="bd-st ' + cls + '">' + esc(st) + '</span>' : '') + '</small></span>' +
       '<span class="bd-acts">' +
-      (e.card && !e.custom ? '<button class="btn small" data-a="bd-prints" data-id="' + e.id + '" aria-label="Scegli un’altra stampa di ' + esc(e.name) + '">Stampa…</button>' : '') +
+      (e.card && !e.custom && !e.mpc ? '<button class="btn small" data-a="bd-prints" data-id="' + e.id + '" aria-label="Scegli un’altra stampa di ' + esc(e.name) + '">Stampa…</button>' : '') +
       (e.token ? '' : '<label class="btn small">' + (e.custom ? 'Cambia' : 'Tua immagine') + '<input type="file" accept="image/*" hidden data-c="bd-file" data-id="' + e.id + '" data-side="front"></label>') +
       (e.custom && !e.token ? '<label class="btn small">' + (e.customBack ? 'Cambia retro' : 'Retro') + '<input type="file" accept="image/*" hidden data-c="bd-file" data-id="' + e.id + '" data-side="back"></label>' : '') +
       (e.token ? '' : '<button class="btn small danger" data-a="bd-del" data-id="' + e.id + '" aria-label="Togli ' + esc(e.name) + '">×</button>') + '</span></div>';
@@ -6729,6 +7160,7 @@ window.CPA_SYNC = {
     var list = '<section class="panel"><div class="bd-head"><h2>Carte <span class="cnt">' + total() + '</span></h2><div class="bd-opts">' +
       chk('nobasic', 'Escludi le terre base', bd.nobasic, 'bd-top') + chk('tokens', 'Aggiungi i token', bd.tokens, 'bd-top') + '</div></div>' +
       (bd.source === 'deck' ? '<div class="btns"><label class="btn small">Aggiungi tue immagini<input type="file" accept="image/*" multiple hidden data-c="bd-addfiles"></label></div>' : '') +
+      mpcPanel() +
       '<div class="bd-list">' + (rows || '<p class="hint">Nessuna carta: incolla una lista e premi «Leggi la lista».</p>') + '</div></section>';
     if (bd.tokens) {
       list += '<section class="panel" id="bd-tok"><div class="bd-head"><h2>Token <span class="cnt">' + tokTotal() + '</span></h2></div>' +
@@ -6831,6 +7263,7 @@ window.CPA_SYNC = {
     switch (c) {
       case 'bd-opt': bd.opts[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value; savePrefs(); H.render(); break;
       case 'bd-up': bd.upBleed = el.value; savePrefs(); H.render(); break;
+      case 'bd-mpcq': bd.mpcDpi = [300, 600, 1200].indexOf(parseInt(el.value, 10)) >= 0 ? parseInt(el.value, 10) : 600; savePrefs(); H.render(); break;
       case 'bd-top': bd[el.dataset.k] = el.checked; savePrefs(); H.render(); if (el.dataset.k === 'tokens' || el.dataset.k === 'nobasic') { bd.tokSig = null; syncTokens(); } break;
       case 'bd-qty': if (e) { var q = parseInt(el.value, 10); e.qty = isFinite(q) && q > 0 ? Math.min(q, 99) : 0; H.render(); if (!e.token) { bd.tokSig = null; syncTokens(); } } break;
       case 'bd-file': if (e && el.files && el.files[0]) ownFile(e, el.files[0], el.dataset.side); break;

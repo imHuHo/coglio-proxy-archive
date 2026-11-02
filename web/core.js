@@ -432,21 +432,34 @@
     var left = qty;
     [deck.cards, deck.side || []].forEach(function (list) {
       list.forEach(function (c) {
-        if (left > 0 && !c.design && keyOf(c.name) === key && (!target || samePrint(target, c))) { var t = Math.min(c.qty, left); c.qty -= t; left -= t; }
+        if (left > 0 && !c.design && !c.mpc && keyOf(c.name) === key && (!target || samePrint(target, c))) { var t = Math.min(c.qty, left); c.qty -= t; left -= t; }
       });
     });
     deck.cards = deck.cards.filter(function (c) { return c.qty > 0; });
     if (deck.side) deck.side = deck.side.filter(function (c) { return c.qty > 0; });
     return qty - left;
   }
+  /* Stampa della comunita' (MPC Fill): id dell'immagine + dpi, archivio e se e' non ufficiale, per mostrarli senza internet. */
+  function mpcOf(card) {
+    var o = {};
+    if (card && typeof card.mpc === 'string' && card.mpc) {
+      o.mpc = card.mpc;
+      var d = Math.round(Number(card.mdpi) || 0); if (d > 0) o.mdpi = d;
+      if (card.muo) o.muo = 1;
+      if (card.msrc) o.msrc = String(card.msrc).slice(0, 60);
+      if (card.mnm) o.mnm = String(card.mnm).slice(0, 120);
+    }
+    return o;
+  }
   function addCopies(deck, card, qty) {
-    var k = keyOf(card.name), set = card.set || '', cn = card.cn || '', ds = card.design || '';
+    var k = keyOf(card.name), set = card.set || '', cn = card.cn || '', ds = card.design || '', mp = card.mpc || '';
     for (var i = 0; i < deck.cards.length; i++) {
       var c = deck.cards[i];
-      if (keyOf(c.name) === k && c.set === set && c.cn === cn && (c.design || '') === ds) { c.qty += qty; return; }
+      if (keyOf(c.name) === k && c.set === set && c.cn === cn && (c.design || '') === ds && (c.mpc || '') === mp) { c.qty += qty; return; }
     }
     var row = { name: card.name, qty: qty, set: set, cn: cn };
     if (ds) row.design = ds;
+    Object.assign(row, mpcOf(card));
     deck.cards.push(row);
   }
 
@@ -454,7 +467,7 @@
   /* ---------- Modifica a mano: aggiungere, togliere e spostare carte (mazzo ↔ sideboard) ---------- */
   function listOf(deck, side) { if (side) { if (!deck.side) deck.side = []; return deck.side; } return deck.cards; }
   function sameRow(c, card) {
-    return keyOf(c.name) === keyOf(card.name) && (c.set || '') === (card.set || '') && (c.cn || '') === (card.cn || '') && (c.design || '') === (card.design || '');
+    return keyOf(c.name) === keyOf(card.name) && (c.set || '') === (card.set || '') && (c.cn || '') === (card.cn || '') && (c.design || '') === (card.design || '') && (c.mpc || '') === (card.mpc || '');
   }
   /* Aggiunge `qty` copie (si fondono con la riga identica); restituisce la riga. */
   function addCard(deck, card, qty, side) {
@@ -462,6 +475,7 @@
     for (var i = 0; i < list.length; i++) if (sameRow(list[i], card)) { list[i].qty += q; return list[i]; }
     var row = { name: card.name, qty: q, set: card.set || '', cn: card.cn || '' };
     if (card.design) row.design = card.design;
+    Object.assign(row, mpcOf(card));
     list.push(row); return row;
   }
   /* Toglie `qty` copie di quella riga (tutte se qty manca); restituisce quante ne ha tolte. */
@@ -478,9 +492,23 @@
   }
   /* Sposta `qty` copie da una lista all'altra (tutte se qty manca); la stampa e il design restano. */
   function moveCard(deck, card, qty, toSide) {
+    var from = listOf(deck, !toSide), src = null;
+    for (var i = 0; i < from.length; i++) if (sameRow(from[i], card)) { src = Object.assign({}, from[i]); break; }
     var got = removeCard(deck, card, qty, !toSide);
-    if (got) addCard(deck, card, got, !!toSide);
+    if (got) addCard(deck, src || card, got, !!toSide);
     return got;
+  }
+  /* Assegna (o toglie, con info nullo) la stampa MPC Fill a una riga: a tutte le copie, o a una sola (la riga si divide). Restituisce la riga nuova. */
+  function setMpc(deck, card, info, side, one) {
+    var list = listOf(deck, side), row = null, i;
+    for (i = 0; i < list.length; i++) if (sameRow(list[i], card)) { row = list[i]; break; }
+    if (!row) return null;
+    var plain = { name: row.name, set: row.set || '', cn: row.cn || '' };
+    if (row.design) plain.design = row.design;
+    var want = info ? Object.assign(plain, mpcOf(info)) : plain;
+    if (one && row.qty > 1) { row.qty -= 1; return addCard(deck, want, 1, side); }
+    list.splice(i, 1);
+    return addCard(deck, want, row.qty, side);
   }
   function countOf(list) { return (list || []).reduce(function (t, c) { return t + c.qty; }, 0); }
 
@@ -532,9 +560,10 @@
     if (binder) rep.binderName = binder.name;
 
     var kept = {};
-    deck.cards.forEach(function (c) { if (c.design) kept[keyOf(c.name)] = c.design; });
+    var keptM = {};
+    deck.cards.forEach(function (c) { if (c.design) kept[keyOf(c.name)] = c.design; else if (c.mpc && !keptM[keyOf(c.name)]) keptM[keyOf(c.name)] = mpcOf(c); });
     deck.cards = cloneJ(up.cards);
-    deck.cards.forEach(function (c) { var k = keyOf(c.name); if (kept[k]) { c.design = kept[k]; delete kept[k]; } });
+    deck.cards.forEach(function (c) { var k = keyOf(c.name); if (kept[k]) { c.design = kept[k]; delete kept[k]; } else if (keptM[k]) { Object.assign(c, keptM[k]); delete keptM[k]; } });
     if (up.commander) deck.commander = up.commander;
     deck.upgrades = deck.upgrades.filter(function (u) { return u.id !== upgradeId; });
     deck.updatedAt = now;
@@ -556,7 +585,7 @@
       decks.forEach(function (d) {
         var q = 0;
         allCards(d).forEach(function (c) {
-          if (keyOf(c.name) !== k || c.design) return;
+          if (keyOf(c.name) !== k || c.design || c.mpc) return;
           q += c.qty;
           if ((d.kind === 'binder' || isFreeDeck(d))) pool.push({ deckId: d.id, deckName: d.name, kind: d.kind, set: c.set || '', cn: c.cn || '', left: c.qty });
         });
@@ -610,11 +639,11 @@
           var left = got, moved = [];
           deck.cards.forEach(function (c) {
             if (left > 0 && keyOf(c.name) === it.key && (kind === 'other' || samePrint(row, c))) {
-              var t = Math.min(c.qty, left); c.qty -= t; left -= t; moved.push({ name: c.name, set: c.set, cn: c.cn, qty: t, design: c.design });
+              var t = Math.min(c.qty, left); c.qty -= t; left -= t; moved.push(Object.assign({ name: c.name, set: c.set, cn: c.cn, qty: t, design: c.design }, mpcOf(c)));
             }
           });
           deck.cards = deck.cards.filter(function (c) { return c.qty > 0; });
-          moved.forEach(function (m) { addCopies(deck, { name: m.name, set: row.set || m.set, cn: row.set ? row.cn : m.cn, design: m.design }, m.qty); });
+          moved.forEach(function (m) { addCopies(deck, Object.assign({ name: m.name, set: row.set || m.set, cn: row.set ? row.cn : m.cn, design: m.design }, mpcOf(m)), m.qty); });
           done.push({ name: it.name, qty: got, deckId: src.id, deckName: src.name, kind: src.kind, from: kind, set: row.set, cn: row.cn });
         });
       });
@@ -630,6 +659,7 @@
         set: String(c && c.set || ''), cn: String(c && c.cn || '')
       };
       if (c && typeof c.design === 'string' && c.design) o.design = c.design;
+      Object.assign(o, mpcOf(c));
       return o;
     }).filter(function (c) { return c.name; });
   }
@@ -661,7 +691,7 @@
   return {
     keyOf: keyOf, searchNorm: searchNorm, isBasic: isBasic, uid: uid,
     parseList: parseList, buildArchive: buildArchive, diffUpgrade: diffUpgrade,
-    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, applyReuse: applyReuse, statusOf: statusOf, isPrinted: isPrinted, samePrint: samePrint, clone: cloneJ, exportText: exportText, exportDeck: exportDeck, exportFileName: exportFileName, allCards: allCards, addCard: addCard, removeCard: removeCard, moveCard: moveCard, countOf: countOf, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, bracketNumber: bracketNumber, deckSig: deckSig, diffText: diffText,
+    applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, applyReuse: applyReuse, statusOf: statusOf, isPrinted: isPrinted, samePrint: samePrint, clone: cloneJ, exportText: exportText, exportDeck: exportDeck, exportFileName: exportFileName, allCards: allCards, addCard: addCard, removeCard: removeCard, moveCard: moveCard, setMpc: setMpc, mpcOf: mpcOf, countOf: countOf, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, bracketNumber: bracketNumber, deckSig: deckSig, diffText: diffText,
     sanitizeDeck: sanitizeDeck, sanitizeSettings: sanitizeSettings, inUse: inUse
   };
 });

@@ -619,6 +619,50 @@
   /* Dato nome e collezione, l'immagine si ricava da api.scryfall.com. Le richieste partono a lotti (fino a 75
      carte) solo per le righe che si vedono, con una pausa fra una chiamata e l'altra come chiede Scryfall.
      L'indirizzo trovato resta salvato sul dispositivo, quindi ogni carta si cerca una volta sola. */
+  /* ---------- MPC Fill: stampe della comunità (fino a 1200 dpi), solo nelle app Windows e Android ---------- */
+  var MPCM = window.CPAMpc || null, MPCI = null;
+  function mpcHttp() {
+    var cap = window.Capacitor, nat = cap && cap.Plugins && cap.Plugins.CapacitorHttp;
+    if (window.cpaNet && typeof window.cpaNet.mpc === 'function') {
+      return function (req) { return window.cpaNet.mpc(req).then(function (r) { return { status: (r && r.status) || 0, text: (r && r.text) || '' }; }); };
+    }
+    if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform() && nat) {
+      return function (req) {
+        var data; try { data = req.body ? JSON.parse(req.body) : undefined; } catch (e) { data = req.body; }
+        return nat.request({ url: req.url, method: req.method || 'GET', headers: req.headers || {}, data: data, responseType: 'text' }).then(function (r) {
+          return { status: r.status, text: typeof r.data === 'string' ? r.data : JSON.stringify(r.data) };
+        });
+      };
+    }
+    return null;
+  }
+  function mpcCache() {
+    var LS = 'cpa:mpc:v1', mem = null;
+    function load() { if (!mem) { try { mem = JSON.parse(localStorage.getItem(LS)) || {}; } catch (e) { mem = {}; } } return mem; }
+    var t = null;
+    function save() {
+      clearTimeout(t);
+      t = setTimeout(function () {
+        var m = load(), ks = Object.keys(m);
+        if (ks.length > 900) { ks.sort(function (a, b) { return (m[a].t || 0) - (m[b].t || 0); }).slice(0, ks.length - 700).forEach(function (k) { delete m[k]; }); }
+        try { localStorage.setItem(LS, JSON.stringify(m)); } catch (e) { /* spazio finito: pazienza */ }
+      }, 800);
+    }
+    return { get: function (k) { return load()[k] || null; }, set: function (k, v) { load()[k] = v; if (v && !v.t) v.t = Date.now(); save(); }, clear: function () { mem = {}; try { localStorage.removeItem(LS); } catch (e) { /* ignorato */ } } };
+  }
+  function mpcInst() {
+    if (!MPCM) return null;
+    if (!MPCI) MPCI = MPCM.create({ http: mpcHttp(), cache: mpcCache(), gap: window.CPA_API_GAP != null ? window.CPA_API_GAP : 150 });
+    return MPCI;
+  }
+  function mpcOn() { var m = mpcInst(); return !!(m && m.available()); }
+  /* etichetta e colori dei dpi: più sono alti, più la stampa regge l'ingrandimento */
+  function dpiClass(n) { return n >= 1000 ? 'hi' : n >= 600 ? 'mid' : n >= 300 ? 'ok' : 'lo'; }
+  function mpcTags(c) {
+    return (c.mdpi ? '<span class="tag mpt ' + dpiClass(c.mdpi) + '" title="Stampa MPC Fill' + (c.msrc ? ' · ' + esc(c.msrc) : '') + '">' + c.mdpi + ' dpi</span>' : '<span class="tag mpt">MPC</span>') +
+      (c.muo ? '<span class="tag uot" title="Immagine della comunità: arte o cornice non ufficiale">non ufficiale</span>' : '');
+  }
+
   var IMG = (function () {
     var API = 'https://api.scryfall.com', HOST = 'https://cards.scryfall.io/', LS = 'cpa:img:v1';
     var cache = null, queue = {}, drainT = null, running = false, saveT = null;
@@ -839,11 +883,11 @@
       var h = get(el.getAttribute('data-thk')); if (!h || !h.u) return;
       closeLb();
       var name = el.getAttribute('data-thn'), set = el.getAttribute('data-ths'), cn = el.getAttribute('data-thc');
-      var t = side && h.b ? h.b : h.u;
+      var t = side && h.b ? h.b : h.u, mpid = el.getAttribute('data-thm') || '';
       lb = document.createElement('div'); lb.id = 'lb'; lb.className = 'lb'; lb.setAttribute('data-a', 'lb-close');
       lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', 'Anteprima di ' + name);
       lb._el = el; lb._side = side ? 1 : 0;
-      lb.innerHTML = '<div class="lb-box" data-a="lb-keep"><img src="' + esc(url(t, 'normal')) + '" alt="' + esc(name) + '">' +
+      lb.innerHTML = '<div class="lb-box" data-a="lb-keep"><img src="' + esc(mpid && MPCM ? MPCM.imageUrl(mpid, 1000) : url(t, 'normal')) + '" alt="' + esc(name) + '"' + (mpid ? ' referrerpolicy="no-referrer"' : '') + '>' +
         '<div class="lb-bar"><span class="lb-name">' + esc(name) + (set ? ' · ' + esc(set.toUpperCase()) + (cn ? ' ' + esc(cn) : '') : ' · stampa predefinita') + '</span>' +
         (el.getAttribute('data-thd') ? '<button class="btn small" data-a="lb-prints">Cambia stampa</button>' : '') +
         (h.b ? '<button class="btn small" data-a="lb-flip">Gira</button>' : '') + '<button class="btn small" data-a="lb-close" id="lbx">Chiudi</button></div></div>';
@@ -858,9 +902,12 @@
     function printsLb() {
       if (!lb || !lb._el) return;
       var el = lb._el, name = el.getAttribute('data-thn'), set0 = (el.getAttribute('data-ths') || '').toLowerCase(), cn0 = (el.getAttribute('data-thc') || '').toLowerCase();
+      var hasDeck = !!el.getAttribute('data-thd') && !!MPCM;
+      mp.tab = 'sf'; if (mp.name !== name) { mp.s = null; mp.err = ''; mp.busy = false; mp.name = name; }
       lb.innerHTML = '<div class="lb-box wide" data-a="lb-keep"><div class="lb-bar"><span class="lb-name">Scegli la stampa che hai: ' + esc(name) + '</span>' +
         '<button class="btn small" data-a="lb-back">Indietro</button><button class="btn small" data-a="lb-close" id="lbx">Chiudi</button></div>' +
-        '<div class="pr-grid" id="prgrid"><p class="lb-wait">Cerco le stampe su Scryfall…</p></div></div>';
+        (hasDeck ? '<div class="lb-tabs" role="tablist"><button class="btn small on" role="tab" data-a="lb-tab" data-t="sf" aria-selected="true">Scryfall · stampe ufficiali</button><button class="btn small" role="tab" data-a="lb-tab" data-t="mpc" aria-selected="false">MPC Fill · comunità, fino a 1200 dpi</button></div>' : '') +
+        '<div class="pr-grid" id="prgrid"><p class="lb-wait">Cerco le stampe su Scryfall…</p></div><div class="mpcbox" id="mpcbox" hidden></div></div>';
       var q = '!"' + String(name).replace(/"/g, '') + '"';
       var mine = lb;
       getJson('/cards/search?q=' + encodeURIComponent(q) + '&unique=prints&order=released&dir=desc').then(function (res) {
@@ -884,11 +931,112 @@
         lb.querySelector('#prgrid').innerHTML = '<p class="lb-wait">Non riesco a contattare Scryfall. Riprova tra poco.</p>';
       });
     }
+    /* ----- MPC Fill nel dialogo "Cambia stampa" ----- */
+    var mp = { tab: 'sf', name: '', s: null, minDpi: 0, hide: false, sort: 'dpi', one: false, busy: false, err: '', view: [] };
+    function mpcRow() {
+      if (!lb || !lb._el) return null;
+      var el = lb._el, d = getDeck(el.getAttribute('data-thd')); if (!d) return null;
+      var k = C.keyOf(el.getAttribute('data-thn')), st = (el.getAttribute('data-ths') || '').toLowerCase(), cn = (el.getAttribute('data-thc') || '').toLowerCase(), m = el.getAttribute('data-thm') || '';
+      var same = function (x) { return !x.design && C.keyOf(x.name) === k && (x.set || '').toLowerCase() === st && (x.cn || '').toLowerCase() === cn && (x.mpc || '') === m; };
+      var row = d.cards.filter(same)[0], side = false;
+      if (!row) { row = (d.side || []).filter(same)[0]; side = !!row; }
+      return row ? { d: d, row: row, side: side } : null;
+    }
+    function mpcPaint() {
+      var box = lb && lb.querySelector('#mpcbox'); if (!box) return;
+      var cur = mpcRow(), h = '';
+      if (!mpcOn()) {
+        box.innerHTML = '<p class="lb-wait">Le stampe di MPC Fill (fino a 1200 dpi) si cercano solo nell’app per Windows o Android: da una pagina web il sito le blocca.</p>'; return;
+      }
+      h += '<div class="mpc-intro"><b>Stampe della comunità</b> (mpcfill.com): immagini fatte da artisti e stampatori. Il numero in alto è la risoluzione; il bollino rosso segna arte o cornici <b>non ufficiali</b>. Le immagini senza etichette non sono garantite ufficiali.</div>';
+      if (cur && cur.row.mpc) h += '<div class="mpc-cur">Ora usi una stampa MPC' + (cur.row.mdpi ? ' da ' + cur.row.mdpi + ' dpi' : '') + (cur.row.muo ? ' (non ufficiale)' : '') + '. <button class="btn small" data-a="mpc-clear">Torna alla stampa Scryfall</button></div>';
+      if (!mp.s && !mp.busy) {
+        h += '<div class="btns"><button class="btn primary" data-a="mpc-go">Cerca «' + esc(mp.name) + '» su MPC Fill</button></div>' + (mp.err ? '<p class="err">' + esc(mp.err) + '</p>' : '');
+        box.innerHTML = h; return;
+      }
+      h += '<div class="mpc-ctl"><label class="lbl">Risoluzione minima<select class="select" data-c="mpc-min">' + [[0, 'Tutte'], [300, '300 dpi o più'], [600, '600 dpi o più'], [1200, '1200 dpi o più']].map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === mp.minDpi ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' +
+        '<label class="lbl">Ordina<select class="select" data-c="mpc-sort"><option value="dpi"' + (mp.sort === 'dpi' ? '' : ' selected') + '>Più dpi prima</option><option value="off"' + (mp.sort === 'off' ? ' selected' : '') + '>Ufficiali prima</option></select></label>' +
+        '<label class="chk"><input type="checkbox" data-c="mpc-hide"' + (mp.hide ? ' checked' : '') + '> Nascondi le non ufficiali</label>' +
+        (cur && cur.row.qty > 1 ? '<label class="chk"><input type="checkbox" data-c="mpc-one"' + (mp.one ? ' checked' : '') + '> Solo per una copia (ne hai ' + cur.row.qty + ')</label>' : '') + '</div>';
+      if (mp.busy && !(mp.s && mp.s.cards.length)) { box.innerHTML = h + '<p class="lb-wait"><span class="spin" aria-hidden="true"></span> Cerco su MPC Fill…</p>'; return; }
+      var all = mp.s ? mp.s.cards : [], list = all.filter(function (c) { return !(mp.hide && c.unofficial); });
+      list.sort(function (a, b) { return mp.sort === 'off' ? ((a.unofficial ? 1 : 0) - (b.unofficial ? 1 : 0)) || (b.dpi - a.dpi) : (b.dpi - a.dpi) || ((a.unofficial ? 1 : 0) - (b.unofficial ? 1 : 0)); });
+      mp.view = list;
+      var left = mp.s ? mp.s.total - mp.s.next : 0;
+      h += '<p class="mpc-count">' + (mp.s ? mp.s.total + ' ' + (mp.s.total === 1 ? 'stampa trovata' : 'stampe trovate') + (all.length < mp.s.total ? ' · ne mostro ' + all.length : '') : '') + '</p>';
+      if (!list.length) h += '<p class="lb-wait">' + (mp.s && mp.s.total ? 'Nessuna tra quelle caricate corrisponde ai filtri.' : 'Nessuna stampa trovata su MPC Fill.') + '</p>';
+      else h += '<div class="pr-grid mpc-grid">' + list.map(function (c, i) {
+        var use = cur && cur.row.mpc === c.id;
+        return '<button class="pr mp' + (use ? ' cur' : '') + (c.unofficial ? ' uo' : '') + '" data-a="mpc-pick" data-i="' + i + '" title="' + esc(c.name + (c.tags.length ? ' · ' + c.tags.join(', ') : '')) + '">' +
+          '<span class="mp-img"><img src="' + esc(MPCM.thumbUrl(c.id)) + '" alt="' + esc(c.name) + '" loading="lazy" referrerpolicy="no-referrer"><b class="dpi ' + dpiClass(c.dpi) + '">' + (c.dpi || '?') + ' dpi</b>' + (c.unofficial ? '<i class="uob">non ufficiale</i>' : '') + '</span>' +
+          '<span class="pn">' + esc(c.name) + '</span><span class="ms">' + esc(c.src) + (c.hint ? ' · ' + esc(c.hint) : '') + (c.size ? ' · ' + MPCM.mb(c.size) : '') + '</span>' +
+          (c.tags.length ? '<span class="mtg">' + c.tags.slice(0, 3).map(esc).join(' · ') + '</span>' : '<span class="mtg none">nessuna etichetta</span>') + '</button>';
+      }).join('') + '</div>';
+      if (left > 0) h += '<div class="btns"><button class="btn" data-a="mpc-more"' + (mp.busy ? ' disabled' : '') + '>' + (mp.busy ? 'Carico…' : 'Carica altre (' + Math.min(left, 75) + ' di ' + left + ')') + '</button></div>';
+      if (mp.err) h += '<p class="err">' + esc(mp.err) + '</p>';
+      var keep = box.querySelector('.mpc-grid'), top = keep ? keep.scrollTop : 0;
+      box.innerHTML = h;
+      var g2 = box.querySelector('.mpc-grid'); if (g2 && top) g2.scrollTop = top;
+    }
+    function mpcFail(e) { mp.busy = false; mp.err = (e && e.message) || 'Non riesco a contattare MPC Fill.'; mpcPaint(); }
+    function mpcGo() {
+      var m = mpcInst(), mine = lb; if (!m || !m.available() || !mine) return;
+      mp.busy = true; mp.err = ''; mp.s = null; mpcPaint();
+      m.search(mp.name, { minDpi: mp.minDpi }).then(function (s) { if (lb !== mine) throw null; mp.s = s; return m.more(s, 75); }).then(function () {
+        if (lb !== mine) return; mp.busy = false; mpcPaint();
+      }).catch(function (e) { if (lb !== mine || !e) return; mpcFail(e); });
+    }
+    function mpcMore() {
+      var m = mpcInst(), mine = lb; if (!m || !mp.s || mp.busy) return;
+      mp.busy = true; mp.err = ''; mpcPaint();
+      m.more(mp.s, 75).then(function () { if (lb !== mine) return; mp.busy = false; mpcPaint(); }).catch(function (e) { if (lb === mine) mpcFail(e); });
+    }
+    function tabLb(t) {
+      if (!lb) return;
+      mp.tab = t === 'mpc' ? 'mpc' : 'sf';
+      var g = lb.querySelector('#prgrid'), b = lb.querySelector('#mpcbox');
+      if (g) g.hidden = mp.tab === 'mpc'; if (b) b.hidden = mp.tab !== 'mpc';
+      [].forEach.call(lb.querySelectorAll('.lb-tabs [data-t]'), function (x) { var on = x.getAttribute('data-t') === mp.tab; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); });
+      if (mp.tab === 'mpc') { mpcPaint(); }
+    }
+    function mpcPick(i) {
+      var c = mp.view[i], cur = mpcRow(); if (!c || !cur) return;
+      var label = cur.row.name + ' · MPC ' + (c.dpi ? c.dpi + ' dpi' : 'Fill') + (c.unofficial ? ' (non ufficiale)' : '');
+      var deckId = cur.d.id, one = mp.one && cur.row.qty > 1, side = cur.side, row = { name: cur.row.name, set: cur.row.set, cn: cur.row.cn, mpc: cur.row.mpc };
+      closeLb();
+      mutate('Stampa scelta: ' + label, function () {
+        var d = getDeck(deckId); if (!d) return;
+        C.setMpc(d, row, { mpc: c.id, mdpi: c.dpi, muo: c.unofficial ? 1 : 0, msrc: c.src, mnm: c.name }, side, one);
+        d.updatedAt = Date.now();
+      });
+      render();
+    }
+    function mpcClear() {
+      var cur = mpcRow(); if (!cur || !cur.row.mpc) return;
+      var deckId = cur.d.id, side = cur.side, row = { name: cur.row.name, set: cur.row.set, cn: cur.row.cn, mpc: cur.row.mpc }, one = mp.one && cur.row.qty > 1;
+      closeLb();
+      mutate('Stampa Scryfall ripristinata: ' + row.name, function () { var d = getDeck(deckId); if (!d) return; C.setMpc(d, row, null, side, one); d.updatedAt = Date.now(); });
+      render();
+    }
+    function mpcClick(a, el) {
+      switch (a) {
+        case 'mpc-go': mpcGo(); break;
+        case 'mpc-more': mpcMore(); break;
+        case 'mpc-pick': mpcPick(parseInt(el.dataset.i, 10)); break;
+        case 'mpc-clear': mpcClear(); break;
+      }
+    }
+    function mpcChange(c, t) {
+      if (c === 'mpc-min') { mp.minDpi = parseInt(t.value, 10) || 0; mp.s = null; mpcGo(); }
+      else if (c === 'mpc-sort') { mp.sort = t.value; mpcPaint(); }
+      else if (c === 'mpc-hide') { mp.hide = t.checked; mpcPaint(); }
+      else if (c === 'mpc-one') { mp.one = t.checked; }
+    }
     function backLb() { if (!lb || !lb._el) return; var h = get(lb._el.getAttribute('data-thk')); if (h && h.u) showLb(lb._el, false); else closeLb(); }
     /* Apre direttamente la scelta della stampa (senza passare dall'anteprima grande). */
-    function openPrints(name, set, cn, deckId) {
+    function openPrints(name, set, cn, deckId, mpcId) {
       closeLb();
-      var at = { 'data-thn': name, 'data-ths': set || '', 'data-thc': cn || '', 'data-thd': deckId || '', 'data-thk': key(name, set, cn) };
+      var at = { 'data-thn': name, 'data-ths': set || '', 'data-thc': cn || '', 'data-thd': deckId || '', 'data-thm': mpcId || '', 'data-thk': key(name, set, cn) };
       lb = document.createElement('div'); lb.id = 'lb'; lb.className = 'lb'; lb.setAttribute('data-a', 'lb-close');
       lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', 'Stampe di ' + name);
       lb._el = { getAttribute: function (a) { return at[a] == null ? null : at[a]; } }; lb._side = 0;
@@ -904,7 +1052,8 @@
       closeLb();
       mutate('Stampa scelta: ' + label, function () {
         var d = getDeck(deckId); if (!d) return;
-        var card = d.cards.filter(function (c) { return C.keyOf(c.name) === C.keyOf(nm) && (c.set || '') === s0 && (c.cn || '') === c0; })[0];
+        var m0 = el.getAttribute('data-thm') || '';
+        var card = d.cards.filter(function (c) { return C.keyOf(c.name) === C.keyOf(nm) && (c.set || '') === s0 && (c.cn || '') === c0 && (c.mpc || '') === m0; })[0] || (d.side || []).filter(function (c) { return C.keyOf(c.name) === C.keyOf(nm) && (c.set || '') === s0 && (c.cn || '') === c0 && (c.mpc || '') === m0; })[0];
         if (card) { card.set = set.toUpperCase(); card.cn = String(cn); d.updatedAt = Date.now(); }
       });
       render();
@@ -925,7 +1074,7 @@
     }
 
     return { enabled: enabled, thumb: thumb, hydrate: hydrate, get: get, key: key, count: count, clear: clear,
-      open: function (el) { showLb(el, false); }, flip: flipLb, prints: printsLb, openPrints: openPrints, pic: pic, hasBack: hasBack, onFill: function (f) { fillFns.push(f); }, back: backLb, pick: pickLb, close: closeLb, hover: hover, isOpen: function () { return !!lb; } };
+      open: function (el) { showLb(el, false); }, flip: flipLb, prints: printsLb, openPrints: openPrints, pic: pic, hasBack: hasBack, onFill: function (f) { fillFns.push(f); }, back: backLb, pick: pickLb, close: closeLb, hover: hover, tab: tabLb, mpcClick: mpcClick, mpcChange: mpcChange, isOpen: function () { return !!lb; } };
   })();
 
   /* ---------- Struttura generale ---------- */
@@ -1509,14 +1658,14 @@
   function dkRec(cc, c) { return cc ? ((c.set ? cc.rec(c.name, c.set, c.cn) : cc.rec(c.name, '', '')) || cc.any(c.name)) : null; }
   function dkPriceRec(cc, c) { return cc ? (c.set ? cc.rec(c.name, c.set, c.cn) : (cc.rec(c.name, '', '') || cc.any(c.name))) : null; }
   function dkIsCmd(d, c) { return d.kind === 'deck' && !!d.commander && C.keyOf(d.commander) === C.keyOf(c.name); }
-  function dkSame(c, p) { return p && C.keyOf(c.name) === C.keyOf(p.n) && (c.set || '') === (p.s || '') && (c.cn || '') === (p.c || ''); }
+  function dkSame(c, p) { return p && C.keyOf(c.name) === C.keyOf(p.n) && (c.set || '') === (p.s || '') && (c.cn || '') === (p.c || '') && (c.mpc || '') === (p.m || ''); }
   function dkAside() { return !!(window.matchMedia && window.matchMedia('(min-width: 1100px)').matches); }
   function dkAgo(ts) {
     if (!ts) return '';
     var n = Math.floor((Date.now() - ts) / 864e5);
     return n <= 0 ? 'oggi' : n === 1 ? 'ieri' : n + ' giorni fa';
   }
-  function dkAttrs(c) { return ' data-n="' + esc(c.name) + '" data-s="' + esc(c.set || '') + '" data-c="' + esc(c.cn || '') + '"'; }
+  function dkAttrs(c) { return ' data-n="' + esc(c.name) + '" data-s="' + esc(c.set || '') + '" data-c="' + esc(c.cn || '') + '"' + (c.mpc ? ' data-mp="' + esc(c.mpc) + '"' : ''); }
 
   /* Scarica una volta sola i dati delle carte che mancano (tipo e prezzo della stampa del mazzo). */
   function dkAuto(d) {
@@ -1539,8 +1688,8 @@
     return out;
   }
   /* una riga si riconosce da nome, stampa, design e lista (mazzo o sideboard) */
-  function dkKey(c, side) { return (side ? 'S' : 'M') + '|' + C.keyOf(c.name) + '|' + (c.set || '') + '|' + (c.cn || '') + '|' + (c.design || ''); }
-  function dkTarget(el) { return { name: el.dataset.n, set: el.dataset.s || '', cn: el.dataset.c || '', design: el.dataset.dz || '' }; }
+  function dkKey(c, side) { return (side ? 'S' : 'M') + '|' + C.keyOf(c.name) + '|' + (c.set || '') + '|' + (c.cn || '') + '|' + (c.design || '') + '|' + (c.mpc || ''); }
+  function dkTarget(el) { return { name: el.dataset.n, set: el.dataset.s || '', cn: el.dataset.c || '', design: el.dataset.dz || '', mpc: el.dataset.mp || '' }; }
   function dkFind(d, p) {
     if (!p) return null;
     return d.cards.filter(function (x) { return dkSame(x, p); })[0] || (d.side || []).filter(function (x) { return dkSame(x, p); })[0] || null;
@@ -1564,13 +1713,14 @@
   function dkRow(d, r) {
     var c = r.c, cc = CARDS.get(), basic = C.isBasic(c.name), st = CARDS.st;
     var seed = IMG.thumb(c.name, c.set, c.cn, d.id).replace('class="th', 'class="th seed');
+    if (c.mpc) seed = seed.replace('<span class="th', '<span data-thm="' + esc(c.mpc) + '" class="th');
     var pv = '';
     if (!c.design && !basic) pv = r.pr ? (r.unit != null ? '(' + eurF(r.unit) + ')' : '(n.d.)') : (CARDS.enabled() && !st.err ? '(…)' : '');
     var tip = 'Cambia stampa' + (c.set ? ' · ora ' + String(c.set).toUpperCase() + (c.cn ? ' ' + c.cn : '') : ' · stampa non indicata');
     var oth = r.others.length ? '<span class="oth ' + (r.others.some(function (x) { return x.active; }) ? 'use' : 'free') + '" title="' + esc('Anche in ' + r.others.map(function (x) { return x.deckName + ' ×' + x.qty + (x.active ? ' (in uso)' : ' (libera)'); }).join(', ')) + '">+' + r.others.length + '</span>' : '';
     var sel = dkSame(c, ui.dprev), open = ui.dmenu === dkKey(c, r.side);
-    return '<div class="dr' + (sel ? ' sel' : '') + (open ? ' mn' : '') + '" data-a="dr-open" tabindex="0"' + dkAttrs(c) + '>' + seed + '<span class="q">' + c.qty + '</span><span class="n">' + esc(c.name) + '</span>' +
-      (c.design ? '<span class="tag dzt">Design</span>' : '') + oth +
+    return '<div class="dr' + (sel ? ' sel' : '') + (open ? ' mn' : '') + (c.mpc ? ' mpr' : '') + '" data-a="dr-open" tabindex="0"' + dkAttrs(c) + '>' + seed + '<span class="q">' + c.qty + '</span><span class="n">' + esc(c.name) + '</span>' +
+      (c.design ? '<span class="tag dzt">Design</span>' : '') + (c.mpc ? '<span class="mpl">' + mpcTags(c) + '</span>' : '') + oth +
       (window.CPADesigner ? (c.design ? '<button class="btn small dzb" data-a="dz-unbind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Togli design</button>' : '<button class="btn small dzb" data-a="dz-bind" data-deck="' + esc(d.id) + '" data-name="' + esc(c.name) + '">Design</button>') : '') +
       (c.design ? '' : '<button class="pb" data-a="dr-prints"' + dkAttrs(c) + ' title="' + esc(tip) + '" aria-label="' + esc('Cambia stampa di ' + c.name) + '">' + IC_SWAP + (pv ? '<span class="pv">' + pv + '</span>' : '') + '</button>') +
       '<button class="dmb" data-a="dr-menu"' + dkAttrs(c) + ' data-dz="' + esc(c.design || '') + '" data-side="' + (r.side ? 1 : '') + '" aria-expanded="' + open + '" title="Aggiungi, togli o sposta" aria-label="' + esc('Azioni su ' + c.name) + '">⋯</button></div>' +
@@ -1619,11 +1769,11 @@
     if (!c) return '<div class="pv-empty"><p>Passa il mouse su una carta per vederla qui.</p></div>';
     var cc = CARDS.get(), pr = dkPriceRec(cc, c), unit = pr ? window.CPACards.unitPrice(pr) : null, rec = dkRec(cc, c);
     var back = ui.dflip && IMG.hasBack(c.name, c.set, c.cn);
-    var big = IMG.pic(c.name, c.set, c.cn, 'normal', back);
+    var big = c.mpc && MPCM ? MPCM.imageUrl(c.mpc, 900) : IMG.pic(c.name, c.set, c.cn, 'normal', back);
     var A = getArchive(), e = A.map[C.keyOf(c.name)], others = e ? e.rows.filter(function (r) { return r.deckId !== d.id; }) : [];
-    return '<div class="pv-img">' + (big ? '<img src="' + esc(big) + '" alt="' + esc(c.name) + '"' + (IMG.hasBack(c.name, c.set, c.cn) ? ' data-a="dr-flip" title="Gira la carta"' : '') + '>' : '<div class="pv-ph"><span>' + esc(c.name) + '</span></div>') + '</div>' +
+    return '<div class="pv-img">' + (big ? '<img src="' + esc(big) + '" alt="' + esc(c.name) + '"' + (c.mpc ? ' referrerpolicy="no-referrer"' : '') + (IMG.hasBack(c.name, c.set, c.cn) ? ' data-a="dr-flip" title="Gira la carta"' : '') + '>' : '<div class="pv-ph"><span>' + esc(c.name) + '</span></div>') + '</div>' +
       '<div class="pv-name">' + esc(c.name) + '</div>' +
-      '<div class="pv-meta">' + (c.set ? esc(String(c.set).toUpperCase()) + (c.cn ? ' ' + esc(c.cn) : '') : 'stampa non indicata') + (!c.design && !C.isBasic(c.name) && unit != null ? ' · ' + eurF(unit) : '') + '</div>' +
+      (c.mpc ? '<div class="pv-mpc">' + mpcTags(c) + (c.msrc ? '<span class="pv-by">di ' + esc(c.msrc) + '</span>' : '') + '</div>' : '') + '<div class="pv-meta">' + (c.set ? esc(String(c.set).toUpperCase()) + (c.cn ? ' ' + esc(c.cn) : '') : 'stampa non indicata') + (!c.design && !C.isBasic(c.name) && unit != null ? ' · ' + eurF(unit) : '') + '</div>' +
       (rec && rec.t ? '<div class="pv-type">' + esc(rec.t) + '</div>' : '') +
       (others.length ? '<div class="pv-oth">' + others.map(function (r) {
         return '<span class="pill ' + (r.active ? 'use' : 'free') + '">anche in ' + esc(r.deckName) + ' ×' + r.qty + (r.active ? ' · in uso' : ' · libera') + '</span>';
@@ -1633,8 +1783,8 @@
   }
   function dprevPaint() { var el = $('#dprev'), d = getDeck(); if (el && d) el.innerHTML = dkPrevHtml(d); }
   function dkSelect(row) {
-    var p = { n: row.dataset.n, s: row.dataset.s, c: row.dataset.c };
-    if (ui.dprev && ui.dprev.n === p.n && ui.dprev.s === p.s && ui.dprev.c === p.c) return;
+    var p = { n: row.dataset.n, s: row.dataset.s, c: row.dataset.c, m: row.dataset.mp || '' };
+    if (ui.dprev && ui.dprev.n === p.n && ui.dprev.s === p.s && ui.dprev.c === p.c && (ui.dprev.m || '') === p.m) return;
     ui.dprev = p; ui.dflip = false;
     [].forEach.call(document.querySelectorAll('.dr.sel'), function (x) { x.classList.remove('sel'); });
     row.classList.add('sel');
@@ -2139,7 +2289,9 @@
       case 'dadd-force': daddGo(true); break;
       case 'dadd-pick': { var dq2 = $('#dadd-q'); if (dq2) { dq2.value = el.dataset.v; dq2.focus(); } ui.dSug = []; daddPaint(); } break;
       case 'export-deck': deck = getDeck(); if (deck) { var fn = C.exportFileName(deck); download(fn, C.exportDeck(deck), 'text/plain').then(function (r) { toast(r === 'declined' ? 'Download annullato.' : r ? 'Lista scaricata: ' + fn : 'Download non riuscito: usa «Copia lista» e incolla in un file di testo.'); }); } break;
-      case 'dr-prints': IMG.openPrints(el.dataset.n, el.dataset.s, el.dataset.c, ui.deckId); break;
+      case 'dr-prints': IMG.openPrints(el.dataset.n, el.dataset.s, el.dataset.c, ui.deckId, el.dataset.mp || ''); break;
+      case 'lb-tab': IMG.tab(el.dataset.t); break;
+      case 'mpc-go': case 'mpc-more': case 'mpc-pick': case 'mpc-clear': IMG.mpcClick(a, el); break;
       case 'dr-flip': ui.dflip = !ui.dflip; dprevPaint(); break;
       case 'dr-retry': CARDS.st.err = ''; updateDeckList(); break;
       case 'deck-man': ui.dMan = !ui.dMan; { var mp = $('#dman'); if (mp) mp.hidden = !ui.dMan; el.setAttribute('aria-expanded', ui.dMan); } break;
@@ -2310,6 +2462,7 @@
           render();
         } break;
       case 'dadd-to': ui.dAddSide = t.value === 'side'; break;
+      case 'mpc-min': case 'mpc-sort': case 'mpc-hide': case 'mpc-one': IMG.mpcChange(c, t); break;
       case 'deck-name': d = getDeck(); if (d && t.value.trim()) { d.name = t.value.trim(); d.updatedAt = Date.now(); touch(d.id); render(); } break;
       case 'deck-cmd': d = getDeck(); if (d) { d.commander = t.value || null; d.updatedAt = Date.now(); touch(d.id); render(); } break;
       case 'up-name':

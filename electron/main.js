@@ -77,6 +77,31 @@ ipcMain.handle('cpa:http', async (_event, req) => {
   } catch (e) { return { status: 0, error: e && e.name === 'TimeoutError' ? 'tempo scaduto' : 'rete' }; }
 });
 
+/* MPC Fill (mpcfill.com): ricerca delle stampe della comunita'. Solo i quattro indirizzi dell'API, corpo limitato.
+   La richiesta parte da Electron: il sito accetta dal browser solo certe origini (CORS). */
+const MPC_GET = new Set(['/2/sources/', '/2/tags/']);
+const MPC_POST = new Set(['/2/editorSearch/', '/2/cards/']);
+ipcMain.handle('cpa:mpc', async (_event, req) => {
+  try {
+    if (!req || typeof req !== 'object') return { status: 0, error: 'richiesta non valida' };
+    const u = new URL(String(req.url));
+    const method = req.method === 'POST' ? 'POST' : 'GET';
+    if (u.protocol !== 'https:' || u.hostname !== 'mpcfill.com' || u.search || !(method === 'POST' ? MPC_POST : MPC_GET).has(u.pathname)) return { status: 0, error: 'indirizzo non consentito' };
+    let body;
+    if (method === 'POST') {
+      if (typeof req.body !== 'string' || req.body.length > 200000) return { status: 0, error: 'richiesta non valida' };
+      body = req.body;
+    }
+    const res = await net.fetch(u.href, {
+      method, body, redirect: 'error', signal: AbortSignal.timeout(40000),
+      headers: Object.assign({ Accept: 'application/json' }, method === 'POST' ? { 'Content-Type': 'application/json' } : {})
+    });
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > 8 * 1024 * 1024) return { status: 0, error: 'risposta troppo grande' };
+    return { status: res.status, text: buf.toString('utf8') };
+  } catch (e) { return { status: 0, error: e && e.name === 'TimeoutError' ? 'tempo scaduto' : 'rete' }; }
+});
+
 /* Appunti scritti dal programma: funziona anche quando la finestra ha perso il focus (ad esempio dopo aver aperto il browser). */
 ipcMain.handle('cpa:copy', (_event, text) => {
   if (typeof text !== 'string' || text.length > 1000000) return false;

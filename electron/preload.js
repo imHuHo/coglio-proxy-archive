@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('cpaNet', {
   copy: (text) => ipcRenderer.invoke('cpa:copy', text),
   image: (url) => ipcRenderer.invoke('cpa:image', url),
   http: (req) => ipcRenderer.invoke('cpa:http', req),
+  mpc: (req) => ipcRenderer.invoke('cpa:mpc', req),
   quit: () => ipcRenderer.invoke('cpa:quit'),
   resource: (name) => ipcRenderer.invoke('cpa:resource', name),
   update: (url) => ipcRenderer.invoke('cpa:update', url),
