@@ -10953,7 +10953,7 @@ window.CPA_COMMUNITY = {
   function friendsHtml() {
     var d = fr.data, h = function (a, label, cls, handle) { return '<button type="button" class="btn small' + (cls ? ' ' + cls : '') + '" data-a="' + a + '" data-h="' + esc(handle) + '">' + label + '</button>'; };
     var out = '<h3 class="cm-sub">Amici</h3>' +
-      '<div class="btns"><button type="button" class="btn primary" data-a="cm-share">Condividi il mio link</button><button type="button" class="btn" data-a="cm-link">Copia il link</button></div>' +
+      '<div class="btns"><button type="button" class="btn primary" data-a="cm-share">' + (navigator.share ? 'Condividi il mio link' : 'Copia il mio link') + '</button></div>' +
       '<p class="hint">Chi apre il link vede il tuo ID e può chiederti l’amicizia: diventate amici solo se accetti. Oppure scrivi qui l’ID di un amico.</p>' +
       '<form class="cm-sf" data-a="cm-keep" onsubmit="return false"><input class="input" id="cm-add" data-c="cm-add" value="' + esc(ux.add) + '" maxlength="21" placeholder="ID di un amico" aria-label="ID di un amico" autocomplete="off" autocapitalize="off" spellcheck="false"><button type="button" class="btn" data-a="cm-fadd">Aggiungi</button></form>' +
       (fr.err ? '<p class="err" role="alert">' + esc(fr.err) + '</p>' : fr.msg ? '<p class="hint cm-st ok" role="status">' + esc(fr.msg) + '</p>' : '');
@@ -11178,7 +11178,6 @@ window.CPA_COMMUNITY = {
         else copyText(link).then(function (okc) { toast(okc ? 'Link copiato: incollalo dove vuoi.' : 'Non riesco a copiare il link.'); });
         break;
       }
-      case 'cm-link': copyText(C.friendLink(me.handle)).then(function (okc) { toast(okc ? 'Link copiato.' : 'Non riesco a copiare il link.'); }); break;
       case 'cm-fadd': {
         var to = C.cleanHandle(ux.add), pr = C.handleProblem(to); fr.msg = ''; fr.err = '';
         if (pr) { fr.err = to ? pr : 'Scrivi l’ID di un amico.'; repaint(); break; }
