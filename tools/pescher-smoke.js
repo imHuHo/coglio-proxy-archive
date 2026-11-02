@@ -95,7 +95,7 @@ const SHOTS = process.env.SHOTS || '';
   await shot('pescher-dice');
   await page.keyboard.press('Escape'); ok(await page.locator('#pe-pop').count() === 0, 'Esc chiude i dadi');
   /* registro */
-  await page.click('[data-a="pe-log"]'); ok(await page.locator('#pe-pop .pe-log li').count() >= 5, 'il registro racconta la partita');
+  ok(await page.locator('#pe .pe-tools [data-a="pe-log"]').count() === 0, 'il registro non affolla la barra'); await page.click('[data-a="pe-menu"]'); await page.click('#pe-pop [data-a="pe-log"]'); ok(await page.locator('#pe-pop .pe-log li').count() >= 5, 'il registro racconta la partita');
   await page.click('#pex'); ok(await page.locator('#pe-pop').count() === 0, 'Chiudi chiude');
   /* salvataggio: ricarico la pagina e la partita è ancora lì */
   const lifeBefore = await life('p2'); await page.reload(); await page.waitForSelector('.shell'); await nav('pescher'); await page.waitForSelector('.pe-grid');
@@ -113,6 +113,29 @@ const SHOTS = process.env.SHOTS || '';
   await page.click('[data-a="pe-menu"]'); await page.click('[data-a="pe-again"]'); ok(await page.locator('.pe-tile').count() === 4 && await life('p2') === lifeBefore, 'una sola pressione non azzera');
   await page.click('[data-a="pe-again"]'); await page.waitForSelector('.pe-grid'); ok(await life('p2') === 40 && await life('p4') === 40, 'nuova partita: tutti a 40');
   await page.click('[data-a="pe-menu"]'); await page.click('[data-a="pe-setup"]'); await page.click('[data-a="pe-setup"]'); await page.waitForSelector('.pe-setup'); ok(true, 'cambia tavolo');
+  /* fine partita: vincitore, mazzo, classifica sul dispositivo */
+  ok(await page.locator('.pe-hsec').count() === 0, 'senza partite, niente classifica');
+  await page.click('[data-a="pe-begin"]'); await page.waitForSelector('.pe-grid');
+  await page.click('[data-a="pe-end"]'); await page.waitForSelector('#pe-pop .pe-win');
+  ok(await page.locator('#pe-pop .pe-wb').count() === 5, 'quattro giocatori più «Nessuno»');
+  ok(await page.getAttribute('#pe-pop .pe-wb.none', 'aria-checked') === 'true' && await page.locator('#pe-wdeck').count() === 0, 'nessun vincitore scelto: niente campo del mazzo');
+  await page.click('#pe-pop .pe-wb[data-p="p2"]'); await page.waitForSelector('#pe-wdeck'); ok(await page.getAttribute('#pe-pop .pe-wb[data-p="p2"]', 'aria-checked') === 'true', 'Luca selezionato');
+  await page.fill('#pe-wdeck', '  Kaalia  of the Vast '); await page.click('#pe-pop .pe-wb[data-p="p3"]'); ok(await page.inputValue('#pe-wdeck') === '  Kaalia  of the Vast ', 'il mazzo scritto resta se cambio vincitore');
+  await page.click('#pe-pop .pe-wb[data-p="p2"]'); await shot('pescher-end');
+  await page.click('[data-a="pe-endok"]'); await page.waitForSelector('.pe-hsec');
+  ok(await page.locator('.pe-setup').count() === 1 && await page.locator('#pe-pop').count() === 0, 'si torna alla preparazione del tavolo');
+  ok(await page.locator('.pe-name[data-p="p2"]').inputValue() === 'Luca', 'il tavolo resta com\'è');
+  ok(/Luca/.test(await page.textContent('.pe-board li:first-child')) && /1 vittoria su 1/.test(await page.textContent('.pe-board li:first-child')) && /Kaalia of the Vast/.test(await page.textContent('.pe-board li:first-child')), 'classifica: Luca in testa con il mazzo ripulito: ' + (await page.textContent('.pe-board li:first-child')).replace(/\s+/g, ' '));
+  ok(/Vince Luca/.test(await page.textContent('.pe-games li')), 'ultima partita');
+  await page.click('[data-a="pe-begin"]'); await page.click('[data-a="pe-end"]'); await page.waitForSelector('#pe-pop .pe-win'); await page.click('#pe-pop .pe-wb[data-p="p1"]'); await page.click('[data-a="pe-endok"]'); await page.waitForSelector('.pe-hsec');
+  ok(await page.locator('.pe-games li').count() === 2 && /1 vittoria su 2/.test(await page.textContent('.pe-board li:nth-child(2)')), 'due partite, Io con 1 su 2');
+  await shot('pescher-board');
+  await page.reload(); await page.waitForSelector('.shell'); await nav('pescher'); await page.waitForSelector('.pe-hsec');
+  ok(await page.locator('.pe-games li').count() === 2, 'lo storico sopravvive al ricaricamento');
+  await page.click('.pe-games li:first-child [data-a="pe-delgame"]'); ok(await page.locator('.pe-games li').count() === 2, 'una sola pressione non elimina');
+  await page.click('.pe-games li:first-child [data-a="pe-delgame"]'); ok(await page.locator('.pe-games li').count() === 1, 'la seconda elimina');
+  ok(/Luca/.test(await page.textContent('.pe-board li:first-child')), 'la classifica si aggiorna');
+
   /* niente scorrimento orizzontale */
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'nessuno scorrimento orizzontale');
   ok(!errors.length, 'nessun errore in pagina: ' + errors.join(' | '));

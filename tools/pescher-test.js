@@ -91,4 +91,21 @@ ok(P.rename(g, 'p2', '  Luca  ') && g.players[1].name === 'Luca', 'rinomina'); o
 g = P.newGame({ players: 4, life: 40 }); P.rename(g, 'p2', 'Luca'); P.resize(g, 6); eq(g.players.length, 6, 'sei posti'); eq(g.players[1].name, 'Luca', 'i primi restano'); eq(g.players[5].name, 'Giocatore 6', 'nuovi posti');
 eq(g.players[5].life, 40, 'con la vita iniziale'); P.cmd(g, 'p1', 'p6', 3); P.resize(g, 3); eq(g.players.length, 3, 'tre posti'); eq(g.players[0].cmd, {}, 'il danno da un posto tolto sparisce');
 P.setStart(g, 20); eq(g.players.map(p => p.life), [20, 20, 20], 'vita iniziale cambiata per tutti'); eq(P.resize(g, 1).players.length, 2, 'minimo due');
+/* fine partita, storico e classifica */
+g = P.newGame({ players: 3, life: 40 }); P.rename(g, 'p1', 'Simone'); P.rename(g, 'p2', 'Luca'); P.rename(g, 'p3', 'Marta'); P.begin(g, seq(0)); P.life(g, 'p3', -40); P.nextTurn(g);
+let rec = P.finish(g, 'p1', '  Kaalia   of the Vast ', g.t + 65000);
+eq([rec.winner, rec.deck, rec.ms, rec.rounds, rec.start], ['Simone', 'Kaalia of the Vast', 65000, 1, 40], 'record: vincitore, mazzo ripulito, durata');
+eq(rec.players.map(p => [p.name, p.life, p.out]), [['Simone', 40, false], ['Luca', 40, false], ['Marta', 0, true]], 'record: giocatori e chi era fuori');
+rec = P.finish(g, '', 'ignorato', g.t + 1000); eq([rec.winner, rec.deck], ['', ''], 'senza vincitore niente mazzo');
+ok(P.finish(g, 'zz', 'x').winner === '', 'vincitore sconosciuto = nessuno'); ok(P.finish(g, 'p1', 'x'.repeat(200)).deck.length === 60, 'mazzo troppo lungo tagliato');
+const mk = (names, winner, deck, t) => ({ id: 'g' + t, t, ms: 1000, rounds: 3, start: 40, players: names.map(n => ({ name: n, life: 10, out: false })), winner, deck });
+const hist = [mk(['Simone', 'Luca', 'Marta'], 'Luca', 'Kaalia', 3), mk(['Simone', 'Luca'], 'Luca', 'Kaalia', 2), mk(['simone', 'Luca', 'Marta'], 'Simone', 'Atraxa', 1), mk(['Simone', 'Marta'], '', '', 0)];
+let tl = P.tally(hist); eq(tl.map(x => [x.name, x.games, x.wins]), [['Luca', 3, 2], ['Simone', 4, 1], ['Marta', 3, 0]], 'classifica per vittorie (maiuscole ignorate)');
+eq(tl[0].deck, 'Kaalia', 'il mazzo con cui vince di più'); eq(tl[1].deck, 'Atraxa', 'anche per chi ha vinto una volta'); eq(tl[2].deck, '', 'nessun mazzo se non ha mai vinto'); ok(Math.abs(tl[0].rate - 2 / 3) < 1e-9, 'percentuale');
+eq(P.tally([]), [], 'senza partite, classifica vuota');
+const tie = P.tally([mk(['A', 'B'], 'A', '', 1), mk(['A', 'B'], 'B', '', 2)]); eq(tie.map(x => x.name), ['A', 'B'], 'a pari merito, ordine alfabetico');
+eq(P.restoreHistory(JSON.stringify(hist)).length, 4, 'storico ripristinato'); eq(P.restoreHistory('rotto'), [], 'testo rotto'); eq(P.restoreHistory({}), [], 'non è una lista');
+const dirty = P.restoreHistory([{ players: [{ name: 'A' }] }, { id: 'x', t: 'boh', ms: -5, rounds: 'x', players: [{ name: ' Ale ', life: 'ciao' }, { name: '' }], winner: 5, deck: null }]);
+eq(dirty.length, 1, 'un record con un solo giocatore si scarta'); eq([dirty[0].t, dirty[0].ms, dirty[0].rounds, dirty[0].players[0].name, dirty[0].players[0].life, dirty[0].players[1].name, dirty[0].winner, dirty[0].deck], [0, 0, 1, 'Ale', 0, '?', '5', ''], 'record sporco ripulito');
+eq(P.restoreHistory(Array.from({ length: 300 }, (_, i) => mk(['A', 'B'], 'A', '', i))).length, 200, 'al massimo 200 partite');
 console.log('pescher-test: ' + n + ' controlli ok');

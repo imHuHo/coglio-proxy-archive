@@ -1317,6 +1317,34 @@ body.pe-focus .main { padding: 8px; max-width: none; }
 body.pe-focus .shell::after { display: none; }
 body.pe-focus .pe-grid { min-height: calc(100dvh - 64px); }
 
+/* fine partita, classifica, storico */
+.pe-win { display: grid; gap: 8px; }
+.pe-wb { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; text-align: left; padding: 10px 12px; min-height: 48px; border-radius: 12px; border: 1.5px solid var(--line2); background: var(--surface); color: var(--fg); font: 600 15px var(--body); touch-action: manipulation; }
+.pe-wb i { align-self: center; width: 12px; height: 12px; border-radius: 50%; background: var(--seat); box-shadow: inset 0 0 0 1.5px #0003; flex: none; }
+.pe-wb b { font: 700 16px var(--display); }
+.pe-wb small { color: var(--muted); font-size: 12px; margin-left: auto; }
+.pe-wb[aria-checked="true"] { background: var(--banana-soft); border-color: var(--banana-deep); box-shadow: 0 0 0 2px var(--banana); }
+.pe-wb:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.pe-wd { display: grid; gap: 4px; }
+.pe-wd span { font: 700 12px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.pe-wd small { text-transform: none; letter-spacing: 0; font-weight: 500; }
+.pe-wd input { flex: none; width: 100%; }
+.pe-hsec { display: grid; gap: 10px; margin-top: 10px; }
+.pe-hsec .sect { margin: 6px 0 0; }
+.pe-board, .pe-games { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pe-board li { display: grid; grid-template-columns: 32px 1fr auto; grid-template-areas: "rk nm sc" ". dk dk"; gap: 0 10px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; box-shadow: var(--shadow); }
+.pe-board .rk { grid-area: rk; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--surface2); border: 1.5px solid var(--line2); font: 800 13px var(--mono); }
+.pe-board li:first-child .rk { background: var(--banana); border-color: var(--banana-deep); color: var(--banana-ink); }
+.pe-board b { grid-area: nm; font: 700 16px var(--display); overflow-wrap: anywhere; }
+.pe-board .sc { grid-area: sc; font: 700 13px var(--mono); color: var(--muted); }
+.pe-board small { grid-area: dk; font-size: 12px; color: var(--muted); }
+.pe-games li { display: flex; gap: 10px; justify-content: space-between; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.pe-games li > div { display: grid; gap: 2px; min-width: 0; }
+.pe-games b { font: 700 15px var(--display); }
+.pe-games .dk { font-size: 13px; color: var(--accent); font-weight: 600; overflow-wrap: anywhere; }
+.pe-games small { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.pe-games .btn { flex: none; }
+
 </style>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
@@ -1335,7 +1363,8 @@ window.CPA_CHANGELOG = [
     { t: 'Veleno e danno da comandante', d: 'Veleno (10 = fuori) e danno da comandante per avversario (21 = fuori, e toglie anche vita come da regola, si può spegnere). Chi è fuori lo dice perché; rialzando i numeri si rientra.' },
     { t: 'Altri segnalini, monarca e iniziativa', d: 'Dal tasto «Altro» di ogni riquadro: esperienza, energia, lanci del comandante (con il costo in più, +2 a lancio), monarca e iniziativa. Monarca e iniziativa li ha un giocatore solo: assegnarli a un altro li toglie al precedente, e si vedono nell\'intestazione del riquadro.' },
     { t: 'Turni, giro e cronometro', d: '«Passa il turno» salta chi è fuori, la barra in alto dice di chi è il turno, a che giro siamo e da quanto si gioca.' },
-    { t: 'Dadi, registro e annulla', d: 'D4, D6, D8, D10, D12, D20, moneta e «Chi inizia?» col caso vero del dispositivo. Ogni passaggio finisce nel registro e si annulla con «Annulla». La partita si salva da sola sul dispositivo e sopravvive al ricaricamento; lo schermo resta acceso finché giochi.' },
+    { t: 'Fine partita, classifica e storico', d: 'Il tasto «Fine partita» chiede chi ha vinto (o nessuno, per un pareggio) e, se vuoi, con quale mazzo: ti suggerisce i tuoi mazzi attivi e quelli già scritti. La partita si salva e torni alla preparazione del tavolo, che resta com\'è. Lì sotto trovi la classifica per giocatore (vittorie su partite, e il mazzo con cui vince di più) e le ultime partite, che puoi eliminare. Sta tutta sul dispositivo.' },
+    { t: 'Dadi, registro e annulla', d: 'D4, D6, D8, D10, D12, D20, moneta e «Chi inizia?» col caso vero del dispositivo. Ogni passaggio finisce nel registro (dal Menu) e si annulla con «Annulla». La partita si salva da sola sul dispositivo e sopravvive al ricaricamento; lo schermo resta acceso finché giochi.' },
     { t: 'Telefono al centro del tavolo', d: 'Dal menu: «Gira i giocatori in alto» ruota i riquadri di chi siede di fronte, e la modalità focus nasconde il resto dell\'app (Esc per uscire).' },
     { t: 'Pagina del mazzo più stabile', d: 'Passando il mouse sulle righe (terre comprese) il pulsante «Design» non strozza più il nome della carta e le colonne non si ribilanciano più sotto il cursore.' },
   ] },
@@ -4358,6 +4387,43 @@ window.CPA_CHANGELOG = [
   }
   function pickFirst(g, rng) { var i = rnd(rng, g.players.length); return { index: i, player: g.players[i], text: 'Inizia ' + g.players[i].name }; }
 
+  /* ----- storico delle partite (sul dispositivo) ----- */
+  var HISTORY_MAX = 200;
+  function clean(t, n) { return String(t == null ? '' : t).replace(/\s+/g, ' ').trim().slice(0, n); }
+  /* Chiude la partita: chi ha vinto (o nessuno) e con quale mazzo. Restituisce il record da conservare. */
+  function finish(g, winnerId, deck, now) {
+    var w = winnerId ? player(g, winnerId) : null; now = now || Date.now();
+    return {
+      id: 'g' + now.toString(36) + Math.floor(Math.random() * 46656).toString(36), t: now, ms: Math.max(0, now - (g.t || now)), rounds: g.round || 1, start: g.start,
+      players: g.players.map(function (p) { return { name: p.name, life: p.life, out: status(g, p).out }; }),
+      winner: w ? w.name : '', deck: w ? clean(deck, 60) : ''
+    };
+  }
+  function restoreHistory(raw) {
+    var a; try { a = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return []; }
+    if (!Array.isArray(a)) return [];
+    return a.filter(function (r) { return r && Array.isArray(r.players) && r.players.length >= MIN; }).slice(0, HISTORY_MAX).map(function (r) {
+      return { id: clean(r.id, 24) || 'g' + Math.random().toString(36).slice(2, 8), t: Number(r.t) || 0, ms: Math.max(0, Number(r.ms) || 0), rounds: clampInt(r.rounds, 1, 9999, 1), start: clampInt(r.start, 1, 999, 40),
+        players: r.players.slice(0, MAX).map(function (p) { return { name: clean(p && p.name, 24) || '?', life: clampInt(p && p.life, -999, 9999, 0), out: !!(p && p.out) }; }),
+        winner: clean(r.winner, 24), deck: clean(r.deck, 60) };
+    });
+  }
+  /* Classifica per nome (senza badare alle maiuscole): partite, vittorie e il mazzo con cui vinci di più. */
+  function tally(history) {
+    var by = {}, order = [];
+    history.forEach(function (r) {
+      r.players.forEach(function (p) {
+        var k = p.name.toLowerCase(); if (!by[k]) { by[k] = { name: p.name, games: 0, wins: 0, decks: {} }; order.push(k); }
+        by[k].games++;
+        if (r.winner && r.winner.toLowerCase() === k) { by[k].wins++; if (r.deck) by[k].decks[r.deck] = (by[k].decks[r.deck] || 0) + 1; }
+      });
+    });
+    return order.map(function (k) {
+      var t = by[k], best = '', n = 0; Object.keys(t.decks).forEach(function (d) { if (t.decks[d] > n) { n = t.decks[d]; best = d; } });
+      return { name: t.name, games: t.games, wins: t.wins, rate: t.games ? t.wins / t.games : 0, deck: best, decks: t.decks };
+    }).sort(function (a, b) { return (b.wins - a.wins) || (b.rate - a.rate) || (b.games - a.games) || a.name.localeCompare(b.name); });
+  }
+
   /* ----- salvataggio ----- */
   function serialize(g) { return JSON.stringify(g); }
   function restore(raw) {
@@ -4383,7 +4449,7 @@ window.CPA_CHANGELOG = [
     MIN: MIN, MAX: MAX, LIVES: LIVES, POISON_OUT: POISON_OUT, CMD_OUT: CMD_OUT, DICE: Object.keys(DICE), COUNTERS: COUNTERS, HOLDERS: HOLDERS,
     newGame: newGame, player: player, status: status, alive: alive, winner: winner, resize: resize, setStart: setStart,
     life: life, setLife: setLife, poison: poison, cmd: cmd, counter: counter, taxOf: taxOf, holder: holder, rename: rename, undo: undo, reset: reset, begin: begin, nextTurn: nextTurn,
-    roll: roll, pickFirst: pickFirst, serialize: serialize, restore: restore
+    roll: roll, pickFirst: pickFirst, serialize: serialize, restore: restore, finish: finish, tally: tally, restoreHistory: restoreHistory, HISTORY_MAX: HISTORY_MAX
   };
 });
 
@@ -9942,15 +10008,17 @@ window.CPA_SYNC = {
   'use strict';
   var H = window.CPAHost, P = window.CPAPescher;
   if (!H || !P) return;
-  var esc = H.esc, KEY = 'cpa:pescher:v1';
-  var g = null, wake = null, clockT = 0, deltaT = 0;
-  var ux = { open: {}, pop: '', rolls: [], confirm: '', setFor: '', delta: {} };
+  var esc = H.esc, KEY = 'cpa:pescher:v1', HKEY = 'cpa:pescher:hist:v1';
+  var g = null, hist = null, wake = null, clockT = 0, deltaT = 0;
+  var ux = { open: {}, pop: '', rolls: [], confirm: '', setFor: '', delta: {}, end: null, delGame: '' };
   var SEAT = ['var(--m-u)', 'var(--m-r)', 'var(--m-g)', 'var(--m-w)', 'var(--m-b)', 'var(--banana)'];
 
   /* ---------- salvataggio ---------- */
   function load() { try { var raw = localStorage.getItem(KEY); return raw ? P.restore(raw) : null; } catch (e) { return null; } }
   function save() { try { g.mirror = !!g.mirror; localStorage.setItem(KEY, P.serialize(g)); } catch (e) { /* il tavolo funziona anche senza salvataggio */ } }
   function ensure() { if (!g) g = load() || P.newGame({ players: 4, life: 40 }); return g; }
+  function history() { if (!hist) { try { hist = P.restoreHistory(localStorage.getItem(HKEY)); } catch (e) { hist = []; } } return hist; }
+  function saveHistory() { try { localStorage.setItem(HKEY, JSON.stringify(hist)); } catch (e) { /* la classifica resta in memoria finché la pagina è aperta */ } }
   function rng() { try { var a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; } catch (e) { return Math.random(); } }
 
   /* ---------- pezzi di interfaccia ---------- */
@@ -9980,8 +10048,23 @@ window.CPA_SYNC = {
       '<label class="pe-chk"><input type="checkbox" data-c="pe-cmdlife"' + (g.cmdLife ? ' checked' : '') + '> Il danno da comandante toglie anche vita</label></div>' +
       '<div class="pe-opt"><b>Nomi (se vuoi)</b></div>' +
       '<div class="pe-seats">' + g.players.map(seatHtml).join('') + '</div>' +
-      '<div class="pe-go"><button type="button" class="btn primary big" data-a="pe-begin">Inizia la partita</button><span class="hint">Il primo giocatore lo decide il caso.</span></div></section>';
+      '<div class="pe-go"><button type="button" class="btn primary big" data-a="pe-begin">Inizia la partita</button><span class="hint">Il primo giocatore lo decide il caso.</span></div>' + historyHtml() + '</section>';
   }
+  function fmtDate(t) { var d = new Date(t); return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function historyHtml() {
+    var h = history(); if (!h.length) return '';
+    var tl = P.tally(h);
+    var board = '<ol class="pe-board">' + tl.slice(0, 10).map(function (x, i) {
+      return '<li><span class="rk">' + (i + 1) + '</span><b>' + esc(x.name) + '</b><span class="sc">' + plural(x.wins, 'vittoria', 'vittorie') + ' su ' + x.games + '</span>' + (x.deck ? '<small>vince di più con ' + esc(x.deck) + '</small>' : '') + '</li>';
+    }).join('') + '</ol>';
+    var games = '<ol class="pe-games">' + h.slice(0, 8).map(function (r) {
+      var armed = ux.delGame === r.id;
+      return '<li><div><b>' + (r.winner ? 'Vince ' + esc(r.winner) : 'Nessun vincitore') + '</b>' + (r.deck ? '<span class="dk">' + esc(r.deck) + '</span>' : '') + '<small>' + fmtDate(r.t) + ' · ' + r.players.map(function (p) { return esc(p.name); }).join(', ') + ' · ' + r.rounds + (r.rounds === 1 ? ' giro' : ' giri') + ' · ' + mmss(r.ms) + '</small></div>' +
+        '<button type="button" class="btn small' + (armed ? ' danger' : '') + '" data-a="pe-delgame" data-id="' + esc(r.id) + '" aria-label="Elimina la partita del ' + fmtDate(r.t) + '">' + (armed ? 'Sicuro?' : 'Elimina') + '</button></li>';
+    }).join('') + '</ol>' + (h.length > 8 ? '<p class="hint">Mostro le ultime 8 di ' + h.length + ': la classifica le conta tutte.</p>' : '');
+    return '<section class="pe-hsec"><h2 class="sect">Classifica</h2>' + board + '<h2 class="sect">Ultime partite</h2>' + games + '<p class="hint">Sta tutta su questo dispositivo.</p></section>';
+  }
+  function plural(n, a, b) { return n + ' ' + (n === 1 ? a : b); }
 
   /* ---------- partita ---------- */
   function deltaOf(id) { var d = ux.delta[id]; return d && Date.now() - d.t < 2400 && d.v ? d.v : 0; }
@@ -10039,7 +10122,7 @@ window.CPA_SYNC = {
       (cur && !w ? '<button type="button" class="btn small primary" data-a="pe-next">Passa il turno</button>' : '') +
       '<button type="button" class="btn small" data-a="pe-dice">Dadi</button>' +
       '<button type="button" class="btn small" data-a="pe-undo"' + (g.hist.length ? '' : ' disabled') + '>Annulla</button>' +
-      '<button type="button" class="btn small" data-a="pe-log">Registro</button>' +
+      '<button type="button" class="btn small' + (w ? ' primary' : '') + '" data-a="pe-end" aria-haspopup="dialog">Fine partita</button>' +
       '<button type="button" class="btn small" data-a="pe-menu" aria-haspopup="dialog">Menu</button></div></div>';
     return bar + '<div class="pe-grid" data-n="' + g.players.length + '">' + g.players.map(tileHtml).join('') + '</div>';
   }
@@ -10103,6 +10186,18 @@ window.CPA_SYNC = {
         (g.log.length ? '<ol class="pe-log">' + g.log.map(function (l) { var d = new Date(l.t); return '<li><time>' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2) + '</time><span>' + esc(l.text) + '</span></li>'; }).join('') + '</ol>' : '<p class="an-none">Ancora niente: tocca una vita per iniziare.</p>') +
         '<div class="pe-popbar"><button type="button" class="btn" data-a="pe-undo"' + (g.hist.length ? '' : ' disabled') + '>Annulla l’ultimo</button></div>';
     }
+    if (ux.pop === 'end') {
+      var e = ux.end, decks = {}; H.decks().forEach(function (d) { if (d.kind === 'deck' && d.active) decks[d.name] = 1; }); history().forEach(function (x) { if (x.deck) decks[x.deck] = 1; });
+      return head('Fine partita', 'Chi ha vinto?') +
+        '<div class="pe-win" role="radiogroup" aria-label="Vincitore">' + g.players.map(function (p, i) {
+          var out = P.status(g, p).out;
+          return '<button type="button" class="pe-wb" role="radio" aria-checked="' + (e.winner === p.id) + '" data-a="pe-winner" data-p="' + p.id + '" style="--seat:' + SEAT[i] + '"><i></i><b>' + esc(p.name) + '</b><small>' + (out ? 'fuori' : 'vita ' + p.life) + '</small></button>';
+        }).join('') + '<button type="button" class="pe-wb none" role="radio" aria-checked="' + (e.winner === '') + '" data-a="pe-winner" data-p=""><b>Nessuno</b><small>pareggio o partita interrotta</small></button></div>' +
+        (e.winner ? '<label class="pe-wd"><span>Mazzo giocato da ' + esc(P.player(g, e.winner).name) + ' <small>(se vuoi)</small></span><input id="pe-wdeck" class="pe-name" type="text" list="pe-decks" maxlength="60" value="' + esc(e.deck) + '" placeholder="Es. Kaalia, Atraxa…" autocomplete="off"></label>' +
+          '<datalist id="pe-decks">' + Object.keys(decks).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>' : '') +
+        '<div class="pe-popbar"><button type="button" class="btn primary" data-a="pe-endok">Salva la partita</button></div>' +
+        '<p class="hint">La partita finisce e si salva nella classifica di questo dispositivo. Il tavolo resta com\u2019è per la prossima.</p>';
+    }
     if (ux.pop === 'set') {
       var p = P.player(g, ux.setFor);
       return head('Vita di ' + esc(p ? p.name : ''), 'Imposta un valore') +
@@ -10115,6 +10210,7 @@ window.CPA_SYNC = {
         '<div class="pe-menu"><label class="pe-chk"><input type="checkbox" data-c="pe-cmdlife"' + (g.cmdLife ? ' checked' : '') + '> Il danno da comandante toglie anche vita</label>' +
         '<label class="pe-chk"><input type="checkbox" data-c="pe-mirror"' + (g.mirror ? ' checked' : '') + '> Gira i giocatori in alto (telefono al centro del tavolo)</label>' +
         '<label class="pe-chk"><input type="checkbox" data-c="pe-focus"' + (g.focus ? ' checked' : '') + '> Modalità focus: nasconde il resto dell’app</label>' +
+        '<div class="pe-popbar"><button type="button" class="btn" data-a="pe-log">Apri il registro</button></div>' +
         '<div class="pe-popbar"><button type="button" class="btn' + (c === 'again' ? ' danger' : '') + '" data-a="pe-again">' + (c === 'again' ? 'Sicuro? Tocca di nuovo' : 'Nuova partita (stesso tavolo)') + '</button>' +
         '<button type="button" class="btn' + (c === 'setup' ? ' danger' : '') + '" data-a="pe-setup">' + (c === 'setup' ? 'Sicuro? Tocca di nuovo' : 'Cambia tavolo') + '</button></div></div>';
     }
@@ -10124,14 +10220,14 @@ window.CPA_SYNC = {
     ux.pop = kind; ux.confirm = '';
     if (!pop) {
       pop = document.createElement('div'); pop.id = 'pe-pop'; pop.className = 'lb bk an pe-pop'; pop.setAttribute('data-a', 'pe-close'); pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true');
-      pop.setAttribute('aria-label', { dice: 'Dadi', log: 'Registro', menu: 'Menu', set: 'Imposta la vita' }[kind] || 'The Pescher'); document.body.appendChild(pop);
+      pop.setAttribute('aria-label', { dice: 'Dadi', log: 'Registro', menu: 'Menu', set: 'Imposta la vita', end: 'Fine partita' }[kind] || 'The Pescher'); document.body.appendChild(pop);
     }
     paintPop(true);
   }
   function paintPop(focus) {
     if (!pop) return;
     pop.innerHTML = '<div class="an-box pe-box" data-a="pe-keep">' + popBody() + '</div>';
-    if (focus) { var x = pop.querySelector('#pe-setv') || pop.querySelector('#pex'); if (x) { x.focus(); if (x.select) x.select(); } }
+    if (focus) { var x = pop.querySelector('#pe-setv') || pop.querySelector('.pe-wb[aria-checked="true"]') || pop.querySelector('#pex'); if (x) { x.focus(); if (x.select) x.select(); } }
   }
 
   /* ---------- azioni ---------- */
@@ -10151,6 +10247,18 @@ window.CPA_SYNC = {
       case 'pe-hold': P.holder(g, el.dataset.k, id); repaint(); break;
       case 'pe-tog': ux.open[id] = ux.open[id] === el.dataset.k ? '' : el.dataset.k; repaint(); break;
       case 'pe-set': ux.setFor = id; openPop('set'); break;
+      case 'pe-end': { var aw = P.winner(g); ux.end = { winner: aw ? aw.id : '', deck: '' }; openPop('end'); break; }
+      case 'pe-winner': { var di = pop && pop.querySelector('#pe-wdeck'); if (di) ux.end.deck = di.value; ux.end.winner = id || ''; if (!ux.end.winner) ux.end.deck = ''; paintPop(); var sel = pop && pop.querySelector('.pe-wb[aria-checked="true"]'); if (sel) sel.focus(); break; }
+      case 'pe-endok': {
+        var dk = pop && pop.querySelector('#pe-wdeck'), rec = P.finish(g, ux.end.winner, dk ? dk.value : ux.end.deck);
+        history().unshift(rec); if (hist.length > P.HISTORY_MAX) hist.length = P.HISTORY_MAX; saveHistory();
+        closePop(); g.started = false; g.focus = false; P.reset(g); g.started = false; ux.open = {}; ux.delta = {}; ux.end = null; after(); repaint();
+        toast(rec.winner ? 'Partita salvata: ha vinto ' + rec.winner + '.' : 'Partita salvata.'); break;
+      }
+      case 'pe-delgame': {
+        var gid = el.dataset.id; if (ux.delGame !== gid) { ux.delGame = gid; repaint(); break; }
+        ux.delGame = ''; hist = history().filter(function (x) { return x.id !== gid; }); saveHistory(); repaint(); toast('Partita eliminata.'); break;
+      }
       case 'pe-setok': { var inp = pop && pop.querySelector('#pe-setv'), n = inp ? parseInt(inp.value, 10) : NaN, sid = ux.setFor; closePop(); if (n === n) { track(sid, function () { return P.setLife(g, sid, n); }); repaint(); } break; }
       case 'pe-next': { var nx = P.nextTurn(g); repaint(); if (nx) toast('Tocca a ' + nx.name + '.'); break; }
       case 'pe-undo': if (P.undo(g)) { ux.delta = {}; repaint(); if (pop) paintPop(); } break;

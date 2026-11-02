@@ -119,6 +119,43 @@
   }
   function pickFirst(g, rng) { var i = rnd(rng, g.players.length); return { index: i, player: g.players[i], text: 'Inizia ' + g.players[i].name }; }
 
+  /* ----- storico delle partite (sul dispositivo) ----- */
+  var HISTORY_MAX = 200;
+  function clean(t, n) { return String(t == null ? '' : t).replace(/\s+/g, ' ').trim().slice(0, n); }
+  /* Chiude la partita: chi ha vinto (o nessuno) e con quale mazzo. Restituisce il record da conservare. */
+  function finish(g, winnerId, deck, now) {
+    var w = winnerId ? player(g, winnerId) : null; now = now || Date.now();
+    return {
+      id: 'g' + now.toString(36) + Math.floor(Math.random() * 46656).toString(36), t: now, ms: Math.max(0, now - (g.t || now)), rounds: g.round || 1, start: g.start,
+      players: g.players.map(function (p) { return { name: p.name, life: p.life, out: status(g, p).out }; }),
+      winner: w ? w.name : '', deck: w ? clean(deck, 60) : ''
+    };
+  }
+  function restoreHistory(raw) {
+    var a; try { a = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return []; }
+    if (!Array.isArray(a)) return [];
+    return a.filter(function (r) { return r && Array.isArray(r.players) && r.players.length >= MIN; }).slice(0, HISTORY_MAX).map(function (r) {
+      return { id: clean(r.id, 24) || 'g' + Math.random().toString(36).slice(2, 8), t: Number(r.t) || 0, ms: Math.max(0, Number(r.ms) || 0), rounds: clampInt(r.rounds, 1, 9999, 1), start: clampInt(r.start, 1, 999, 40),
+        players: r.players.slice(0, MAX).map(function (p) { return { name: clean(p && p.name, 24) || '?', life: clampInt(p && p.life, -999, 9999, 0), out: !!(p && p.out) }; }),
+        winner: clean(r.winner, 24), deck: clean(r.deck, 60) };
+    });
+  }
+  /* Classifica per nome (senza badare alle maiuscole): partite, vittorie e il mazzo con cui vinci di più. */
+  function tally(history) {
+    var by = {}, order = [];
+    history.forEach(function (r) {
+      r.players.forEach(function (p) {
+        var k = p.name.toLowerCase(); if (!by[k]) { by[k] = { name: p.name, games: 0, wins: 0, decks: {} }; order.push(k); }
+        by[k].games++;
+        if (r.winner && r.winner.toLowerCase() === k) { by[k].wins++; if (r.deck) by[k].decks[r.deck] = (by[k].decks[r.deck] || 0) + 1; }
+      });
+    });
+    return order.map(function (k) {
+      var t = by[k], best = '', n = 0; Object.keys(t.decks).forEach(function (d) { if (t.decks[d] > n) { n = t.decks[d]; best = d; } });
+      return { name: t.name, games: t.games, wins: t.wins, rate: t.games ? t.wins / t.games : 0, deck: best, decks: t.decks };
+    }).sort(function (a, b) { return (b.wins - a.wins) || (b.rate - a.rate) || (b.games - a.games) || a.name.localeCompare(b.name); });
+  }
+
   /* ----- salvataggio ----- */
   function serialize(g) { return JSON.stringify(g); }
   function restore(raw) {
@@ -144,6 +181,6 @@
     MIN: MIN, MAX: MAX, LIVES: LIVES, POISON_OUT: POISON_OUT, CMD_OUT: CMD_OUT, DICE: Object.keys(DICE), COUNTERS: COUNTERS, HOLDERS: HOLDERS,
     newGame: newGame, player: player, status: status, alive: alive, winner: winner, resize: resize, setStart: setStart,
     life: life, setLife: setLife, poison: poison, cmd: cmd, counter: counter, taxOf: taxOf, holder: holder, rename: rename, undo: undo, reset: reset, begin: begin, nextTurn: nextTurn,
-    roll: roll, pickFirst: pickFirst, serialize: serialize, restore: restore
+    roll: roll, pickFirst: pickFirst, serialize: serialize, restore: restore, finish: finish, tally: tally, restoreHistory: restoreHistory, HISTORY_MAX: HISTORY_MAX
   };
 });
