@@ -47,6 +47,7 @@ const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers
     await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
     await ctx.route('https://api.scryfall.com/cards/search**', r => r.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify(CARDS) }));
     await ctx.route('https://cards.scryfall.io/**', r => r.fulfill({ status: 200, headers: { 'content-type': 'image/svg+xml' }, body: SVG }));
+    if (!configured) await ctx.route('**/community-config.js', r => r.fulfill({ status: 200, headers: { 'content-type': 'text/javascript' }, body: "window.CPA_COMMUNITY = { url: '', key: '' };" }));
     if (configured) {
       await ctx.route('**/community-config.js', r => r.fulfill({ status: 200, headers: { 'content-type': 'text/javascript' }, body: "window.CPA_COMMUNITY = { url: 'https://test.supabase.co', key: 'anon-key-for-tests-0123456789' };" }));
       await ctx.route('https://test.supabase.co/**', rpc);
