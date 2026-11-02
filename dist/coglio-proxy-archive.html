@@ -1198,6 +1198,21 @@ body.on-deck #toast { bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
 .pe-go .btn.big { background: var(--banana); border-color: var(--banana-deep); color: var(--banana-ink); box-shadow: 0 3px 0 var(--banana-deep); }
 .pe-go .btn.big:hover { background: var(--banana-hi); }
 
+/* tavoli salvati */
+.pe-tbl { display: grid; gap: 10px; margin-bottom: 0; }
+.pe-tt { font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.pe-tchips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pe-tc { min-height: 40px; max-width: 100%; padding: 6px 14px; border-radius: 999px; border: 1.5px solid var(--line2); background: var(--surface); color: var(--fg); font: 700 14px var(--body); overflow-wrap: anywhere; touch-action: manipulation; }
+.pe-tc:hover { border-color: var(--accent); }
+.pe-tc[aria-pressed="true"] { background: var(--banana); border-color: var(--banana-deep); color: var(--banana-ink); box-shadow: 0 2px 0 var(--banana-deep); }
+.pe-tc:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.pe-tedit { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pe-tedit .pe-name { flex: 1 1 200px; }
+.pe-tedit .btn[hidden] { display: none; }
+.pe-esave { display: grid; gap: 8px; }
+.pe-tnote { margin: 0; font-size: 14px; color: var(--muted); }
+.pe-tnote b { color: var(--fg); }
+
 /* partita */
 .pe-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
 .pe-turn { font-size: 15px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 2px 12px; align-items: baseline; }
@@ -1349,13 +1364,17 @@ body.pe-focus .pe-grid { min-height: calc(100dvh - 64px); }
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <script>
-window.CPA_VERSION = '5.0.0';
+window.CPA_VERSION = '5.1.0';
 
 </script>
 <script>
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '5.1.0', date: '2 novembre 2026', title: 'Pescher: fine partita e tavoli', items: [
+    { t: 'Fine partita con vincitore e mazzo', d: 'Il tasto «Fine partita» chiede chi ha vinto (o nessuno, per un pareggio) e, se vuoi, con quale mazzo: ti suggerisce i tuoi mazzi attivi e quelli già scritti. La partita si salva e torni alla preparazione del tavolo, che resta com\'è. Si può eliminare una partita con una doppia pressione.' },
+    { t: 'Tavoli salvati, con la loro classifica', d: 'Se giochi spesso con le stesse persone, salva il tavolo: ricorda nomi, posti, vita iniziale e regola del comandante, e lo ritrovi in cima alla preparazione con un tocco. Ogni tavolo ha la sua classifica (vittorie su partite per giocatore e il mazzo con cui vince di più) e le sue ultime partite: niente classifica globale che mescola gruppi diversi. Puoi salvare il tavolo anche alla fine di una partita, con una casella nel pop-up. Le partite senza tavolo restano in una lista a parte, senza classifica. Sta tutto sul dispositivo.' },
+  ] },
   { v: '5.0.0', date: '2 novembre 2026', title: 'Analisi del piscio e The Pescher', items: [
     { t: 'Analisi del piscio', d: 'Nella pagina di un mazzo, accanto a «Verifica bracket», c\'è il nuovo tasto «Analisi del piscio»: un pop-up con la curva di mana (il picco in banana, la media tratteggiata, il costo del commander), la torta dei simboli di mana per colore, il conteggio per tipo, il costo medio, le fonti di mana per colore (con l\'avviso «poche fonti» e le terre che cercano terre base), il controllo dell\'identità di colore e la legalità in Commander. Tutto dai dati di Scryfall già sul dispositivo: se mancano, li scarica lui. Ogni grafico ha la sua descrizione scritta per chi non li vede.' },
     { t: 'Legalità in chiaro', d: 'Il verdetto in cima dice «Legale» oppure elenca i problemi: carte bandite o non legali, copie doppie, carte fuori dall\'identità del commander (con le miniature), commander che non può esserlo, mazzo che non fa cento carte. Il sideboard non conta. Non sostituisce il giudizio al tavolo: le regole di casa non le conosce.' },
@@ -1363,7 +1382,6 @@ window.CPA_CHANGELOG = [
     { t: 'Veleno e danno da comandante', d: 'Veleno (10 = fuori) e danno da comandante per avversario (21 = fuori, e toglie anche vita come da regola, si può spegnere). Chi è fuori lo dice perché; rialzando i numeri si rientra.' },
     { t: 'Altri segnalini, monarca e iniziativa', d: 'Dal tasto «Altro» di ogni riquadro: esperienza, energia, lanci del comandante (con il costo in più, +2 a lancio), monarca e iniziativa. Monarca e iniziativa li ha un giocatore solo: assegnarli a un altro li toglie al precedente, e si vedono nell\'intestazione del riquadro.' },
     { t: 'Turni, giro e cronometro', d: '«Passa il turno» salta chi è fuori, la barra in alto dice di chi è il turno, a che giro siamo e da quanto si gioca.' },
-    { t: 'Fine partita, classifica e storico', d: 'Il tasto «Fine partita» chiede chi ha vinto (o nessuno, per un pareggio) e, se vuoi, con quale mazzo: ti suggerisce i tuoi mazzi attivi e quelli già scritti. La partita si salva e torni alla preparazione del tavolo, che resta com\'è. Lì sotto trovi la classifica per giocatore (vittorie su partite, e il mazzo con cui vince di più) e le ultime partite, che puoi eliminare. Sta tutta sul dispositivo.' },
     { t: 'Dadi, registro e annulla', d: 'D4, D6, D8, D10, D12, D20, moneta e «Chi inizia?» col caso vero del dispositivo. Ogni passaggio finisce nel registro (dal Menu) e si annulla con «Annulla». La partita si salva da sola sul dispositivo e sopravvive al ricaricamento; lo schermo resta acceso finché giochi.' },
     { t: 'Telefono al centro del tavolo', d: 'Dal menu: «Gira i giocatori in alto» ruota i riquadri di chi siede di fronte, e la modalità focus nasconde il resto dell\'app (Esc per uscire).' },
     { t: 'Pagina del mazzo più stabile', d: 'Passando il mouse sulle righe (terre comprese) il pulsante «Design» non strozza più il nome della carta e le colonne non si ribilanciano più sotto il cursore.' },
@@ -4294,7 +4312,7 @@ window.CPA_CHANGELOG = [
       var p = seat(i, life); if (o.names && o.names[i]) p.name = String(o.names[i]).slice(0, 24);
       players.push(p);
     }
-    return { v: 1, started: false, start: life, cmdLife: o.cmdLife !== false, players: players, turn: -1, first: -1, round: 1, monarch: '', initiative: '', log: [], hist: [], t: Date.now() };
+    return { v: 1, started: false, start: life, cmdLife: o.cmdLife !== false, players: players, turn: -1, first: -1, round: 1, monarch: '', initiative: '', log: [], hist: [], t: Date.now(), table: '' };
   }
   function player(g, id) { for (var i = 0; i < g.players.length; i++) if (g.players[i].id === id) return g.players[i]; return null; }
   function say(g, text) { g.log.unshift({ t: Date.now(), text: text }); if (g.log.length > LOG) g.log.length = LOG; }
@@ -4396,7 +4414,7 @@ window.CPA_CHANGELOG = [
     return {
       id: 'g' + now.toString(36) + Math.floor(Math.random() * 46656).toString(36), t: now, ms: Math.max(0, now - (g.t || now)), rounds: g.round || 1, start: g.start,
       players: g.players.map(function (p) { return { name: p.name, life: p.life, out: status(g, p).out }; }),
-      winner: w ? w.name : '', deck: w ? clean(deck, 60) : ''
+      winner: w ? w.name : '', deck: w ? clean(deck, 60) : '', table: clean(g.table, 24)
     };
   }
   function restoreHistory(raw) {
@@ -4405,9 +4423,11 @@ window.CPA_CHANGELOG = [
     return a.filter(function (r) { return r && Array.isArray(r.players) && r.players.length >= MIN; }).slice(0, HISTORY_MAX).map(function (r) {
       return { id: clean(r.id, 24) || 'g' + Math.random().toString(36).slice(2, 8), t: Number(r.t) || 0, ms: Math.max(0, Number(r.ms) || 0), rounds: clampInt(r.rounds, 1, 9999, 1), start: clampInt(r.start, 1, 999, 40),
         players: r.players.slice(0, MAX).map(function (p) { return { name: clean(p && p.name, 24) || '?', life: clampInt(p && p.life, -999, 9999, 0), out: !!(p && p.out) }; }),
-        winner: clean(r.winner, 24), deck: clean(r.deck, 60) };
+        winner: clean(r.winner, 24), deck: clean(r.deck, 60), table: clean(r.table, 24) };
     });
   }
+  /* Le partite di un tavolo (id vuoto = partite senza tavolo). La classifica ha senso solo dentro un tavolo. */
+  function forTable(history, id) { id = id || ''; return history.filter(function (r) { return (r.table || '') === id; }); }
   /* Classifica per nome (senza badare alle maiuscole): partite, vittorie e il mazzo con cui vinci di più. */
   function tally(history) {
     var by = {}, order = [];
@@ -4422,6 +4442,34 @@ window.CPA_CHANGELOG = [
       var t = by[k], best = '', n = 0; Object.keys(t.decks).forEach(function (d) { if (t.decks[d] > n) { n = t.decks[d]; best = d; } });
       return { name: t.name, games: t.games, wins: t.wins, rate: t.games ? t.wins / t.games : 0, deck: best, decks: t.decks };
     }).sort(function (a, b) { return (b.wins - a.wins) || (b.rate - a.rate) || (b.games - a.games) || a.name.localeCompare(b.name); });
+  }
+
+  /* ----- tavoli salvati: chi gioca insieme, con le impostazioni di partenza ----- */
+  var TABLES_MAX = 20;
+  function listNames(g) { return g.players.map(function (p) { return p.name; }); }
+  function makeTable(g, name, now) {
+    var names = listNames(g); now = now || Date.now();
+    return { id: 't' + now.toString(36) + Math.floor(Math.random() * 46656).toString(36), name: clean(name, 30) || ('Tavolo di ' + names.slice(0, 2).join(' e ')), players: names, start: g.start, cmdLife: !!g.cmdLife, t: now };
+  }
+  /* Carica un tavolo nella preparazione: posti, nomi, vita iniziale e regola del comandante. */
+  function applyTable(g, tb) {
+    if (!tb) return g;
+    resize(g, tb.players.length); g.start = clampInt(tb.start, 1, 999, 40); g.cmdLife = tb.cmdLife !== false;
+    g.players.forEach(function (p, i) { p.life = g.start; p.name = clean(tb.players[i], 24) || p.name; });
+    g.table = tb.id; return g;
+  }
+  /* Il tavolo di partenza è ancora quello che si vede nella preparazione? (nomi, posti, vita) */
+  function sameTable(g, tb) {
+    if (!tb || tb.players.length !== g.players.length || tb.start !== g.start || (tb.cmdLife !== false) !== !!g.cmdLife) return false;
+    return tb.players.every(function (n, i) { return n === g.players[i].name; });
+  }
+  function restoreTables(raw) {
+    var a; try { a = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return []; }
+    if (!Array.isArray(a)) return [];
+    var seen = {};
+    return a.filter(function (t) { return t && typeof t.id === 'string' && t.id && !seen[t.id] && (seen[t.id] = 1) && Array.isArray(t.players) && t.players.length >= MIN; }).slice(0, TABLES_MAX).map(function (t) {
+      return { id: clean(t.id, 24), name: clean(t.name, 30) || 'Tavolo', players: t.players.slice(0, MAX).map(function (n) { return clean(n, 24) || '?'; }), start: clampInt(t.start, 1, 999, 40), cmdLife: t.cmdLife !== false, t: Number(t.t) || 0 };
+    });
   }
 
   /* ----- salvataggio ----- */
@@ -4441,7 +4489,7 @@ window.CPA_CHANGELOG = [
     g.monarch = ids[g.monarch] || ''; g.initiative = ids[g.initiative] || '';
     g.log = Array.isArray(g.log) ? g.log.slice(0, LOG).filter(function (l) { return l && typeof l.text === 'string'; }) : [];
     g.hist = Array.isArray(g.hist) ? g.hist.slice(-HIST).filter(function (h) { return typeof h === 'string'; }) : [];
-    g.v = 1; g.t = Number(g.t) || Date.now();
+    g.table = clean(g.table, 24); g.v = 1; g.t = Number(g.t) || Date.now();
     return g;
   }
 
@@ -4449,7 +4497,8 @@ window.CPA_CHANGELOG = [
     MIN: MIN, MAX: MAX, LIVES: LIVES, POISON_OUT: POISON_OUT, CMD_OUT: CMD_OUT, DICE: Object.keys(DICE), COUNTERS: COUNTERS, HOLDERS: HOLDERS,
     newGame: newGame, player: player, status: status, alive: alive, winner: winner, resize: resize, setStart: setStart,
     life: life, setLife: setLife, poison: poison, cmd: cmd, counter: counter, taxOf: taxOf, holder: holder, rename: rename, undo: undo, reset: reset, begin: begin, nextTurn: nextTurn,
-    roll: roll, pickFirst: pickFirst, serialize: serialize, restore: restore, finish: finish, tally: tally, restoreHistory: restoreHistory, HISTORY_MAX: HISTORY_MAX
+    roll: roll, pickFirst: pickFirst, serialize: serialize, restore: restore, finish: finish, tally: tally, forTable: forTable, restoreHistory: restoreHistory, HISTORY_MAX: HISTORY_MAX,
+    makeTable: makeTable, applyTable: applyTable, sameTable: sameTable, restoreTables: restoreTables, TABLES_MAX: TABLES_MAX
   };
 });
 
@@ -10008,9 +10057,9 @@ window.CPA_SYNC = {
   'use strict';
   var H = window.CPAHost, P = window.CPAPescher;
   if (!H || !P) return;
-  var esc = H.esc, KEY = 'cpa:pescher:v1', HKEY = 'cpa:pescher:hist:v1';
-  var g = null, hist = null, wake = null, clockT = 0, deltaT = 0;
-  var ux = { open: {}, pop: '', rolls: [], confirm: '', setFor: '', delta: {}, end: null, delGame: '' };
+  var esc = H.esc, KEY = 'cpa:pescher:v1', HKEY = 'cpa:pescher:hist:v1', TKEY = 'cpa:pescher:tables:v1';
+  var g = null, hist = null, tbls = null, wake = null, clockT = 0, deltaT = 0;
+  var ux = { open: {}, pop: '', rolls: [], confirm: '', setFor: '', delta: {}, end: null, delGame: '', delTable: '', tnew: '' };
   var SEAT = ['var(--m-u)', 'var(--m-r)', 'var(--m-g)', 'var(--m-w)', 'var(--m-b)', 'var(--banana)'];
 
   /* ---------- salvataggio ---------- */
@@ -10019,6 +10068,15 @@ window.CPA_SYNC = {
   function ensure() { if (!g) g = load() || P.newGame({ players: 4, life: 40 }); return g; }
   function history() { if (!hist) { try { hist = P.restoreHistory(localStorage.getItem(HKEY)); } catch (e) { hist = []; } } return hist; }
   function saveHistory() { try { localStorage.setItem(HKEY, JSON.stringify(hist)); } catch (e) { /* la classifica resta in memoria finché la pagina è aperta */ } }
+  function tables() { if (!tbls) { try { tbls = P.restoreTables(localStorage.getItem(TKEY)); } catch (e) { tbls = []; } } return tbls; }
+  function saveTables() { try { localStorage.setItem(TKEY, JSON.stringify(tbls)); } catch (e) { /* i tavoli restano in memoria finché la pagina è aperta */ } }
+  /* il tavolo scelto; se è stato eliminato (o l'id è sporco) si torna al tavolo libero */
+  function curTable() {
+    if (!g || !g.table) return null;
+    var t = tables().filter(function (x) { return x.id === g.table; })[0];
+    if (!t) g.table = '';
+    return t || null;
+  }
   function rng() { try { var a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; } catch (e) { return Math.random(); } }
 
   /* ---------- pezzi di interfaccia ---------- */
@@ -10042,27 +10100,55 @@ window.CPA_SYNC = {
   }
   function setupHtml() {
     return '<header class="vh"><h1>The Pescher</h1><p class="sub">Il compagno di partita dal vivo: vite, veleno, danno da comandante, segnalini e dadi.</p></header>' +
-      '<section class="pe-setup"><div class="pe-opts panel">' +
+      '<section class="pe-setup">' + tableHtml() + '<div class="pe-opts panel">' +
       '<div class="pe-opt"><b>Giocatori</b>' + seg([2, 3, 4, 5, 6], g.players.length, 'pe-count', 'Numero di giocatori') + '</div>' +
       '<div class="pe-opt"><b>Vita iniziale</b>' + seg(P.LIVES, g.start, 'pe-start', 'Vita iniziale') + '</div>' +
       '<label class="pe-chk"><input type="checkbox" data-c="pe-cmdlife"' + (g.cmdLife ? ' checked' : '') + '> Il danno da comandante toglie anche vita</label></div>' +
-      '<div class="pe-opt"><b>Nomi (se vuoi)</b></div>' +
+      '<div class="pe-opt"><b>Nomi' + (curTable() ? ' del tavolo' : ' (se vuoi)') + '</b></div>' +
       '<div class="pe-seats">' + g.players.map(seatHtml).join('') + '</div>' +
       '<div class="pe-go"><button type="button" class="btn primary big" data-a="pe-begin">Inizia la partita</button><span class="hint">Il primo giocatore lo decide il caso.</span></div>' + historyHtml() + '</section>';
   }
   function fmtDate(t) { var d = new Date(t); return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  /* Il tavolo: «libero» oppure uno salvato. Un tavolo salvato ricorda i nomi e tiene la sua classifica. */
+  function tableHtml() {
+    var ts = tables(), cur = curTable(), full = ts.length >= P.TABLES_MAX;
+    var chips = '<div class="pe-tchips" role="group" aria-label="Tavolo"><button type="button" class="pe-tc" data-a="pe-table" data-id="" aria-pressed="' + !cur + '">Tavolo libero</button>' +
+      ts.map(function (t) { return '<button type="button" class="pe-tc" data-a="pe-table" data-id="' + esc(t.id) + '" aria-pressed="' + !!(cur && cur.id === t.id) + '">' + esc(t.name) + '</button>'; }).join('') + '</div>';
+    var body;
+    if (cur) {
+      var armed = ux.delTable === cur.id;
+      body = '<div class="pe-tedit"><input class="pe-name" data-c="pe-tname" value="' + esc(cur.name) + '" maxlength="30" aria-label="Nome del tavolo" autocomplete="off">' +
+        '<button type="button" class="btn small" id="pe-tup" data-a="pe-tupdate"' + (P.sameTable(g, cur) ? ' hidden' : '') + '>Aggiorna il tavolo con questi nomi</button>' +
+        '<button type="button" class="btn small' + (armed ? ' danger' : '') + '" data-a="pe-tdel">' + (armed ? 'Sicuro? Sparisce con le sue partite' : 'Elimina il tavolo') + '</button></div>';
+    } else if (full) {
+      body = '<p class="hint">Hai già ' + P.TABLES_MAX + ' tavoli salvati: eliminane uno per salvarne un altro.</p>';
+    } else {
+      body = '<div class="pe-tedit"><input class="pe-name" data-c="pe-tnew" value="' + esc(ux.tnew) + '" maxlength="30" placeholder="Nome del tavolo (es. Il venerdì)" aria-label="Nome del nuovo tavolo" autocomplete="off">' +
+        '<button type="button" class="btn small primary" data-a="pe-tsave">Salva questo tavolo</button></div>' +
+        '<p class="hint">Giochi spesso con le stesse persone? Salva il tavolo: avrà la sua classifica, con le vittorie di ognuno e il mazzo con cui vincono.</p>';
+    }
+    return '<div class="pe-tbl panel"><b class="pe-tt">Tavolo</b>' + chips + body + '</div>';
+  }
+  function fmtDate(t) { var d = new Date(t); return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function gamesHtml(h, n) {
+    return '<ol class="pe-games">' + h.slice(0, n).map(function (r) {
+      var armed = ux.delGame === r.id;
+      return '<li><div><b>' + (r.winner ? 'Vince ' + esc(r.winner) : 'Nessun vincitore') + '</b>' + (r.deck ? '<span class="dk">' + esc(r.deck) + '</span>' : '') + '<small>' + fmtDate(r.t) + ' · ' + r.players.map(function (p) { return esc(p.name); }).join(', ') + ' · ' + r.rounds + (r.rounds === 1 ? ' giro' : ' giri') + ' · ' + mmss(r.ms) + '</small></div>' +
+        '<button type="button" class="btn small' + (armed ? ' danger' : '') + '" data-a="pe-delgame" data-id="' + esc(r.id) + '" aria-label="Elimina la partita del ' + fmtDate(r.t) + '">' + (armed ? 'Sicuro?' : 'Elimina') + '</button></li>';
+    }).join('') + '</ol>' + (h.length > n ? '<p class="hint">Mostro le ultime ' + n + ' di ' + h.length + '.</p>' : '');
+  }
   function historyHtml() {
-    var h = history(); if (!h.length) return '';
+    var cur = curTable(), h = P.forTable(history(), cur ? cur.id : '');
+    if (!cur) {
+      if (!h.length) return '';
+      return '<section class="pe-hsec"><h2 class="sect">Partite senza tavolo</h2>' + gamesHtml(h, 5) + '<p class="hint">Queste non fanno classifica: salva il tavolo per contare le vittorie di chi gioca sempre insieme. Sta tutto su questo dispositivo.</p></section>';
+    }
+    if (!h.length) return '<section class="pe-hsec"><h2 class="sect">Classifica · ' + esc(cur.name) + '</h2><p class="an-none">Ancora nessuna partita: la classifica parte quando finisci la prima.</p></section>';
     var tl = P.tally(h);
     var board = '<ol class="pe-board">' + tl.slice(0, 10).map(function (x, i) {
       return '<li><span class="rk">' + (i + 1) + '</span><b>' + esc(x.name) + '</b><span class="sc">' + plural(x.wins, 'vittoria', 'vittorie') + ' su ' + x.games + '</span>' + (x.deck ? '<small>vince di più con ' + esc(x.deck) + '</small>' : '') + '</li>';
     }).join('') + '</ol>';
-    var games = '<ol class="pe-games">' + h.slice(0, 8).map(function (r) {
-      var armed = ux.delGame === r.id;
-      return '<li><div><b>' + (r.winner ? 'Vince ' + esc(r.winner) : 'Nessun vincitore') + '</b>' + (r.deck ? '<span class="dk">' + esc(r.deck) + '</span>' : '') + '<small>' + fmtDate(r.t) + ' · ' + r.players.map(function (p) { return esc(p.name); }).join(', ') + ' · ' + r.rounds + (r.rounds === 1 ? ' giro' : ' giri') + ' · ' + mmss(r.ms) + '</small></div>' +
-        '<button type="button" class="btn small' + (armed ? ' danger' : '') + '" data-a="pe-delgame" data-id="' + esc(r.id) + '" aria-label="Elimina la partita del ' + fmtDate(r.t) + '">' + (armed ? 'Sicuro?' : 'Elimina') + '</button></li>';
-    }).join('') + '</ol>' + (h.length > 8 ? '<p class="hint">Mostro le ultime 8 di ' + h.length + ': la classifica le conta tutte.</p>' : '');
-    return '<section class="pe-hsec"><h2 class="sect">Classifica</h2>' + board + '<h2 class="sect">Ultime partite</h2>' + games + '<p class="hint">Sta tutta su questo dispositivo.</p></section>';
+    return '<section class="pe-hsec"><h2 class="sect">Classifica · ' + esc(cur.name) + '</h2>' + board + '<h2 class="sect">Ultime partite del tavolo</h2>' + gamesHtml(h, 8) + '<p class="hint">Sta tutta su questo dispositivo.</p></section>';
   }
   function plural(n, a, b) { return n + ' ' + (n === 1 ? a : b); }
 
@@ -10187,7 +10273,7 @@ window.CPA_SYNC = {
         '<div class="pe-popbar"><button type="button" class="btn" data-a="pe-undo"' + (g.hist.length ? '' : ' disabled') + '>Annulla l’ultimo</button></div>';
     }
     if (ux.pop === 'end') {
-      var e = ux.end, decks = {}; H.decks().forEach(function (d) { if (d.kind === 'deck' && d.active) decks[d.name] = 1; }); history().forEach(function (x) { if (x.deck) decks[x.deck] = 1; });
+      var e = ux.end, ct = curTable(), decks = {}; H.decks().forEach(function (d) { if (d.kind === 'deck' && d.active) decks[d.name] = 1; }); history().forEach(function (x) { if (x.deck) decks[x.deck] = 1; });
       return head('Fine partita', 'Chi ha vinto?') +
         '<div class="pe-win" role="radiogroup" aria-label="Vincitore">' + g.players.map(function (p, i) {
           var out = P.status(g, p).out;
@@ -10195,8 +10281,12 @@ window.CPA_SYNC = {
         }).join('') + '<button type="button" class="pe-wb none" role="radio" aria-checked="' + (e.winner === '') + '" data-a="pe-winner" data-p=""><b>Nessuno</b><small>pareggio o partita interrotta</small></button></div>' +
         (e.winner ? '<label class="pe-wd"><span>Mazzo giocato da ' + esc(P.player(g, e.winner).name) + ' <small>(se vuoi)</small></span><input id="pe-wdeck" class="pe-name" type="text" list="pe-decks" maxlength="60" value="' + esc(e.deck) + '" placeholder="Es. Kaalia, Atraxa…" autocomplete="off"></label>' +
           '<datalist id="pe-decks">' + Object.keys(decks).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>' : '') +
+        (ct ? '<p class="pe-tnote">Si conta nella classifica di <b>' + esc(ct.name) + '</b>.</p>' :
+          (tables().length < P.TABLES_MAX ? '<div class="pe-esave"><label class="pe-chk"><input type="checkbox" data-c="pe-esave"' + (e.save ? ' checked' : '') + '> Salva questo tavolo per tenere la classifica</label>' +
+            (e.save ? '<input id="pe-esname" class="pe-name" type="text" maxlength="30" value="' + esc(e.tname) + '" placeholder="Nome del tavolo (es. Il venerdì)" aria-label="Nome del tavolo" autocomplete="off">' : '') + '</div>' :
+            '<p class="hint">Hai già ' + P.TABLES_MAX + ' tavoli salvati: la partita resta tra quelle senza tavolo.</p>')) +
         '<div class="pe-popbar"><button type="button" class="btn primary" data-a="pe-endok">Salva la partita</button></div>' +
-        '<p class="hint">La partita finisce e si salva nella classifica di questo dispositivo. Il tavolo resta com\u2019è per la prossima.</p>';
+        '<p class="hint">La partita finisce e si salva su questo dispositivo. Il tavolo resta com\u2019è per la prossima.</p>';
     }
     if (ux.pop === 'set') {
       var p = P.player(g, ux.setFor);
@@ -10230,6 +10320,12 @@ window.CPA_SYNC = {
     if (focus) { var x = pop.querySelector('#pe-setv') || pop.querySelector('.pe-wb[aria-checked="true"]') || pop.querySelector('#pex'); if (x) { x.focus(); if (x.select) x.select(); } }
   }
 
+  /* prima di ridisegnare il pop-up di fine partita si tiene quel che è stato scritto */
+  function grabEnd() {
+    if (!pop || !ux.end) return;
+    var d = pop.querySelector('#pe-wdeck'), n = pop.querySelector('#pe-esname'); if (d) ux.end.deck = d.value; if (n) ux.end.tname = n.value;
+  }
+
   /* ---------- azioni ---------- */
   function toast(m) { if (H.toast) H.toast(m); }
 
@@ -10247,13 +10343,28 @@ window.CPA_SYNC = {
       case 'pe-hold': P.holder(g, el.dataset.k, id); repaint(); break;
       case 'pe-tog': ux.open[id] = ux.open[id] === el.dataset.k ? '' : el.dataset.k; repaint(); break;
       case 'pe-set': ux.setFor = id; openPop('set'); break;
-      case 'pe-end': { var aw = P.winner(g); ux.end = { winner: aw ? aw.id : '', deck: '' }; openPop('end'); break; }
-      case 'pe-winner': { var di = pop && pop.querySelector('#pe-wdeck'); if (di) ux.end.deck = di.value; ux.end.winner = id || ''; if (!ux.end.winner) ux.end.deck = ''; paintPop(); var sel = pop && pop.querySelector('.pe-wb[aria-checked="true"]'); if (sel) sel.focus(); break; }
+      case 'pe-end': { var aw = P.winner(g); ux.end = { winner: aw ? aw.id : '', deck: '', save: false, tname: '' }; openPop('end'); break; }
+      case 'pe-winner': { grabEnd(); ux.end.winner = id || ''; if (!ux.end.winner) ux.end.deck = ''; paintPop(); var sel = pop && pop.querySelector('.pe-wb[aria-checked="true"]'); if (sel) sel.focus(); break; }
       case 'pe-endok': {
-        var dk = pop && pop.querySelector('#pe-wdeck'), rec = P.finish(g, ux.end.winner, dk ? dk.value : ux.end.deck);
+        grabEnd();
+        var made = null;
+        if (!curTable() && ux.end.save && tables().length < P.TABLES_MAX) { made = P.makeTable(g, ux.end.tname); tables().unshift(made); saveTables(); g.table = made.id; }
+        var rec = P.finish(g, ux.end.winner, ux.end.deck);
         history().unshift(rec); if (hist.length > P.HISTORY_MAX) hist.length = P.HISTORY_MAX; saveHistory();
         closePop(); g.started = false; g.focus = false; P.reset(g); g.started = false; ux.open = {}; ux.delta = {}; ux.end = null; after(); repaint();
-        toast(rec.winner ? 'Partita salvata: ha vinto ' + rec.winner + '.' : 'Partita salvata.'); break;
+        toast((made ? 'Tavolo «' + made.name + '» salvato. ' : '') + (rec.winner ? 'Partita salvata: ha vinto ' + rec.winner + '.' : 'Partita salvata.')); break;
+      }
+      case 'pe-table': { var tb = !el.dataset.id ? null : tables().filter(function (x) { return x.id === el.dataset.id; })[0]; ux.delTable = ''; if (tb) P.applyTable(g, tb); else g.table = ''; repaint(); break; }
+      case 'pe-tsave': {
+        if (curTable() || tables().length >= P.TABLES_MAX) break;
+        var nt = P.makeTable(g, ux.tnew); tables().unshift(nt); saveTables(); g.table = nt.id; ux.tnew = ''; repaint(); toast('Tavolo «' + nt.name + '» salvato.'); break;
+      }
+      case 'pe-tupdate': { var ut = curTable(); if (!ut) break; var nn = P.makeTable(g, ut.name); ut.players = nn.players; ut.start = nn.start; ut.cmdLife = nn.cmdLife; saveTables(); repaint(); toast('Tavolo aggiornato.'); break; }
+      case 'pe-tdel': {
+        var dt = curTable(); if (!dt) break;
+        if (ux.delTable !== dt.id) { ux.delTable = dt.id; repaint(); break; }
+        ux.delTable = ''; tbls = tables().filter(function (x) { return x.id !== dt.id; }); saveTables();
+        hist = history().filter(function (x) { return x.table !== dt.id; }); saveHistory(); g.table = ''; repaint(); toast('Tavolo eliminato.'); break;
       }
       case 'pe-delgame': {
         var gid = el.dataset.id; if (ux.delGame !== gid) { ux.delGame = gid; repaint(); break; }
@@ -10279,12 +10390,20 @@ window.CPA_SYNC = {
   }
   function input(c, t) {
     ensure();
-    if (c === 'pe-name') { P.rename(g, t.dataset.p, t.value); save(); }
+    if (c === 'pe-name') {
+      P.rename(g, t.dataset.p, t.value); save();
+      var ct = curTable(), up = document.getElementById('pe-tup'); if (ct && up) up.hidden = P.sameTable(g, ct);
+    } else if (c === 'pe-tnew') ux.tnew = t.value;
+    else if (c === 'pe-tname') {
+      var tb = curTable(), nm = String(t.value || '').replace(/\s+/g, ' ').trim().slice(0, 30);
+      if (tb && nm) { tb.name = nm; saveTables(); var chip = document.querySelector('#pe .pe-tc[data-id="' + tb.id + '"]'); if (chip) chip.textContent = nm; }
+    }
   }
   function change(c, t) {
     ensure();
     switch (c) {
-      case 'pe-cmdlife': g.cmdLife = t.checked; save(); break;
+      case 'pe-cmdlife': g.cmdLife = t.checked; save(); { var ct = curTable(), up = document.getElementById('pe-tup'); if (ct && up) up.hidden = P.sameTable(g, ct); } break;
+      case 'pe-esave': grabEnd(); if (ux.end) ux.end.save = t.checked; paintPop(); { var ni = pop && pop.querySelector('#pe-esname'); if (ni) ni.focus(); else { var cb = pop && pop.querySelector('[data-c="pe-esave"]'); if (cb) cb.focus(); } } break;
       case 'pe-mirror': g.mirror = t.checked; repaint(); break;
       case 'pe-focus':
         g.focus = t.checked; after(); save();

@@ -26,7 +26,7 @@
       var p = seat(i, life); if (o.names && o.names[i]) p.name = String(o.names[i]).slice(0, 24);
       players.push(p);
     }
-    return { v: 1, started: false, start: life, cmdLife: o.cmdLife !== false, players: players, turn: -1, first: -1, round: 1, monarch: '', initiative: '', log: [], hist: [], t: Date.now() };
+    return { v: 1, started: false, start: life, cmdLife: o.cmdLife !== false, players: players, turn: -1, first: -1, round: 1, monarch: '', initiative: '', log: [], hist: [], t: Date.now(), table: '' };
   }
   function player(g, id) { for (var i = 0; i < g.players.length; i++) if (g.players[i].id === id) return g.players[i]; return null; }
   function say(g, text) { g.log.unshift({ t: Date.now(), text: text }); if (g.log.length > LOG) g.log.length = LOG; }
@@ -128,7 +128,7 @@
     return {
       id: 'g' + now.toString(36) + Math.floor(Math.random() * 46656).toString(36), t: now, ms: Math.max(0, now - (g.t || now)), rounds: g.round || 1, start: g.start,
       players: g.players.map(function (p) { return { name: p.name, life: p.life, out: status(g, p).out }; }),
-      winner: w ? w.name : '', deck: w ? clean(deck, 60) : ''
+      winner: w ? w.name : '', deck: w ? clean(deck, 60) : '', table: clean(g.table, 24)
     };
   }
   function restoreHistory(raw) {
@@ -137,9 +137,11 @@
     return a.filter(function (r) { return r && Array.isArray(r.players) && r.players.length >= MIN; }).slice(0, HISTORY_MAX).map(function (r) {
       return { id: clean(r.id, 24) || 'g' + Math.random().toString(36).slice(2, 8), t: Number(r.t) || 0, ms: Math.max(0, Number(r.ms) || 0), rounds: clampInt(r.rounds, 1, 9999, 1), start: clampInt(r.start, 1, 999, 40),
         players: r.players.slice(0, MAX).map(function (p) { return { name: clean(p && p.name, 24) || '?', life: clampInt(p && p.life, -999, 9999, 0), out: !!(p && p.out) }; }),
-        winner: clean(r.winner, 24), deck: clean(r.deck, 60) };
+        winner: clean(r.winner, 24), deck: clean(r.deck, 60), table: clean(r.table, 24) };
     });
   }
+  /* Le partite di un tavolo (id vuoto = partite senza tavolo). La classifica ha senso solo dentro un tavolo. */
+  function forTable(history, id) { id = id || ''; return history.filter(function (r) { return (r.table || '') === id; }); }
   /* Classifica per nome (senza badare alle maiuscole): partite, vittorie e il mazzo con cui vinci di più. */
   function tally(history) {
     var by = {}, order = [];
@@ -154,6 +156,34 @@
       var t = by[k], best = '', n = 0; Object.keys(t.decks).forEach(function (d) { if (t.decks[d] > n) { n = t.decks[d]; best = d; } });
       return { name: t.name, games: t.games, wins: t.wins, rate: t.games ? t.wins / t.games : 0, deck: best, decks: t.decks };
     }).sort(function (a, b) { return (b.wins - a.wins) || (b.rate - a.rate) || (b.games - a.games) || a.name.localeCompare(b.name); });
+  }
+
+  /* ----- tavoli salvati: chi gioca insieme, con le impostazioni di partenza ----- */
+  var TABLES_MAX = 20;
+  function listNames(g) { return g.players.map(function (p) { return p.name; }); }
+  function makeTable(g, name, now) {
+    var names = listNames(g); now = now || Date.now();
+    return { id: 't' + now.toString(36) + Math.floor(Math.random() * 46656).toString(36), name: clean(name, 30) || ('Tavolo di ' + names.slice(0, 2).join(' e ')), players: names, start: g.start, cmdLife: !!g.cmdLife, t: now };
+  }
+  /* Carica un tavolo nella preparazione: posti, nomi, vita iniziale e regola del comandante. */
+  function applyTable(g, tb) {
+    if (!tb) return g;
+    resize(g, tb.players.length); g.start = clampInt(tb.start, 1, 999, 40); g.cmdLife = tb.cmdLife !== false;
+    g.players.forEach(function (p, i) { p.life = g.start; p.name = clean(tb.players[i], 24) || p.name; });
+    g.table = tb.id; return g;
+  }
+  /* Il tavolo di partenza è ancora quello che si vede nella preparazione? (nomi, posti, vita) */
+  function sameTable(g, tb) {
+    if (!tb || tb.players.length !== g.players.length || tb.start !== g.start || (tb.cmdLife !== false) !== !!g.cmdLife) return false;
+    return tb.players.every(function (n, i) { return n === g.players[i].name; });
+  }
+  function restoreTables(raw) {
+    var a; try { a = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return []; }
+    if (!Array.isArray(a)) return [];
+    var seen = {};
+    return a.filter(function (t) { return t && typeof t.id === 'string' && t.id && !seen[t.id] && (seen[t.id] = 1) && Array.isArray(t.players) && t.players.length >= MIN; }).slice(0, TABLES_MAX).map(function (t) {
+      return { id: clean(t.id, 24), name: clean(t.name, 30) || 'Tavolo', players: t.players.slice(0, MAX).map(function (n) { return clean(n, 24) || '?'; }), start: clampInt(t.start, 1, 999, 40), cmdLife: t.cmdLife !== false, t: Number(t.t) || 0 };
+    });
   }
 
   /* ----- salvataggio ----- */
@@ -173,7 +203,7 @@
     g.monarch = ids[g.monarch] || ''; g.initiative = ids[g.initiative] || '';
     g.log = Array.isArray(g.log) ? g.log.slice(0, LOG).filter(function (l) { return l && typeof l.text === 'string'; }) : [];
     g.hist = Array.isArray(g.hist) ? g.hist.slice(-HIST).filter(function (h) { return typeof h === 'string'; }) : [];
-    g.v = 1; g.t = Number(g.t) || Date.now();
+    g.table = clean(g.table, 24); g.v = 1; g.t = Number(g.t) || Date.now();
     return g;
   }
 
@@ -181,6 +211,7 @@
     MIN: MIN, MAX: MAX, LIVES: LIVES, POISON_OUT: POISON_OUT, CMD_OUT: CMD_OUT, DICE: Object.keys(DICE), COUNTERS: COUNTERS, HOLDERS: HOLDERS,
     newGame: newGame, player: player, status: status, alive: alive, winner: winner, resize: resize, setStart: setStart,
     life: life, setLife: setLife, poison: poison, cmd: cmd, counter: counter, taxOf: taxOf, holder: holder, rename: rename, undo: undo, reset: reset, begin: begin, nextTurn: nextTurn,
-    roll: roll, pickFirst: pickFirst, serialize: serialize, restore: restore, finish: finish, tally: tally, restoreHistory: restoreHistory, HISTORY_MAX: HISTORY_MAX
+    roll: roll, pickFirst: pickFirst, serialize: serialize, restore: restore, finish: finish, tally: tally, forTable: forTable, restoreHistory: restoreHistory, HISTORY_MAX: HISTORY_MAX,
+    makeTable: makeTable, applyTable: applyTable, sameTable: sameTable, restoreTables: restoreTables, TABLES_MAX: TABLES_MAX
   };
 });

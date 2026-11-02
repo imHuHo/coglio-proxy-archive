@@ -108,4 +108,37 @@ eq(P.restoreHistory(JSON.stringify(hist)).length, 4, 'storico ripristinato'); eq
 const dirty = P.restoreHistory([{ players: [{ name: 'A' }] }, { id: 'x', t: 'boh', ms: -5, rounds: 'x', players: [{ name: ' Ale ', life: 'ciao' }, { name: '' }], winner: 5, deck: null }]);
 eq(dirty.length, 1, 'un record con un solo giocatore si scarta'); eq([dirty[0].t, dirty[0].ms, dirty[0].rounds, dirty[0].players[0].name, dirty[0].players[0].life, dirty[0].players[1].name, dirty[0].winner, dirty[0].deck], [0, 0, 1, 'Ale', 0, '?', '5', ''], 'record sporco ripulito');
 eq(P.restoreHistory(Array.from({ length: 300 }, (_, i) => mk(['A', 'B'], 'A', '', i))).length, 200, 'al massimo 200 partite');
+
+/* ----- tavoli salvati: la classifica è del tavolo ----- */
+{
+  const tg = P.newGame({ players: 3, life: 30, names: ['Simone', 'Luca', 'Marta'], cmdLife: false });
+  eq(tg.table, '', 'una partita nuova è senza tavolo');
+  const tb = P.makeTable(tg, '  Il   venerdì ', 1000);
+  eq([tb.name, tb.players, tb.start, tb.cmdLife], ['Il venerdì', ['Simone', 'Luca', 'Marta'], 30, false], 'tavolo: nome ripulito, nomi, vita, regola');
+  ok(/^Tavolo di Simone e Luca$/.test(P.makeTable(tg, '', 1).name), 'senza nome, un nome pensato da solo');
+  ok(P.sameTable(tg, tb), 'il tavolo coincide con la preparazione'); tg.players[1].name = 'Luigi'; ok(!P.sameTable(tg, tb), 'un nome diverso lo fa risultare modificato');
+  tg.players[1].name = 'Luca'; tg.cmdLife = true; ok(!P.sameTable(tg, tb), 'anche la regola del comandante conta'); tg.cmdLife = false;
+  const other = P.newGame({ players: 5, life: 20 }); P.applyTable(other, tb);
+  eq([other.players.map(p => p.name), other.start, other.cmdLife, other.table, other.players.map(p => p.life)], [['Simone', 'Luca', 'Marta'], 30, false, tb.id, [30, 30, 30]], 'carica un tavolo: posti, nomi, vita e regola');
+  ok(P.applyTable(other, null) === other, 'applicare «niente» non rompe');
+  /* una partita porta con sé il suo tavolo */
+  other.table = tb.id; eq(P.finish(other, 'p1', 'Kaalia', 5).table, tb.id, 'il record ricorda il tavolo');
+  eq(P.finish(P.newGame({}), '', '', 5).table, '', 'senza tavolo, id vuoto');
+  const r2 = (names, w, t, tbl) => Object.assign(mk(names, w, '', t), { table: tbl });
+  const mix = [r2(['A', 'B'], 'A', 1, 'tX'), r2(['A', 'C'], 'C', 2, 'tY'), r2(['A', 'B'], 'B', 3, 'tX'), r2(['A', 'B'], 'A', 4, ''), mk(['A', 'B'], 'A', '', 5)];
+  eq(P.forTable(mix, 'tX').map(r => r.t), [1, 3], 'solo le partite di quel tavolo');
+  eq(P.forTable(mix, '').map(r => r.t), [4, 5], 'tavolo vuoto = partite senza tavolo (anche quelle vecchie, senza campo)');
+  eq(P.forTable(mix).length, 2, 'senza id come tavolo vuoto');
+  eq(P.tally(P.forTable(mix, 'tX')).map(x => [x.name, x.wins, x.games]), [['A', 1, 2], ['B', 1, 2]], 'la classifica del tavolo conta solo il tavolo');
+  eq(P.tally(P.forTable(mix, 'tY')).map(x => [x.name, x.wins, x.games]), [['C', 1, 1], ['A', 0, 1]], 'un altro tavolo ha un’altra classifica');
+  eq(P.restoreHistory(JSON.stringify(mix)).map(r => r.table), ['tX', 'tY', 'tX', '', ''], 'il tavolo sopravvive al ripristino');
+  /* salvataggio della partita in corso */
+  const g3 = P.restore(P.serialize(Object.assign(P.newGame({}), { table: tb.id }))); eq(g3.table, tb.id, 'la partita in corso ricorda il tavolo');
+  eq(P.restore(JSON.stringify(Object.assign(P.newGame({}), { table: 5 }))).table, '5', 'id strano ripulito'); eq(P.restore(JSON.stringify(Object.assign(P.newGame({}), { table: undefined }))).table, '', 'partita vecchia, nessun tavolo');
+  /* ripristino dell'elenco */
+  const ts = P.restoreTables(JSON.stringify([tb, tb, { id: 't2', name: '  ', players: ['A', ' B ', ''], start: 'boh', cmdLife: false }, { id: 't3', players: ['solo'] }, { name: 'senza id', players: ['A', 'B'] }, null, 7]));
+  eq(ts.length, 2, 'doppioni, tavoli con un giocatore e senza id si scartano'); eq([ts[1].name, ts[1].players, ts[1].start, ts[1].cmdLife], ['Tavolo', ['A', 'B', '?'], 40, false], 'tavolo sporco ripulito');
+  eq(P.restoreTables('rotto'), [], 'elenco rotto'); eq(P.restoreTables({}), [], 'non è una lista');
+  eq(P.restoreTables(Array.from({ length: 40 }, (_, i) => ({ id: 't' + i, name: 'x', players: ['A', 'B'] }))).length, P.TABLES_MAX, 'al massimo 20 tavoli');
+}
 console.log('pescher-test: ' + n + ' controlli ok');

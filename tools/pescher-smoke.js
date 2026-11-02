@@ -31,7 +31,7 @@ const SHOTS = process.env.SHOTS || '';
   await nav('pescher'); await page.waitForSelector('#pe .pe-setup');
   ok(/The Pescher/.test(await page.textContent('.vh h1')), 'titolo');
   ok(await page.locator('.pe-seat').count() === 4, 'quattro posti di default');
-  ok(await page.locator('.pe-name').first().inputValue() === 'Io', 'il primo posto è «Io»');
+  ok(await page.locator('.pe-seat .pe-name').first().inputValue() === 'Io', 'il primo posto è «Io»');
   /* giocatori e vita */
   await page.click('[data-a="pe-count"][data-v="3"]'); ok(await page.locator('.pe-seat').count() === 3, 'tre posti');
   await page.click('[data-a="pe-count"][data-v="4"]');
@@ -49,7 +49,7 @@ const SHOTS = process.env.SHOTS || '';
   ok(await page.locator('.pe-tile').count() === 4, 'quattro riquadri');
   ok(await page.locator('.pe-tile.turn').count() === 1, 'uno solo ha il turno');
   ok(await life('p1') === 40, 'vita 40');
-  await page.click('.pe-tile[data-p="p2"] [data-a="pe-life"][data-d="-1"]'); await page.click('.pe-tile[data-p="p2"] [data-a="pe-life"][data-d="-5"]');
+  await page.click('.pe-tile[data-p="p2"] [data-a="pe-life"][data-d="-1"]', { position: { x: 12, y: 12 } }); await page.click('.pe-tile[data-p="p2"] [data-a="pe-life"][data-d="-5"]');
   ok(await life('p2') === 34, 'vita 34 dopo -1 e -5: ' + await life('p2'));
   await page.click('[data-a="pe-undo"]'); ok(await life('p2') === 39, 'annulla toglie solo l\'ultimo passaggio: ' + await life('p2'));
   /* veleno */
@@ -69,11 +69,11 @@ const SHOTS = process.env.SHOTS || '';
   await page.click('.pe-tile[data-p="p3"] [data-a="pe-hold"][data-k="initiative"]'); ok(await page.locator('.pe-tile[data-p="p3"] .pe-tk', { hasText: 'Iniziativa' }).count() === 1, 'iniziativa a p3');
   await page.click('.pe-tile[data-p="p2"] [data-a="pe-tog"][data-k="more"]'); await page.click('.pe-tile[data-p="p3"] [data-a="pe-tog"][data-k="more"]');
   /* la bolla del cambio di vita e il valore esatto */
-  await page.click('.pe-tile[data-p="p1"] [data-a="pe-life"][data-d="-5"]'); await page.click('.pe-tile[data-p="p1"] [data-a="pe-life"][data-d="-1"]');
+  await page.click('.pe-tile[data-p="p1"] [data-a="pe-life"][data-d="-5"]'); await page.click('.pe-tile[data-p="p1"] [data-a="pe-life"][data-d="-1"]', { position: { x: 12, y: 12 } });
   ok((await page.textContent('.pe-tile[data-p="p1"] .pe-delta')).replace(/\s/g, '') === '\u22126', 'la bolla somma i tocchi ravvicinati: ' + await page.textContent('.pe-tile[data-p="p1"] .pe-delta'));
   await page.click('.pe-tile[data-p="p1"] [data-a="pe-set"]'); await page.waitForSelector('#pe-setv'); await page.fill('#pe-setv', '25'); await page.keyboard.press('Enter');
   ok(await life('p1') === 25 && await page.locator('#pe-pop').count() === 0, 'vita impostata a 25 con Invio');
-  await page.click('[data-a="pe-undo"]'); ok(await life('p1') === 34, 'e si annulla: ' + await life('p1')); await page.click('.pe-tile[data-p="p1"] [data-a="pe-life"][data-d="5"]'); await page.click('.pe-tile[data-p="p1"] [data-a="pe-life"][data-d="1"]'); ok(await life('p1') === 40, 'di nuovo 40');
+  await page.click('[data-a="pe-undo"]'); ok(await life('p1') === 34, 'e si annulla: ' + await life('p1')); await page.click('.pe-tile[data-p="p1"] [data-a="pe-life"][data-d="5"]'); await page.click('.pe-tile[data-p="p1"] [data-a="pe-life"][data-d="1"]', { position: { x: 12, y: 12 } }); ok(await life('p1') === 40, 'di nuovo 40');
   ok(/Giro 1/.test(await page.textContent('.pe-turn')) && /\d+:\d\d/.test(await page.textContent('.pe-clock')), 'giro e cronometro in barra');
   /* danno da comandante: toglie vita e a 21 si è fuori */
   await page.click('.pe-tile[data-p="p4"] [data-a="pe-tog"][data-k="cmd"]');
@@ -113,28 +113,67 @@ const SHOTS = process.env.SHOTS || '';
   await page.click('[data-a="pe-menu"]'); await page.click('[data-a="pe-again"]'); ok(await page.locator('.pe-tile').count() === 4 && await life('p2') === lifeBefore, 'una sola pressione non azzera');
   await page.click('[data-a="pe-again"]'); await page.waitForSelector('.pe-grid'); ok(await life('p2') === 40 && await life('p4') === 40, 'nuova partita: tutti a 40');
   await page.click('[data-a="pe-menu"]'); await page.click('[data-a="pe-setup"]'); await page.click('[data-a="pe-setup"]'); await page.waitForSelector('.pe-setup'); ok(true, 'cambia tavolo');
-  /* fine partita: vincitore, mazzo, classifica sul dispositivo */
-  ok(await page.locator('.pe-hsec').count() === 0, 'senza partite, niente classifica');
+  /* fine partita: vincitore, mazzo; senza tavolo non c'è classifica */
+  ok(await page.locator('.pe-hsec').count() === 0, 'senza partite, niente storico');
+  ok(await page.locator('.pe-tc').count() === 1 && await page.getAttribute('.pe-tc', 'aria-pressed') === 'true', 'all\'inizio c\'è solo «Tavolo libero», scelto');
   await page.click('[data-a="pe-begin"]'); await page.waitForSelector('.pe-grid');
   await page.click('[data-a="pe-end"]'); await page.waitForSelector('#pe-pop .pe-win');
   ok(await page.locator('#pe-pop .pe-wb').count() === 5, 'quattro giocatori più «Nessuno»');
   ok(await page.getAttribute('#pe-pop .pe-wb.none', 'aria-checked') === 'true' && await page.locator('#pe-wdeck').count() === 0, 'nessun vincitore scelto: niente campo del mazzo');
+  ok(await page.locator('#pe-pop [data-c="pe-esave"]').count() === 1 && await page.locator('#pe-esname').count() === 0, 'si può salvare il tavolo, ma il nome compare solo se lo vuoi');
   await page.click('#pe-pop .pe-wb[data-p="p2"]'); await page.waitForSelector('#pe-wdeck'); ok(await page.getAttribute('#pe-pop .pe-wb[data-p="p2"]', 'aria-checked') === 'true', 'Luca selezionato');
   await page.fill('#pe-wdeck', '  Kaalia  of the Vast '); await page.click('#pe-pop .pe-wb[data-p="p3"]'); ok(await page.inputValue('#pe-wdeck') === '  Kaalia  of the Vast ', 'il mazzo scritto resta se cambio vincitore');
-  await page.click('#pe-pop .pe-wb[data-p="p2"]'); await shot('pescher-end');
+  await page.click('#pe-pop .pe-wb[data-p="p2"]');
   await page.click('[data-a="pe-endok"]'); await page.waitForSelector('.pe-hsec');
   ok(await page.locator('.pe-setup').count() === 1 && await page.locator('#pe-pop').count() === 0, 'si torna alla preparazione del tavolo');
   ok(await page.locator('.pe-name[data-p="p2"]').inputValue() === 'Luca', 'il tavolo resta com\'è');
-  ok(/Luca/.test(await page.textContent('.pe-board li:first-child')) && /1 vittoria su 1/.test(await page.textContent('.pe-board li:first-child')) && /Kaalia of the Vast/.test(await page.textContent('.pe-board li:first-child')), 'classifica: Luca in testa con il mazzo ripulito: ' + (await page.textContent('.pe-board li:first-child')).replace(/\s+/g, ' '));
-  ok(/Vince Luca/.test(await page.textContent('.pe-games li')), 'ultima partita');
-  await page.click('[data-a="pe-begin"]'); await page.click('[data-a="pe-end"]'); await page.waitForSelector('#pe-pop .pe-win'); await page.click('#pe-pop .pe-wb[data-p="p1"]'); await page.click('[data-a="pe-endok"]'); await page.waitForSelector('.pe-hsec');
-  ok(await page.locator('.pe-games li').count() === 2 && /1 vittoria su 2/.test(await page.textContent('.pe-board li:nth-child(2)')), 'due partite, Io con 1 su 2');
+  ok(/senza tavolo/i.test(await page.textContent('.pe-hsec h2')) && await page.locator('.pe-board').count() === 0, 'una partita libera non fa classifica');
+  ok(/Vince Luca/.test(await page.textContent('.pe-games li')) && /Kaalia of the Vast/.test(await page.textContent('.pe-games li')), 'ma resta tra le partite senza tavolo, con il mazzo ripulito');
+
+  /* salvare il tavolo alla fine di una partita: da lì parte la classifica */
+  await page.click('[data-a="pe-begin"]'); await page.click('[data-a="pe-end"]'); await page.waitForSelector('#pe-pop .pe-win'); await page.click('#pe-pop .pe-wb[data-p="p1"]');
+  await page.check('#pe-pop [data-c="pe-esave"]'); await page.waitForSelector('#pe-esname'); await page.fill('#pe-esname', '  Il   venerdì '); await page.click('#pe-pop .pe-wb[data-p="p1"]'); ok(await page.inputValue('#pe-esname') === '  Il   venerdì ', 'il nome del tavolo resta se cambio vincitore');
+  await shot('pescher-end');
+  await page.click('[data-a="pe-endok"]'); await page.waitForSelector('.pe-board');
+  ok(await page.locator('.pe-tc').count() === 2 && await page.getAttribute('.pe-tc[aria-pressed="true"]', 'data-id') !== '' && /Il venerdì/.test(await page.textContent('.pe-tc[aria-pressed="true"]')), 'il tavolo è salvato e scelto: ' + (await page.textContent('.pe-tbl')).replace(/\s+/g, ' '));
+  ok(/Classifica · Il venerdì/.test(await page.textContent('.pe-hsec h2')), 'la classifica porta il nome del tavolo');
+  ok(await page.locator('.pe-board li').count() === 4 && /Io/.test(await page.textContent('.pe-board li:first-child')) && /1 vittoria su 1/.test(await page.textContent('.pe-board li:first-child')), 'in testa Io, 1 su 1');
+  ok(!/Vince Luca/.test(await page.textContent('.pe-hsec')), 'la partita libera di Luca non c\'entra con questo tavolo');
+  ok(await page.locator('.pe-games li').count() === 1, 'solo le partite del tavolo');
+  /* due partite sul tavolo: Luca vince la seconda con un mazzo */
+  await page.click('[data-a="pe-begin"]'); await page.click('[data-a="pe-end"]'); await page.waitForSelector('#pe-pop .pe-win');
+  ok(await page.locator('#pe-pop [data-c="pe-esave"]').count() === 0 && /Il venerdì/.test(await page.textContent('#pe-pop .pe-tnote')), 'a un tavolo salvato non si chiede di salvarlo, si dice a quale classifica va');
+  await page.click('#pe-pop .pe-wb[data-p="p2"]'); await page.fill('#pe-wdeck', 'Atraxa'); await page.click('[data-a="pe-endok"]'); await page.waitForSelector('.pe-board');
+  ok(await page.locator('.pe-games li').count() === 2 && /Luca/.test(await page.textContent('.pe-board li:nth-child(2)')) && /1 vittoria su 2/.test(await page.textContent('.pe-board li:nth-child(2)')) && /Atraxa/.test(await page.textContent('.pe-board li:nth-child(2)')), 'Luca 1 su 2 con Atraxa');
   await shot('pescher-board');
+  /* tavolo libero: la classifica sparisce, le partite libere restano */
+  const savedId = await page.getAttribute('.pe-tc[aria-pressed="true"]', 'data-id');
+  await page.click('.pe-tc[data-id=""]'); ok(await page.locator('.pe-board').count() === 0 && await page.locator('.pe-games li').count() === 1 && await page.locator('.pe-tedit [data-a="pe-tsave"]').count() === 1, 'tornando libero, niente classifica e si può salvare un altro tavolo');
+  await page.click('.pe-tc[data-id="' + savedId + '"]'); ok(await page.locator('.pe-board li').count() === 4, 'e il tavolo ritrova la sua classifica: ' + (await page.textContent('.pe-setup')).replace(/\s+/g, ' '));
+  /* nomi diversi dal tavolo: compare «aggiorna» */
+  ok(!(await page.isVisible('#pe-tup')), 'nomi uguali al tavolo: niente «aggiorna»');
+  await page.fill('.pe-name[data-p="p3"]', 'Ospite'); ok(await page.isVisible('#pe-tup'), 'cambio un nome: compare «aggiorna»');
+  await page.fill('.pe-name[data-p="p3"]', 'Marta'); ok(!(await page.isVisible('#pe-tup')), 'torno al nome di prima: sparisce');
+  await page.fill('.pe-name[data-p="p3"]', 'Ospite'); await page.click('#pe-tup'); ok(!(await page.isVisible('#pe-tup')), 'aggiornato');
+  await page.click('.pe-tc[data-id=""]'); await page.fill('.pe-name[data-p="p3"]', 'Boh'); await page.click('.pe-tc[data-id="' + savedId + '"]');
+  ok(await page.inputValue('.pe-name[data-p="p3"]') === 'Ospite', 'scegliendo il tavolo tornano i suoi nomi aggiornati');
+  /* un secondo tavolo, vuoto; rinominare */
+  await page.click('.pe-tc[data-id=""]'); await page.fill('[data-c="pe-tnew"]', 'Domenica'); await page.click('[data-a="pe-tsave"]'); await page.waitForSelector('.pe-tc[aria-pressed="true"]:has-text("Domenica")');
+  ok(await page.locator('.pe-tc').count() === 3 && /Ancora nessuna partita/.test(await page.textContent('.pe-hsec')), 'tavolo nuovo: classifica vuota');
+  await page.fill('[data-c="pe-tname"]', 'Domenica sera'); ok(/Domenica sera/.test(await page.textContent('.pe-tc[aria-pressed="true"]')), 'rinominato');
+  /* persistenza */
   await page.reload(); await page.waitForSelector('.shell'); await nav('pescher'); await page.waitForSelector('.pe-hsec');
-  ok(await page.locator('.pe-games li').count() === 2, 'lo storico sopravvive al ricaricamento');
+  ok(/Domenica sera/.test(await page.textContent('.pe-tc[aria-pressed="true"]')) && await page.locator('.pe-tc').count() === 3, 'tavoli e scelta sopravvivono al ricaricamento');
+  await page.click('.pe-tc[data-id="' + savedId + '"]'); ok(await page.locator('.pe-games li').count() === 2, 'lo storico del tavolo sopravvive');
+  /* eliminare una partita aggiorna la classifica */
   await page.click('.pe-games li:first-child [data-a="pe-delgame"]'); ok(await page.locator('.pe-games li').count() === 2, 'una sola pressione non elimina');
   await page.click('.pe-games li:first-child [data-a="pe-delgame"]'); ok(await page.locator('.pe-games li').count() === 1, 'la seconda elimina');
-  ok(/Luca/.test(await page.textContent('.pe-board li:first-child')), 'la classifica si aggiorna');
+  ok(/Io/.test(await page.textContent('.pe-board li:first-child')) && /1 vittoria su 1/.test(await page.textContent('.pe-board li:first-child')), 'la classifica si aggiorna');
+  await shot('pescher-table');
+  /* eliminare un tavolo porta via le sue partite, non quelle libere */
+  await page.click('[data-a="pe-tdel"]'); ok(await page.locator('.pe-tc').count() === 3, 'una sola pressione non elimina il tavolo');
+  await page.click('[data-a="pe-tdel"]'); await page.waitForSelector('.pe-tc[aria-pressed="true"][data-id=""]');
+  ok(await page.locator('.pe-tc').count() === 2 && await page.locator('.pe-games li').count() === 1 && /Luca/.test(await page.textContent('.pe-games li')), 'tavolo eliminato con le sue partite; resta la partita libera');
 
   /* niente scorrimento orizzontale */
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'nessuno scorrimento orizzontale');

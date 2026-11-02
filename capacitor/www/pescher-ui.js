@@ -5,9 +5,9 @@
   'use strict';
   var H = window.CPAHost, P = window.CPAPescher;
   if (!H || !P) return;
-  var esc = H.esc, KEY = 'cpa:pescher:v1', HKEY = 'cpa:pescher:hist:v1';
-  var g = null, hist = null, wake = null, clockT = 0, deltaT = 0;
-  var ux = { open: {}, pop: '', rolls: [], confirm: '', setFor: '', delta: {}, end: null, delGame: '' };
+  var esc = H.esc, KEY = 'cpa:pescher:v1', HKEY = 'cpa:pescher:hist:v1', TKEY = 'cpa:pescher:tables:v1';
+  var g = null, hist = null, tbls = null, wake = null, clockT = 0, deltaT = 0;
+  var ux = { open: {}, pop: '', rolls: [], confirm: '', setFor: '', delta: {}, end: null, delGame: '', delTable: '', tnew: '' };
   var SEAT = ['var(--m-u)', 'var(--m-r)', 'var(--m-g)', 'var(--m-w)', 'var(--m-b)', 'var(--banana)'];
 
   /* ---------- salvataggio ---------- */
@@ -16,6 +16,15 @@
   function ensure() { if (!g) g = load() || P.newGame({ players: 4, life: 40 }); return g; }
   function history() { if (!hist) { try { hist = P.restoreHistory(localStorage.getItem(HKEY)); } catch (e) { hist = []; } } return hist; }
   function saveHistory() { try { localStorage.setItem(HKEY, JSON.stringify(hist)); } catch (e) { /* la classifica resta in memoria finché la pagina è aperta */ } }
+  function tables() { if (!tbls) { try { tbls = P.restoreTables(localStorage.getItem(TKEY)); } catch (e) { tbls = []; } } return tbls; }
+  function saveTables() { try { localStorage.setItem(TKEY, JSON.stringify(tbls)); } catch (e) { /* i tavoli restano in memoria finché la pagina è aperta */ } }
+  /* il tavolo scelto; se è stato eliminato (o l'id è sporco) si torna al tavolo libero */
+  function curTable() {
+    if (!g || !g.table) return null;
+    var t = tables().filter(function (x) { return x.id === g.table; })[0];
+    if (!t) g.table = '';
+    return t || null;
+  }
   function rng() { try { var a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; } catch (e) { return Math.random(); } }
 
   /* ---------- pezzi di interfaccia ---------- */
@@ -39,27 +48,55 @@
   }
   function setupHtml() {
     return '<header class="vh"><h1>The Pescher</h1><p class="sub">Il compagno di partita dal vivo: vite, veleno, danno da comandante, segnalini e dadi.</p></header>' +
-      '<section class="pe-setup"><div class="pe-opts panel">' +
+      '<section class="pe-setup">' + tableHtml() + '<div class="pe-opts panel">' +
       '<div class="pe-opt"><b>Giocatori</b>' + seg([2, 3, 4, 5, 6], g.players.length, 'pe-count', 'Numero di giocatori') + '</div>' +
       '<div class="pe-opt"><b>Vita iniziale</b>' + seg(P.LIVES, g.start, 'pe-start', 'Vita iniziale') + '</div>' +
       '<label class="pe-chk"><input type="checkbox" data-c="pe-cmdlife"' + (g.cmdLife ? ' checked' : '') + '> Il danno da comandante toglie anche vita</label></div>' +
-      '<div class="pe-opt"><b>Nomi (se vuoi)</b></div>' +
+      '<div class="pe-opt"><b>Nomi' + (curTable() ? ' del tavolo' : ' (se vuoi)') + '</b></div>' +
       '<div class="pe-seats">' + g.players.map(seatHtml).join('') + '</div>' +
       '<div class="pe-go"><button type="button" class="btn primary big" data-a="pe-begin">Inizia la partita</button><span class="hint">Il primo giocatore lo decide il caso.</span></div>' + historyHtml() + '</section>';
   }
   function fmtDate(t) { var d = new Date(t); return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  /* Il tavolo: «libero» oppure uno salvato. Un tavolo salvato ricorda i nomi e tiene la sua classifica. */
+  function tableHtml() {
+    var ts = tables(), cur = curTable(), full = ts.length >= P.TABLES_MAX;
+    var chips = '<div class="pe-tchips" role="group" aria-label="Tavolo"><button type="button" class="pe-tc" data-a="pe-table" data-id="" aria-pressed="' + !cur + '">Tavolo libero</button>' +
+      ts.map(function (t) { return '<button type="button" class="pe-tc" data-a="pe-table" data-id="' + esc(t.id) + '" aria-pressed="' + !!(cur && cur.id === t.id) + '">' + esc(t.name) + '</button>'; }).join('') + '</div>';
+    var body;
+    if (cur) {
+      var armed = ux.delTable === cur.id;
+      body = '<div class="pe-tedit"><input class="pe-name" data-c="pe-tname" value="' + esc(cur.name) + '" maxlength="30" aria-label="Nome del tavolo" autocomplete="off">' +
+        '<button type="button" class="btn small" id="pe-tup" data-a="pe-tupdate"' + (P.sameTable(g, cur) ? ' hidden' : '') + '>Aggiorna il tavolo con questi nomi</button>' +
+        '<button type="button" class="btn small' + (armed ? ' danger' : '') + '" data-a="pe-tdel">' + (armed ? 'Sicuro? Sparisce con le sue partite' : 'Elimina il tavolo') + '</button></div>';
+    } else if (full) {
+      body = '<p class="hint">Hai già ' + P.TABLES_MAX + ' tavoli salvati: eliminane uno per salvarne un altro.</p>';
+    } else {
+      body = '<div class="pe-tedit"><input class="pe-name" data-c="pe-tnew" value="' + esc(ux.tnew) + '" maxlength="30" placeholder="Nome del tavolo (es. Il venerdì)" aria-label="Nome del nuovo tavolo" autocomplete="off">' +
+        '<button type="button" class="btn small primary" data-a="pe-tsave">Salva questo tavolo</button></div>' +
+        '<p class="hint">Giochi spesso con le stesse persone? Salva il tavolo: avrà la sua classifica, con le vittorie di ognuno e il mazzo con cui vincono.</p>';
+    }
+    return '<div class="pe-tbl panel"><b class="pe-tt">Tavolo</b>' + chips + body + '</div>';
+  }
+  function fmtDate(t) { var d = new Date(t); return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function gamesHtml(h, n) {
+    return '<ol class="pe-games">' + h.slice(0, n).map(function (r) {
+      var armed = ux.delGame === r.id;
+      return '<li><div><b>' + (r.winner ? 'Vince ' + esc(r.winner) : 'Nessun vincitore') + '</b>' + (r.deck ? '<span class="dk">' + esc(r.deck) + '</span>' : '') + '<small>' + fmtDate(r.t) + ' · ' + r.players.map(function (p) { return esc(p.name); }).join(', ') + ' · ' + r.rounds + (r.rounds === 1 ? ' giro' : ' giri') + ' · ' + mmss(r.ms) + '</small></div>' +
+        '<button type="button" class="btn small' + (armed ? ' danger' : '') + '" data-a="pe-delgame" data-id="' + esc(r.id) + '" aria-label="Elimina la partita del ' + fmtDate(r.t) + '">' + (armed ? 'Sicuro?' : 'Elimina') + '</button></li>';
+    }).join('') + '</ol>' + (h.length > n ? '<p class="hint">Mostro le ultime ' + n + ' di ' + h.length + '.</p>' : '');
+  }
   function historyHtml() {
-    var h = history(); if (!h.length) return '';
+    var cur = curTable(), h = P.forTable(history(), cur ? cur.id : '');
+    if (!cur) {
+      if (!h.length) return '';
+      return '<section class="pe-hsec"><h2 class="sect">Partite senza tavolo</h2>' + gamesHtml(h, 5) + '<p class="hint">Queste non fanno classifica: salva il tavolo per contare le vittorie di chi gioca sempre insieme. Sta tutto su questo dispositivo.</p></section>';
+    }
+    if (!h.length) return '<section class="pe-hsec"><h2 class="sect">Classifica · ' + esc(cur.name) + '</h2><p class="an-none">Ancora nessuna partita: la classifica parte quando finisci la prima.</p></section>';
     var tl = P.tally(h);
     var board = '<ol class="pe-board">' + tl.slice(0, 10).map(function (x, i) {
       return '<li><span class="rk">' + (i + 1) + '</span><b>' + esc(x.name) + '</b><span class="sc">' + plural(x.wins, 'vittoria', 'vittorie') + ' su ' + x.games + '</span>' + (x.deck ? '<small>vince di più con ' + esc(x.deck) + '</small>' : '') + '</li>';
     }).join('') + '</ol>';
-    var games = '<ol class="pe-games">' + h.slice(0, 8).map(function (r) {
-      var armed = ux.delGame === r.id;
-      return '<li><div><b>' + (r.winner ? 'Vince ' + esc(r.winner) : 'Nessun vincitore') + '</b>' + (r.deck ? '<span class="dk">' + esc(r.deck) + '</span>' : '') + '<small>' + fmtDate(r.t) + ' · ' + r.players.map(function (p) { return esc(p.name); }).join(', ') + ' · ' + r.rounds + (r.rounds === 1 ? ' giro' : ' giri') + ' · ' + mmss(r.ms) + '</small></div>' +
-        '<button type="button" class="btn small' + (armed ? ' danger' : '') + '" data-a="pe-delgame" data-id="' + esc(r.id) + '" aria-label="Elimina la partita del ' + fmtDate(r.t) + '">' + (armed ? 'Sicuro?' : 'Elimina') + '</button></li>';
-    }).join('') + '</ol>' + (h.length > 8 ? '<p class="hint">Mostro le ultime 8 di ' + h.length + ': la classifica le conta tutte.</p>' : '');
-    return '<section class="pe-hsec"><h2 class="sect">Classifica</h2>' + board + '<h2 class="sect">Ultime partite</h2>' + games + '<p class="hint">Sta tutta su questo dispositivo.</p></section>';
+    return '<section class="pe-hsec"><h2 class="sect">Classifica · ' + esc(cur.name) + '</h2>' + board + '<h2 class="sect">Ultime partite del tavolo</h2>' + gamesHtml(h, 8) + '<p class="hint">Sta tutta su questo dispositivo.</p></section>';
   }
   function plural(n, a, b) { return n + ' ' + (n === 1 ? a : b); }
 
@@ -184,7 +221,7 @@
         '<div class="pe-popbar"><button type="button" class="btn" data-a="pe-undo"' + (g.hist.length ? '' : ' disabled') + '>Annulla l’ultimo</button></div>';
     }
     if (ux.pop === 'end') {
-      var e = ux.end, decks = {}; H.decks().forEach(function (d) { if (d.kind === 'deck' && d.active) decks[d.name] = 1; }); history().forEach(function (x) { if (x.deck) decks[x.deck] = 1; });
+      var e = ux.end, ct = curTable(), decks = {}; H.decks().forEach(function (d) { if (d.kind === 'deck' && d.active) decks[d.name] = 1; }); history().forEach(function (x) { if (x.deck) decks[x.deck] = 1; });
       return head('Fine partita', 'Chi ha vinto?') +
         '<div class="pe-win" role="radiogroup" aria-label="Vincitore">' + g.players.map(function (p, i) {
           var out = P.status(g, p).out;
@@ -192,8 +229,12 @@
         }).join('') + '<button type="button" class="pe-wb none" role="radio" aria-checked="' + (e.winner === '') + '" data-a="pe-winner" data-p=""><b>Nessuno</b><small>pareggio o partita interrotta</small></button></div>' +
         (e.winner ? '<label class="pe-wd"><span>Mazzo giocato da ' + esc(P.player(g, e.winner).name) + ' <small>(se vuoi)</small></span><input id="pe-wdeck" class="pe-name" type="text" list="pe-decks" maxlength="60" value="' + esc(e.deck) + '" placeholder="Es. Kaalia, Atraxa…" autocomplete="off"></label>' +
           '<datalist id="pe-decks">' + Object.keys(decks).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>' : '') +
+        (ct ? '<p class="pe-tnote">Si conta nella classifica di <b>' + esc(ct.name) + '</b>.</p>' :
+          (tables().length < P.TABLES_MAX ? '<div class="pe-esave"><label class="pe-chk"><input type="checkbox" data-c="pe-esave"' + (e.save ? ' checked' : '') + '> Salva questo tavolo per tenere la classifica</label>' +
+            (e.save ? '<input id="pe-esname" class="pe-name" type="text" maxlength="30" value="' + esc(e.tname) + '" placeholder="Nome del tavolo (es. Il venerdì)" aria-label="Nome del tavolo" autocomplete="off">' : '') + '</div>' :
+            '<p class="hint">Hai già ' + P.TABLES_MAX + ' tavoli salvati: la partita resta tra quelle senza tavolo.</p>')) +
         '<div class="pe-popbar"><button type="button" class="btn primary" data-a="pe-endok">Salva la partita</button></div>' +
-        '<p class="hint">La partita finisce e si salva nella classifica di questo dispositivo. Il tavolo resta com\u2019è per la prossima.</p>';
+        '<p class="hint">La partita finisce e si salva su questo dispositivo. Il tavolo resta com\u2019è per la prossima.</p>';
     }
     if (ux.pop === 'set') {
       var p = P.player(g, ux.setFor);
@@ -227,6 +268,12 @@
     if (focus) { var x = pop.querySelector('#pe-setv') || pop.querySelector('.pe-wb[aria-checked="true"]') || pop.querySelector('#pex'); if (x) { x.focus(); if (x.select) x.select(); } }
   }
 
+  /* prima di ridisegnare il pop-up di fine partita si tiene quel che è stato scritto */
+  function grabEnd() {
+    if (!pop || !ux.end) return;
+    var d = pop.querySelector('#pe-wdeck'), n = pop.querySelector('#pe-esname'); if (d) ux.end.deck = d.value; if (n) ux.end.tname = n.value;
+  }
+
   /* ---------- azioni ---------- */
   function toast(m) { if (H.toast) H.toast(m); }
 
@@ -244,13 +291,28 @@
       case 'pe-hold': P.holder(g, el.dataset.k, id); repaint(); break;
       case 'pe-tog': ux.open[id] = ux.open[id] === el.dataset.k ? '' : el.dataset.k; repaint(); break;
       case 'pe-set': ux.setFor = id; openPop('set'); break;
-      case 'pe-end': { var aw = P.winner(g); ux.end = { winner: aw ? aw.id : '', deck: '' }; openPop('end'); break; }
-      case 'pe-winner': { var di = pop && pop.querySelector('#pe-wdeck'); if (di) ux.end.deck = di.value; ux.end.winner = id || ''; if (!ux.end.winner) ux.end.deck = ''; paintPop(); var sel = pop && pop.querySelector('.pe-wb[aria-checked="true"]'); if (sel) sel.focus(); break; }
+      case 'pe-end': { var aw = P.winner(g); ux.end = { winner: aw ? aw.id : '', deck: '', save: false, tname: '' }; openPop('end'); break; }
+      case 'pe-winner': { grabEnd(); ux.end.winner = id || ''; if (!ux.end.winner) ux.end.deck = ''; paintPop(); var sel = pop && pop.querySelector('.pe-wb[aria-checked="true"]'); if (sel) sel.focus(); break; }
       case 'pe-endok': {
-        var dk = pop && pop.querySelector('#pe-wdeck'), rec = P.finish(g, ux.end.winner, dk ? dk.value : ux.end.deck);
+        grabEnd();
+        var made = null;
+        if (!curTable() && ux.end.save && tables().length < P.TABLES_MAX) { made = P.makeTable(g, ux.end.tname); tables().unshift(made); saveTables(); g.table = made.id; }
+        var rec = P.finish(g, ux.end.winner, ux.end.deck);
         history().unshift(rec); if (hist.length > P.HISTORY_MAX) hist.length = P.HISTORY_MAX; saveHistory();
         closePop(); g.started = false; g.focus = false; P.reset(g); g.started = false; ux.open = {}; ux.delta = {}; ux.end = null; after(); repaint();
-        toast(rec.winner ? 'Partita salvata: ha vinto ' + rec.winner + '.' : 'Partita salvata.'); break;
+        toast((made ? 'Tavolo «' + made.name + '» salvato. ' : '') + (rec.winner ? 'Partita salvata: ha vinto ' + rec.winner + '.' : 'Partita salvata.')); break;
+      }
+      case 'pe-table': { var tb = !el.dataset.id ? null : tables().filter(function (x) { return x.id === el.dataset.id; })[0]; ux.delTable = ''; if (tb) P.applyTable(g, tb); else g.table = ''; repaint(); break; }
+      case 'pe-tsave': {
+        if (curTable() || tables().length >= P.TABLES_MAX) break;
+        var nt = P.makeTable(g, ux.tnew); tables().unshift(nt); saveTables(); g.table = nt.id; ux.tnew = ''; repaint(); toast('Tavolo «' + nt.name + '» salvato.'); break;
+      }
+      case 'pe-tupdate': { var ut = curTable(); if (!ut) break; var nn = P.makeTable(g, ut.name); ut.players = nn.players; ut.start = nn.start; ut.cmdLife = nn.cmdLife; saveTables(); repaint(); toast('Tavolo aggiornato.'); break; }
+      case 'pe-tdel': {
+        var dt = curTable(); if (!dt) break;
+        if (ux.delTable !== dt.id) { ux.delTable = dt.id; repaint(); break; }
+        ux.delTable = ''; tbls = tables().filter(function (x) { return x.id !== dt.id; }); saveTables();
+        hist = history().filter(function (x) { return x.table !== dt.id; }); saveHistory(); g.table = ''; repaint(); toast('Tavolo eliminato.'); break;
       }
       case 'pe-delgame': {
         var gid = el.dataset.id; if (ux.delGame !== gid) { ux.delGame = gid; repaint(); break; }
@@ -276,12 +338,20 @@
   }
   function input(c, t) {
     ensure();
-    if (c === 'pe-name') { P.rename(g, t.dataset.p, t.value); save(); }
+    if (c === 'pe-name') {
+      P.rename(g, t.dataset.p, t.value); save();
+      var ct = curTable(), up = document.getElementById('pe-tup'); if (ct && up) up.hidden = P.sameTable(g, ct);
+    } else if (c === 'pe-tnew') ux.tnew = t.value;
+    else if (c === 'pe-tname') {
+      var tb = curTable(), nm = String(t.value || '').replace(/\s+/g, ' ').trim().slice(0, 30);
+      if (tb && nm) { tb.name = nm; saveTables(); var chip = document.querySelector('#pe .pe-tc[data-id="' + tb.id + '"]'); if (chip) chip.textContent = nm; }
+    }
   }
   function change(c, t) {
     ensure();
     switch (c) {
-      case 'pe-cmdlife': g.cmdLife = t.checked; save(); break;
+      case 'pe-cmdlife': g.cmdLife = t.checked; save(); { var ct = curTable(), up = document.getElementById('pe-tup'); if (ct && up) up.hidden = P.sameTable(g, ct); } break;
+      case 'pe-esave': grabEnd(); if (ux.end) ux.end.save = t.checked; paintPop(); { var ni = pop && pop.querySelector('#pe-esname'); if (ni) ni.focus(); else { var cb = pop && pop.querySelector('[data-c="pe-esave"]'); if (cb) cb.focus(); } } break;
       case 'pe-mirror': g.mirror = t.checked; repaint(); break;
       case 'pe-focus':
         g.focus = t.checked; after(); save();

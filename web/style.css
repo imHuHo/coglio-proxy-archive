@@ -1194,6 +1194,21 @@ body.on-deck #toast { bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
 .pe-go .btn.big { background: var(--banana); border-color: var(--banana-deep); color: var(--banana-ink); box-shadow: 0 3px 0 var(--banana-deep); }
 .pe-go .btn.big:hover { background: var(--banana-hi); }
 
+/* tavoli salvati */
+.pe-tbl { display: grid; gap: 10px; margin-bottom: 0; }
+.pe-tt { font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.pe-tchips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pe-tc { min-height: 40px; max-width: 100%; padding: 6px 14px; border-radius: 999px; border: 1.5px solid var(--line2); background: var(--surface); color: var(--fg); font: 700 14px var(--body); overflow-wrap: anywhere; touch-action: manipulation; }
+.pe-tc:hover { border-color: var(--accent); }
+.pe-tc[aria-pressed="true"] { background: var(--banana); border-color: var(--banana-deep); color: var(--banana-ink); box-shadow: 0 2px 0 var(--banana-deep); }
+.pe-tc:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.pe-tedit { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pe-tedit .pe-name { flex: 1 1 200px; }
+.pe-tedit .btn[hidden] { display: none; }
+.pe-esave { display: grid; gap: 8px; }
+.pe-tnote { margin: 0; font-size: 14px; color: var(--muted); }
+.pe-tnote b { color: var(--fg); }
+
 /* partita */
 .pe-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
 .pe-turn { font-size: 15px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 2px 12px; align-items: baseline; }
