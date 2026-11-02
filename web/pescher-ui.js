@@ -7,7 +7,7 @@
   if (!H || !P) return;
   var esc = H.esc, KEY = 'cpa:pescher:v1', HKEY = 'cpa:pescher:hist:v1', TKEY = 'cpa:pescher:tables:v1', SKEY = 'cpa:pescher:shared:v1', OKEY = 'cpa:pescher:outbox:v1';
   var g = null, hist = null, tbls = null, wake = null, clockT = 0, deltaT = 0, sh = null, ob = null, net = { busy: false, err: '', t: 0, flush: false, work: '' };
-  var ux = { open: {}, pop: '', rolls: [], confirm: '', setFor: '', delta: {}, end: null, delGame: '', delTable: '', tnew: '', pick: '', perr: '', tname: '', leave: '' };
+  var ux = { open: {}, pop: '', rolls: [], confirm: '', setFor: '', delta: {}, end: null, delGame: '', delTable: '', tnew: '', pick: '', perr: '', tname: '', leave: '', tab: 'tables' };
   var SEAT = ['var(--m-u)', 'var(--m-r)', 'var(--m-g)', 'var(--m-w)', 'var(--m-b)', 'var(--banana)'];
 
   /* ---------- salvataggio ---------- */
@@ -139,8 +139,17 @@
       '<input class="pe-name" data-c="pe-name" data-p="' + p.id + '" value="' + esc(p.name) + '" maxlength="24" aria-label="Nome del posto ' + (i + 1) + (f ? ' (amico)' : '') + '" autocomplete="off">' +
       (A ? '<button type="button" class="pe-pick" data-a="pe-pick" data-p="' + p.id + '" aria-haspopup="dialog" aria-pressed="' + f + '" aria-label="' + (f ? 'Cambia l’amico del posto ' : 'Siedi un amico al posto ') + (i + 1) + '">' + ICON.people + '</button>' : '') + '</div>';
   }
+  /* Schede della preparazione: i tavoli (con le loro classifiche) e «Chat? Ma questa cosa è reale?» (annunci dei mazzi degli amici) */
+  function tabsOn() { try { return !!window.CPAChatUI && C.configured(window.CPA_COMMUNITY); } catch (e) { return false; } }
+  function tabsHtml() {
+    if (!tabsOn()) return '';
+    var tab = function (k, label, extra) { return '<button type="button" class="pe-tab" role="tab" id="pe-tab-' + k + '" data-a="pe-tab" data-v="' + k + '" aria-selected="' + (ux.tab === k) + '">' + label + (extra || '') + '</button>'; };
+    return '<div class="pe-tabs" role="tablist" aria-label="Sezioni del Pescher">' + tab('tables', 'Tavoli e classifiche') + tab('chat', 'Chat? Ma questa cosa è reale?', window.CPAChatUI.badgeHtml()) + '</div>';
+  }
   function setupHtml() {
-    return '<header class="vh"><h1>The Pescher</h1><p class="sub">Il compagno di partita dal vivo: vite, veleno, danno da comandante, segnalini e dadi.</p></header>' +
+    var top = '<header class="vh"><h1>The Pescher</h1><p class="sub">Il compagno di partita dal vivo: vite, veleno, danno da comandante, segnalini e dadi.</p></header>' + tabsHtml();
+    if (ux.tab === 'chat' && tabsOn()) return top + window.CPAChatUI.html();
+    return top +
       '<section class="pe-setup">' + tableHtml() + '<div class="pe-opts panel">' +
       '<div class="pe-opt"><b>Giocatori</b>' + seg([2, 3, 4, 5, 6], g.players.length, 'pe-count', 'Numero di giocatori') + '</div>' +
       '<div class="pe-opt"><b>Vita iniziale</b>' + seg(P.LIVES, g.start, 'pe-start', 'Vita iniziale') + '</div>' +
@@ -311,7 +320,7 @@
   function unwake() { try { if (wake) wake.release(); } catch (e) { /* già rilasciato */ } wake = null; }
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && document.getElementById('pe')) syncWake(); });
 
-  function after() { kick(); document.body.classList.toggle('pe-play', !!(g && g.started)); document.body.classList.toggle('pe-focus', !!(g && g.focus && g.started)); syncWake(); syncClock(); }
+  function after() { kick(); if (window.CPAChatUI && !(g && g.started)) window.CPAChatUI.after(); document.body.classList.toggle('pe-play', !!(g && g.started)); document.body.classList.toggle('pe-focus', !!(g && g.focus && g.started)); syncWake(); syncClock(); }
   function idle() { closePop(); unwake(); if (clockT) { clearInterval(clockT); clockT = 0; } clearTimeout(deltaT); document.body.classList.remove('pe-play', 'pe-focus'); }
 
   /* ---------- pop-up: dadi, registro, menu, valore esatto ---------- */
@@ -409,6 +418,7 @@
     var id = el.dataset.p, d = parseInt(el.dataset.d, 10), v = el.dataset.v;
     ensure();
     switch (a) {
+      case 'pe-tab': { if (!tabsOn() || ux.tab === v) break; ux.tab = v === 'chat' ? 'chat' : 'tables'; repaint(); if (ux.tab === 'chat') window.CPAChatUI.opened(); else { var cb = document.getElementById('pe-tab-tables'); if (cb) cb.focus({ preventScroll: true }); } break; }
       case 'pe-count': P.resize(g, parseInt(v, 10)); repaint(); break;
       case 'pe-start': P.setStart(g, parseInt(v, 10)); repaint(); break;
       case 'pe-begin': { var f = P.begin(g, rng); ux.open = {}; ux.rolls = []; ux.delta = {}; repaint(); toast('Inizia ' + f.name + '.'); break; }

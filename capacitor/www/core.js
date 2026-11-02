@@ -106,10 +106,11 @@
   }
 
   /* ---------- Archivio ---------- */
-  /* Stato di un mazzo: 'active' (montato: carte in uso), 'unprinted' (non ancora stampato: le sue carte non esistono ancora
-   * e non entrano nell'archivio), 'inactive' (smontato: carte libere), 'binder' (carte sciolte, sempre libere). */
-  function statusOf(d) { return d.kind === 'binder' ? 'binder' : d.status === 'unprinted' ? 'unprinted' : d.active ? 'active' : 'inactive'; }
-  function inUse(deck) { return statusOf(deck) === 'active'; }
+  /* Stato di un mazzo: 'active' (attivo: montato, carte in uso), 'unprinted' (da stampare: le sue carte non esistono ancora
+   * e non entrano nell'archivio), 'printed' (stampato ma non pronto: le carte esistono e sono occupate nel mazzo, ma il mazzo
+   * non conta come attivo), 'inactive' (smontato: le carte tornano libere, tra le sciolte), 'binder' (carte sciolte, sempre libere). */
+  function statusOf(d) { return d.kind === 'binder' ? 'binder' : d.status === 'unprinted' ? 'unprinted' : d.status === 'printed' ? 'printed' : d.active ? 'active' : 'inactive'; }
+  function inUse(deck) { var s = statusOf(deck); return s === 'active' || s === 'printed'; }
   function isPrinted(d) { return statusOf(d) !== 'unprinted'; }
   function isFreeDeck(d) { return statusOf(d) === 'inactive'; }
 
@@ -137,7 +138,7 @@
           if (r.deckId === d.id && r.set === set && r.cn === cn) { ex = r; break; }
         }
         if (ex) ex.qty += c.qty;
-        else e.rows.push({ deckId: d.id, deckName: d.name, kind: d.kind, active: used, qty: c.qty, set: set, cn: cn });
+        else e.rows.push({ deckId: d.id, deckName: d.name, kind: d.kind, active: used, st: statusOf(d), qty: c.qty, set: set, cn: cn });
       });
     });
     var stats = { unique: list.length, owned: 0, occupied: 0, free: 0, activeDecks: 0, decks: 0, busy: 0, part: 0, avail: 0 };
@@ -667,8 +668,8 @@
     return {
       id: String(d.id || uid('d')), name: String(d.name || 'Mazzo'),
       kind: d.kind === 'binder' ? 'binder' : 'deck',
-      status: d.kind === 'binder' ? 'inactive' : d.status === 'unprinted' ? 'unprinted' : d.active ? 'active' : 'inactive',
-      active: d.kind === 'binder' || d.status === 'unprinted' ? false : !!d.active,
+      status: d.kind === 'binder' ? 'inactive' : d.status === 'unprinted' ? 'unprinted' : d.status === 'printed' ? 'printed' : d.active ? 'active' : 'inactive',
+      active: d.kind === 'binder' || d.status === 'unprinted' || d.status === 'printed' ? false : !!d.active,
       commander: d.commander ? String(d.commander) : null,
       bracket: sanitizeBracket(d.bracket),
       cards: sanitizeCards(d.cards),

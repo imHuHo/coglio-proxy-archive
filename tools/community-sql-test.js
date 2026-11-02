@@ -215,6 +215,42 @@ const URL1 = 'https://cards.scryfall.io/art_crop/front/1/2/12345678-aaaa-bbbb-cc
   for (let i = 0; i < 3; i++) await gadd('Hugo', SH, first.id, { t: 10000 + i, players: [{ name: 'a' }, { name: 'b' }] });
   await db.exec('reset role'); eq((await db.query('select count(*)::int c from public.cpa_games where table_id = $1', [first.id])).rows[0].c, 500, 'al massimo 500 partite per tavolo'); eq((await db.query('select min(t)::int m from public.cpa_games where table_id = $1', [first.id])).rows[0].m, 3, 'si perdono le più vecchie'); await db.exec('set role anon');
 
+
+  /* ----- Chat? Ma questa cosa è reale? ----- */
+  const fpost = (h, sc, a) => call('cpa_feed_post', { p_handle: h, p_secret: sc, p_deck: a.deck == null ? 'd1' : a.deck, p_name: a.name || 'Mazzo Kaalia', p_cmd: a.cmd == null ? 'Kaalia of the Vast' : a.cmd, p_img: a.img == null ? URL1 : a.img, p_from: a.from, p_to: a.to });
+  const flist = (h, sc) => call('cpa_feed_list', { p_handle: h, p_secret: sc });
+  for (const q of ['select * from public.cpa_feed', 'insert into public.cpa_feed (author, from_st, to_st) values (null, \'active\', \'inactive\')', 'delete from public.cpa_feed']) {
+    let denied = false; try { await db.query(q); } catch (e) { denied = /permission denied/i.test(e.message); } ok(denied, 'annunci: accesso negato: ' + q.slice(0, 40));
+  }
+  eq(await flist('Elena', SE), [], 'all\'inizio nessun annuncio');
+  const f1 = await fpost('Elena', SE, { from: 'unprinted', to: 'printed' }); ok(/^[0-9a-f-]{36}$/.test(f1.id), 'annuncio pubblicato');
+  const l1 = await flist('Fabio', SF); eq(l1.length, 1, 'lo vede l\'amico'); const e1 = l1[0];
+  eq([e1.mine, e1.author.handle, e1.deck, e1.commander, e1.image, e1.from, e1.to, e1.id], [false, 'Elena', 'Mazzo Kaalia', 'Kaalia of the Vast', URL1, 'unprinted', 'printed', f1.id], 'con commander, immagine e stati');
+  ok(typeof e1.t === 'number' && Math.abs(e1.t - Date.now()) < 3600e3 * 24, 'orario in millisecondi'); eq((await flist('Elena', SE))[0].mine, true, 'chi lo scrive lo vede come suo');
+  eq(await flist('Hugo', SH), [], 'chi non è amico non lo vede');
+  await fails('cpa_feed_list', { p_handle: 'Fabio', p_secret: SE }, 'bad_login', 'con il codice di un altro');
+  for (const [a, m] of [[{ from: 'x', to: 'printed' }, 'stato non valido'], [{ from: 'printed', to: 'printed' }, 'stesso stato'], [{ from: 'active', to: 'binder' }, 'binder non è uno stato annunciabile']]) await fails('cpa_feed_post', { p_handle: 'Elena', p_secret: SE, p_deck: 'd9', p_name: 'x', p_cmd: 'y', p_img: '', p_from: a.from, p_to: a.to }, 'bad_data', m);
+  await fails('cpa_feed_post', { p_handle: 'Elena', p_secret: SF, p_deck: 'd9', p_name: 'x', p_cmd: 'y', p_img: '', p_from: 'active', p_to: 'inactive' }, 'bad_login', 'annunciare con il codice di un altro');
+  /* un'immagine che non è di Scryfall si scarta, i testi si accorciano */
+  await fpost('Elena', SE, { deck: 'd2', name: 'N'.repeat(200), cmd: 'C'.repeat(200), img: 'https://evil.example/a.jpg', from: 'active', to: 'inactive' });
+  const e2 = (await flist('Elena', SE))[0]; eq([e2.image, e2.deck.length, e2.commander.length, e2.from, e2.to], ['', 60, 80, 'active', 'inactive'], 'immagine esterna scartata, testi tagliati');
+  /* cambi ravvicinati dello stesso mazzo si fondono */
+  const e3 = await fpost('Elena', SE, { deck: 'd1', from: 'printed', to: 'active' }); const l3 = (await flist('Fabio', SF)).filter(x => x.deck === 'Mazzo Kaalia');
+  eq([l3.length, l3[0].from, l3[0].to, l3[0].id === e3.id], [1, 'unprinted', 'active', true], 'da stampare→stampato→attivo in pochi minuti: un solo annuncio, da stampare→attivo');
+  eq(await fpost('Elena', SE, { deck: 'd1', from: 'active', to: 'unprinted' }), null, 'tornare allo stato di partenza: niente annuncio'); eq((await flist('Fabio', SF)).filter(x => x.deck === 'Mazzo Kaalia').length, 0, 'e sparisce quello di prima');
+  /* ritirare un annuncio */
+  const e4 = await fpost('Elena', SE, { deck: 'd3', name: 'Terzo', from: 'inactive', to: 'active' });
+  eq(await call('cpa_feed_delete', { p_handle: 'Fabio', p_secret: SF, p_id: e4.id }), false, 'non si ritira quello di un altro'); eq(await call('cpa_feed_delete', { p_handle: 'Elena', p_secret: SE, p_id: e4.id }), true, 'si ritira il proprio'); eq(await call('cpa_feed_delete', { p_handle: 'Elena', p_secret: SE, p_id: e4.id }), false, 'già ritirato');
+  /* gli amici tolti non si leggono più */
+  await call('cpa_friend_remove', { p_handle: 'Fabio', p_secret: SF, p_other: 'Elena' }); eq((await flist('Fabio', SF)).length, 0, 'tolta l\'amicizia, niente più annunci di Elena'); await req('Elena', SE, 'Fabio'); await call('cpa_friend_respond', { p_handle: 'Fabio', p_secret: SF, p_from: 'Elena', p_accept: true });
+  eq((await flist('Fabio', SF)).length > 0, true, 'rifatta l\'amicizia tornano');
+  /* limite: 40 all'ora */
+  for (let i = 0; i < 40; i++) { try { await fpost('Hugo', SH, { deck: 'x' + i, from: 'unprinted', to: 'printed' }); } catch (e) { eq(i >= 40, false, 'troppo presto'); } }
+  await fails('cpa_feed_post', { p_handle: 'Hugo', p_secret: SH, p_deck: 'x99', p_name: 'x', p_cmd: 'y', p_img: '', p_from: 'unprinted', p_to: 'printed' }, 'too_many', 'al massimo 40 annunci all\'ora');
+  eq((await flist('Hugo', SH)).length, 40, 'e l\'elenco ne mostra al massimo 60');
+  /* eliminare il profilo porta via gli annunci */
+  await call('cpa_delete', { p_handle: 'Hugo', p_secret: SH }); await db.exec('reset role'); eq((await db.query('select count(*)::int c from public.cpa_feed where author not in (select id from public.cpa_profiles)')).rows[0].c, 0, 'eliminato il profilo, spariscono i suoi annunci'); await db.exec('set role anon');
+
   /* l'orologio: seen_at si aggiorna */
   await db.exec('reset role'); const t0 = (await db.query("select seen_at from public.cpa_profiles where handle_key = 'simone'")).rows[0].seen_at; await db.exec('select pg_sleep(0.05)'); await db.exec('set role anon');
   await call('cpa_login', { p_handle: 'Simone', p_secret: SECRET }); await db.exec('reset role');

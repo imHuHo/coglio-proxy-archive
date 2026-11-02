@@ -408,13 +408,89 @@ begin
   return true;
 end $$;
 
+-- ============ Chat? Ma questa cosa è reale? (annunci dei mazzi) ============
+-- Quando cambi lo stato di un tuo mazzo (da stampare, stampato ma non pronto, attivo, smontato) l'app può annunciarlo agli amici:
+-- una riga qui, con il nome del commander e il suo artwork (solo da Scryfall). La vedono tu e i tuoi amici; si tengono gli ultimi 60 giorni.
+create table if not exists public.cpa_feed (
+  id         uuid primary key default gen_random_uuid(),
+  author     uuid not null references public.cpa_profiles(id) on delete cascade,
+  deck_key   text not null default '',
+  deck_name  text not null default '',
+  commander  text not null default '',
+  image_url  text not null default '',
+  from_st    text not null,
+  to_st      text not null,
+  created_at timestamptz not null default now(),
+  constraint cpa_feed_st check (from_st in ('active', 'unprinted', 'printed', 'inactive') and to_st in ('active', 'unprinted', 'printed', 'inactive') and from_st <> to_st),
+  constraint cpa_feed_img check (image_url = '' or image_url ~ '^https://cards\.scryfall\.io/[A-Za-z0-9/._-]+(\?[A-Za-z0-9=&._-]*)?$')
+);
+create index if not exists cpa_feed_author on public.cpa_feed (author, created_at desc);
+alter table public.cpa_feed enable row level security;
+revoke all on public.cpa_feed from public;
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'anon') then revoke all on public.cpa_feed from anon; end if;
+  if exists (select 1 from pg_roles where rolname = 'authenticated') then revoke all on public.cpa_feed from authenticated; end if;
+end $$;
+
+-- Annuncia il cambio di stato di un mazzo. Cambi ravvicinati dello stesso mazzo (10 minuti) si fondono in uno solo, e se si torna
+-- allo stato di partenza non resta niente: niente raffiche di messaggi per un tocco sbagliato.
+create or replace function public.cpa_feed_post(p_handle text, p_secret text, p_deck text, p_name text, p_cmd text, p_img text, p_from text, p_to text) returns json
+language plpgsql security definer set search_path = public as $$
+declare me uuid; prev cpa_feed; k text; f text; nid uuid;
+begin
+  me := cpa_auth(p_handle, p_secret);
+  if p_from not in ('active', 'unprinted', 'printed', 'inactive') or p_to not in ('active', 'unprinted', 'printed', 'inactive') or p_from = p_to then raise exception 'bad_data'; end if;
+  if (select count(*) from cpa_feed where author = me and created_at > now() - interval '1 hour') >= 40 then raise exception 'too_many'; end if;
+  k := left(btrim(coalesce(p_deck, '')), 40); f := p_from;
+  if k <> '' then
+    select * into prev from cpa_feed where author = me and deck_key = k and created_at > now() - interval '10 minutes' order by created_at desc limit 1;
+    if found then
+      f := prev.from_st;
+      delete from cpa_feed where author = me and deck_key = k and created_at > now() - interval '10 minutes';
+      if f = p_to then return null; end if;
+    end if;
+  end if;
+  insert into cpa_feed (author, deck_key, deck_name, commander, image_url, from_st, to_st)
+  values (me, k, left(btrim(coalesce(p_name, '')), 60), left(btrim(coalesce(p_cmd, '')), 80),
+    case when coalesce(p_img, '') ~ '^https://cards\.scryfall\.io/[A-Za-z0-9/._-]+(\?[A-Za-z0-9=&._-]*)?$' then p_img else '' end, f, p_to)
+  returning id into nid;
+  delete from cpa_feed where author = me and id not in (select id from cpa_feed where author = me order by created_at desc limit 100);
+  return json_build_object('id', nid);
+end $$;
+
+-- Gli annunci di tutti gli amici accettati e i tuoi, dal più recente.
+create or replace function public.cpa_feed_list(p_handle text, p_secret text) returns json
+language plpgsql security definer set search_path = public as $$
+declare me uuid;
+begin
+  me := cpa_auth(p_handle, p_secret);
+  return coalesce((select json_agg(x order by (x->>'t')::bigint desc) from (
+    select json_build_object('id', e.id, 'mine', e.author = me, 'author', json_build_object('id', p.id, 'handle', p.handle, 'avatar_url', p.avatar_url),
+      'deck', e.deck_name, 'commander', e.commander, 'image', e.image_url, 'from', e.from_st, 'to', e.to_st, 't', (extract(epoch from e.created_at) * 1000)::bigint) as x
+    from cpa_feed e join cpa_profiles p on p.id = e.author
+    where e.created_at > now() - interval '60 days'
+      and (e.author = me or exists (select 1 from cpa_friends f where f.status = 'accepted' and ((f.a = me and f.b = e.author) or (f.b = me and f.a = e.author))))
+    order by e.created_at desc limit 60) q), '[]'::json);
+end $$;
+
+-- Ritira un tuo annuncio.
+create or replace function public.cpa_feed_delete(p_handle text, p_secret text, p_id uuid) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare me uuid; n int;
+begin
+  me := cpa_auth(p_handle, p_secret);
+  delete from cpa_feed where id = p_id and author = me; get diagnostics n = row_count;
+  return n > 0;
+end $$;
+
 -- Chi può chiamare cosa: l'app usa la chiave «anon», e basta; i controlli interni non si chiamano da fuori.
 revoke all on function public.cpa_reserved(text), public.cpa_hash(text), public.cpa_check(text, text, text), public.cpa_auth(text, text) from public;
 revoke all on function public.cpa_handle_free(text), public.cpa_profile(text), public.cpa_register(text, text, text, text), public.cpa_login(text, text),
   public.cpa_set_avatar(text, text, text, text), public.cpa_rename(text, text, text), public.cpa_delete(text, text),
   public.cpa_friend_request(text, text, text), public.cpa_friend_respond(text, text, text, boolean), public.cpa_friend_remove(text, text, text), public.cpa_friend_list(text, text),
   public.cpa_table_save(text, text, uuid, text, json, int, boolean), public.cpa_table_list(text, text), public.cpa_table_games(text, text, uuid), public.cpa_game_add(text, text, uuid, json),
-  public.cpa_game_delete(text, text, uuid, uuid), public.cpa_table_delete(text, text, uuid), public.cpa_table_leave(text, text, uuid) from public;
+  public.cpa_game_delete(text, text, uuid, uuid), public.cpa_table_delete(text, text, uuid), public.cpa_table_leave(text, text, uuid),
+  public.cpa_feed_post(text, text, text, text, text, text, text, text), public.cpa_feed_list(text, text), public.cpa_feed_delete(text, text, uuid) from public;
 revoke all on function public.cpa_uuid_or_null(text), public.cpa_is_member(uuid, uuid), public.cpa_table_doc(uuid, uuid), public.cpa_roster(json, uuid, uuid[]) from public;
 do $$ begin
   if exists (select 1 from pg_roles where rolname = 'anon') then
@@ -422,14 +498,16 @@ do $$ begin
       public.cpa_set_avatar(text, text, text, text), public.cpa_rename(text, text, text), public.cpa_delete(text, text),
       public.cpa_friend_request(text, text, text), public.cpa_friend_respond(text, text, text, boolean), public.cpa_friend_remove(text, text, text), public.cpa_friend_list(text, text),
       public.cpa_table_save(text, text, uuid, text, json, int, boolean), public.cpa_table_list(text, text), public.cpa_table_games(text, text, uuid), public.cpa_game_add(text, text, uuid, json),
-      public.cpa_game_delete(text, text, uuid, uuid), public.cpa_table_delete(text, text, uuid), public.cpa_table_leave(text, text, uuid) to anon;
+      public.cpa_game_delete(text, text, uuid, uuid), public.cpa_table_delete(text, text, uuid), public.cpa_table_leave(text, text, uuid),
+      public.cpa_feed_post(text, text, text, text, text, text, text, text), public.cpa_feed_list(text, text), public.cpa_feed_delete(text, text, uuid) to anon;
   end if;
   if exists (select 1 from pg_roles where rolname = 'authenticated') then
     grant execute on function public.cpa_handle_free(text), public.cpa_profile(text), public.cpa_register(text, text, text, text), public.cpa_login(text, text),
       public.cpa_set_avatar(text, text, text, text), public.cpa_rename(text, text, text), public.cpa_delete(text, text),
       public.cpa_friend_request(text, text, text), public.cpa_friend_respond(text, text, text, boolean), public.cpa_friend_remove(text, text, text), public.cpa_friend_list(text, text),
       public.cpa_table_save(text, text, uuid, text, json, int, boolean), public.cpa_table_list(text, text), public.cpa_table_games(text, text, uuid), public.cpa_game_add(text, text, uuid, json),
-      public.cpa_game_delete(text, text, uuid, uuid), public.cpa_table_delete(text, text, uuid), public.cpa_table_leave(text, text, uuid) to authenticated;
+      public.cpa_game_delete(text, text, uuid, uuid), public.cpa_table_delete(text, text, uuid), public.cpa_table_leave(text, text, uuid),
+      public.cpa_feed_post(text, text, text, text, text, text, text, text), public.cpa_feed_list(text, text), public.cpa_feed_delete(text, text, uuid) to authenticated;
   end if;
 end $$;
 

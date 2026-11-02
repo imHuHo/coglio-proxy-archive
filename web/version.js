@@ -1,1 +1,1 @@
-window.CPA_VERSION = '6.0.1';
+window.CPA_VERSION = '6.1.0';

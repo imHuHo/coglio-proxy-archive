@@ -479,7 +479,7 @@ body.bd-lock { overflow: hidden; }
 #upd-prog{width:100%;height:10px;margin:4px 0}
 
 /* Stati mazzo e riuso */
-.stsel { width: auto; max-width: 190px; font-size: 13px; padding: 6px 8px; font-weight: 700; }
+.stsel { width: auto; max-width: 230px; font-size: 13px; padding: 6px 8px; font-weight: 700; }
 .deckcard.is-np { border-color: var(--warn, #d9a21b); border-style: dashed; }
 .reuse .sm { display: block; margin: 0 0 8px; font-size: 13px; color: var(--muted); }
 .reuse li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px; }
@@ -712,6 +712,8 @@ img.dz-msym { box-shadow: none; }
 :root:not([data-theme="light"]) .deckcard.is-on h2::before { border-color: var(--banana-hi); }
 .deckcard.is-np h2::before { transform: none; background: transparent; border: 1.8px dashed var(--banana-deep); margin: 0 10px 0 1px; }
 .deckcard.is-on { border-color: var(--free); box-shadow: var(--shadow), inset 4px 0 0 var(--free); }
+.deckcard.is-pp { border-color: var(--m-u); box-shadow: var(--shadow), inset 4px 0 0 var(--m-u); }
+.deckcard.is-pp h2::before { transform: none; background: color-mix(in srgb, var(--m-u) 55%, transparent); border: 1.8px solid var(--m-u); margin: 0 10px 0 1px; }
 .deckcard .meta { margin-top: 3px; font-weight: 600; }
 .bk-badge { border-radius: 5px 5px 11px 5px; border: 2px solid rgba(15, 29, 58, .5); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .55), 0 1px 0 rgba(0, 0, 0, .25); font-weight: 800; }
 .bk-num { border-radius: 8px 8px 20px 8px; border: 2.5px solid rgba(15, 29, 58, .5); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .5); }
@@ -1429,17 +1431,88 @@ body.pe-focus .pe-grid { min-height: calc(100dvh - 64px); }
 .cm-wait { font-size: 12px; color: var(--muted); }
 @media (max-width: 520px) { .cm-fr { flex-wrap: wrap; } .cm-fa { width: 100%; justify-content: flex-start; } }
 
+/* --- The Pescher: schede (Tavoli / Chat) --- */
+.pe-tabs { display: flex; gap: 6px; padding: 5px; margin: 0 0 16px; background: var(--surface2); border: 1px solid var(--line); border-radius: 16px; position: relative; }
+.pe-tabs::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: -5px; height: 3px; border-radius: 3px; background: var(--wubrg); opacity: .85; }
+.pe-tab { flex: 1 1 0; min-height: 46px; padding: 6px 12px; border-radius: 11px; border: 0; background: transparent; color: var(--muted); font: 700 14px/1.2 var(--body); text-align: center; overflow-wrap: anywhere; touch-action: manipulation; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.pe-tab:hover { color: var(--fg); }
+.pe-tab[aria-selected="true"] { background: var(--banana); color: var(--banana-ink); box-shadow: 0 2px 0 var(--banana-deep); }
+.pe-tab:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.pe-badge { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--m-r); color: #fff; font: 800 12px/1 var(--body); }
+.pe-badge[hidden] { display: none; }
+
+/* --- Chat? Ma questa cosa è reale? --- */
+.ch { display: grid; gap: 14px; }
+.ch-hero { position: relative; overflow: hidden; border-radius: var(--r); padding: 20px 18px 18px; color: #fff; border: 1.5px solid var(--line2);
+  background: radial-gradient(120% 140% at 100% 0, color-mix(in srgb, var(--m-r) 38%, transparent), transparent 55%), radial-gradient(110% 140% at 0 100%, color-mix(in srgb, var(--m-u) 40%, transparent), transparent 55%), linear-gradient(135deg, var(--night2), var(--night)); }
+.ch-hero::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: var(--wubrg); }
+.ch-hero small { display: block; font: 700 11px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--banana-hi); margin-bottom: 8px; }
+.ch-hero h2 { margin: 0 0 6px; font: 800 clamp(21px, 5.6vw, 28px)/1.1 var(--display); letter-spacing: -0.005em; text-wrap: balance; text-shadow: 0 2px 14px rgba(0, 0, 0, .55); }
+.ch-hero p { margin: 0; max-width: 56ch; font-size: 14px; line-height: 1.45; color: rgba(255, 255, 255, .8); }
+.ch-opts { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.ch-sync { display: flex; gap: 10px; align-items: center; margin-left: auto; }
+.ch-sst { font-size: 13px; color: var(--muted); }
+.ch-sst.err { color: var(--danger, #c0392b); font-weight: 600; }
+.ch-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.ch-ev { --tone: var(--m-w); position: relative; display: grid; grid-template-columns: 104px minmax(0, 1fr); overflow: hidden; background: var(--surface); border: 1.5px solid var(--line); border-left: 6px solid var(--tone); border-radius: 16px; box-shadow: var(--shadow); }
+.tone-w { --tone: var(--m-w); } .tone-u { --tone: var(--m-u); } .tone-b { --tone: var(--m-b); } .tone-r { --tone: var(--m-r); } .tone-g { --tone: var(--m-g); }
+.ch-ev.new { box-shadow: var(--shadow), 0 0 0 2px var(--banana); }
+.ch-art { background: center 22% / cover no-repeat var(--surface2); min-height: 100%; position: relative; }
+.ch-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 55%, var(--surface)); }
+.ch-art.none { display: grid; place-items: center; background: linear-gradient(160deg, color-mix(in srgb, var(--tone) 30%, var(--surface2)), var(--surface2)); }
+.ch-art.none img { opacity: .75; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .35)); }
+.ch-body { display: grid; gap: 6px; padding: 12px 14px 12px 6px; min-width: 0; align-content: start; }
+.ch-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ch-top .cm-av { width: 26px; height: 26px; flex: none; }
+.ch-who { font: 700 14px var(--body); overflow-wrap: anywhere; }
+.ch-me { font: 700 10px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--banana-ink); background: var(--banana); border-radius: 999px; padding: 2px 7px; }
+.ch-time { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.ch-new { font: 800 10px var(--body); letter-spacing: .08em; text-transform: uppercase; color: #fff; background: var(--m-r); border-radius: 999px; padding: 2px 7px; }
+.ch-pip { margin-left: auto; flex: none; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .3)); }
+.ch-shout { font: 800 16px/1.15 var(--display); letter-spacing: .02em; text-transform: uppercase; color: color-mix(in srgb, var(--tone) 70%, var(--fg)); text-wrap: balance; }
+.tone-w .ch-shout { color: var(--fg); }
+.ch-text { margin: 0; font-size: 14.5px; line-height: 1.4; overflow-wrap: anywhere; }
+.ch-text b { color: var(--fg); }
+.ch-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-top: 2px; }
+.ch-lab { font-size: 12px; color: var(--muted); font-weight: 600; }
+/* l'annuncio da urlare: «ha stampato il deck di…» a tutta larghezza, con il commander in grande */
+.ch-ev.big { grid-template-columns: 1fr; border-left-width: 1.5px; border-top: 6px solid var(--tone); }
+.ch-ev.big .ch-art { min-height: 168px; background-position: center 24%; }
+.ch-ev.big .ch-art::after { background: linear-gradient(180deg, transparent 30%, var(--surface) 86%); }
+.ch-ev.big .ch-art.none { min-height: 110px; }
+.ch-ev.big .ch-body { padding: 0 16px 14px; margin-top: -30px; position: relative; z-index: 1; }
+.ch-ev.big .ch-shout { font-size: clamp(21px, 6.2vw, 30px); line-height: 1.05; color: var(--fg); justify-self: start; padding: 0 8px 1px 4px; margin-left: -4px; background: linear-gradient(transparent 56%, color-mix(in srgb, var(--banana) 85%, transparent) 56%); text-shadow: none; }
+.ch-ev.big .ch-text { font-size: 16px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ch-ev.big .ch-shout { color: var(--banana-hi); background: none; text-shadow: 0 2px 12px rgba(0, 0, 0, .6); } }
+:root[data-theme="dark"] .ch-ev.big .ch-shout { color: var(--banana-hi); background: none; text-shadow: 0 2px 12px rgba(0, 0, 0, .6); }
+.ch-empty { display: grid; justify-items: center; gap: 8px; text-align: center; padding: 26px 18px; border: 1.5px dashed var(--line2); border-radius: var(--r); background: var(--surface); }
+.ch-empty b { font: 800 18px var(--display); }
+.ch-empty p { margin: 0; max-width: 46ch; color: var(--muted); font-size: 14px; line-height: 1.45; }
+@media (max-width: 520px) {
+  .ch-ev { grid-template-columns: 78px minmax(0, 1fr); }
+  .pe-tab { font-size: 13px; padding: 6px 8px; }
+}
+@media (prefers-reduced-motion: no-preference) { .ch-ev { animation: ch-in .35s ease both; } .ch-ev:nth-child(2) { animation-delay: .05s; } .ch-ev:nth-child(3) { animation-delay: .1s; } }
+@keyframes ch-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
 </style>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <script>
-window.CPA_VERSION = '6.0.1';
+window.CPA_VERSION = '6.1.0';
 
 </script>
 <script>
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '6.1.0', date: '3 novembre 2026', title: 'Quattro stati e Chat? Ma questa cosa è reale?', items: [
+    { t: 'Quattro stati per i mazzi', d: 'Ogni mazzo ora è Attivo, Da stampare, Stampato ma non pronto oppure Smontato (il vecchio «Non attivo»). Un mazzo smontato restituisce le sue carte alle sciolte; uno stampato ma non pronto tiene occupate le sue carte, ma non conta tra gli attivi.' },
+    { t: 'Chat? Ma questa cosa è reale?', d: 'Nuova scheda nel Pescher, separata dalle classifiche dei tavoli: quando un amico stampa un mazzo compare «QUESTO È FREAKIN CRAAZY! X ha stampato il deck di…» con l\'immagine del suo commander. Servono un Codighel ID e gli amici.' },
+    { t: 'Un messaggio per ogni cambio di stato', d: 'Anche smontare, rimontare o mettere in campo un mazzo diventa un annuncio, ognuno con il suo tono e il suo colore. I cambi ravvicinati dello stesso mazzo si fondono in un annuncio solo.' },
+    { t: 'Decidi tu cosa annunciare', d: 'Nella scheda c\'è l\'interruttore per non annunciare ai tuoi amici i tuoi cambi di stato; puoi anche ritirare un tuo annuncio. Se sei offline l\'annuncio aspetta la rete e parte da solo.' },
+    { t: 'Da fare una volta', d: 'Dopo l\'aggiornamento, rilancia supabase/schema.sql nello SQL Editor di Supabase: aggiunge la tabella degli annunci.' },
+  ] },
   { v: '6.0.1', date: '2 novembre 2026', title: 'Un solo pulsante per il link', items: [
     { t: 'Link amico: un pulsante solo', d: 'In Dati, «Condividi il mio link» e «Copia il link» facevano la stessa cosa: ora c\'è un solo pulsante. Sul telefono apre il menu di condivisione del sistema, altrove copia direttamente il link.' },
   ] },
@@ -1686,10 +1759,11 @@ window.CPA_CHANGELOG = [
   }
 
   /* ---------- Archivio ---------- */
-  /* Stato di un mazzo: 'active' (montato: carte in uso), 'unprinted' (non ancora stampato: le sue carte non esistono ancora
-   * e non entrano nell'archivio), 'inactive' (smontato: carte libere), 'binder' (carte sciolte, sempre libere). */
-  function statusOf(d) { return d.kind === 'binder' ? 'binder' : d.status === 'unprinted' ? 'unprinted' : d.active ? 'active' : 'inactive'; }
-  function inUse(deck) { return statusOf(deck) === 'active'; }
+  /* Stato di un mazzo: 'active' (attivo: montato, carte in uso), 'unprinted' (da stampare: le sue carte non esistono ancora
+   * e non entrano nell'archivio), 'printed' (stampato ma non pronto: le carte esistono e sono occupate nel mazzo, ma il mazzo
+   * non conta come attivo), 'inactive' (smontato: le carte tornano libere, tra le sciolte), 'binder' (carte sciolte, sempre libere). */
+  function statusOf(d) { return d.kind === 'binder' ? 'binder' : d.status === 'unprinted' ? 'unprinted' : d.status === 'printed' ? 'printed' : d.active ? 'active' : 'inactive'; }
+  function inUse(deck) { var s = statusOf(deck); return s === 'active' || s === 'printed'; }
   function isPrinted(d) { return statusOf(d) !== 'unprinted'; }
   function isFreeDeck(d) { return statusOf(d) === 'inactive'; }
 
@@ -1717,7 +1791,7 @@ window.CPA_CHANGELOG = [
           if (r.deckId === d.id && r.set === set && r.cn === cn) { ex = r; break; }
         }
         if (ex) ex.qty += c.qty;
-        else e.rows.push({ deckId: d.id, deckName: d.name, kind: d.kind, active: used, qty: c.qty, set: set, cn: cn });
+        else e.rows.push({ deckId: d.id, deckName: d.name, kind: d.kind, active: used, st: statusOf(d), qty: c.qty, set: set, cn: cn });
       });
     });
     var stats = { unique: list.length, owned: 0, occupied: 0, free: 0, activeDecks: 0, decks: 0, busy: 0, part: 0, avail: 0 };
@@ -2247,8 +2321,8 @@ window.CPA_CHANGELOG = [
     return {
       id: String(d.id || uid('d')), name: String(d.name || 'Mazzo'),
       kind: d.kind === 'binder' ? 'binder' : 'deck',
-      status: d.kind === 'binder' ? 'inactive' : d.status === 'unprinted' ? 'unprinted' : d.active ? 'active' : 'inactive',
-      active: d.kind === 'binder' || d.status === 'unprinted' ? false : !!d.active,
+      status: d.kind === 'binder' ? 'inactive' : d.status === 'unprinted' ? 'unprinted' : d.status === 'printed' ? 'printed' : d.active ? 'active' : 'inactive',
+      active: d.kind === 'binder' || d.status === 'unprinted' || d.status === 'printed' ? false : !!d.active,
       commander: d.commander ? String(d.commander) : null,
       bracket: sanitizeBracket(d.bracket),
       cards: sanitizeCards(d.cards),
@@ -4721,7 +4795,11 @@ window.CPA_CHANGELOG = [
       gameAdd: function (h, secret, table, rec) { return call('cpa_game_add', { p_handle: h, p_secret: secret, p_table: table, p_rec: JSON.stringify(rec) }); },
       gameDelete: function (h, secret, table, gid) { return call('cpa_game_delete', { p_handle: h, p_secret: secret, p_table: table, p_game: gid }); },
       tableDelete: function (h, secret, id) { return call('cpa_table_delete', { p_handle: h, p_secret: secret, p_id: id }); },
-      tableLeave: function (h, secret, id) { return call('cpa_table_leave', { p_handle: h, p_secret: secret, p_id: id }); }
+      tableLeave: function (h, secret, id) { return call('cpa_table_leave', { p_handle: h, p_secret: secret, p_id: id }); },
+      /* annunci dei mazzi agli amici */
+      feedPost: function (h, secret, e) { return call('cpa_feed_post', { p_handle: h, p_secret: secret, p_deck: String(e.deck || ''), p_name: String(e.name || ''), p_cmd: String(e.cmd || ''), p_img: ART_RE.test(String(e.img || '')) ? String(e.img) : '', p_from: e.from, p_to: e.to }); },
+      feedList: function (h, secret) { return call('cpa_feed_list', { p_handle: h, p_secret: secret }).then(cleanFeed); },
+      feedDelete: function (h, secret, id) { return call('cpa_feed_delete', { p_handle: h, p_secret: secret, p_id: id }); }
     };
   }
 
@@ -4771,6 +4849,38 @@ window.CPA_CHANGELOG = [
     return { acct: String(o.acct || '').slice(0, 40), handle: o.handle, t: Number(o.t) || 0, tables: (Array.isArray(o.tables) ? o.tables : []).slice(0, 40).map(cleanTable).filter(Boolean), games: games, gt: gt };
   }
 
+  /* ----- Chat? Ma questa cosa è reale? (annunci dei mazzi) ----- */
+  var STATES = { active: 'Attivo', unprinted: 'Da stampare', printed: 'Stampato ma non pronto', inactive: 'Smontato' };
+  function cleanEvent(e) {
+    if (!e || !uid(e.id) || !e.author || !validHandle(e.author.handle) || !STATES[e.from] || !STATES[e.to] || e.from === e.to) return null;
+    return { id: uid(e.id), mine: !!e.mine, author: { id: uid(e.author.id), handle: e.author.handle, avatar_url: ART_RE.test(String(e.author.avatar_url || '')) ? String(e.author.avatar_url) : '' },
+      deck: str(e.deck, 60), commander: str(e.commander, 80), image: ART_RE.test(String(e.image || '')) ? String(e.image) : '', from: e.from, to: e.to, t: Math.max(0, Number(e.t) || 0) };
+  }
+  function cleanFeed(a) { return (Array.isArray(a) ? a : []).slice(0, 60).map(cleanEvent).filter(Boolean); }
+  /* Come si annuncia un cambio di stato: titolo urlato, frase, colore Magic della destinazione. */
+  var TONE = { printed: 'u', active: 'g', inactive: 'b', unprinted: 'r' };
+  function feedMessage(ev) {
+    var who = ev.mine ? 'Hai' : '@' + ev.author.handle;
+    var what = ev.commander ? 'il deck di ' + ev.commander : 'il mazzo «' + (ev.deck || 'senza nome') + '»';
+    var k = ev.from + '>' + ev.to, shout, text;
+    if (k === 'unprinted>printed') { shout = 'QUESTO È FREAKIN CRAAZY!'; text = ev.mine ? 'Hai stampato ' + what + '.' : who + ' ha stampato ' + what + '.'; }
+    else if (k === 'unprinted>active') { shout = 'STAMPATO E GIÀ IN CAMPO!'; text = (ev.mine ? 'Hai stampato e montato subito ' : who + ' ha stampato e montato subito ') + what + '.'; }
+    else if (k === 'printed>active') { shout = 'PRONTO AL COMBATTIMENTO!'; text = (ev.mine ? 'Hai messo in campo ' : who + ' ha messo in campo ') + what + ': è pronto, ora è attivo.'; }
+    else if (k === 'inactive>active') { shout = 'RIMONTATO!'; text = (ev.mine ? 'Hai rimontato ' : who + ' ha rimontato ') + what + ': di nuovo in campo.'; }
+    else if (ev.to === 'inactive') { shout = 'SMONTATO!'; text = (ev.mine ? 'Hai smontato ' : who + ' ha smontato ') + what + ': le carte tornano libere.'; }
+    else if (ev.to === 'unprinted') { shout = 'TORNA IN FUCINA!'; text = (ev.mine ? 'Hai rimandato ' : who + ' ha rimandato ') + what + ' da stampare.'; }
+    else if (k === 'active>printed') { shout = 'UN PASSO INDIETRO…'; text = (ev.mine ? 'Hai rimesso ' : who + ' ha rimesso ') + what + ' in attesa: stampato ma non pronto.'; }
+    else { shout = 'DI NUOVO SUL TAVOLO!'; text = (ev.mine ? 'Hai rimesso insieme ' : who + ' ha rimesso insieme ') + what + ': stampato ma non pronto.'; }
+    return { shout: shout, text: text, tone: TONE[ev.to] || 'w', big: k === 'unprinted>printed', label: STATES[ev.from] + ' → ' + STATES[ev.to] };
+  }
+  /* «5 min fa», «ieri»… */
+  function ago(t, now) {
+    var s = Math.max(0, Math.floor(((now == null ? Date.now() : now) - t) / 1000));
+    if (s < 60) return 'adesso'; var m = Math.floor(s / 60); if (m < 60) return m + ' min fa';
+    var h = Math.floor(m / 60); if (h < 24) return h + (h === 1 ? ' ora fa' : ' ore fa'); var d = Math.floor(h / 24);
+    return d === 1 ? 'ieri' : d + ' giorni fa';
+  }
+
   /* Il link che si manda agli amici: apre la versione web e lo riconosce dal #amico=ID. */
   var WEB_URL = 'https://imHuHo.github.io/coglio-proxy-archive/';
   function friendLink(handle, base) { return String(base || WEB_URL).replace(/#.*$/, '') + '#amico=' + encodeURIComponent(cleanHandle(handle)); }
@@ -4792,7 +4902,7 @@ window.CPA_CHANGELOG = [
     HANDLE_RE: HANDLE_RE, SECRET_LEN: SECRET_LEN, ART_HOST: ART_HOST,
     cleanHandle: cleanHandle, validHandle: validHandle, handleProblem: handleProblem,
     newSecret: newSecret, formatSecret: formatSecret, normSecret: normSecret, validSecret: validSecret,
-    cleanFriends: cleanFriends, cleanTable: cleanTable, cleanGame: cleanGame, namesNow: namesNow, restoreShared: restoreShared, uid: uid, friendLink: friendLink, parseFriendHash: parseFriendHash, WEB_URL: WEB_URL,
+    cleanFriends: cleanFriends, cleanFeed: cleanFeed, cleanEvent: cleanEvent, feedMessage: feedMessage, ago: ago, STATES: STATES, cleanTable: cleanTable, cleanGame: cleanGame, namesNow: namesNow, restoreShared: restoreShared, uid: uid, friendLink: friendLink, parseFriendHash: parseFriendHash, WEB_URL: WEB_URL,
     artFromCard: artFromCard, artSearch: artSearch, configured: configured, create: create, messageOf: messageOf, TEXT: TEXT, restoreLocal: restoreLocal
   };
 });
@@ -6588,7 +6698,7 @@ window.CPA_COMMUNITY = {
     var rows = e.rows.slice().sort(function (a, b) { return (b.active - a.active) || a.deckName.localeCompare(b.deckName); });
     return '<div class="detail"><h3>Dove sono le copie</h3><ul class="where">' + rows.map(function (r) {
       var pill = r.kind === 'binder' ? '<span class="pill free">Sciolta · libera</span>'
-        : r.active ? '<span class="pill use">In uso · mazzo attivo</span>' : '<span class="pill free">Libera · mazzo non attivo</span>';
+        : r.st === 'printed' ? '<span class="pill use">In uso · stampato, non pronto</span>' : r.active ? '<span class="pill use">In uso · mazzo attivo</span>' : '<span class="pill free">Libera · mazzo smontato</span>';
       return '<li>' + IMG.thumb(e.name, r.set, r.cn, r.deckId) + '<span class="qty">' + r.qty + '×</span><button class="link" data-a="open-deck" data-id="' + esc(r.deckId) + '">' + esc(r.deckName) + '</button>' + pill +
         (r.set ? '<span class="tag">' + esc(r.set) + (r.cn ? ' ' + esc(r.cn) : '') + '</span>' : '') + '</li>';
     }).join('') + '</ul><p class="hint">' + plural(e.occupied, 'copia in uso', 'copie in uso') + ' · ' + plural(e.free, 'libera', 'libere') + '</p></div>';
@@ -6886,7 +6996,8 @@ window.CPA_COMMUNITY = {
   }
 
   /* ---------- Mazzi ---------- */
-  var STATUS = [['active', 'Attivo'], ['unprinted', 'Non ancora stampato'], ['inactive', 'Non attivo']];
+  var STATUS = [['active', 'Attivo'], ['unprinted', 'Da stampare'], ['printed', 'Stampato ma non pronto'], ['inactive', 'Smontato']];
+  var STATUS_NAME = { active: 'Attivo', unprinted: 'Da stampare', printed: 'Stampato ma non pronto', inactive: 'Smontato' };
   function statusSelect(d, id, cls) {
     var cur = C.statusOf(d);
     return '<select class="select ' + (cls || '') + '" data-c="' + (id || 'status') + '" data-id="' + esc(d.id || '') + '" aria-label="Stato del mazzo">' + STATUS.map(function (o) {
@@ -6896,16 +7007,17 @@ window.CPA_COMMUNITY = {
   function switchHtml(d) { return statusSelect(d, 'status', 'stsel'); }
   function statusHint(d) {
     var st = C.statusOf(d);
-    return st === 'active' ? 'Mazzo montato: le sue carte risultano in uso.' :
-      st === 'unprinted' ? 'Non ancora stampato: le sue carte non entrano nell\'archivio finché non lo stampi. Quando è pronto, passalo ad Attivo.' :
-        'Mazzo smontato: le sue carte risultano libere e le ritrovi anche tra le carte disponibili per altri mazzi.';
+    return st === 'active' ? 'Mazzo attivo: montato e pronto, le sue carte risultano in uso.' :
+      st === 'unprinted' ? 'Da stampare: le sue carte non entrano nell\'archivio finché non lo stampi. Quando l\'hai stampato, passalo a «Stampato ma non pronto».' :
+        st === 'printed' ? 'Stampato ma non pronto: le carte esistono e restano occupate in questo mazzo, ma non conta tra i mazzi attivi. Quando è pronto, passalo ad Attivo.' :
+          'Smontato: le sue carte tornano tra le sciolte, libere per altri mazzi.';
   }
   function deckCard(d) {
-    var on = d.kind === 'deck' && d.active, np = d.kind === 'deck' && C.statusOf(d) === 'unprinted';
+    var on = d.kind === 'deck' && d.active, np = d.kind === 'deck' && C.statusOf(d) === 'unprinted', pp = d.kind === 'deck' && C.statusOf(d) === 'printed';
     var meta = d.kind === 'deck' ? (d.commander ? 'Commander: ' + esc(d.commander) : 'Nessun commander scelto') : 'Carte sciolte, sempre disponibili';
     var cc = CARDS.get(), dv = cc && CARDS.enabled() ? cc.valueDeck(d, C.isBasic) : null;
     var worth = dv && dv.ready && dv.cards.length ? ' · <span class="worth" title="Costo se fosse reale, con le stampe del mazzo">' + eurF(dv.total) + '</span>' : '';
-    return '<article class="deckcard' + (on ? ' is-on' : np ? ' is-np' : '') + '"><div class="top"><div><h2>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + (C.countOf(d.side) ? ' + ' + C.countOf(d.side) + ' in sideboard' : '') + worth + '</div></div>' +
+    return '<article class="deckcard' + (on ? ' is-on' : np ? ' is-np' : pp ? ' is-pp' : '') + '"><div class="top"><div><h2>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + (C.countOf(d.side) ? ' + ' + C.countOf(d.side) + ' in sideboard' : '') + worth + '</div></div>' +
       (d.kind === 'deck' ? switchHtml(d) : '') + '</div><div class="foot"><span>' +
       (d.upgrades.length ? '<span class="pill info">' + plural(d.upgrades.length, 'upgrade', 'upgrade') + '</span>' : '<span class="hint">Nessun upgrade</span>') +
       '</span><span class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="open-deck" data-id="' + esc(d.id) + '">Apri</button></span></div></article>';
@@ -6926,8 +7038,8 @@ window.CPA_COMMUNITY = {
   function decksView() {
     var ds = state.decks.filter(function (d) { return d.kind === 'deck'; }), bs = state.decks.filter(function (d) { return d.kind === 'binder'; });
     if (!state.decks.length) return '<header class="vh"><h1>Mazzi</h1></header>' + welcome();
-    var act = ds.filter(function (d) { return d.active; }).length, np = ds.filter(function (d) { return C.statusOf(d) === 'unprinted'; }).length;
-    return '<header class="vh"><h1>Mazzi</h1><p class="sub"><b>' + act + '</b> attivi su <b>' + ds.length + '</b>' + (np ? ' · <b>' + np + '</b> da stampare' : '') + '. Un mazzo attivo è montato: le sue carte risultano in uso nell\'archivio.</p></header>' +
+    var cnt = function (k) { return ds.filter(function (d) { return C.statusOf(d) === k; }).length; }, act = cnt('active'), np = cnt('unprinted'), pp = cnt('printed'), off = cnt('inactive');
+    return '<header class="vh"><h1>Mazzi</h1><p class="sub"><b>' + act + '</b> attivi su <b>' + ds.length + '</b>' + (np ? ' · <b>' + np + '</b> da stampare' : '') + (pp ? ' · <b>' + pp + '</b> stampati ma non pronti' : '') + (off ? ' · <b>' + off + '</b> smontati' : '') + '. Un mazzo attivo è montato e pronto; uno stampato ma non pronto tiene già occupate le sue carte.</p></header>' +
       '<div class="btns" style="margin-bottom:12px"><button class="btn primary" data-a="nav" data-v="import">Importa un mazzo</button></div>' +
       '<div class="list" id="declist">' + ds.map(deckCard).join('') + '</div>' +
       (bs.length ? '<h2 class="sect">Carte sciolte</h2><div class="list">' + bs.map(deckCard).join('') + '</div>' : '');
@@ -7565,6 +7677,7 @@ window.CPA_COMMUNITY = {
     if (a.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.click(a, el); return; }
     if (a.indexOf('dz-') === 0 && window.CPADesigner) { if (el.dataset.cf) ui.confirm = null; window.CPADesigner.click(a, el); return; }
     if (a.indexOf('pe-') === 0 && window.CPAPescherUI) { window.CPAPescherUI.click(a, el); return; }
+    if (a.indexOf('ch-') === 0 && window.CPAChatUI) { window.CPAChatUI.click(a, el); return; }
     if (a.indexOf('cm-') === 0 && window.CPACommunityUI) { window.CPACommunityUI.click(a, el); return; }
     var deck;
     switch (a) {
@@ -7746,6 +7859,7 @@ window.CPA_COMMUNITY = {
     if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.input(c, e.target); return; }
     if (c.indexOf('dz-') === 0 && window.CPADesigner) { window.CPADesigner.input(c, e.target); return; }
     if (c.indexOf('pe-') === 0 && window.CPAPescherUI) { window.CPAPescherUI.input(c, e.target); return; }
+    if (c.indexOf('ch-') === 0 && window.CPAChatUI) { window.CPAChatUI.input(c, e.target); return; }
     if (c.indexOf('cm-') === 0 && window.CPACommunityUI) { window.CPACommunityUI.input(c, e.target); return; }
     if (c === 'q') { ui.q = e.target.value; ui.limit = 150; updateArchiveList(); }
     else if (c === 'f-text') { ui.f.text = e.target.value; ui.limit = 150; updateArchiveList(); }
@@ -7763,6 +7877,7 @@ window.CPA_COMMUNITY = {
     if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.change(c, t); return; }
     if (c.indexOf('dz-') === 0 && window.CPADesigner) { window.CPADesigner.change(c, t); return; }
     if (c.indexOf('pe-') === 0 && window.CPAPescherUI) { window.CPAPescherUI.change(c, t); return; }
+    if (c.indexOf('ch-') === 0 && window.CPAChatUI) { window.CPAChatUI.change(c, t); return; }
     if (c.indexOf('cm-') === 0 && window.CPACommunityUI) { window.CPACommunityUI.change(c, t); return; }
     var d;
     switch (c) {
@@ -7774,10 +7889,12 @@ window.CPA_COMMUNITY = {
       case 'status':
         d = getDeck(t.dataset.id);
         if (d) {
-          var st = t.value; d.status = st; d.active = st === 'active'; d.updatedAt = Date.now(); touch(d.id);
+          var prev = C.statusOf(d), st = t.value; d.status = st; d.active = st === 'active'; d.updatedAt = Date.now(); touch(d.id);
           toast(st === 'active' ? d.name + ' attivo: le sue ' + sum(d.cards) + ' carte risultano in uso.' :
-            st === 'unprinted' ? d.name + ' non ancora stampato: le sue carte non entrano nell\'archivio finché non lo stampi.' :
-              d.name + ' non attivo: le sue carte tornano libere.');
+            st === 'unprinted' ? d.name + ' da stampare: le sue carte non entrano nell\'archivio finché non lo stampi.' :
+              st === 'printed' ? d.name + ' stampato ma non pronto: le sue carte restano occupate nel mazzo.' :
+                d.name + ' smontato: le sue carte tornano libere.');
+          if (d.kind === 'deck' && prev !== st && window.CPAChatUI) window.CPAChatUI.announce(d, prev, st);
           render();
         } break;
       case 'dadd-to': ui.dAddSide = t.value === 'side'; break;
@@ -7811,7 +7928,9 @@ window.CPA_COMMUNITY = {
     cmpVersion: UPD.cmp,
     esc: esc, toast: toast, download: download, getDeck: getDeck, ui: ui, render: render, mutate: mutate,
     decks: function () { return state.decks; },
-    available: function () { return !!store && store.kind !== 'claude' && typeof fetch === 'function'; }
+    available: function () { return !!store && store.kind !== 'claude' && typeof fetch === 'function'; },
+    /* artwork (art_crop di Scryfall) del commander di un mazzo, se già conosciuto */
+    cmdArt: function (d) { var c = d && d.kind === 'deck' && d.commander ? d.cards.filter(function (x) { return dkIsCmd(d, x); })[0] : null; return c ? IMG.pic(c.name, c.set, c.cn, 'art_crop') || '' : ''; }
   };
 
   /* ---------- Avvio ---------- */
@@ -10377,7 +10496,7 @@ window.CPA_COMMUNITY = {
   if (!H || !P) return;
   var esc = H.esc, KEY = 'cpa:pescher:v1', HKEY = 'cpa:pescher:hist:v1', TKEY = 'cpa:pescher:tables:v1', SKEY = 'cpa:pescher:shared:v1', OKEY = 'cpa:pescher:outbox:v1';
   var g = null, hist = null, tbls = null, wake = null, clockT = 0, deltaT = 0, sh = null, ob = null, net = { busy: false, err: '', t: 0, flush: false, work: '' };
-  var ux = { open: {}, pop: '', rolls: [], confirm: '', setFor: '', delta: {}, end: null, delGame: '', delTable: '', tnew: '', pick: '', perr: '', tname: '', leave: '' };
+  var ux = { open: {}, pop: '', rolls: [], confirm: '', setFor: '', delta: {}, end: null, delGame: '', delTable: '', tnew: '', pick: '', perr: '', tname: '', leave: '', tab: 'tables' };
   var SEAT = ['var(--m-u)', 'var(--m-r)', 'var(--m-g)', 'var(--m-w)', 'var(--m-b)', 'var(--banana)'];
 
   /* ---------- salvataggio ---------- */
@@ -10509,8 +10628,17 @@ window.CPA_COMMUNITY = {
       '<input class="pe-name" data-c="pe-name" data-p="' + p.id + '" value="' + esc(p.name) + '" maxlength="24" aria-label="Nome del posto ' + (i + 1) + (f ? ' (amico)' : '') + '" autocomplete="off">' +
       (A ? '<button type="button" class="pe-pick" data-a="pe-pick" data-p="' + p.id + '" aria-haspopup="dialog" aria-pressed="' + f + '" aria-label="' + (f ? 'Cambia l’amico del posto ' : 'Siedi un amico al posto ') + (i + 1) + '">' + ICON.people + '</button>' : '') + '</div>';
   }
+  /* Schede della preparazione: i tavoli (con le loro classifiche) e «Chat? Ma questa cosa è reale?» (annunci dei mazzi degli amici) */
+  function tabsOn() { try { return !!window.CPAChatUI && C.configured(window.CPA_COMMUNITY); } catch (e) { return false; } }
+  function tabsHtml() {
+    if (!tabsOn()) return '';
+    var tab = function (k, label, extra) { return '<button type="button" class="pe-tab" role="tab" id="pe-tab-' + k + '" data-a="pe-tab" data-v="' + k + '" aria-selected="' + (ux.tab === k) + '">' + label + (extra || '') + '</button>'; };
+    return '<div class="pe-tabs" role="tablist" aria-label="Sezioni del Pescher">' + tab('tables', 'Tavoli e classifiche') + tab('chat', 'Chat? Ma questa cosa è reale?', window.CPAChatUI.badgeHtml()) + '</div>';
+  }
   function setupHtml() {
-    return '<header class="vh"><h1>The Pescher</h1><p class="sub">Il compagno di partita dal vivo: vite, veleno, danno da comandante, segnalini e dadi.</p></header>' +
+    var top = '<header class="vh"><h1>The Pescher</h1><p class="sub">Il compagno di partita dal vivo: vite, veleno, danno da comandante, segnalini e dadi.</p></header>' + tabsHtml();
+    if (ux.tab === 'chat' && tabsOn()) return top + window.CPAChatUI.html();
+    return top +
       '<section class="pe-setup">' + tableHtml() + '<div class="pe-opts panel">' +
       '<div class="pe-opt"><b>Giocatori</b>' + seg([2, 3, 4, 5, 6], g.players.length, 'pe-count', 'Numero di giocatori') + '</div>' +
       '<div class="pe-opt"><b>Vita iniziale</b>' + seg(P.LIVES, g.start, 'pe-start', 'Vita iniziale') + '</div>' +
@@ -10681,7 +10809,7 @@ window.CPA_COMMUNITY = {
   function unwake() { try { if (wake) wake.release(); } catch (e) { /* già rilasciato */ } wake = null; }
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && document.getElementById('pe')) syncWake(); });
 
-  function after() { kick(); document.body.classList.toggle('pe-play', !!(g && g.started)); document.body.classList.toggle('pe-focus', !!(g && g.focus && g.started)); syncWake(); syncClock(); }
+  function after() { kick(); if (window.CPAChatUI && !(g && g.started)) window.CPAChatUI.after(); document.body.classList.toggle('pe-play', !!(g && g.started)); document.body.classList.toggle('pe-focus', !!(g && g.focus && g.started)); syncWake(); syncClock(); }
   function idle() { closePop(); unwake(); if (clockT) { clearInterval(clockT); clockT = 0; } clearTimeout(deltaT); document.body.classList.remove('pe-play', 'pe-focus'); }
 
   /* ---------- pop-up: dadi, registro, menu, valore esatto ---------- */
@@ -10779,6 +10907,7 @@ window.CPA_COMMUNITY = {
     var id = el.dataset.p, d = parseInt(el.dataset.d, 10), v = el.dataset.v;
     ensure();
     switch (a) {
+      case 'pe-tab': { if (!tabsOn() || ux.tab === v) break; ux.tab = v === 'chat' ? 'chat' : 'tables'; repaint(); if (ux.tab === 'chat') window.CPAChatUI.opened(); else { var cb = document.getElementById('pe-tab-tables'); if (cb) cb.focus({ preventScroll: true }); } break; }
       case 'pe-count': P.resize(g, parseInt(v, 10)); repaint(); break;
       case 'pe-start': P.setStart(g, parseInt(v, 10)); repaint(); break;
       case 'pe-begin': { var f = P.begin(g, rng); ux.open = {}; ux.rolls = []; ux.delta = {}; repaint(); toast('Inizia ' + f.name + '.'); break; }
@@ -11255,6 +11384,157 @@ window.CPA_COMMUNITY = {
     return p.then(function () { return fr.data || client().friends(who.handle, who.secret).then(function (d) { if (me === who) fr.data = d; return d; }); });
   }
   window.CPACommunityUI = { html: html, after: after, click: click, input: input, change: change, escape: escape, isOpen: isOpen, state: function () { return load(); }, api: api };
+})();
+
+</script>
+<script>
+/* Coglio Proxy Archive - «Chat? Ma questa cosa è reale?»: gli annunci dei mazzi, dentro il Pescher (scheda separata dalle classifiche dei tavoli).
+ * Quando cambi lo stato di un tuo mazzo (da stampare, stampato ma non pronto, attivo, smontato) l'app lo annuncia ai tuoi amici,
+ * con il commander e il suo artwork; qui vedi gli annunci tuoi e dei tuoi amici. Logica dei messaggi e client del server: community.js.
+ * Ridisegna solo il proprio contenitore (#ch). Gli annunci non partiti (niente rete) restano in coda sul dispositivo e riprovano da soli. */
+(function () {
+  'use strict';
+  var H = window.CPAHost, C = window.CPACommunity;
+  if (!H || !C) return;
+  var esc = H.esc, FKEY = 'cpa:feed:v1', AKEY = 'cpa:feed:announce:v1', QKEY = 'cpa:feed:outbox:v1', SKEY = 'cpa:feed:seen:v1';
+  var cache = null, outq = null, st = { busy: false, err: '', t: 0, baseline: 0, arm: '', sending: false };
+
+  function cm() { var U = window.CPACommunityUI; try { return U && U.api ? U.api() : null; } catch (e) { return null; } }
+  function hk(a) { return String(a.me.handle).toLowerCase(); }
+  function on() { try { return C.configured(window.CPA_COMMUNITY); } catch (e) { return false; } }
+  function annOn() { try { return localStorage.getItem(AKEY) !== '0'; } catch (e) { return true; } }
+  function setAnn(v) { try { localStorage.setItem(AKEY, v ? '1' : '0'); } catch (e) { /* resta com'è */ } }
+
+  /* ---------- copia sul dispositivo ---------- */
+  function loadCache() {
+    if (cache) return cache;
+    try { var o = JSON.parse(localStorage.getItem(FKEY) || 'null'); cache = o && typeof o.h === 'string' ? { h: o.h, t: Number(o.t) || 0, list: C.cleanFeed(o.list) } : null; } catch (e) { cache = null; }
+    return cache;
+  }
+  function saveCache() { try { if (cache) localStorage.setItem(FKEY, JSON.stringify(cache)); } catch (e) { /* resta in memoria */ } }
+  function listOf(a) { var c = loadCache(); return a && c && c.h === hk(a) ? c.list : null; }
+  function queue() {
+    if (!outq) { try { var q = JSON.parse(localStorage.getItem(QKEY) || '[]'); outq = Array.isArray(q) ? q.filter(function (x) { return x && typeof x.h === 'string' && x.e && C.STATES[x.e.from] && C.STATES[x.e.to]; }).slice(0, 20) : []; } catch (e) { outq = []; } }
+    return outq;
+  }
+  function saveQueue() { try { localStorage.setItem(QKEY, JSON.stringify(outq || [])); } catch (e) { /* resta in memoria */ } }
+  function seen() { try { return Number(localStorage.getItem(SKEY)) || 0; } catch (e) { return 0; } }
+  function markSeen(a) { var l = listOf(a); if (!l || !l.length) return; var m = 0; l.forEach(function (e) { if (e.t > m) m = e.t; }); try { if (m > seen()) localStorage.setItem(SKEY, String(m)); } catch (e) { /* pazienza */ } }
+  /* novità non ancora viste: annunci degli amici più recenti dell'ultima volta che hai aperto la scheda */
+  function unread(a) { var l = listOf(a), s = seen(); return l ? l.filter(function (e) { return !e.mine && e.t > s; }).length : 0; }
+
+  /* ---------- annunci in uscita ---------- */
+  function enqueue(a, e) {
+    var q = queue(), h = hk(a), prev = q.filter(function (x) { return x.h === h && x.e.deck === e.deck; })[0];
+    if (prev) { var f = prev.e.from; q.splice(q.indexOf(prev), 1); if (f === e.to) { saveQueue(); return; } e.from = f; }   /* stesso mazzo ancora in coda: si fonde, come sul server */
+    q.push({ h: h, e: e }); if (q.length > 20) q.shift(); saveQueue();
+  }
+  function flush() {
+    var a = cm(); if (!a || st.sending) return Promise.resolve();
+    var h = hk(a); if (!queue().some(function (x) { return x.h === h; })) return Promise.resolve();
+    st.sending = true;
+    function drop(x) { var i = outq.indexOf(x); if (i >= 0) outq.splice(i, 1); }
+    function next() {
+      var x = queue().filter(function (y) { return y.h === h; })[0]; if (!x) return null;
+      return a.cli.feedPost(a.me.handle, a.me.secret, x.e).then(function () { drop(x); return next(); }, function (err) {
+        if (err && (err.code === 'offline' || err.code === 'server' || err.code === 'unconfigured')) throw err;
+        drop(x); return next();         /* annuncio rifiutato dal server: inutile riprovare */
+      });
+    }
+    return Promise.resolve(next()).then(null, function (e) { st.err = C.messageOf(e); }).then(function () { st.sending = false; saveQueue(); });
+  }
+  /* Il mazzo d è passato da `from` a `to`: si annuncia agli amici (se l'interruttore è acceso e c'è un Codighel ID). */
+  function announce(d, from, to) {
+    var a = cm(); if (!a || !annOn() || !d || d.kind !== 'deck' || from === to || !C.STATES[from] || !C.STATES[to]) return;
+    var e = { deck: String(d.id || '').slice(0, 40), name: String(d.name || ''), cmd: String(d.commander || ''), img: '', from: from, to: to };
+    var img = ''; try { img = H.cmdArt ? H.cmdArt(d) || '' : ''; } catch (x) { img = ''; }
+    function go(u) { e.img = u || ''; enqueue(a, e); flush().then(function () { st.t = 0; }); }
+    if (img && /^https:\/\/cards\.scryfall\.io\//.test(img)) { go(img); return; }
+    if (e.cmd) C.artSearch('!"' + e.cmd.replace(/"/g, '') + '"', function (u) { return fetch(u); }).then(function (l) { go(l[0] && l[0].url); }, function () { go(''); });
+    else go('');
+  }
+
+  /* ---------- aggiornamento ---------- */
+  function refresh(force) {
+    var a = cm(); if (!a || st.busy) return;
+    if (!force && Date.now() - st.t < 60000) return;
+    st.busy = true; st.err = ''; st.t = Date.now(); paint();
+    flush().then(function () { return a.cli.feedList(a.me.handle, a.me.secret); }).then(function (l) { cache = { h: hk(a), t: Date.now(), list: l }; saveCache(); },
+      function (e) { st.err = C.messageOf(e); }).then(function () { st.busy = false; paint(); });
+  }
+
+  /* ---------- interfaccia ---------- */
+  function face(url, h) {
+    return url ? '<img class="cm-av" src="' + esc(url) + '" alt="" referrerpolicy="no-referrer" loading="lazy">' : '<span class="cm-av ph" aria-hidden="true">' + esc(String(h || '?').charAt(0).toUpperCase()) + '</span>';
+  }
+  /* il testo dell'annuncio, con ID e commander in grassetto */
+  function rich(text, ev) {
+    var h = esc(text);
+    [('@' + ev.author.handle), ev.commander, ev.deck].forEach(function (p) { if (p) { var e = esc(p); h = h.split(e).join('<b>' + e + '</b>'); } });
+    return h;
+  }
+  function evHtml(ev, now) {
+    var m = C.feedMessage(ev), armed = st.arm === ev.id, isNew = !ev.mine && ev.t > st.baseline;
+    var art = ev.image ? '<div class="ch-art" style="background-image:url(' + esc(ev.image) + ')" role="img" aria-label="' + esc('Artwork di ' + (ev.commander || ev.deck)) + '"></div>' : '<div class="ch-art none" aria-hidden="true"><img src="mana/' + m.tone + '.svg" alt="" width="64" height="64"></div>';
+    return '<li class="ch-ev tone-' + m.tone + (m.big ? ' big' : '') + (isNew ? ' new' : '') + '">' + art +
+      '<div class="ch-body"><div class="ch-top">' + face(ev.author.avatar_url, ev.author.handle) + '<b class="ch-who">@' + esc(ev.author.handle) + '</b>' + (ev.mine ? '<span class="ch-me">tu</span>' : '') +
+      '<time class="ch-time" datetime="' + esc(new Date(ev.t).toISOString()) + '">' + esc(C.ago(ev.t, now)) + '</time>' + (isNew ? '<span class="ch-new">Nuovo</span>' : '') +
+      '<img class="ch-pip" src="mana/' + m.tone + '.svg" alt="" width="22" height="22"></div>' +
+      '<strong class="ch-shout">' + esc(m.shout) + '</strong><p class="ch-text">' + rich(m.text, ev) + '</p>' +
+      '<div class="ch-foot"><span class="ch-lab">' + esc(m.label) + '</span>' + (ev.mine ? '<button type="button" class="btn small' + (armed ? ' danger' : '') + '" data-a="ch-del" data-id="' + esc(ev.id) + '">' + (armed ? 'Sicuro? Sparisce per tutti' : 'Ritira') + '</button>' : '') + '</div></div></li>';
+  }
+  function inner() {
+    var a = cm(), head = '<div class="ch-hero"><small>Annunci dei mazzi</small><h2>Chat? Ma questa cosa è reale?</h2><p>Quando un amico stampa, monta o smonta un mazzo, lo scopri qui. Niente messaggi da scrivere: parlano i mazzi.</p></div>';
+    if (!on()) return head + '<p class="hint">Le funzioni community non sono ancora attive su questa copia dell’app.</p>';
+    if (!a) return head + '<div class="ch-empty"><img src="mana/u.svg" alt="" width="46" height="46"><b>Serve un Codighel ID</b><p>Crea il tuo ID in Dati e aggiungi gli amici: i loro annunci compariranno qui.</p><button type="button" class="btn primary" data-a="ch-data">Vai a Dati</button></div>';
+    var l = listOf(a), now = Date.now();
+    var opts = '<div class="ch-opts panel"><label class="pe-chk"><input type="checkbox" data-c="ch-ann"' + (annOn() ? ' checked' : '') + '> Annuncia ai miei amici i cambi di stato dei miei mazzi</label>' +
+      '<div class="ch-sync"><span class="ch-sst' + (st.err ? ' err' : '') + '" role="status" aria-live="polite">' + esc(st.busy ? 'Aggiorno…' : st.err ? st.err : queue().some(function (x) { return x.h === hk(a); }) ? 'Un tuo annuncio aspetta la rete…' : (loadCache() && loadCache().h === hk(a) && cache.t ? 'Aggiornato alle ' + ('0' + new Date(cache.t).getHours()).slice(-2) + ':' + ('0' + new Date(cache.t).getMinutes()).slice(-2) : 'Non ancora aggiornato')) + '</span>' +
+      '<button type="button" class="btn small" data-a="ch-refresh"' + (st.busy ? ' disabled' : '') + '>Aggiorna</button></div></div>';
+    var body;
+    if (!l) body = '<p class="an-none">' + (st.busy ? 'Carico gli annunci…' : 'Non riesco a caricare gli annunci: tocca «Aggiorna».') + '</p>';
+    else if (!l.length) body = '<div class="ch-empty"><img src="mana/r.svg" alt="" width="46" height="46"><b>Tutto tace…</b><p>Ancora nessun annuncio. Quando un amico passa un mazzo da «Da stampare» a «Stampato ma non pronto», lo vedi qui con il suo commander. Se vuoi, comincia tu: cambia lo stato di un mazzo nella pagina Mazzi.</p></div>';
+    else body = '<ul class="ch-list">' + l.map(function (ev) { return evHtml(ev, now); }).join('') + '</ul>';
+    return head + opts + body;
+  }
+  function html() { return '<section class="ch" id="ch" aria-label="Chat? Ma questa cosa è reale?">' + inner() + '</section>'; }
+  function badgeHtml() { var a = cm(), n = a ? unread(a) : 0; return '<span class="pe-badge" id="ch-badge"' + (n ? '' : ' hidden') + '>' + (n > 9 ? '9+' : n) + '</span>'; }
+  function updateBadge() {
+    var b = document.getElementById('ch-badge'); if (!b) return; var a = cm(), n = a ? unread(a) : 0;
+    b.hidden = !n; b.textContent = n > 9 ? '9+' : String(n);
+  }
+  function paint() {
+    var el = document.getElementById('ch');
+    if (el) {
+      var f = document.activeElement, key = f && el.contains(f) && f.getAttribute ? (f.getAttribute('data-a') ? '[data-a="' + f.getAttribute('data-a') + '"]' : f.getAttribute('data-c') ? '[data-c="' + f.getAttribute('data-c') + '"]' : '') : '';
+      el.innerHTML = inner();
+      if (key) { try { var n = el.querySelector(key); if (n && !n.disabled) n.focus({ preventScroll: true }); } catch (e) { /* pazienza */ } }
+      var a = cm(); if (a && listOf(a)) { markSeen(a); }
+    }
+    updateBadge();
+  }
+  /* scheda aperta: ciò che era già visto non è «nuovo», il resto sì finché non si lascia la scheda */
+  function opened() { st.baseline = seen(); refresh(Date.now() - st.t > 15000); var a = cm(); if (a && listOf(a)) markSeen(a); updateBadge(); }
+  function after() { if (cm()) refresh(false); updateBadge(); }
+
+  function click(a, el) {
+    var u = cm();
+    switch (a) {
+      case 'ch-refresh': refresh(true); break;
+      case 'ch-data': H.ui.view = 'data'; H.render(); break;
+      case 'ch-del': {
+        var id = el.dataset.id; if (!u) break;
+        if (st.arm !== id) { st.arm = id; paint(); break; }
+        st.arm = ''; u.cli.feedDelete(u.me.handle, u.me.secret, id).then(function () {
+          var c = loadCache(); if (c) { c.list = c.list.filter(function (e) { return e.id !== id; }); saveCache(); } paint();
+        }, function (e) { st.err = C.messageOf(e); paint(); }); break;
+      }
+    }
+  }
+  function change(c, t) { if (c === 'ch-ann') { setAnn(t.checked); H.toast(t.checked ? 'Annuncerò ai tuoi amici i cambi di stato dei tuoi mazzi.' : 'Non annuncerò più i cambi di stato dei tuoi mazzi.'); } }
+  function input() { /* nessun campo di testo */ }
+
+  window.CPAChatUI = { html: html, badgeHtml: badgeHtml, opened: opened, after: after, click: click, change: change, input: input, announce: announce, unread: function () { var a = cm(); return a ? unread(a) : 0; }, state: function () { return st; } };
 })();
 
 </script>

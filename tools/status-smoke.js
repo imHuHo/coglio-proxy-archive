@@ -38,13 +38,13 @@ const toastText = () => $('#toast').textContent.replace(/\s+/g, ' ');
   const boxes = $$('[data-c="reuse"]');
   ok(boxes.length === 2 && boxes.every(b => !b.checked), 'una spunta per carta, di base nessuna');
   ok(text().includes('Nessuna carta presa'), 'riepilogo iniziale');
-  ok($('[data-c="draft-status"]') && $$('[data-c="draft-status"] option').map(o => o.value).join() === 'active,unprinted,inactive', 'scelta dello stato nel nuovo mazzo');
+  ok($('[data-c="draft-status"]') && $$('[data-c="draft-status"] option').map(o => o.value).join() === 'active,unprinted,printed,inactive', 'scelta dello stato nel nuovo mazzo');
   const cs = boxes.find(b => b.dataset.k === 'counterspell');
   cs.checked = true; cs.dispatchEvent(new w.Event('change', { bubbles: true }));
   ok($('#reuse-sum').textContent.includes('Prenderò 1 copia'), 'riepilogo aggiornato');
   change('[data-c="draft-status"]', 'unprinted');
   ok($$('[data-c="reuse"]').find(b => b.dataset.k === 'counterspell').checked, 'la spunta resta dopo aver cambiato stato');
-  ok(text().includes('Non ancora stampato: le sue carte non entrano'), 'spiegazione dello stato');
+  ok(text().includes('Da stampare: le sue carte non entrano'), 'spiegazione dello stato');
   clickA('draft-create');
   ok(toastText().includes('1 copia presa'), 'avviso: copia presa → ' + toastText());
 

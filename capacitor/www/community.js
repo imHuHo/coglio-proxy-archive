@@ -123,7 +123,11 @@
       gameAdd: function (h, secret, table, rec) { return call('cpa_game_add', { p_handle: h, p_secret: secret, p_table: table, p_rec: JSON.stringify(rec) }); },
       gameDelete: function (h, secret, table, gid) { return call('cpa_game_delete', { p_handle: h, p_secret: secret, p_table: table, p_game: gid }); },
       tableDelete: function (h, secret, id) { return call('cpa_table_delete', { p_handle: h, p_secret: secret, p_id: id }); },
-      tableLeave: function (h, secret, id) { return call('cpa_table_leave', { p_handle: h, p_secret: secret, p_id: id }); }
+      tableLeave: function (h, secret, id) { return call('cpa_table_leave', { p_handle: h, p_secret: secret, p_id: id }); },
+      /* annunci dei mazzi agli amici */
+      feedPost: function (h, secret, e) { return call('cpa_feed_post', { p_handle: h, p_secret: secret, p_deck: String(e.deck || ''), p_name: String(e.name || ''), p_cmd: String(e.cmd || ''), p_img: ART_RE.test(String(e.img || '')) ? String(e.img) : '', p_from: e.from, p_to: e.to }); },
+      feedList: function (h, secret) { return call('cpa_feed_list', { p_handle: h, p_secret: secret }).then(cleanFeed); },
+      feedDelete: function (h, secret, id) { return call('cpa_feed_delete', { p_handle: h, p_secret: secret, p_id: id }); }
     };
   }
 
@@ -173,6 +177,38 @@
     return { acct: String(o.acct || '').slice(0, 40), handle: o.handle, t: Number(o.t) || 0, tables: (Array.isArray(o.tables) ? o.tables : []).slice(0, 40).map(cleanTable).filter(Boolean), games: games, gt: gt };
   }
 
+  /* ----- Chat? Ma questa cosa è reale? (annunci dei mazzi) ----- */
+  var STATES = { active: 'Attivo', unprinted: 'Da stampare', printed: 'Stampato ma non pronto', inactive: 'Smontato' };
+  function cleanEvent(e) {
+    if (!e || !uid(e.id) || !e.author || !validHandle(e.author.handle) || !STATES[e.from] || !STATES[e.to] || e.from === e.to) return null;
+    return { id: uid(e.id), mine: !!e.mine, author: { id: uid(e.author.id), handle: e.author.handle, avatar_url: ART_RE.test(String(e.author.avatar_url || '')) ? String(e.author.avatar_url) : '' },
+      deck: str(e.deck, 60), commander: str(e.commander, 80), image: ART_RE.test(String(e.image || '')) ? String(e.image) : '', from: e.from, to: e.to, t: Math.max(0, Number(e.t) || 0) };
+  }
+  function cleanFeed(a) { return (Array.isArray(a) ? a : []).slice(0, 60).map(cleanEvent).filter(Boolean); }
+  /* Come si annuncia un cambio di stato: titolo urlato, frase, colore Magic della destinazione. */
+  var TONE = { printed: 'u', active: 'g', inactive: 'b', unprinted: 'r' };
+  function feedMessage(ev) {
+    var who = ev.mine ? 'Hai' : '@' + ev.author.handle;
+    var what = ev.commander ? 'il deck di ' + ev.commander : 'il mazzo «' + (ev.deck || 'senza nome') + '»';
+    var k = ev.from + '>' + ev.to, shout, text;
+    if (k === 'unprinted>printed') { shout = 'QUESTO È FREAKIN CRAAZY!'; text = ev.mine ? 'Hai stampato ' + what + '.' : who + ' ha stampato ' + what + '.'; }
+    else if (k === 'unprinted>active') { shout = 'STAMPATO E GIÀ IN CAMPO!'; text = (ev.mine ? 'Hai stampato e montato subito ' : who + ' ha stampato e montato subito ') + what + '.'; }
+    else if (k === 'printed>active') { shout = 'PRONTO AL COMBATTIMENTO!'; text = (ev.mine ? 'Hai messo in campo ' : who + ' ha messo in campo ') + what + ': è pronto, ora è attivo.'; }
+    else if (k === 'inactive>active') { shout = 'RIMONTATO!'; text = (ev.mine ? 'Hai rimontato ' : who + ' ha rimontato ') + what + ': di nuovo in campo.'; }
+    else if (ev.to === 'inactive') { shout = 'SMONTATO!'; text = (ev.mine ? 'Hai smontato ' : who + ' ha smontato ') + what + ': le carte tornano libere.'; }
+    else if (ev.to === 'unprinted') { shout = 'TORNA IN FUCINA!'; text = (ev.mine ? 'Hai rimandato ' : who + ' ha rimandato ') + what + ' da stampare.'; }
+    else if (k === 'active>printed') { shout = 'UN PASSO INDIETRO…'; text = (ev.mine ? 'Hai rimesso ' : who + ' ha rimesso ') + what + ' in attesa: stampato ma non pronto.'; }
+    else { shout = 'DI NUOVO SUL TAVOLO!'; text = (ev.mine ? 'Hai rimesso insieme ' : who + ' ha rimesso insieme ') + what + ': stampato ma non pronto.'; }
+    return { shout: shout, text: text, tone: TONE[ev.to] || 'w', big: k === 'unprinted>printed', label: STATES[ev.from] + ' → ' + STATES[ev.to] };
+  }
+  /* «5 min fa», «ieri»… */
+  function ago(t, now) {
+    var s = Math.max(0, Math.floor(((now == null ? Date.now() : now) - t) / 1000));
+    if (s < 60) return 'adesso'; var m = Math.floor(s / 60); if (m < 60) return m + ' min fa';
+    var h = Math.floor(m / 60); if (h < 24) return h + (h === 1 ? ' ora fa' : ' ore fa'); var d = Math.floor(h / 24);
+    return d === 1 ? 'ieri' : d + ' giorni fa';
+  }
+
   /* Il link che si manda agli amici: apre la versione web e lo riconosce dal #amico=ID. */
   var WEB_URL = 'https://imHuHo.github.io/coglio-proxy-archive/';
   function friendLink(handle, base) { return String(base || WEB_URL).replace(/#.*$/, '') + '#amico=' + encodeURIComponent(cleanHandle(handle)); }
@@ -194,7 +230,7 @@
     HANDLE_RE: HANDLE_RE, SECRET_LEN: SECRET_LEN, ART_HOST: ART_HOST,
     cleanHandle: cleanHandle, validHandle: validHandle, handleProblem: handleProblem,
     newSecret: newSecret, formatSecret: formatSecret, normSecret: normSecret, validSecret: validSecret,
-    cleanFriends: cleanFriends, cleanTable: cleanTable, cleanGame: cleanGame, namesNow: namesNow, restoreShared: restoreShared, uid: uid, friendLink: friendLink, parseFriendHash: parseFriendHash, WEB_URL: WEB_URL,
+    cleanFriends: cleanFriends, cleanFeed: cleanFeed, cleanEvent: cleanEvent, feedMessage: feedMessage, ago: ago, STATES: STATES, cleanTable: cleanTable, cleanGame: cleanGame, namesNow: namesNow, restoreShared: restoreShared, uid: uid, friendLink: friendLink, parseFriendHash: parseFriendHash, WEB_URL: WEB_URL,
     artFromCard: artFromCard, artSearch: artSearch, configured: configured, create: create, messageOf: messageOf, TEXT: TEXT, restoreLocal: restoreLocal
   };
 });

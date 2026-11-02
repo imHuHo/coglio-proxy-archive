@@ -1,4 +1,4 @@
-/* Stati dei mazzi (attivo / non ancora stampato / inattivo) e riuso delle carte nel mazzo in creazione. Solo Node. */
+/* Stati dei mazzi (attivo / da stampare / stampato ma non pronto / smontato) e riuso delle carte nel mazzo in creazione. Solo Node. */
 const C = require('../web/core.js');
 const assert = require('assert');
 let n = 0; const ok = (c, m) => { assert(c, m); n++; };
@@ -21,6 +21,19 @@ ok(S({ kind: 'deck', status: 'boh', active: true }).status === 'active', 'stato 
 ok(S({ kind: 'binder', active: true }).active === false, 'le sciolte non sono mai attive');
 ok(C.statusOf(fresh()[3]) === 'unprinted' && C.statusOf(fresh()[2]) === 'binder' && C.statusOf(fresh()[1]) === 'inactive' && C.statusOf(fresh()[0]) === 'active', 'statusOf');
 ok(C.isPrinted(fresh()[0]) && C.isPrinted(fresh()[1]) && !C.isPrinted(fresh()[3]), 'isPrinted');
+
+// stampato ma non pronto: le carte esistono e sono occupate, ma il mazzo non è attivo
+ok(S({ kind: 'deck', status: 'printed', active: true }).status === 'printed' && S({ kind: 'deck', status: 'printed', active: true }).active === false, 'stampato ma non pronto non è mai attivo');
+{ const pp = mk('p', 'Stampato', 'deck', false, [card('Sol Ring', 1, 'c21', '263'), card('Mind Stone', 1, 'c21', '300')], { status: 'printed' });
+  ok(C.statusOf(pp) === 'printed' && C.isPrinted(pp) && C.inUse(pp) && !C.inUse(fresh()[1]) && C.inUse(fresh()[0]) && !C.inUse(fresh()[3]), 'statusOf/isPrinted/inUse per «stampato ma non pronto»');
+  const Ap = C.buildArchive(fresh().filter(d => d.id !== 'u').concat([pp]));
+  ok(Ap.map[K('Mind Stone')].owned === 1 && Ap.map[K('Mind Stone')].occupied === 1 && Ap.map[K('Mind Stone')].status === 'busy', 'le sue carte sono in archivio e occupate');
+  ok(Ap.map[K('Mind Stone')].rows[0].st === 'printed' && Ap.map[K('Mind Stone')].rows[0].active === true, 'la riga dice che è stampato ma non pronto');
+  ok(Ap.stats.decks === 3 && Ap.stats.activeDecks === 1 && Ap.stats.occupied === 4, 'non conta tra i mazzi attivi, ma le sue carte sì');
+  const rp = C.findReusable([card('Mind Stone', 1), card('Sol Ring', 1, 'c21', '263')], fresh().filter(d => d.id !== 'u').concat([pp]), {});
+  ok(rp.length === 0, 'le sue carte non si possono riusare altrove: sono occupate');
+  pp.status = 'inactive'; ok(C.statusOf(pp) === 'inactive' && !C.inUse(pp), 'smontato: di nuovo libere');
+  const Ps = C.buildArchive(fresh().filter(d => d.id !== 'u').concat([pp])); ok(Ps.map[K('Mind Stone')].status === 'free', 'smontato: le sue carte tornano libere'); }
 
 // archivio: i mazzi non stampati non contano
 let ds = fresh(), A = C.buildArchive(ds);

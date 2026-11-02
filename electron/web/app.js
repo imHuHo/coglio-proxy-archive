@@ -1429,7 +1429,7 @@
     var rows = e.rows.slice().sort(function (a, b) { return (b.active - a.active) || a.deckName.localeCompare(b.deckName); });
     return '<div class="detail"><h3>Dove sono le copie</h3><ul class="where">' + rows.map(function (r) {
       var pill = r.kind === 'binder' ? '<span class="pill free">Sciolta · libera</span>'
-        : r.active ? '<span class="pill use">In uso · mazzo attivo</span>' : '<span class="pill free">Libera · mazzo non attivo</span>';
+        : r.st === 'printed' ? '<span class="pill use">In uso · stampato, non pronto</span>' : r.active ? '<span class="pill use">In uso · mazzo attivo</span>' : '<span class="pill free">Libera · mazzo smontato</span>';
       return '<li>' + IMG.thumb(e.name, r.set, r.cn, r.deckId) + '<span class="qty">' + r.qty + '×</span><button class="link" data-a="open-deck" data-id="' + esc(r.deckId) + '">' + esc(r.deckName) + '</button>' + pill +
         (r.set ? '<span class="tag">' + esc(r.set) + (r.cn ? ' ' + esc(r.cn) : '') + '</span>' : '') + '</li>';
     }).join('') + '</ul><p class="hint">' + plural(e.occupied, 'copia in uso', 'copie in uso') + ' · ' + plural(e.free, 'libera', 'libere') + '</p></div>';
@@ -1727,7 +1727,8 @@
   }
 
   /* ---------- Mazzi ---------- */
-  var STATUS = [['active', 'Attivo'], ['unprinted', 'Non ancora stampato'], ['inactive', 'Non attivo']];
+  var STATUS = [['active', 'Attivo'], ['unprinted', 'Da stampare'], ['printed', 'Stampato ma non pronto'], ['inactive', 'Smontato']];
+  var STATUS_NAME = { active: 'Attivo', unprinted: 'Da stampare', printed: 'Stampato ma non pronto', inactive: 'Smontato' };
   function statusSelect(d, id, cls) {
     var cur = C.statusOf(d);
     return '<select class="select ' + (cls || '') + '" data-c="' + (id || 'status') + '" data-id="' + esc(d.id || '') + '" aria-label="Stato del mazzo">' + STATUS.map(function (o) {
@@ -1737,16 +1738,17 @@
   function switchHtml(d) { return statusSelect(d, 'status', 'stsel'); }
   function statusHint(d) {
     var st = C.statusOf(d);
-    return st === 'active' ? 'Mazzo montato: le sue carte risultano in uso.' :
-      st === 'unprinted' ? 'Non ancora stampato: le sue carte non entrano nell\'archivio finché non lo stampi. Quando è pronto, passalo ad Attivo.' :
-        'Mazzo smontato: le sue carte risultano libere e le ritrovi anche tra le carte disponibili per altri mazzi.';
+    return st === 'active' ? 'Mazzo attivo: montato e pronto, le sue carte risultano in uso.' :
+      st === 'unprinted' ? 'Da stampare: le sue carte non entrano nell\'archivio finché non lo stampi. Quando l\'hai stampato, passalo a «Stampato ma non pronto».' :
+        st === 'printed' ? 'Stampato ma non pronto: le carte esistono e restano occupate in questo mazzo, ma non conta tra i mazzi attivi. Quando è pronto, passalo ad Attivo.' :
+          'Smontato: le sue carte tornano tra le sciolte, libere per altri mazzi.';
   }
   function deckCard(d) {
-    var on = d.kind === 'deck' && d.active, np = d.kind === 'deck' && C.statusOf(d) === 'unprinted';
+    var on = d.kind === 'deck' && d.active, np = d.kind === 'deck' && C.statusOf(d) === 'unprinted', pp = d.kind === 'deck' && C.statusOf(d) === 'printed';
     var meta = d.kind === 'deck' ? (d.commander ? 'Commander: ' + esc(d.commander) : 'Nessun commander scelto') : 'Carte sciolte, sempre disponibili';
     var cc = CARDS.get(), dv = cc && CARDS.enabled() ? cc.valueDeck(d, C.isBasic) : null;
     var worth = dv && dv.ready && dv.cards.length ? ' · <span class="worth" title="Costo se fosse reale, con le stampe del mazzo">' + eurF(dv.total) + '</span>' : '';
-    return '<article class="deckcard' + (on ? ' is-on' : np ? ' is-np' : '') + '"><div class="top"><div><h2>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + (C.countOf(d.side) ? ' + ' + C.countOf(d.side) + ' in sideboard' : '') + worth + '</div></div>' +
+    return '<article class="deckcard' + (on ? ' is-on' : np ? ' is-np' : pp ? ' is-pp' : '') + '"><div class="top"><div><h2>' + esc(d.name) + (d.kind === 'deck' ? bracketBadge(d) : '') + '</h2><div class="meta">' + meta + ' · ' + plural(sum(d.cards), 'carta', 'carte') + (C.countOf(d.side) ? ' + ' + C.countOf(d.side) + ' in sideboard' : '') + worth + '</div></div>' +
       (d.kind === 'deck' ? switchHtml(d) : '') + '</div><div class="foot"><span>' +
       (d.upgrades.length ? '<span class="pill info">' + plural(d.upgrades.length, 'upgrade', 'upgrade') + '</span>' : '<span class="hint">Nessun upgrade</span>') +
       '</span><span class="btns">' + (d.kind === 'deck' ? bracketBtn(d) : '') + '<button class="btn small" data-a="open-deck" data-id="' + esc(d.id) + '">Apri</button></span></div></article>';
@@ -1767,8 +1769,8 @@
   function decksView() {
     var ds = state.decks.filter(function (d) { return d.kind === 'deck'; }), bs = state.decks.filter(function (d) { return d.kind === 'binder'; });
     if (!state.decks.length) return '<header class="vh"><h1>Mazzi</h1></header>' + welcome();
-    var act = ds.filter(function (d) { return d.active; }).length, np = ds.filter(function (d) { return C.statusOf(d) === 'unprinted'; }).length;
-    return '<header class="vh"><h1>Mazzi</h1><p class="sub"><b>' + act + '</b> attivi su <b>' + ds.length + '</b>' + (np ? ' · <b>' + np + '</b> da stampare' : '') + '. Un mazzo attivo è montato: le sue carte risultano in uso nell\'archivio.</p></header>' +
+    var cnt = function (k) { return ds.filter(function (d) { return C.statusOf(d) === k; }).length; }, act = cnt('active'), np = cnt('unprinted'), pp = cnt('printed'), off = cnt('inactive');
+    return '<header class="vh"><h1>Mazzi</h1><p class="sub"><b>' + act + '</b> attivi su <b>' + ds.length + '</b>' + (np ? ' · <b>' + np + '</b> da stampare' : '') + (pp ? ' · <b>' + pp + '</b> stampati ma non pronti' : '') + (off ? ' · <b>' + off + '</b> smontati' : '') + '. Un mazzo attivo è montato e pronto; uno stampato ma non pronto tiene già occupate le sue carte.</p></header>' +
       '<div class="btns" style="margin-bottom:12px"><button class="btn primary" data-a="nav" data-v="import">Importa un mazzo</button></div>' +
       '<div class="list" id="declist">' + ds.map(deckCard).join('') + '</div>' +
       (bs.length ? '<h2 class="sect">Carte sciolte</h2><div class="list">' + bs.map(deckCard).join('') + '</div>' : '');
@@ -2406,6 +2408,7 @@
     if (a.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.click(a, el); return; }
     if (a.indexOf('dz-') === 0 && window.CPADesigner) { if (el.dataset.cf) ui.confirm = null; window.CPADesigner.click(a, el); return; }
     if (a.indexOf('pe-') === 0 && window.CPAPescherUI) { window.CPAPescherUI.click(a, el); return; }
+    if (a.indexOf('ch-') === 0 && window.CPAChatUI) { window.CPAChatUI.click(a, el); return; }
     if (a.indexOf('cm-') === 0 && window.CPACommunityUI) { window.CPACommunityUI.click(a, el); return; }
     var deck;
     switch (a) {
@@ -2587,6 +2590,7 @@
     if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.input(c, e.target); return; }
     if (c.indexOf('dz-') === 0 && window.CPADesigner) { window.CPADesigner.input(c, e.target); return; }
     if (c.indexOf('pe-') === 0 && window.CPAPescherUI) { window.CPAPescherUI.input(c, e.target); return; }
+    if (c.indexOf('ch-') === 0 && window.CPAChatUI) { window.CPAChatUI.input(c, e.target); return; }
     if (c.indexOf('cm-') === 0 && window.CPACommunityUI) { window.CPACommunityUI.input(c, e.target); return; }
     if (c === 'q') { ui.q = e.target.value; ui.limit = 150; updateArchiveList(); }
     else if (c === 'f-text') { ui.f.text = e.target.value; ui.limit = 150; updateArchiveList(); }
@@ -2604,6 +2608,7 @@
     if (c.indexOf('bd-') === 0 && window.CPABuilder) { window.CPABuilder.change(c, t); return; }
     if (c.indexOf('dz-') === 0 && window.CPADesigner) { window.CPADesigner.change(c, t); return; }
     if (c.indexOf('pe-') === 0 && window.CPAPescherUI) { window.CPAPescherUI.change(c, t); return; }
+    if (c.indexOf('ch-') === 0 && window.CPAChatUI) { window.CPAChatUI.change(c, t); return; }
     if (c.indexOf('cm-') === 0 && window.CPACommunityUI) { window.CPACommunityUI.change(c, t); return; }
     var d;
     switch (c) {
@@ -2615,10 +2620,12 @@
       case 'status':
         d = getDeck(t.dataset.id);
         if (d) {
-          var st = t.value; d.status = st; d.active = st === 'active'; d.updatedAt = Date.now(); touch(d.id);
+          var prev = C.statusOf(d), st = t.value; d.status = st; d.active = st === 'active'; d.updatedAt = Date.now(); touch(d.id);
           toast(st === 'active' ? d.name + ' attivo: le sue ' + sum(d.cards) + ' carte risultano in uso.' :
-            st === 'unprinted' ? d.name + ' non ancora stampato: le sue carte non entrano nell\'archivio finché non lo stampi.' :
-              d.name + ' non attivo: le sue carte tornano libere.');
+            st === 'unprinted' ? d.name + ' da stampare: le sue carte non entrano nell\'archivio finché non lo stampi.' :
+              st === 'printed' ? d.name + ' stampato ma non pronto: le sue carte restano occupate nel mazzo.' :
+                d.name + ' smontato: le sue carte tornano libere.');
+          if (d.kind === 'deck' && prev !== st && window.CPAChatUI) window.CPAChatUI.announce(d, prev, st);
           render();
         } break;
       case 'dadd-to': ui.dAddSide = t.value === 'side'; break;
@@ -2652,7 +2659,9 @@
     cmpVersion: UPD.cmp,
     esc: esc, toast: toast, download: download, getDeck: getDeck, ui: ui, render: render, mutate: mutate,
     decks: function () { return state.decks; },
-    available: function () { return !!store && store.kind !== 'claude' && typeof fetch === 'function'; }
+    available: function () { return !!store && store.kind !== 'claude' && typeof fetch === 'function'; },
+    /* artwork (art_crop di Scryfall) del commander di un mazzo, se già conosciuto */
+    cmdArt: function (d) { var c = d && d.kind === 'deck' && d.commander ? d.cards.filter(function (x) { return dkIsCmd(d, x); })[0] : null; return c ? IMG.pic(c.name, c.set, c.cn, 'art_crop') || '' : ''; }
   };
 
   /* ---------- Avvio ---------- */

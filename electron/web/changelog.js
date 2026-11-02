@@ -1,6 +1,13 @@
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '6.1.0', date: '3 novembre 2026', title: 'Quattro stati e Chat? Ma questa cosa è reale?', items: [
+    { t: 'Quattro stati per i mazzi', d: 'Ogni mazzo ora è Attivo, Da stampare, Stampato ma non pronto oppure Smontato (il vecchio «Non attivo»). Un mazzo smontato restituisce le sue carte alle sciolte; uno stampato ma non pronto tiene occupate le sue carte, ma non conta tra gli attivi.' },
+    { t: 'Chat? Ma questa cosa è reale?', d: 'Nuova scheda nel Pescher, separata dalle classifiche dei tavoli: quando un amico stampa un mazzo compare «QUESTO È FREAKIN CRAAZY! X ha stampato il deck di…» con l\'immagine del suo commander. Servono un Codighel ID e gli amici.' },
+    { t: 'Un messaggio per ogni cambio di stato', d: 'Anche smontare, rimontare o mettere in campo un mazzo diventa un annuncio, ognuno con il suo tono e il suo colore. I cambi ravvicinati dello stesso mazzo si fondono in un annuncio solo.' },
+    { t: 'Decidi tu cosa annunciare', d: 'Nella scheda c\'è l\'interruttore per non annunciare ai tuoi amici i tuoi cambi di stato; puoi anche ritirare un tuo annuncio. Se sei offline l\'annuncio aspetta la rete e parte da solo.' },
+    { t: 'Da fare una volta', d: 'Dopo l\'aggiornamento, rilancia supabase/schema.sql nello SQL Editor di Supabase: aggiunge la tabella degli annunci.' },
+  ] },
   { v: '6.0.1', date: '2 novembre 2026', title: 'Un solo pulsante per il link', items: [
     { t: 'Link amico: un pulsante solo', d: 'In Dati, «Condividi il mio link» e «Copia il link» facevano la stessa cosa: ora c\'è un solo pulsante. Sul telefono apre il menu di condivisione del sistema, altrove copia direttamente il link.' },
   ] },
