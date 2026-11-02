@@ -273,7 +273,7 @@
 
   /* ---------- Novità («Codighel! che novità!») ---------- */
   var NEWS = (function () {
-    var KEY = 'cpa-news-seen', hidden = false;
+    var KEY = 'cpa-news-seen', hidden = false, showAll = false;
     function log() { return Array.isArray(window.CPA_CHANGELOG) ? window.CPA_CHANGELOG : []; }
     function seen() { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
     function mark() { try { localStorage.setItem(KEY, String(window.CPA_VERSION || '')); } catch (e) { /* ignorato */ } }
@@ -298,9 +298,13 @@
         if (major(e)) return '<span class="news-major"><span class="news-major-tag">Major update</span><span class="news-major-t">' + esc(e.title) + '</span></span><span class="news-major-v">' + esc(e.v) + (e.date ? ' · ' + esc(e.date) : '') + '</span>';
         return esc(e.v) + (e.date ? ' · ' + esc(e.date) : '') + ' — ' + esc(e.title);
       };
+      /* in mostra: dall'ultima versione fino all'inizio del secondo major update più recente; il resto sta dietro il tasto della cronologia */
+      var rest = l.filter(function (e) { return e !== first; }), cut = rest.length, majors = major(first) ? 1 : 0;
+      for (var i = 0; i < rest.length; i++) { if (major(rest[i])) { majors++; if (majors >= 2) { cut = i + 1; break; } } }
+      var recent = rest.slice(0, cut), older = rest.slice(cut), row = function (e) { return '<details class="news-old"><summary>' + head(e) + '</summary>' + list(e) + '</details>'; };
       return '<section class="panel" id="news"><h2 class="sect" style="margin:0">Codighel! che novità!</h2>' +
-        '<div class="news-cur"><h3>' + head(first) + '</h3>' + list(first) + '</div>' +
-        l.filter(function (e) { return e !== first; }).map(function (e) { return '<details class="news-old"><summary>' + head(e) + '</summary>' + list(e) + '</details>'; }).join('') +
+        '<div class="news-cur"><h3>' + head(first) + '</h3>' + list(first) + '</div>' + recent.map(row).join('') +
+        (older.length ? (showAll ? older.map(row).join('') : '') + '<div class="btns news-all"><button type="button" class="btn small" data-a="news-all" aria-expanded="' + showAll + '">' + (showAll ? 'Nascondi la cronologia' : 'Visualizza la cronologia degli aggiornamenti (' + older.length + ' più vecchi)') + '</button></div>' : '') +
         '</section>';
     }
     function close() { hidden = true; mark(); render(); }
@@ -308,7 +312,8 @@
       hidden = true; mark(); ui.view = 'data'; ui.confirm = null; render();
       setTimeout(function () { var el = document.getElementById('news'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30);
     }
-    return { banner: banner, panel: panel, close: close, open: open };
+    function toggle() { showAll = !showAll; render(); }
+    return { banner: banner, panel: panel, close: close, open: open, toggle: toggle };
   })();
 
   /* ---------- Aggiornamenti (GitHub Releases) ---------- */
@@ -2529,6 +2534,7 @@
       case 'lb-keep': break;
       case 'news-open': NEWS.open(); break;
       case 'news-close': NEWS.close(); break;
+      case 'news-all': NEWS.toggle(); break;
       case 'upd-check': UPD.check(); break;
       case 'upd-go': UPD.start(); break;
       case 'upd-reload': UPD.reload(); break;

@@ -73,8 +73,10 @@ const toastText = () => $('#toast').textContent.replace(/\s+/g, ' ');
   clickA('nav', '[data-v="decks"]');
   ok($('.news-banner') && $('.news-banner').textContent.includes(w.CPA_VERSION), 'avviso novità alla prima apertura della versione');
   clickA('news-open');
-  ok($('#news') && text().includes('Codighel! che novità!') && text().includes('Tre stati per i mazzi'), 'sezione novità in Dati');
-  ok($$('#news details').length >= 3 && text().includes('Coglio Proxy Builder'), 'versioni precedenti elencate');
+  ok($('#news') && text().includes('Codighel! che novità!') && text().includes('Nasce la community di Coglio'), 'sezione novità in Dati');
+  { const nd = $$('#news details').length; ok(nd >= 1 && !text().includes('Coglio Proxy Builder') && $('[data-a="news-all"]') && /Visualizza la cronologia/.test($('[data-a="news-all"]').textContent), 'in mostra solo gli ultimi due major, il resto dietro «Visualizza la cronologia»');
+  clickA('news-all'); ok($$('#news details').length > nd && text().includes('Coglio Proxy Builder') && /Nascondi la cronologia/.test($('[data-a="news-all"]').textContent), 'la cronologia si apre con tutte le versioni precedenti');
+  clickA('news-all'); ok($$('#news details').length === nd, 'e si richiude'); }
   ok(!$('.news-banner') && w.localStorage.getItem('cpa-news-seen') === w.CPA_VERSION, 'avviso sparito e ricordato');
   clickA('nav', '[data-v="decks"]');
   ok(!$('.news-banner'), 'non ricompare');
