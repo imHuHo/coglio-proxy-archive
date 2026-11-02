@@ -55,42 +55,37 @@ eq(P.roll('coin', seq(0.1)).value, 'Testa', 'testa'); eq(P.roll('coin', seq(0.9)
 for (let i = 0; i < 200; i++) { const v = P.roll('d12').value; if (v < 1 || v > 12) throw new Error('d12 fuori scala ' + v); } n++;
 eq(P.DICE, ['d4', 'd6', 'd8', 'd10', 'd12', 'd20'], 'dadi offerti');
 
-/* bilanciamento dei bracket */
-g = P.newGame({ players: 4 });
-eq(P.balance(g).level, 'unknown', 'nessun bracket: sconosciuto');
-P.setBracket(g, 'p1', 3); eq(P.balance(g).level, 'unknown', 'uno solo: sconosciuto');
-P.setBracket(g, 'p2', 3); eq(P.balance(g).level, 'ok', 'tutti uguali');
-P.setBracket(g, 'p3', 2); eq(P.balance(g).level, 'ok', 'distanza 1: va bene');
-P.setBracket(g, 'p4', 4); let b = P.balance(g); eq(b.level, 'warn', 'distanza 2: avviso'); eq([b.min, b.max, b.spread], [2, 4, 2], 'minimo, massimo, distanza');
-ok(/bracket 4/.test(b.text) && /bracket 2/.test(b.text) && /Giocatore 4/.test(b.text) && /Giocatore 3/.test(b.text), 'dice chi contro chi: ' + b.text);
-P.setBracket(g, 'p3', 1); b = P.balance(g); eq(b.level, 'bad', 'distanza 3: squilibrio forte'); ok(/forte/.test(b.text), 'testo forte');
-P.setBracket(g, 'p3', 0); P.setBracket(g, 'p4', 0); eq(P.balance(g).level, 'ok', 'chi non ha bracket non conta'); eq(P.balance(g).unknown, ['Giocatore 3', 'Giocatore 4'], 'e viene elencato');
-ok(P.setDeck(g, 'p3', { id: 'd1', name: 'Kaalia', commander: 'Kaalia of the Vast', n: 5 }), 'scelgo un mazzo'); eq(g.players[2].bracket, 5, 'il bracket arriva dal mazzo'); eq(P.balance(g).level, 'warn', 'ora si vede lo squilibrio');
-P.setDeck(g, 'p3', null); eq(g.players[2].bracket, 0, 'tolto il mazzo, tolto il bracket');
-P.setDeck(g, 'p3', { id: 'd2', name: 'Senza', n: 0 }); eq(g.players[2].bracket, 0, 'mazzo senza bracket: resta quello impostato a mano'); P.setBracket(g, 'p3', 2); eq(g.players[2].bracket, 2, 'a mano');
+/* segnalini */
+g = P.newGame({ players: 3 });
+ok(P.counter(g, 'p1', 'exp', 2), 'esperienza'); eq(g.players[0].exp, 2, 'esperienza 2'); ok(P.counter(g, 'p1', 'eng', 3) && g.players[0].eng === 3, 'energia');
+ok(!P.counter(g, 'p1', 'exp', -5) === false && g.players[0].exp === 0, 'non scende sotto zero'); ok(!P.counter(g, 'p1', 'exp', -1), 'a zero non cambia più');
+ok(!P.counter(g, 'p1', 'boh', 1), 'segnalino sconosciuto'); ok(!P.counter(g, 'zz', 'exp', 1), 'giocatore sconosciuto');
+P.counter(g, 'p2', 'tax', 1); P.counter(g, 'p2', 'tax', 1); eq(g.players[1].tax, 2, 'due lanci'); eq(P.taxOf(g.players[1]), 4, 'costo in più: 4'); ok(/\+4/.test(g.log[0].text), 'il registro dice +4: ' + g.log[0].text);
+P.undo(g); eq(g.players[1].tax, 1, 'annulla un lancio');
+for (let i = 0; i < 120; i++) P.counter(g, 'p3', 'eng', 1); eq(g.players[2].eng, 99, 'limite 99');
 
-/* che mazzo uso stasera? */
-const decks = [{ id: 'a', name: 'A', n: 2 }, { id: 'b', name: 'B', n: 3 }, { id: 'c', name: 'C', n: 4 }, { id: 'd', name: 'D', n: 0 }];
-let s = P.suggest(decks, { others: [4, 4, 3] }, seq(0.5)); eq(s.pick.deck.id, 'c', 'mediana 4: il bracket 4'); eq(s.target, 4, 'mediana');
-eq(s.ranked.map(r => r.deck.id), ['c', 'b', 'a', 'd'], 'ordine per vicinanza, il senza bracket per ultimo');
-s = P.suggest(decks, { others: [2, 2] }, seq(0.5)); eq(s.pick.deck.id, 'a', 'tavolo basso: il più basso');
-s = P.suggest(decks, { others: [3, 4] }, seq(0.5)); eq(s.target, 3.5, 'mediana con due'); ok(['b', 'c'].includes(s.pick.deck.id), 'a pari merito uno dei due');
-eq(P.suggest(decks, { others: [3, 4] }, seq(0.1, 0.9, 0.5, 0.5)).pick.deck.id !== undefined, true, 'a pari merito decide il caso');
-s = P.suggest(decks, { others: [4], taken: ['c'] }, seq(0.5)); eq(s.pick.deck.id, 'b', 'un mazzo già al tavolo non si ripropone');
-s = P.suggest(decks, {}, seq(0.5)); eq(s.target, null, 'senza altri: nessun bersaglio'); eq(s.ranked.length, 4, 'tutti in lista');
-eq(P.suggest([], {}, seq(0.5)).pick, null, 'nessun mazzo attivo: nessun consiglio');
-const r1 = P.suggest(decks, {}, seq(0.1, 0.2, 0.3, 0.4)).pick.deck.id, r2 = P.suggest(decks, {}, seq(0.9, 0.2, 0.3, 0.4)).pick.deck.id; ok(r1 !== r2, 'senza bracket il caso cambia la scelta');
-ok(/come il tavolo/.test(P.suggest(decks, { others: [3] }, seq(0.5)).ranked[0].why), 'la ragione dice «come il tavolo»');
+/* monarca e iniziativa */
+g = P.newGame({ players: 3 }); eq(g.monarch, '', 'nessun monarca'); ok(P.holder(g, 'monarch', 'p2'), 'p2 monarca'); eq(g.monarch, 'p2', 'è p2');
+P.holder(g, 'monarch', 'p3'); eq(g.monarch, 'p3', 'passa a p3'); P.holder(g, 'monarch', 'p3'); eq(g.monarch, '', 'toccato di nuovo, si toglie');
+P.holder(g, 'initiative', 'p1'); eq([g.monarch, g.initiative], ['', 'p1'], 'iniziativa indipendente'); ok(/iniziativa/.test(g.log[0].text), 'registro: ' + g.log[0].text);
+P.undo(g); eq(g.initiative, '', 'annulla l\'iniziativa'); ok(!P.holder(g, 'drago', 'p1'), 'titolo sconosciuto'); ok(!P.holder(g, 'monarch', 'zz'), 'giocatore sconosciuto');
+P.holder(g, 'monarch', 'p3'); P.resize(g, 2); eq(g.monarch, '', 'se il posto sparisce, sparisce anche il monarca');
+
+/* giri */
+g = P.newGame({ players: 3 }); P.begin(g, seq(0.4)); eq(g.round, 1, 'giro 1'); eq(g.first, 1, 'inizia p2');
+P.nextTurn(g); eq(g.round, 1, 'p3: ancora giro 1'); P.nextTurn(g); eq(g.round, 1, 'p1: ancora giro 1'); P.nextTurn(g); eq([g.turn, g.round], [1, 2], 'si torna a chi ha iniziato: giro 2');
+P.undo(g); eq(g.round, 1, 'annulla anche il giro');
+g = P.newGame({ players: 2, life: 5 }); P.begin(g, seq(0)); P.life(g, 'p2', -5); const before = g.round; P.nextTurn(g); eq(g.turn, 0, 'resta chi è ancora in gioco'); eq(g.round, before + 1, 'e il giro avanza');
 
 /* salvataggio */
-g = P.newGame({ players: 3, life: 40 }); P.begin(g, seq(0.5)); P.life(g, 'p2', -7); P.cmd(g, 'p3', 'p1', 4); P.setDeck(g, 'p1', { id: 'x', name: 'Kaalia', commander: 'Kaalia', n: 3 });
-const back = P.restore(P.serialize(g)); eq(back.players, g.players, 'giocatori ripristinati'); eq(back.turn, g.turn, 'turno ripristinato'); ok(P.undo(back), 'anche la cronologia');
+g = P.newGame({ players: 3, life: 40 }); P.begin(g, seq(0.5)); P.life(g, 'p2', -7); P.cmd(g, 'p3', 'p1', 4); P.counter(g, 'p1', 'exp', 2); P.holder(g, 'monarch', 'p2');
+const back = P.restore(P.serialize(g)); eq(back.players, g.players, 'giocatori ripristinati'); eq(back.turn, g.turn, 'turno ripristinato'); eq([back.monarch, back.players[0].exp], ['p2', 2], 'monarca e segnalini ripristinati'); ok(P.undo(back), 'anche la cronologia');
 eq(P.restore('non json'), null, 'testo rotto'); eq(P.restore({ v: 2, players: [] }), null, 'versione sconosciuta'); eq(P.restore(null), null, 'null');
 const bad = JSON.parse(P.serialize(g)); bad.players[0].life = 'ciao'; bad.players[1].poison = -5; bad.players[2].cmd = { zzz: 5, p1: '9' }; bad.turn = 99;
 const fixed = P.restore(bad); eq(fixed.players[0].life, 40, 'vita sporca ripulita'); eq(fixed.players[1].poison, 0, 'veleno negativo'); eq(fixed.players[2].cmd, { p1: 9 }, 'danni da giocatori inesistenti tolti'); eq(fixed.turn, 2, 'turno fuori scala riportato dentro');
 
 /* nuova partita e rinomina */
-P.reset(g); eq(g.players.map(p => p.life), [40, 40, 40], 'reset vite'); eq(g.players[2].cmd, {}, 'reset comandante'); eq(g.hist.length, 0, 'reset cronologia'); eq(g.players[0].deck.name, 'Kaalia', 'il mazzo scelto resta');
+P.reset(g); eq(g.players.map(p => p.life), [40, 40, 40], 'reset vite'); eq(g.players[2].cmd, {}, 'reset comandante'); eq(g.hist.length, 0, 'reset cronologia'); eq([g.players[0].exp, g.monarch, g.round], [0, '', 1], 'reset segnalini, monarca e giri');
 ok(P.rename(g, 'p2', '  Luca  ') && g.players[1].name === 'Luca', 'rinomina'); ok(!P.rename(g, 'p2', '   '), 'nome vuoto rifiutato');
 /* posti e vita prima di iniziare */
 g = P.newGame({ players: 4, life: 40 }); P.rename(g, 'p2', 'Luca'); P.resize(g, 6); eq(g.players.length, 6, 'sei posti'); eq(g.players[1].name, 'Luca', 'i primi restano'); eq(g.players[5].name, 'Giocatore 6', 'nuovi posti');

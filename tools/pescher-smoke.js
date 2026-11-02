@@ -1,4 +1,4 @@
-/* Prova in Chromium vero di The Pescher (preparazione, partita, danno da comandante, dadi, avviso di squilibrio, salvataggio).
+/* Prova in Chromium vero di The Pescher (preparazione, partita, danno da comandante, segnalini, monarca, dadi, salvataggio).
  * Uso: node tools/pescher-smoke.js   (SHOTS=cartella per gli screenshot, DARK=1, VP=390x800) */
 const path = require('path'), fs = require('fs'), http = require('http'), assert = require('assert');
 const { chromium } = require('playwright');
@@ -25,41 +25,23 @@ const SHOTS = process.env.SHOTS || '';
   const life = id => page.$eval('.pe-tile[data-p="' + id + '"] .pe-lv', e => parseInt(e.textContent, 10));
 
   await page.goto(base); await page.waitForSelector('.shell');
-  /* due mazzi attivi, uno con bracket */
-  await nav('import');
-  await page.fill('[data-c="draft-text"]', fs.readFileSync(FX + 'kaalia_old.txt', 'utf8')); await page.fill('[data-c="draft-name"]', 'Kaalia Upgrade');
-  await page.click('[data-a="draft-next"]'); await page.click('[data-a="draft-create"]'); await page.waitForSelector('.dk-hero');
-  await nav('decks');
-  const act = page.locator('[data-a="toggle-active"]').first(); if (await act.count()) await act.click();
-
   /* la voce di menu esiste con la sua icona */
   ok(await page.locator('.nav[data-v="pescher"]:visible').count() >= 1, 'voce The Pescher nel menu');
-  ok(await page.locator('.nav[data-v="pescher"] svg').count() >= 1, 'con la sua icona');
+  ok(await page.locator('.nav[data-v="pescher"] svg path').count() >= 3 && await page.locator('.nav[data-v="pescher"] svg polygon').count() === 0, 'con la sua icona a goccia (niente stellina)');
   await nav('pescher'); await page.waitForSelector('#pe .pe-setup');
   ok(/The Pescher/.test(await page.textContent('.vh h1')), 'titolo');
   ok(await page.locator('.pe-seat').count() === 4, 'quattro posti di default');
-  ok(await page.locator('.pe-seat .pe-name').first().inputValue() === 'Io', 'il primo posto è «Io»');
+  ok(await page.locator('.pe-name').first().inputValue() === 'Io', 'il primo posto è «Io»');
   /* giocatori e vita */
   await page.click('[data-a="pe-count"][data-v="3"]'); ok(await page.locator('.pe-seat').count() === 3, 'tre posti');
   await page.click('[data-a="pe-count"][data-v="4"]');
   await page.click('[data-a="pe-start"][data-v="20"]'); ok(await page.getAttribute('[data-a="pe-start"][data-v="20"]', 'aria-pressed') === 'true', 'vita 20 scelta');
   await page.click('[data-a="pe-start"][data-v="40"]');
   /* nomi */
-  await page.fill('.pe-seat[data-p="p2"] .pe-name', 'Luca'); await page.fill('.pe-seat[data-p="p3"] .pe-name', 'Marta'); await page.fill('.pe-seat[data-p="p4"] .pe-name', 'Giulia');
-  /* avviso di squilibrio */
-  ok(/bracket/i.test(await page.textContent('.pe-bal')) && await page.locator('.pe-bal.unknown').count() === 1, 'prima dei bracket: invito a sceglierli');
-  await page.click('.pe-seat[data-p="p2"] [data-a="pe-bkt"][data-v="2"]'); await page.click('.pe-seat[data-p="p3"] [data-a="pe-bkt"][data-v="2"]');
-  ok(await page.locator('.pe-bal.ok').count() === 1, 'due bracket 2: equilibrato');
-  await page.click('.pe-seat[data-p="p4"] [data-a="pe-bkt"][data-v="5"]');
-  ok(await page.locator('.pe-bal.bad').count() === 1, 'bracket 2 contro 5: squilibrio forte');
-  ok(/Giulia/.test(await page.textContent('.pe-bal')) && /Luca|Marta/.test(await page.textContent('.pe-bal')), 'l\'avviso dice chi: ' + await page.textContent('.pe-bal'));
-  await page.click('.pe-seat[data-p="p4"] [data-a="pe-bkt"][data-v="3"]'); ok(await page.locator('.pe-bal.ok').count() === 1, 'bracket 2, 2 e 3: distanza 1, va bene');
-  await page.click('.pe-seat[data-p="p4"] [data-a="pe-bkt"][data-v="4"]'); ok(await page.locator('.pe-bal.warn').count() === 1, 'bracket 2 contro 4: avviso');
-  /* che mazzo uso stasera */
-  await page.click('[data-a="pe-sug"]'); await page.waitForSelector('.pe-sug');
-  ok(/Kaalia/.test(await page.textContent('.pe-sug')) || /Non ho nessun mazzo/.test(await page.textContent('.pe-sug')), 'consiglio del mazzo: ' + (await page.textContent('.pe-sug')).replace(/\s+/g, ' '));
-  const hadDeck = await page.locator('[data-a="pe-sug-use"]').count();
-  if (hadDeck) { await page.click('[data-a="pe-sug-use"]'); ok(/Kaalia/.test(await page.$eval('.pe-seat[data-p="p1"] select', e => e.selectedOptions[0].textContent)), 'mazzo scelto nel selettore'); }
+  await page.fill('.pe-name[data-p="p2"]', 'Luca'); await page.fill('.pe-name[data-p="p3"]', 'Marta'); await page.fill('.pe-name[data-p="p4"]', 'Giulia');
+  /* niente mazzi né bracket: si gioca con gli amici */
+  ok(await page.locator('.pe-seat select, [data-a="pe-bkt"], [data-a="pe-sug"], .pe-bal').count() === 0, 'nessun mazzo, bracket o consiglio nella preparazione');
+  ok(!/bracket|mazzo uso/i.test(await page.textContent('#pe')), 'nessuna parola su bracket o mazzi');
   await shot('pescher-setup');
 
   /* partita */
@@ -74,6 +56,25 @@ const SHOTS = process.env.SHOTS || '';
   await page.click('.pe-tile[data-p="p3"] [data-a="pe-tog"][data-k="poison"]');
   for (let i = 0; i < 3; i++) await page.click('.pe-tile[data-p="p3"] [data-a="pe-poison"][data-d="1"]');
   ok(/3/.test(await page.textContent('.pe-tile[data-p="p3"] .pe-chip[data-k="poison"]')), 'veleno a 3');
+  /* altri segnalini, monarca, iniziativa */
+  await page.click('.pe-tile[data-p="p2"] [data-a="pe-tog"][data-k="more"]');
+  await page.click('.pe-tile[data-p="p2"] [data-a="pe-ctr"][data-k="exp"][data-d="1"]'); await page.click('.pe-tile[data-p="p2"] [data-a="pe-ctr"][data-k="exp"][data-d="1"]');
+  await page.click('.pe-tile[data-p="p2"] [data-a="pe-ctr"][data-k="tax"][data-d="1"]');
+  ok(/\+2/.test(await page.textContent('.pe-tile[data-p="p2"] .pe-panel')), 'un lancio: costa +2');
+  ok(/Esp 2/.test(await page.textContent('.pe-tile[data-p="p2"] header')), 'l\'esperienza si vede nell\'intestazione');
+  await page.click('.pe-tile[data-p="p2"] [data-a="pe-hold"][data-k="monarch"]');
+  ok(await page.locator('.pe-tile[data-p="p2"] .pe-tk', { hasText: 'Monarca' }).count() === 1, 'p2 è il monarca');
+  await page.click('.pe-tile[data-p="p3"] [data-a="pe-tog"][data-k="more"]'); await page.click('.pe-tile[data-p="p3"] [data-a="pe-hold"][data-k="monarch"]');
+  ok(await page.locator('.pe-tk', { hasText: 'Monarca' }).count() === 1 && await page.locator('.pe-tile[data-p="p3"] .pe-tk', { hasText: 'Monarca' }).count() === 1, 'il monarca è uno solo e passa a p3');
+  await page.click('.pe-tile[data-p="p3"] [data-a="pe-hold"][data-k="initiative"]'); ok(await page.locator('.pe-tile[data-p="p3"] .pe-tk', { hasText: 'Iniziativa' }).count() === 1, 'iniziativa a p3');
+  await page.click('.pe-tile[data-p="p2"] [data-a="pe-tog"][data-k="more"]'); await page.click('.pe-tile[data-p="p3"] [data-a="pe-tog"][data-k="more"]');
+  /* la bolla del cambio di vita e il valore esatto */
+  await page.click('.pe-tile[data-p="p1"] [data-a="pe-life"][data-d="-5"]'); await page.click('.pe-tile[data-p="p1"] [data-a="pe-life"][data-d="-1"]');
+  ok((await page.textContent('.pe-tile[data-p="p1"] .pe-delta')).replace(/\s/g, '') === '\u22126', 'la bolla somma i tocchi ravvicinati: ' + await page.textContent('.pe-tile[data-p="p1"] .pe-delta'));
+  await page.click('.pe-tile[data-p="p1"] [data-a="pe-set"]'); await page.waitForSelector('#pe-setv'); await page.fill('#pe-setv', '25'); await page.keyboard.press('Enter');
+  ok(await life('p1') === 25 && await page.locator('#pe-pop').count() === 0, 'vita impostata a 25 con Invio');
+  await page.click('[data-a="pe-undo"]'); ok(await life('p1') === 34, 'e si annulla: ' + await life('p1')); await page.click('.pe-tile[data-p="p1"] [data-a="pe-life"][data-d="5"]'); await page.click('.pe-tile[data-p="p1"] [data-a="pe-life"][data-d="1"]'); ok(await life('p1') === 40, 'di nuovo 40');
+  ok(/Giro 1/.test(await page.textContent('.pe-turn')) && /\d+:\d\d/.test(await page.textContent('.pe-clock')), 'giro e cronometro in barra');
   /* danno da comandante: toglie vita e a 21 si è fuori */
   await page.click('.pe-tile[data-p="p4"] [data-a="pe-tog"][data-k="cmd"]');
   ok(await page.locator('.pe-tile[data-p="p4"] .pe-row').count() === 3, 'tre avversari');

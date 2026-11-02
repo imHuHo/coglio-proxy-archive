@@ -1181,7 +1181,6 @@ body.on-deck #toast { bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
 .shell[data-view="pescher"] .main { max-width: 1240px; }
 .pe { display: grid; gap: 12px; }
 .btn.big { min-height: 52px; padding: 8px 28px; font-size: 17px; font-weight: 800; }
-.btn.bracket.small { color: #2a2100; }
 
 /* preparazione */
 .pe-setup { display: grid; gap: 12px; }
@@ -1190,47 +1189,20 @@ body.on-deck #toast { bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
 .pe-opt b { font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .pe-chk { display: flex; gap: 10px; align-items: center; font-size: 14px; cursor: pointer; }
 .pe-chk input { width: 18px; height: 18px; flex: none; }
-.pe-seats { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
-.pe-seat { background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--seat); border-radius: 14px; padding: 12px; display: grid; gap: 10px; align-content: start; box-shadow: var(--shadow); }
-.pe-seat-h { display: flex; gap: 10px; align-items: center; }
-.pe-n { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--seat); color: #111d3a; font: 800 14px var(--body); flex: none; box-shadow: inset 0 0 0 2px #0002; }
+.pe-seats { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.pe-seat { display: flex; gap: 10px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-left: 6px solid var(--seat); border-radius: 12px; padding: 8px 10px; box-shadow: var(--shadow); }
+.pe-n { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--seat); color: #111d3a; font: 800 14px var(--body); flex: none; box-shadow: inset 0 0 0 2px #0002; }
 .pe-name { flex: 1; min-width: 0; font: 700 16px var(--body); color: var(--fg); background: var(--surface2); border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 10px; }
-.pe-name:focus-visible, .pe-deck select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.pe-deck { display: grid; gap: 4px; }
-.pe-deck span, .pe-bkr > span { font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-.pe-deck select { font: 600 14px var(--body); color: var(--fg); background: var(--surface2); border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 10px; min-width: 0; width: 100%; }
-.pe-bkr { display: grid; gap: 4px; }
-.pe-bks { display: flex; gap: 6px; }
-.pe-bk { --b: #8a8fa6; flex: 1; min-height: 40px; border-radius: 9px; border: 2px solid var(--line2); background: var(--surface2); color: var(--fg); font: 800 16px var(--body); }
-.pe-bk.b1 { --b: #5aa9ff; } .pe-bk.b2 { --b: #43c59e; } .pe-bk.b3 { --b: #f6c93a; } .pe-bk.b4 { --b: #ff9a3c; } .pe-bk.b5 { --b: #ef5b5b; }
-.pe-bk[aria-pressed="true"] { background: var(--b); border-color: rgba(15, 29, 58, .55); color: #1d1d1d; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .5); }
-.pe-ask { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.pe-sug { display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap; background: var(--banana-soft); border: 1.5px solid var(--banana-deep); border-radius: 12px; padding: 10px 12px; color: var(--fg); }
-.pe-sug > div:first-child { display: grid; min-width: 0; }
-.pe-sug small { font: 700 10.5px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-.pe-sug b { font: 700 16px var(--display); overflow-wrap: anywhere; }
-.pe-sug span { font-size: 12.5px; color: var(--muted); }
-.pe-sug-b { display: flex; gap: 8px; align-items: center; }
-.pe-sug.none { margin: 0; font-size: 13.5px; color: var(--muted); }
+.pe-name:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .pe-go { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
 .pe-go .btn.big { background: var(--banana); border-color: var(--banana-deep); color: var(--banana-ink); box-shadow: 0 3px 0 var(--banana-deep); }
 .pe-go .btn.big:hover { background: var(--banana-hi); }
 
-/* avviso di squilibrio */
-.pe-bal { margin: 0; display: flex; gap: 10px; align-items: flex-start; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 600; border: 1.5px solid; }
-.pe-bal .ic { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font: 800 13px var(--body); background: currentColor; }
-.pe-bal .ic { color: inherit; position: relative; }
-.pe-bal .ic::before { content: attr(data-x); }
-.pe-bal.ok { background: var(--free-bg); color: var(--free); border-color: transparent; }
-.pe-bal.warn { background: var(--part-bg); color: var(--part); border-color: var(--part); }
-.pe-bal.bad { background: var(--busy-bg); color: var(--busy); border-color: var(--busy); }
-.pe-bal.unknown { background: var(--surface); color: var(--muted); border-color: var(--line); }
-.pe-bal.slim { padding: 7px 12px; font-size: 13px; }
-.pe-bal .ic { background: none; width: 20px; height: 20px; font-size: 17px; line-height: 1; }
-
 /* partita */
 .pe-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
-.pe-turn { font-size: 15px; color: var(--muted); }
+.pe-turn { font-size: 15px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 2px 12px; align-items: baseline; }
+.pe-meta { display: inline-flex; gap: 10px; font: 600 12.5px var(--mono); color: var(--muted); }
+.pe-meta time { color: var(--fg); font-variant-numeric: tabular-nums; }
 .pe-turn b { color: var(--fg); font: 700 18px var(--display); }
 .pe-turn.won b { font-size: 22px; }
 .pe-tools { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -1243,24 +1215,38 @@ body.on-deck #toast { bottom: calc(130px + env(safe-area-inset-bottom, 0px)); }
 .pe-tile > header { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; min-width: 0; }
 .pe-tile .pe-nm { font: 700 16px var(--display); overflow-wrap: anywhere; }
 .pe-tile .pe-dk { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; flex: 1 1 auto; min-width: 0; }
-.pe-tile .bk-badge { margin: 0; min-width: 24px; height: 24px; font-size: 13px; }
 .pe-t { margin-left: auto; font: 800 10.5px var(--mono); text-transform: uppercase; letter-spacing: .06em; padding: 2px 8px; border-radius: 999px; background: var(--banana); color: var(--banana-ink); }
 .pe-t.win { background: var(--free); color: #fff; }
 .pe-life { position: relative; display: grid; place-items: center; min-height: clamp(92px, 17vh, 150px); border-radius: 16px; background: var(--surface2); border: 1.5px solid var(--line); overflow: hidden; }
 .pe-lb { position: absolute; top: 0; bottom: 0; width: 50%; border: 0; border-radius: 0; background: transparent; color: var(--muted); font: 600 36px/1 var(--body); display: flex; align-items: center; padding: 0 12%; touch-action: manipulation; transition: background .12s; }
-.pe-lb:first-child { left: 0; justify-content: flex-start; }
-.pe-lb:last-child { right: 0; justify-content: flex-end; }
+.pe-lb.minus { left: 0; justify-content: flex-start; }
+.pe-lb.plus { right: 0; justify-content: flex-end; }
 .pe-lb:hover { background: var(--accent-soft); color: var(--fg); }
 .pe-lb:active { background: color-mix(in srgb, var(--accent) 24%, transparent); }
 .pe-lb:focus-visible, .pe-fast button:focus-visible, .pe-chip:focus-visible, .pe-step button:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
-.pe-lv { position: relative; z-index: 1; pointer-events: none; font: 800 clamp(52px, 9vw, 104px)/1 var(--display); font-variant-numeric: tabular-nums; text-align: center; color: var(--fg); }
+.pe-lv { position: relative; z-index: 1; border: 0; background: none; border-radius: 14px; padding: 0 .12em; cursor: pointer; touch-action: manipulation; font: 800 clamp(52px, 9vw, 104px)/1 var(--display); font-variant-numeric: tabular-nums; text-align: center; color: var(--fg); }
 .pe-lv.low { color: var(--busy); }
+.pe-lv:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.pe-lv:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.pe-delta { position: absolute; z-index: 2; top: 8px; right: 12px; font: 800 20px var(--mono); padding: 2px 10px; border-radius: 999px; pointer-events: none; box-shadow: 0 2px 6px #0003; }
+.pe-delta.up { background: var(--free-bg); color: var(--free); }
+.pe-delta.down { background: var(--busy-bg); color: var(--busy); }
+.pe-tk { display: inline-flex; gap: 4px; align-items: center; font: 800 10.5px var(--mono); text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px 2px 6px; border-radius: 999px; background: var(--banana); color: var(--banana-ink); }
+.pe-tk svg { width: 13px; height: 13px; }
+.pe-mini { font: 700 11px var(--mono); padding: 1px 7px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--line2); color: var(--fg); }
+.pe-holds { display: flex; gap: 8px; flex-wrap: wrap; }
+.pe-hold { flex: 1 1 120px; display: flex; gap: 6px; align-items: center; justify-content: center; min-height: 40px; border-radius: 10px; border: 1.5px solid var(--line2); background: var(--surface); color: var(--fg); font: 700 13px var(--body); touch-action: manipulation; }
+.pe-hold svg { width: 17px; height: 17px; }
+.pe-hold[aria-pressed="true"] { background: var(--banana); border-color: var(--banana-deep); color: var(--banana-ink); }
+.pe-setrow { display: flex; gap: 8px; }
+.pe-setin { font-size: 28px; text-align: center; font-family: var(--mono); }
+.pe-first { background: var(--banana); border-color: var(--banana-deep); color: var(--banana-ink); }
 .pe-grid[data-n="5"] .pe-lv, .pe-grid[data-n="6"] .pe-lv { font-size: clamp(44px, 8vw, 76px); }
 .pe-grid[data-n="5"] .pe-life, .pe-grid[data-n="6"] .pe-life { min-height: clamp(74px, 12vh, 110px); }
 .pe-fast { display: flex; gap: 8px; justify-content: center; }
 .pe-fast button { min-width: 64px; min-height: 36px; border-radius: 10px; border: 1.5px solid var(--line); background: none; color: var(--muted); font: 700 14px var(--mono); touch-action: manipulation; }
 .pe-fast button:hover { background: var(--surface2); color: var(--fg); }
-.pe-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pe-chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .pe-chip { display: flex; align-items: center; gap: 6px; justify-content: center; min-height: 40px; padding: 4px 8px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface2); color: var(--muted); font: 700 13px var(--body); min-width: 0; touch-action: manipulation; }
 .pe-chip svg { width: 17px; height: 17px; flex: none; }
 .pe-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1345,10 +1331,11 @@ window.CPA_CHANGELOG = [
   { v: '5.0.0', date: '2 novembre 2026', title: 'Analisi del piscio e The Pescher', items: [
     { t: 'Analisi del piscio', d: 'Nella pagina di un mazzo, accanto a «Verifica bracket», c\'è il nuovo tasto «Analisi del piscio»: un pop-up con la curva di mana (il picco in banana, la media tratteggiata, il costo del commander), la torta dei simboli di mana per colore, il conteggio per tipo, il costo medio, le fonti di mana per colore (con l\'avviso «poche fonti» e le terre che cercano terre base), il controllo dell\'identità di colore e la legalità in Commander. Tutto dai dati di Scryfall già sul dispositivo: se mancano, li scarica lui. Ogni grafico ha la sua descrizione scritta per chi non li vede.' },
     { t: 'Legalità in chiaro', d: 'Il verdetto in cima dice «Legale» oppure elenca i problemi: carte bandite o non legali, copie doppie, carte fuori dall\'identità del commander (con le miniature), commander che non può esserlo, mazzo che non fa cento carte. Il sideboard non conta. Non sostituisce il giudizio al tavolo: le regole di casa non le conosce.' },
-    { t: 'The Pescher: il compagno di partita', d: 'Nuova voce nel menu, con l\'icona di Botto. Contatore vite da 2 a 6 giocatori (20, 30 o 40 di vita): tocchi la metà sinistra o destra del riquadro per togliere o aggiungere, e −5 / +5 per i colpi grossi. Veleno (10 = fuori) e danno da comandante per avversario (21 = fuori, e toglie anche vita come da regola, si può spegnere). Chi è fuori lo dice perché; rialzando i numeri si rientra.' },
-    { t: 'Che mazzo uso stasera?', d: 'Dalla preparazione del tavolo: scegli i bracket degli altri posti e The Pescher ti consiglia, tra i tuoi mazzi attivi, quello più vicino al livello del tavolo (o a caso, se non sai nulla). «Un altro» passa al successivo. Se scegli un mazzo, il suo bracket entra da solo.' },
-    { t: 'Avviso di squilibrio', d: 'Se al tavolo ci sono bracket molto diversi, un riquadro lo dice con nomi e numeri: da 2 livelli di distanza è un avviso («vale la pena dirselo»), da 3 uno squilibrio forte. Un 2 e un 3 si giocano benissimo, quindi lì non dice nulla.' },
-    { t: 'Dadi, turni, registro e annulla', d: 'D4, D6, D8, D10, D12, D20, moneta e «Chi inizia?» col caso vero del dispositivo. «Passa il turno» salta chi è fuori. Ogni passaggio finisce nel registro e si annulla con «Annulla». La partita si salva da sola sul dispositivo e sopravvive al ricaricamento; lo schermo resta acceso finché giochi.' },
+    { t: 'The Pescher: il compagno di partita', d: 'Nuova voce nel menu, con Botto a goccia. Contatore vite da 2 a 6 giocatori (20, 30 o 40 di vita) pensato per giocare dal vivo con gli amici: nessun mazzo da scegliere, solo i nomi se vuoi. Tocchi la metà sinistra o destra del riquadro per togliere o aggiungere, −5 / +5 per i colpi grossi, e un tocco sul numero per impostare la vita esatta. Sul riquadro appare per un attimo di quanto è cambiata (la somma dei tocchi ravvicinati).' },
+    { t: 'Veleno e danno da comandante', d: 'Veleno (10 = fuori) e danno da comandante per avversario (21 = fuori, e toglie anche vita come da regola, si può spegnere). Chi è fuori lo dice perché; rialzando i numeri si rientra.' },
+    { t: 'Altri segnalini, monarca e iniziativa', d: 'Dal tasto «Altro» di ogni riquadro: esperienza, energia, lanci del comandante (con il costo in più, +2 a lancio), monarca e iniziativa. Monarca e iniziativa li ha un giocatore solo: assegnarli a un altro li toglie al precedente, e si vedono nell\'intestazione del riquadro.' },
+    { t: 'Turni, giro e cronometro', d: '«Passa il turno» salta chi è fuori, la barra in alto dice di chi è il turno, a che giro siamo e da quanto si gioca.' },
+    { t: 'Dadi, registro e annulla', d: 'D4, D6, D8, D10, D12, D20, moneta e «Chi inizia?» col caso vero del dispositivo. Ogni passaggio finisce nel registro e si annulla con «Annulla». La partita si salva da sola sul dispositivo e sopravvive al ricaricamento; lo schermo resta acceso finché giochi.' },
     { t: 'Telefono al centro del tavolo', d: 'Dal menu: «Gira i giocatori in alto» ruota i riquadri di chi siede di fronte, e la modalità focus nasconde il resto dell\'app (Esc per uscire).' },
     { t: 'Pagina del mazzo più stabile', d: 'Passando il mouse sulle righe (terre comprese) il pulsante «Design» non strozza più il nome della carta e le colonne non si ribilanciano più sotto il cursore.' },
   ] },
@@ -4250,9 +4237,9 @@ window.CPA_CHANGELOG = [
   return { analyze: analyze, pips: pips, typeOf: typeOf, COLORS: COLORS, TYPES: TYPES };
 });
 
-/* Coglio Proxy Archive - The Pescher, il compagno di partita (nessun accesso al DOM).
- * Tiene la partita: vite, veleno, danno da comandante, annulla, registro, dadi, chi inizia, e due consigli che solo noi
- * possiamo dare perché conosciamo i mazzi: «che mazzo uso stasera?» e l'avviso quando al tavolo ci sono bracket molto diversi.
+/* Coglio Proxy Archive - The Pescher, il compagno di partita dal vivo (nessun accesso al DOM).
+ * Tiene la partita al tavolo: vite, veleno, danno da comandante, segnalini (esperienza, energia, lanci del comandante),
+ * monarca e iniziativa, turni, annulla, registro, dadi e «chi inizia». Non sa nulla dei mazzi degli altri: si gioca con gli amici.
  * Stato semplice (JSON) così si salva e si ripristina; il caso entra come funzione `rng` per poterlo provare. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -4262,20 +4249,23 @@ window.CPA_CHANGELOG = [
 
   var MIN = 2, MAX = 6, LIVES = [20, 30, 40], POISON_OUT = 10, CMD_OUT = 21, HIST = 60, LOG = 80;
   var DICE = { d4: 4, d6: 6, d8: 8, d10: 10, d12: 12, d20: 20 };
+  var COUNTERS = { exp: 'Esperienza', eng: 'Energia', tax: 'Lanci del comandante' };
+  var HOLDERS = { monarch: 'Monarca', initiative: 'Iniziativa' };
 
   function clampInt(n, lo, hi, d) { n = parseInt(n, 10); return n === n ? Math.max(lo, Math.min(hi, n)) : d; }
   function rnd(rng, n) { var x = (typeof rng === 'function' ? rng() : Math.random()); return Math.min(n - 1, Math.floor(x * n)); }
-  function plain(g) { return { players: g.players, turn: g.turn, first: g.first }; }
+  function plain(g) { return { players: g.players, turn: g.turn, first: g.first, round: g.round, monarch: g.monarch, initiative: g.initiative }; }
+  function seat(i, life) { return { id: 'p' + (i + 1), name: i === 0 ? 'Io' : 'Giocatore ' + (i + 1), life: life, poison: 0, exp: 0, eng: 0, tax: 0, cmd: {} }; }
 
   /* ----- partita ----- */
   function newGame(o) {
     o = o || {};
     var n = clampInt(o.players, MIN, MAX, 4), life = clampInt(o.life, 1, 999, 40), players = [];
     for (var i = 0; i < n; i++) {
-      var nm = o.names && o.names[i] ? String(o.names[i]).slice(0, 24) : (i === 0 ? 'Io' : 'Giocatore ' + (i + 1));
-      players.push({ id: 'p' + (i + 1), name: nm, life: life, poison: 0, cmd: {}, deck: null, bracket: 0 });
+      var p = seat(i, life); if (o.names && o.names[i]) p.name = String(o.names[i]).slice(0, 24);
+      players.push(p);
     }
-    return { v: 1, started: false, start: life, cmdLife: o.cmdLife !== false, players: players, turn: -1, first: -1, log: [], hist: [], t: Date.now() };
+    return { v: 1, started: false, start: life, cmdLife: o.cmdLife !== false, players: players, turn: -1, first: -1, round: 1, monarch: '', initiative: '', log: [], hist: [], t: Date.now() };
   }
   function player(g, id) { for (var i = 0; i < g.players.length; i++) if (g.players[i].id === id) return g.players[i]; return null; }
   function say(g, text) { g.log.unshift({ t: Date.now(), text: text }); if (g.log.length > LOG) g.log.length = LOG; }
@@ -4299,51 +4289,66 @@ window.CPA_CHANGELOG = [
     var p = player(g, id); if (!p || !d) return false;
     push(g); p.life += d; say(g, p.name + (d > 0 ? ' guadagna ' + d : ' perde ' + (-d)) + ' vita (' + p.life + ')'); return true;
   }
+  function setLife(g, id, v) {
+    var p = player(g, id); v = parseInt(v, 10); if (!p || v !== v || v === p.life) return false;
+    v = Math.max(-999, Math.min(9999, v)); push(g); say(g, p.name + ': vita impostata a ' + v); p.life = v; return true;
+  }
   function poison(g, id, d) {
     var p = player(g, id); if (!p || !d) return false;
-    var to = Math.max(0, p.poison + d); if (to === p.poison) return false;
+    var to = Math.max(0, Math.min(99, p.poison + d)); if (to === p.poison) return false;
     push(g); p.poison = to; say(g, p.name + ': veleno a ' + to); return true;
   }
   /* Danno da comandante: per regola è danno da combattimento, quindi toglie anche vita (si può spegnere). */
   function cmd(g, id, from, d) {
     var p = player(g, id), f = player(g, from); if (!p || !f || id === from || !d) return false;
-    var cur = p.cmd[from] || 0, to = Math.max(0, cur + d), real = to - cur; if (!real) return false;
+    var cur = p.cmd[from] || 0, to = Math.max(0, Math.min(99, cur + d)), real = to - cur; if (!real) return false;
     push(g); p.cmd[from] = to; if (g.cmdLife) p.life -= real;
     say(g, p.name + ' subisce ' + (real > 0 ? real : 'meno ' + (-real)) + ' da comandante di ' + f.name + ' (' + to + ')'); return true;
   }
-  function setLife(g, id, v) { var p = player(g, id); v = parseInt(v, 10); if (!p || v !== v || v === p.life) return false; push(g); say(g, p.name + ': vita impostata a ' + v); p.life = v; return true; }
-  function rename(g, id, name) { var p = player(g, id); name = String(name || '').trim().slice(0, 24); if (!p || !name) return false; p.name = name; return true; }
-  function setDeck(g, id, deck) {
-    var p = player(g, id); if (!p) return false;
-    p.deck = deck ? { id: String(deck.id || ''), name: String(deck.name || ''), commander: String(deck.commander || ''), n: clampInt(deck.n, 0, 5, 0) } : null;
-    if (p.deck && p.deck.n) p.bracket = p.deck.n; else if (!p.deck) p.bracket = 0;
+  /* Esperienza, energia, lanci del comandante (ogni lancio costa 2 in più). */
+  function counter(g, id, key, d) {
+    var p = player(g, id); if (!p || !COUNTERS[key] || !d) return false;
+    var to = Math.max(0, Math.min(99, (p[key] || 0) + d)); if (to === (p[key] || 0)) return false;
+    push(g); p[key] = to; say(g, p.name + ': ' + COUNTERS[key].toLowerCase() + ' a ' + to + (key === 'tax' ? ' (+' + 2 * to + ' di costo)' : '')); return true;
+  }
+  function taxOf(p) { return 2 * (p.tax || 0); }
+  /* Monarca e iniziativa: li ha un giocatore solo; toccarlo di nuovo lo toglie. */
+  function holder(g, kind, id) {
+    var p = player(g, id); if (!p || !HOLDERS[kind]) return false;
+    push(g);
+    if (g[kind] === id) { g[kind] = ''; say(g, p.name + ' non è più ' + (kind === 'monarch' ? 'il monarca' : 'chi ha l’iniziativa')); }
+    else { g[kind] = id; say(g, p.name + (kind === 'monarch' ? ' diventa il monarca' : ' prende l’iniziativa')); }
     return true;
   }
+  function rename(g, id, name) { var p = player(g, id); name = String(name || '').trim().slice(0, 24); if (!p || !name) return false; p.name = name; return true; }
+  function undo(g) {
+    if (!g.hist.length) return false;
+    var s = JSON.parse(g.hist.pop()); g.players = s.players; g.turn = s.turn; g.first = s.first; g.round = s.round || 1; g.monarch = s.monarch || ''; g.initiative = s.initiative || '';
+    say(g, 'Annullato l’ultimo passaggio'); return true;
+  }
+  function reset(g) {
+    g.players.forEach(function (p) { p.life = g.start; p.poison = 0; p.exp = 0; p.eng = 0; p.tax = 0; p.cmd = {}; });
+    g.hist = []; g.log = []; g.turn = -1; g.first = -1; g.round = 1; g.monarch = ''; g.initiative = ''; g.started = true; g.t = Date.now();
+  }
+  function begin(g, rng) { reset(g); var i = rnd(rng, g.players.length); g.first = i; g.turn = i; say(g, 'Inizia ' + g.players[i].name); return g.players[i]; }
+  /* Passa il turno a chi è ancora in gioco; quando si ripassa da chi ha iniziato si conta un nuovo giro. */
+  function nextTurn(g) {
+    if (g.turn < 0) return null;
+    var n = g.players.length, i = g.turn, wrapped = false;
+    for (var k = 0; k < n; k++) { i = (i + 1) % n; if (i === g.first) wrapped = true; if (!status(g, g.players[i]).out) break; }
+    push(g); if (wrapped || i === g.turn) g.round++; g.turn = i; return g.players[i];
+  }
+
   /* Prima di iniziare: quanti posti e con quanta vita. */
   function resize(g, n) {
     n = clampInt(n, MIN, MAX, g.players.length);
     while (g.players.length > n) g.players.pop();
-    while (g.players.length < n) { var i = g.players.length; g.players.push({ id: 'p' + (i + 1), name: 'Giocatore ' + (i + 1), life: g.start, poison: 0, cmd: {}, deck: null, bracket: 0 }); }
+    while (g.players.length < n) g.players.push(seat(g.players.length, g.start));
     g.players.forEach(function (p) { Object.keys(p.cmd).forEach(function (k) { if (!player(g, k)) delete p.cmd[k]; }); });
+    if (!player(g, g.monarch)) g.monarch = ''; if (!player(g, g.initiative)) g.initiative = '';
     return g;
   }
   function setStart(g, v) { g.start = clampInt(v, 1, 999, 40); g.players.forEach(function (p) { p.life = g.start; }); return g; }
-  function setBracket(g, id, n) { var p = player(g, id); if (!p) return false; p.bracket = clampInt(n, 0, 5, 0); return true; }
-  function undo(g) {
-    if (!g.hist.length) return false;
-    var s = JSON.parse(g.hist.pop()); g.players = s.players; g.turn = s.turn; g.first = s.first; say(g, 'Annullato l’ultimo passaggio'); return true;
-  }
-  function reset(g) {
-    g.players.forEach(function (p) { p.life = g.start; p.poison = 0; p.cmd = {}; });
-    g.hist = []; g.log = []; g.turn = -1; g.first = -1; g.started = true; g.t = Date.now();
-  }
-  function begin(g, rng) { reset(g); var i = rnd(rng, g.players.length); g.first = i; g.turn = i; say(g, 'Inizia ' + g.players[i].name); return g.players[i]; }
-  function nextTurn(g) {
-    if (g.turn < 0) return null;
-    var n = g.players.length, i = g.turn;
-    for (var k = 0; k < n; k++) { i = (i + 1) % n; if (!status(g, g.players[i]).out) break; }
-    push(g); g.turn = i; return g.players[i];
-  }
 
   /* ----- dadi ----- */
   function roll(kind, rng) {
@@ -4353,43 +4358,6 @@ window.CPA_CHANGELOG = [
   }
   function pickFirst(g, rng) { var i = rnd(rng, g.players.length); return { index: i, player: g.players[i], text: 'Inizia ' + g.players[i].name }; }
 
-  /* ----- bracket al tavolo ----- */
-  /* 1–2 di distanza va bene (un 2 e un 3 si giocano), da 2 in su si avvisa, da 3 in su è uno squilibrio forte. */
-  function balance(g) {
-    var known = g.players.filter(function (p) { return p.bracket >= 1; }).map(function (p) { return { id: p.id, name: p.name, n: p.bracket }; });
-    var unknown = g.players.filter(function (p) { return !(p.bracket >= 1); }).map(function (p) { return p.name; });
-    var out = { known: known, unknown: unknown, level: 'unknown', spread: 0, min: 0, max: 0, lows: [], highs: [], text: '' };
-    if (known.length < 2) { out.text = known.length ? 'Serve il bracket di almeno un altro mazzo per confrontarli.' : 'Scegli i mazzi o imposta i bracket per controllare il bilanciamento.'; return out; }
-    var ns = known.map(function (k) { return k.n; }); out.min = Math.min.apply(null, ns); out.max = Math.max.apply(null, ns); out.spread = out.max - out.min;
-    out.lows = known.filter(function (k) { return k.n === out.min; }); out.highs = known.filter(function (k) { return k.n === out.max; });
-    var names = function (l) { return l.map(function (k) { return k.name; }).join(', '); };
-    if (out.spread <= 1) { out.level = 'ok'; out.text = out.spread ? 'Tavolo equilibrato: bracket ' + out.min + ' e ' + out.max + '.' : 'Tavolo equilibrato: tutti al bracket ' + out.min + '.'; }
-    else {
-      out.level = out.spread >= 3 ? 'bad' : 'warn';
-      out.text = (out.spread >= 3 ? 'Squilibrio forte' : 'Bracket diversi') + ': ' + names(out.highs) + ' (bracket ' + out.max + ') contro ' + names(out.lows) + ' (bracket ' + out.min + '). ' +
-        (out.spread >= 3 ? 'Meglio parlarne prima di giocare o cambiare mazzo.' : 'Vale la pena dirselo prima di iniziare.');
-    }
-    return out;
-  }
-
-  /* ----- «che mazzo uso stasera?» ----- */
-  /* decks: [{id,name,commander,n}] solo i mazzi attivi. others: bracket degli altri posti. taken: id già scelti al tavolo.
-   * Con altri bracket noti si preferisce il più vicino alla mediana; senza, o a parità, decide il caso. */
-  function median(a) { var s = a.slice().sort(function (x, y) { return x - y; }), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
-  function suggest(decks, o, rng) {
-    o = o || {};
-    var others = (o.others || []).filter(function (n) { return n >= 1; }), taken = o.taken || [], target = others.length ? median(others) : null;
-    var list = decks.filter(function (d) { return taken.indexOf(d.id) < 0; }).map(function (d) {
-      var s = 0, why;
-      if (target == null) why = d.n ? 'bracket ' + d.n : 'bracket non calcolato';
-      else if (!d.n) { s = -2.5; why = 'bracket non calcolato'; }
-      else { s = -Math.abs(d.n - target); why = 'bracket ' + d.n + (s === 0 ? ', come il tavolo' : ' contro ' + (target % 1 ? String(target).replace('.', ',') : target) + ' del tavolo'); }
-      return { deck: d, score: s, why: why, tie: typeof rng === 'function' ? rng() : Math.random() };
-    });
-    list.sort(function (a, b) { return (b.score - a.score) || (a.tie - b.tie); });
-    return { ranked: list, pick: list.length ? list[0] : null, target: target };
-  }
-
   /* ----- salvataggio ----- */
   function serialize(g) { return JSON.stringify(g); }
   function restore(raw) {
@@ -4398,12 +4366,13 @@ window.CPA_CHANGELOG = [
     var ids = {};
     g.players = g.players.map(function (p, i) {
       var id = 'p' + (i + 1); ids[p.id] = id;
-      return { id: id, name: String(p.name || 'Giocatore ' + (i + 1)).slice(0, 24), life: clampInt(p.life, -999, 9999, 40), poison: clampInt(p.poison, 0, 99, 0), cmd: p.cmd && typeof p.cmd === 'object' ? p.cmd : {},
-        deck: p.deck && typeof p.deck === 'object' ? { id: String(p.deck.id || ''), name: String(p.deck.name || ''), commander: String(p.deck.commander || ''), n: clampInt(p.deck.n, 0, 5, 0) } : null, bracket: clampInt(p.bracket, 0, 5, 0) };
+      return { id: id, name: String(p.name || 'Giocatore ' + (i + 1)).slice(0, 24), life: clampInt(p.life, -999, 9999, 40), poison: clampInt(p.poison, 0, 99, 0),
+        exp: clampInt(p.exp, 0, 99, 0), eng: clampInt(p.eng, 0, 99, 0), tax: clampInt(p.tax, 0, 99, 0), cmd: p.cmd && typeof p.cmd === 'object' ? p.cmd : {} };
     });
     g.players.forEach(function (p) { var c = {}; Object.keys(p.cmd).forEach(function (k) { if (ids[k]) c[ids[k]] = clampInt(p.cmd[k], 0, 999, 0); }); p.cmd = c; });
     g.start = clampInt(g.start, 1, 999, 40); g.cmdLife = g.cmdLife !== false; g.started = !!g.started;
-    g.turn = clampInt(g.turn, -1, g.players.length - 1, -1); g.first = clampInt(g.first, -1, g.players.length - 1, -1);
+    g.turn = clampInt(g.turn, -1, g.players.length - 1, -1); g.first = clampInt(g.first, -1, g.players.length - 1, -1); g.round = clampInt(g.round, 1, 9999, 1);
+    g.monarch = ids[g.monarch] || ''; g.initiative = ids[g.initiative] || '';
     g.log = Array.isArray(g.log) ? g.log.slice(0, LOG).filter(function (l) { return l && typeof l.text === 'string'; }) : [];
     g.hist = Array.isArray(g.hist) ? g.hist.slice(-HIST).filter(function (h) { return typeof h === 'string'; }) : [];
     g.v = 1; g.t = Number(g.t) || Date.now();
@@ -4411,10 +4380,10 @@ window.CPA_CHANGELOG = [
   }
 
   return {
-    MIN: MIN, MAX: MAX, LIVES: LIVES, POISON_OUT: POISON_OUT, CMD_OUT: CMD_OUT, DICE: Object.keys(DICE),
-    newGame: newGame, player: player, status: status, alive: alive, winner: winner,
-    resize: resize, setStart: setStart, life: life, poison: poison, cmd: cmd, setLife: setLife, rename: rename, setDeck: setDeck, setBracket: setBracket, undo: undo, reset: reset, begin: begin, nextTurn: nextTurn,
-    roll: roll, pickFirst: pickFirst, balance: balance, suggest: suggest, serialize: serialize, restore: restore
+    MIN: MIN, MAX: MAX, LIVES: LIVES, POISON_OUT: POISON_OUT, CMD_OUT: CMD_OUT, DICE: Object.keys(DICE), COUNTERS: COUNTERS, HOLDERS: HOLDERS,
+    newGame: newGame, player: player, status: status, alive: alive, winner: winner, resize: resize, setStart: setStart,
+    life: life, setLife: setLife, poison: poison, cmd: cmd, counter: counter, taxOf: taxOf, holder: holder, rename: rename, undo: undo, reset: reset, begin: begin, nextTurn: nextTurn,
+    roll: roll, pickFirst: pickFirst, serialize: serialize, restore: restore
   };
 });
 
@@ -4792,7 +4761,7 @@ window.CPA_SYNC = {
     builder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="7" y="13" width="10" height="8" rx="1"/></svg>',
     designer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="13" height="18" rx="2"/><path d="M7 15l3-4 2 2 2-3M18 9l3 3-6 6-3.5.5.5-3.5z"/></svg>',
     data: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.500 4h11l3.500 5-9 11L3 9z"/><path d="M3 9h18M9.500 4 8 9l4 11 4-11-1.500-5"/></svg>',
-    pescher: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12.8,1.2 14.3,4.3 17.4,2.6 17.4,6.1 20.9,5.9 19.4,9.0 22.7,10.3 20.0,12.6 22.3,15.1 18.9,16.0 20.0,19.3 16.5,18.6 16.0,22.0 13.2,19.9 11.2,22.8 9.7,19.7 6.6,21.4 6.6,17.9 3.1,18.1 4.6,15.0 1.3,13.7 4.0,11.4 1.7,8.9 5.1,8.0 4.0,4.7 7.5,5.4 8.0,2.0 10.8,4.1"/><path d="M12 8.600v5.400"/><path d="M12 16.700v.1" stroke-width="2.400"/></svg>',
+    pescher: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.100C15.200 6.900 20.800 9.700 20.800 14.100A8.800 8.800 0 0 1 3.200 14.100C3.200 9.700 8.800 6.900 12 2.100Z"/><circle cx="9.400" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="14.600" cy="13" r="1" fill="currentColor" stroke="none"/><path d="M7.200 9.900l3.800 1.200M16.800 9.900l-3.800 1.200"/><path d="M10.200 17.500q1.800-1 3.600 0"/></svg>',
     search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
     filter: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg>'
   };
@@ -9974,8 +9943,8 @@ window.CPA_SYNC = {
   var H = window.CPAHost, P = window.CPAPescher;
   if (!H || !P) return;
   var esc = H.esc, KEY = 'cpa:pescher:v1';
-  var g = null, wake = null;
-  var ux = { open: {}, pop: '', sug: null, rolls: [], confirm: '' };
+  var g = null, wake = null, clockT = 0, deltaT = 0;
+  var ux = { open: {}, pop: '', rolls: [], confirm: '', setFor: '', delta: {} };
   var SEAT = ['var(--m-u)', 'var(--m-r)', 'var(--m-g)', 'var(--m-w)', 'var(--m-b)', 'var(--banana)'];
 
   /* ---------- salvataggio ---------- */
@@ -9984,103 +9953,95 @@ window.CPA_SYNC = {
   function ensure() { if (!g) g = load() || P.newGame({ players: 4, life: 40 }); return g; }
   function rng() { try { var a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; } catch (e) { return Math.random(); } }
 
-  /* ---------- mazzi attivi ---------- */
-  function myDecks() {
-    return H.decks().filter(function (d) { return d.kind === 'deck' && d.active; }).map(function (d) {
-      return { id: d.id, name: d.name, commander: d.commander || '', n: d.bracket && d.bracket.n > 0 ? d.bracket.n : 0 };
-    });
-  }
-  function bdg(n, extra) { return n > 0 ? '<span class="bk-badge b' + n + (extra ? ' ' + extra : '') + '" title="Bracket ' + n + '" aria-label="Bracket ' + n + '">' + n + '</span>' : ''; }
-
   /* ---------- pezzi di interfaccia ---------- */
+  var SV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
   var ICON = {
-    drop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z"/></svg>',
-    crown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18h18l-1.500-10-4.500 4-3-7-3 7-4.500-4z"/></svg>'
+    drop: SV + '<path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z"/></svg>',
+    shield: SV + '<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/></svg>',
+    crown: SV + '<path d="M3 18h18l-1.500-10-4.500 4-3-7-3 7-4.500-4z"/></svg>',
+    more: SV + '<circle cx="5" cy="12" r="1.200"/><circle cx="12" cy="12" r="1.200"/><circle cx="19" cy="12" r="1.200"/></svg>',
+    flag: SV + '<path d="M6 21V4M6 5h11l-2 4 2 4H6"/></svg>'
   };
   function seg(items, cur, act, label) {
     return '<div class="seg" role="group" aria-label="' + esc(label) + '">' + items.map(function (v) { return '<button type="button" data-a="' + act + '" data-v="' + v + '" aria-pressed="' + (v === cur) + '">' + v + '</button>'; }).join('') + '</div>';
   }
-  function banner(b, cls) {
-    if (b.level === 'unknown') return '<p class="pe-bal unknown' + (cls ? ' ' + cls : '') + '" role="status"><span class="ic" aria-hidden="true">i</span>' + esc(b.text) + '</p>';
-    return '<p class="pe-bal ' + b.level + (cls ? ' ' + cls : '') + '" role="status"><span class="ic" aria-hidden="true">' + (b.level === 'ok' ? '✓' : '!') + '</span>' + esc(b.text) + '</p>';
-  }
+  function mmss(ms) { var s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); s %= 60; return (h ? h + ':' + ('0' + m).slice(-2) : m) + ':' + ('0' + s).slice(-2); }
 
   /* ---------- preparazione del tavolo ---------- */
-  function seatHtml(p, i, decks) {
-    var d = p.deck, opts = '<option value="">Nessun mazzo (bracket a mano)</option>' + decks.map(function (x) {
-      return '<option value="' + esc(x.id) + '"' + (d && d.id === x.id ? ' selected' : '') + '>' + esc(x.name) + (x.n ? ' · bracket ' + x.n : '') + '</option>';
-    }).join('');
-    var chips = [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" class="pe-bk b' + n + '" data-a="pe-bkt" data-p="' + p.id + '" data-v="' + n + '" aria-pressed="' + (p.bracket === n) + '" aria-label="Bracket ' + n + '">' + n + '</button>'; }).join('');
-    var sug = '';
-    if (i === 0) {
-      sug = '<div class="pe-ask"><button type="button" class="btn small bracket" data-a="pe-sug">Che mazzo uso stasera?</button>' +
-        (decks.length ? '' : '<span class="hint">Nessun mazzo attivo: attiva quelli che hai montato nella sezione Mazzi.</span>') + '</div>';
-      if (ux.sug && ux.sug.list.length) {
-        var cur = ux.sug.list[ux.sug.i % ux.sug.list.length];
-        sug += '<div class="pe-sug" role="status"><div><small>Stasera ti consiglio</small><b>' + esc(cur.deck.name) + '</b><span>' + esc(cur.why) + (cur.deck.commander ? ' · ' + esc(cur.deck.commander) : '') + '</span></div>' +
-          '<div class="pe-sug-b">' + bdg(cur.deck.n) + '<button type="button" class="btn small primary" data-a="pe-sug-use">Usa questo</button>' +
-          (ux.sug.list.length > 1 ? '<button type="button" class="btn small" data-a="pe-sug-next">Un altro</button>' : '') + '</div></div>';
-      } else if (ux.sug) sug += '<p class="pe-sug none" role="status">Non ho nessun mazzo attivo da proporti.</p>';
-    }
-    return '<div class="pe-seat" data-p="' + p.id + '" style="--seat:' + SEAT[i] + '"><div class="pe-seat-h"><span class="pe-n" aria-hidden="true">' + (i + 1) + '</span>' +
-      '<input class="pe-name" data-c="pe-name" data-p="' + p.id + '" value="' + esc(p.name) + '" maxlength="24" aria-label="Nome del posto ' + (i + 1) + '" autocomplete="off"></div>' +
-      '<label class="pe-deck"><span>Mazzo</span><select data-c="pe-deck" data-p="' + p.id + '">' + opts + '</select></label>' +
-      '<div class="pe-bkr"><span>Bracket</span><div class="pe-bks" role="group" aria-label="Bracket del posto ' + (i + 1) + '">' + chips + '</div></div>' + sug + '</div>';
+  function seatHtml(p, i) {
+    return '<div class="pe-seat" style="--seat:' + SEAT[i] + '"><span class="pe-n" aria-hidden="true">' + (i + 1) + '</span>' +
+      '<input class="pe-name" data-c="pe-name" data-p="' + p.id + '" value="' + esc(p.name) + '" maxlength="24" aria-label="Nome del posto ' + (i + 1) + '" autocomplete="off"></div>';
   }
   function setupHtml() {
-    var decks = myDecks(), b = P.balance(g);
-    return '<header class="vh"><h1>The Pescher</h1><p class="sub">Il compagno di partita: vite, veleno, danno da comandante e dadi. Conosce i tuoi mazzi e i loro bracket.</p></header>' +
+    return '<header class="vh"><h1>The Pescher</h1><p class="sub">Il compagno di partita dal vivo: vite, veleno, danno da comandante, segnalini e dadi.</p></header>' +
       '<section class="pe-setup"><div class="pe-opts panel">' +
       '<div class="pe-opt"><b>Giocatori</b>' + seg([2, 3, 4, 5, 6], g.players.length, 'pe-count', 'Numero di giocatori') + '</div>' +
       '<div class="pe-opt"><b>Vita iniziale</b>' + seg(P.LIVES, g.start, 'pe-start', 'Vita iniziale') + '</div>' +
       '<label class="pe-chk"><input type="checkbox" data-c="pe-cmdlife"' + (g.cmdLife ? ' checked' : '') + '> Il danno da comandante toglie anche vita</label></div>' +
-      '<div class="pe-seats">' + g.players.map(function (p, i) { return seatHtml(p, i, decks); }).join('') + '</div>' +
-      banner(b) +
+      '<div class="pe-opt"><b>Nomi (se vuoi)</b></div>' +
+      '<div class="pe-seats">' + g.players.map(seatHtml).join('') + '</div>' +
       '<div class="pe-go"><button type="button" class="btn primary big" data-a="pe-begin">Inizia la partita</button><span class="hint">Il primo giocatore lo decide il caso.</span></div></section>';
   }
 
   /* ---------- partita ---------- */
+  function deltaOf(id) { var d = ux.delta[id]; return d && Date.now() - d.t < 2400 && d.v ? d.v : 0; }
   function tileHtml(p, i) {
     var st = P.status(g, p), w = P.winner(g), isTurn = g.turn === i && !w;
     var maxC = 0; Object.keys(p.cmd).forEach(function (k) { if (p.cmd[k] > maxC) maxC = p.cmd[k]; });
-    var open = ux.open[p.id] || '', flip = g.mirror && i < Math.floor(g.players.length / 2);
-    var life = '<div class="pe-life"><button type="button" class="pe-lb" data-a="pe-life" data-p="' + p.id + '" data-d="-1" aria-label="Togli 1 vita a ' + esc(p.name) + '">−</button>' +
-      '<output class="pe-lv' + (p.life <= 10 ? ' low' : '') + '" aria-live="polite" aria-label="Vita di ' + esc(p.name) + '">' + p.life + '</output>' +
-      '<button type="button" class="pe-lb" data-a="pe-life" data-p="' + p.id + '" data-d="1" aria-label="Aggiungi 1 vita a ' + esc(p.name) + '">+</button></div>' +
+    var open = ux.open[p.id] || '', flip = g.mirror && i < Math.floor(g.players.length / 2), dl = deltaOf(p.id);
+    var extras = (p.exp ? 1 : 0) + (p.eng ? 1 : 0) + (p.tax ? 1 : 0) + (g.monarch === p.id ? 1 : 0) + (g.initiative === p.id ? 1 : 0);
+    var life = '<div class="pe-life"><button type="button" class="pe-lb minus" data-a="pe-life" data-p="' + p.id + '" data-d="-1" aria-label="Togli 1 vita a ' + esc(p.name) + '">−</button>' +
+      '<button type="button" class="pe-lv' + (p.life <= 10 ? ' low' : '') + '" data-a="pe-set" data-p="' + p.id + '" aria-label="Vita di ' + esc(p.name) + ': ' + p.life + '. Tocca per impostare un valore.">' + p.life + '</button>' +
+      '<button type="button" class="pe-lb plus" data-a="pe-life" data-p="' + p.id + '" data-d="1" aria-label="Aggiungi 1 vita a ' + esc(p.name) + '">+</button>' +
+      (dl ? '<span class="pe-delta ' + (dl > 0 ? 'up' : 'down') + '" aria-hidden="true">' + (dl > 0 ? '+' : '−') + Math.abs(dl) + '</span>' : '') + '</div>' +
       '<div class="pe-fast"><button type="button" data-a="pe-life" data-p="' + p.id + '" data-d="-5" aria-label="Togli 5 vita a ' + esc(p.name) + '">−5</button><button type="button" data-a="pe-life" data-p="' + p.id + '" data-d="5" aria-label="Aggiungi 5 vita a ' + esc(p.name) + '">+5</button></div>';
-    var chips = '<div class="pe-chips"><button type="button" class="pe-chip' + (p.poison >= P.POISON_OUT ? ' bad' : p.poison ? ' on' : '') + '" data-a="pe-tog" data-p="' + p.id + '" data-k="poison" aria-expanded="' + (open === 'poison') + '" aria-label="Veleno: ' + p.poison + '">' + ICON.drop + '<span>Veleno</span><b>' + p.poison + '</b></button>' +
-      '<button type="button" class="pe-chip' + (maxC >= P.CMD_OUT ? ' bad' : maxC ? ' on' : '') + '" data-a="pe-tog" data-p="' + p.id + '" data-k="cmd" aria-expanded="' + (open === 'cmd') + '" aria-label="Danno da comandante: ' + maxC + '">' + ICON.crown + '<span>Comandante</span><b>' + maxC + '</b></button></div>';
+    var chips = '<div class="pe-chips">' +
+      chip(p, 'poison', ICON.drop, 'Veleno', p.poison, p.poison >= P.POISON_OUT ? 'bad' : p.poison ? 'on' : '', open) +
+      chip(p, 'cmd', ICON.shield, 'Comandante', maxC, maxC >= P.CMD_OUT ? 'bad' : maxC ? 'on' : '', open) +
+      chip(p, 'more', ICON.more, 'Altro', extras || '', extras ? 'on' : '', open) + '</div>';
     var panel = '';
     if (open === 'poison') {
-      panel = '<div class="pe-panel"><div class="pe-row"><span class="pe-from">Segnalini veleno <small>' + P.POISON_OUT + ' = fuori</small></span>' +
-        step(p, 'pe-poison', '', p.poison, P.POISON_OUT) + '</div></div>';
+      panel = '<div class="pe-panel"><div class="pe-row"><span class="pe-from">Segnalini veleno <small>' + P.POISON_OUT + ' = fuori</small></span>' + step(p, 'pe-poison', '', p.poison, P.POISON_OUT) + '</div></div>';
     } else if (open === 'cmd') {
       panel = '<div class="pe-panel">' + g.players.filter(function (o) { return o.id !== p.id; }).map(function (o) {
         var oi = g.players.indexOf(o), n = p.cmd[o.id] || 0;
         return '<div class="pe-row"><span class="pe-from"><i style="background:' + SEAT[oi] + '"></i>da ' + esc(o.name) + '<small>' + P.CMD_OUT + ' = fuori</small></span>' + step(p, 'pe-cmd', o.id, n, P.CMD_OUT) + '</div>';
       }).join('') + '</div>';
+    } else if (open === 'more') {
+      panel = '<div class="pe-panel">' +
+        '<div class="pe-row"><span class="pe-from">Esperienza</span>' + step(p, 'pe-ctr', 'exp', p.exp, 0) + '</div>' +
+        '<div class="pe-row"><span class="pe-from">Energia</span>' + step(p, 'pe-ctr', 'eng', p.eng, 0) + '</div>' +
+        '<div class="pe-row"><span class="pe-from">Lanci del comandante<small>' + (p.tax ? 'costa +' + P.taxOf(p) : 'ogni lancio costa 2 in più') + '</small></span>' + step(p, 'pe-ctr', 'tax', p.tax, 0) + '</div>' +
+        '<div class="pe-holds"><button type="button" class="pe-hold" data-a="pe-hold" data-p="' + p.id + '" data-k="monarch" aria-pressed="' + (g.monarch === p.id) + '">' + ICON.crown + 'Monarca</button>' +
+        '<button type="button" class="pe-hold" data-a="pe-hold" data-p="' + p.id + '" data-k="initiative" aria-pressed="' + (g.initiative === p.id) + '">' + ICON.flag + 'Iniziativa</button></div></div>';
     }
-    var dk = p.deck && p.deck.name ? '<span class="pe-dk">' + esc(p.deck.name) + '</span>' : '';
+    var tags = '';
+    if (g.monarch === p.id) tags += '<span class="pe-tk" title="Monarca">' + ICON.crown + '<span>Monarca</span></span>';
+    if (g.initiative === p.id) tags += '<span class="pe-tk" title="Iniziativa">' + ICON.flag + '<span>Iniziativa</span></span>';
+    var ctrs = (p.exp ? '<span class="pe-mini" title="Esperienza">Esp ' + p.exp + '</span>' : '') + (p.eng ? '<span class="pe-mini" title="Energia">En ' + p.eng + '</span>' : '') + (p.tax ? '<span class="pe-mini" title="Lanci del comandante">+' + P.taxOf(p) + '</span>' : '');
     return '<article class="pe-tile' + (isTurn ? ' turn' : '') + (st.out ? ' out' : '') + (open ? ' open' : '') + (w && w.id === p.id ? ' won' : '') + (flip ? ' flip' : '') + '" data-p="' + p.id + '" style="--seat:' + SEAT[i] + '">' +
-      '<header><b class="pe-nm">' + esc(p.name) + '</b>' + dk + bdg(p.bracket) + (isTurn ? '<span class="pe-t">Turno</span>' : '') + (w && w.id === p.id ? '<span class="pe-t win">Vince</span>' : '') + '</header>' +
+      '<header><b class="pe-nm">' + esc(p.name) + '</b>' + tags + ctrs + (isTurn ? '<span class="pe-t">Turno</span>' : '') + (w && w.id === p.id ? '<span class="pe-t win">Vince</span>' : '') + '</header>' +
       life + chips + panel +
       (st.out ? '<div class="pe-out" role="status"><b>Fuori</b><span>' + esc(st.why.map(function (x) { return x.text; }).join(' · ')) + '</span></div>' : '') + '</article>';
   }
+  function chip(p, k, icon, label, val, cls, open) {
+    return '<button type="button" class="pe-chip' + (cls ? ' ' + cls : '') + '" data-a="pe-tog" data-p="' + p.id + '" data-k="' + k + '" aria-expanded="' + (open === k) + '" aria-label="' + label + (val !== '' ? ': ' + val : '') + '">' + icon + '<span>' + label + '</span>' + (val !== '' ? '<b>' + val + '</b>' : '') + '</button>';
+  }
   function step(p, act, from, n, max) {
-    var a = ' data-a="' + act + '" data-p="' + p.id + '"' + (from ? ' data-from="' + from + '"' : '');
-    return '<div class="pe-step"><button type="button"' + a + ' data-d="-1" aria-label="Meno">−</button><output class="' + (n >= max ? 'bad' : '') + '">' + n + '<small>/' + max + '</small></output><button type="button"' + a + ' data-d="1" aria-label="Più">+</button></div>';
+    var a = ' data-a="' + act + '" data-p="' + p.id + '"' + (from ? ' data-from="' + from + '" data-k="' + from + '"' : '');
+    return '<div class="pe-step"><button type="button"' + a + ' data-d="-1" aria-label="Meno">−</button><output class="' + (max && n >= max ? 'bad' : '') + '">' + n + (max ? '<small>/' + max + '</small>' : '') + '</output><button type="button"' + a + ' data-d="1" aria-label="Più">+</button></div>';
   }
   function playHtml() {
-    var w = P.winner(g), b = P.balance(g), cur = g.turn >= 0 ? g.players[g.turn] : null;
-    var head = w ? '<div class="pe-turn won"><b>Ha vinto ' + esc(w.name) + '!</b></div>' : cur ? '<div class="pe-turn">Turno di <b>' + esc(cur.name) + '</b></div>' : '<div class="pe-turn"><b>Partita in corso</b></div>';
+    var w = P.winner(g), cur = g.turn >= 0 ? g.players[g.turn] : null;
+    var head = w ? '<div class="pe-turn won"><b>Ha vinto ' + esc(w.name) + '!</b></div>' :
+      '<div class="pe-turn">' + (cur ? 'Turno di <b>' + esc(cur.name) + '</b>' : '<b>Partita in corso</b>') + '<span class="pe-meta"><span>Giro ' + g.round + '</span><time class="pe-clock">' + mmss(Date.now() - g.t) + '</time></span></div>';
     var bar = '<div class="pe-bar">' + head + '<div class="pe-tools">' +
       (cur && !w ? '<button type="button" class="btn small primary" data-a="pe-next">Passa il turno</button>' : '') +
       '<button type="button" class="btn small" data-a="pe-dice">Dadi</button>' +
       '<button type="button" class="btn small" data-a="pe-undo"' + (g.hist.length ? '' : ' disabled') + '>Annulla</button>' +
       '<button type="button" class="btn small" data-a="pe-log">Registro</button>' +
       '<button type="button" class="btn small" data-a="pe-menu" aria-haspopup="dialog">Menu</button></div></div>';
-    return bar + (b.level === 'warn' || b.level === 'bad' ? banner(b, 'slim') : '') +
-      '<div class="pe-grid" data-n="' + g.players.length + '">' + g.players.map(tileHtml).join('') + '</div>';
+    return bar + '<div class="pe-grid" data-n="' + g.players.length + '">' + g.players.map(tileHtml).join('') + '</div>';
   }
   function inner() { ensure(); return g.started ? playHtml() : setupHtml(); }
   function html() { return '<div class="pe" id="pe">' + inner() + '</div>'; }
@@ -10096,7 +10057,21 @@ window.CPA_SYNC = {
     var el = document.getElementById('pe'); if (!el) return;
     var k = focusKey(); el.innerHTML = inner(); document.body.classList.toggle('pe-play', !!g.started);
     if (k) { try { var n = el.querySelector(k); if (n && !n.disabled) n.focus({ preventScroll: true }); } catch (e) { /* selettore non valido: pazienza */ } }
-    save(); syncWake();
+    save(); syncWake(); syncClock();
+  }
+  /* il cronometro e le bolle del «+3» si aggiornano da soli, senza ridisegnare tutto il tavolo */
+  function syncClock() {
+    if (g && g.started && document.getElementById('pe')) {
+      if (!clockT) clockT = setInterval(function () { var c = document.querySelector('#pe .pe-clock'); if (c) c.textContent = mmss(Date.now() - g.t); else { clearInterval(clockT); clockT = 0; } }, 1000);
+    } else if (clockT) { clearInterval(clockT); clockT = 0; }
+  }
+  function bubbleLater() { clearTimeout(deltaT); deltaT = setTimeout(function () { if (document.getElementById('pe') && g.started) repaint(); }, 2500); }
+  /* ogni cambio di vita mostra per un attimo di quanto è cambiata (somma dei tocchi ravvicinati) */
+  function track(id, fn) {
+    var p = P.player(g, id); if (!p) return false;
+    var before = p.life, done = fn(); if (!done) return false;
+    var d = p.life - before, cur = ux.delta[id];
+    ux.delta[id] = { v: (cur && Date.now() - cur.t < 2400 ? cur.v : 0) + d, t: Date.now() }; bubbleLater(); return true;
   }
 
   /* schermo acceso mentre si gioca */
@@ -10107,29 +10082,36 @@ window.CPA_SYNC = {
   function unwake() { try { if (wake) wake.release(); } catch (e) { /* già rilasciato */ } wake = null; }
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && document.getElementById('pe')) syncWake(); });
 
-  function after() { document.body.classList.toggle('pe-play', !!(g && g.started)); document.body.classList.toggle('pe-focus', !!(g && g.focus && g.started)); syncWake(); }
-  function idle() { closePop(); unwake(); document.body.classList.remove('pe-play', 'pe-focus'); }
+  function after() { document.body.classList.toggle('pe-play', !!(g && g.started)); document.body.classList.toggle('pe-focus', !!(g && g.focus && g.started)); syncWake(); syncClock(); }
+  function idle() { closePop(); unwake(); if (clockT) { clearInterval(clockT); clockT = 0; } clearTimeout(deltaT); document.body.classList.remove('pe-play', 'pe-focus'); }
 
-  /* ---------- pop-up: dadi, registro, menu ---------- */
+  /* ---------- pop-up: dadi, registro, menu, valore esatto ---------- */
   var pop = null;
-  function closePop() { if (pop) { pop.remove(); pop = null; } ux.pop = ''; ux.confirm = ''; }
+  function closePop() { if (pop) { pop.remove(); pop = null; } ux.pop = ''; ux.confirm = ''; ux.setFor = ''; }
+  function head(small, title) { return '<div class="an-head"><div><small>' + small + '</small><strong>' + title + '</strong></div><button type="button" class="btn small" data-a="pe-close" id="pex">Chiudi</button></div>'; }
   function popBody() {
     if (ux.pop === 'dice') {
       var last = ux.rolls[0];
-      return '<div class="an-head"><div><small>Il caso decide</small><strong>Dadi</strong></div><button type="button" class="btn small" data-a="pe-close" id="pex">Chiudi</button></div>' +
+      return head('Il caso decide', 'Dadi') +
         '<div class="pe-dice">' + P.DICE.map(function (d) { return '<button type="button" class="btn" data-a="pe-roll" data-k="' + d + '">' + d.toUpperCase() + '</button>'; }).join('') +
-        '<button type="button" class="btn" data-a="pe-roll" data-k="coin">Moneta</button><button type="button" class="btn bracket" data-a="pe-first">Chi inizia?</button></div>' +
+        '<button type="button" class="btn" data-a="pe-roll" data-k="coin">Moneta</button><button type="button" class="btn pe-first" data-a="pe-first">Chi inizia?</button></div>' +
         '<div class="pe-res' + (last ? ' has' : '') + '" role="status" aria-live="polite">' + (last ? '<small>' + esc(last.label) + '</small><b>' + esc(String(last.value)) + '</b>' : '<span>Scegli un dado.</span>') + '</div>' +
         (ux.rolls.length > 1 ? '<ol class="pe-hist" aria-label="Lanci precedenti">' + ux.rolls.slice(1, 7).map(function (r) { return '<li>' + esc(r.label) + ': <b>' + esc(String(r.value)) + '</b></li>'; }).join('') + '</ol>' : '');
     }
     if (ux.pop === 'log') {
-      return '<div class="an-head"><div><small>Cosa è successo</small><strong>Registro</strong></div><button type="button" class="btn small" data-a="pe-close" id="pex">Chiudi</button></div>' +
+      return head('Cosa è successo', 'Registro') +
         (g.log.length ? '<ol class="pe-log">' + g.log.map(function (l) { var d = new Date(l.t); return '<li><time>' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2) + '</time><span>' + esc(l.text) + '</span></li>'; }).join('') + '</ol>' : '<p class="an-none">Ancora niente: tocca una vita per iniziare.</p>') +
         '<div class="pe-popbar"><button type="button" class="btn" data-a="pe-undo"' + (g.hist.length ? '' : ' disabled') + '>Annulla l’ultimo</button></div>';
     }
+    if (ux.pop === 'set') {
+      var p = P.player(g, ux.setFor);
+      return head('Vita di ' + esc(p ? p.name : ''), 'Imposta un valore') +
+        '<div class="pe-setrow"><input id="pe-setv" class="pe-name pe-setin" type="text" inputmode="numeric" pattern="-?[0-9]*" value="' + (p ? p.life : '') + '" aria-label="Nuova vita" autocomplete="off"><button type="button" class="btn primary" data-a="pe-setok">Imposta</button></div>' +
+        '<p class="hint">Per correggere un errore o ripartire da un numero diverso. Si può annullare.</p>';
+    }
     if (ux.pop === 'menu') {
       var c = ux.confirm;
-      return '<div class="an-head"><div><small>The Pescher</small><strong>Menu</strong></div><button type="button" class="btn small" data-a="pe-close" id="pex">Chiudi</button></div>' +
+      return head('The Pescher', 'Menu') +
         '<div class="pe-menu"><label class="pe-chk"><input type="checkbox" data-c="pe-cmdlife"' + (g.cmdLife ? ' checked' : '') + '> Il danno da comandante toglie anche vita</label>' +
         '<label class="pe-chk"><input type="checkbox" data-c="pe-mirror"' + (g.mirror ? ' checked' : '') + '> Gira i giocatori in alto (telefono al centro del tavolo)</label>' +
         '<label class="pe-chk"><input type="checkbox" data-c="pe-focus"' + (g.focus ? ' checked' : '') + '> Modalità focus: nasconde il resto dell’app</label>' +
@@ -10142,41 +10124,36 @@ window.CPA_SYNC = {
     ux.pop = kind; ux.confirm = '';
     if (!pop) {
       pop = document.createElement('div'); pop.id = 'pe-pop'; pop.className = 'lb bk an pe-pop'; pop.setAttribute('data-a', 'pe-close'); pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true');
-      pop.setAttribute('aria-label', kind === 'dice' ? 'Dadi' : kind === 'log' ? 'Registro' : 'Menu'); document.body.appendChild(pop);
+      pop.setAttribute('aria-label', { dice: 'Dadi', log: 'Registro', menu: 'Menu', set: 'Imposta la vita' }[kind] || 'The Pescher'); document.body.appendChild(pop);
     }
     paintPop(true);
   }
   function paintPop(focus) {
     if (!pop) return;
     pop.innerHTML = '<div class="an-box pe-box" data-a="pe-keep">' + popBody() + '</div>';
-    if (focus) { var x = pop.querySelector('#pex'); if (x) x.focus(); }
+    if (focus) { var x = pop.querySelector('#pe-setv') || pop.querySelector('#pex'); if (x) { x.focus(); if (x.select) x.select(); } }
   }
 
   /* ---------- azioni ---------- */
-  function others() { return g.players.slice(1).map(function (p) { return p.bracket; }); }
-  function takenIds() { return g.players.slice(1).map(function (p) { return p.deck && p.deck.id; }).filter(Boolean); }
   function toast(m) { if (H.toast) H.toast(m); }
 
   function click(a, el) {
     var id = el.dataset.p, d = parseInt(el.dataset.d, 10), v = el.dataset.v;
     ensure();
     switch (a) {
-      case 'pe-count': P.resize(g, parseInt(v, 10)); ux.sug = null; repaint(); break;
+      case 'pe-count': P.resize(g, parseInt(v, 10)); repaint(); break;
       case 'pe-start': P.setStart(g, parseInt(v, 10)); repaint(); break;
-      case 'pe-bkt': P.setBracket(g, id, P.player(g, id).bracket === parseInt(v, 10) ? 0 : v); repaint(); break;
-      case 'pe-sug': {
-        var r = P.suggest(myDecks(), { others: others(), taken: takenIds() }, rng);
-        ux.sug = { list: r.ranked, i: 0 }; repaint(); break;
-      }
-      case 'pe-sug-next': if (ux.sug) { ux.sug.i++; repaint(); } break;
-      case 'pe-sug-use': if (ux.sug && ux.sug.list.length) { P.setDeck(g, 'p1', ux.sug.list[ux.sug.i % ux.sug.list.length].deck); ux.sug = null; repaint(); } break;
-      case 'pe-begin': { var f = P.begin(g, rng); ux.open = {}; ux.rolls = []; repaint(); toast('Inizia ' + f.name + '.'); break; }
-      case 'pe-life': P.life(g, id, d); repaint(); break;
+      case 'pe-begin': { var f = P.begin(g, rng); ux.open = {}; ux.rolls = []; ux.delta = {}; repaint(); toast('Inizia ' + f.name + '.'); break; }
+      case 'pe-life': track(id, function () { return P.life(g, id, d); }); repaint(); break;
       case 'pe-poison': P.poison(g, id, d); repaint(); break;
-      case 'pe-cmd': P.cmd(g, id, el.dataset.from, d); repaint(); break;
+      case 'pe-cmd': track(id, function () { return P.cmd(g, id, el.dataset.from, d); }); repaint(); break;
+      case 'pe-ctr': P.counter(g, id, el.dataset.k, d); repaint(); break;
+      case 'pe-hold': P.holder(g, el.dataset.k, id); repaint(); break;
       case 'pe-tog': ux.open[id] = ux.open[id] === el.dataset.k ? '' : el.dataset.k; repaint(); break;
-      case 'pe-next': { var n = P.nextTurn(g); repaint(); if (n) toast('Tocca a ' + n.name + '.'); break; }
-      case 'pe-undo': if (P.undo(g)) { repaint(); if (pop) paintPop(); } break;
+      case 'pe-set': ux.setFor = id; openPop('set'); break;
+      case 'pe-setok': { var inp = pop && pop.querySelector('#pe-setv'), n = inp ? parseInt(inp.value, 10) : NaN, sid = ux.setFor; closePop(); if (n === n) { track(sid, function () { return P.setLife(g, sid, n); }); repaint(); } break; }
+      case 'pe-next': { var nx = P.nextTurn(g); repaint(); if (nx) toast('Tocca a ' + nx.name + '.'); break; }
+      case 'pe-undo': if (P.undo(g)) { ux.delta = {}; repaint(); if (pop) paintPop(); } break;
       case 'pe-dice': openPop('dice'); break;
       case 'pe-log': openPop('log'); break;
       case 'pe-menu': openPop('menu'); break;
@@ -10186,10 +10163,10 @@ window.CPA_SYNC = {
       case 'pe-keep': break;
       case 'pe-again':
         if (ux.confirm !== 'again') { ux.confirm = 'again'; paintPop(); break; }
-        closePop(); ux.open = {}; P.begin(g, rng); repaint(); toast('Nuova partita.'); break;
+        closePop(); ux.open = {}; ux.delta = {}; P.begin(g, rng); repaint(); toast('Nuova partita.'); break;
       case 'pe-setup':
         if (ux.confirm !== 'setup') { ux.confirm = 'setup'; paintPop(); break; }
-        closePop(); g.started = false; g.focus = false; P.reset(g); g.started = false; ux.open = {}; ux.sug = null; after(); repaint(); break;
+        closePop(); g.started = false; g.focus = false; P.reset(g); g.started = false; ux.open = {}; ux.delta = {}; after(); repaint(); break;
     }
   }
   function input(c, t) {
@@ -10199,10 +10176,6 @@ window.CPA_SYNC = {
   function change(c, t) {
     ensure();
     switch (c) {
-      case 'pe-deck': {
-        var dk = myDecks().filter(function (x) { return x.id === t.value; })[0] || null;
-        P.setDeck(g, t.dataset.p, dk); repaint(); break;
-      }
       case 'pe-cmdlife': g.cmdLife = t.checked; save(); break;
       case 'pe-mirror': g.mirror = t.checked; repaint(); break;
       case 'pe-focus':
@@ -10211,6 +10184,10 @@ window.CPA_SYNC = {
         break;
     }
   }
+  /* Invio nel campo «imposta vita» */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target && e.target.id === 'pe-setv') { e.preventDefault(); var b = pop && pop.querySelector('[data-a="pe-setok"]'); if (b) click('pe-setok', b); }
+  });
   /* Esc: chiude il pop-up, poi esce dal focus. Restituisce true se ha fatto qualcosa. */
   function escape() {
     if (pop) { closePop(); return true; }
