@@ -5,6 +5,7 @@ const { chromium } = require('playwright');
 const WEB = path.join(__dirname, '..', 'web');
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/json' };
 let n = 0; const ok = (c, m) => { n++; assert.ok(c, m); };
+const eq = (a, b, m) => { n++; assert.deepStrictEqual(a, b, m); };
 
 const packFiles = {}; /* catalogo cornici simulato */
 let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipendere dai file veri */
@@ -274,6 +275,7 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   ok((await full()) !== b5, 'i pips cambiano l\u2019anteprima');
   ok(await page.evaluate(() => CPADesigner.state.cur.crown === 'legend' && CPADesigner.state.cur.pips === '1'), 'extra salvati nel design');
   await page.selectOption('[data-k="crown"]', ''); await page.selectOption('[data-k="pips"]', '');
+  await page.evaluate(() => { const x = document.querySelector('[data-a="dz-res-del"]'); if (x && x.closest('details')) x.closest('details').open = true; });
   await page.click('[data-a="dz-res-del"]');
   await page.waitForFunction(() => CPADesigner.state.res.length === 0);
   ok(await page.evaluate(() => !CPACard.hasSymbols() && !CPACard.hasWatermarks() && !CPACard.hasOverlays()), 'simboli, font e filigrane tolti');
@@ -496,10 +498,11 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   /* due colori */
   await page.evaluate(() => { const d = CPADesigner.state.cur; d.mix = 'BR'; d.cmix = 'BR'; d.crown = 'legend'; });
   ok(await page.evaluate(() => CPACard.mixOf('BR') === 'BR' && CPACard.mixOf('BB') === null && CPACard.paletteKey({ mix: 'RG', colors: 'W' }) === 'R'), 'la cornice a due colori usa il colore di sinistra come base');
-  await page.evaluate(() => { document.querySelector('.dz-adv').open = true; });
-  await page.selectOption('[data-c="dz-mix"][data-k="mix"][data-side="0"]', 'W'); await page.selectOption('[data-c="dz-mix"][data-k="mix"][data-side="1"]', 'U');
-  ok(await page.evaluate(() => CPADesigner.state.cur.mix) === 'WU', 'i selettori impostano la cornice a due colori');
-  await page.selectOption('[data-c="dz-mix"][data-k="mix"][data-side="1"]', ''); ok(await page.evaluate(() => CPADesigner.state.cur.mix) === '', 'togliendo un colore la cornice torna normale');
+  await page.evaluate(() => { CPADesigner.state.tab = 'aspetto'; });
+  await page.click('[data-a="dz-tab"][data-v="testo"]'); await page.click('[data-a="dz-col"][data-v="W"]'); await page.click('[data-a="dz-col"][data-v="W"]'); await page.click('[data-a="dz-tab"][data-v="aspetto"]');
+  ok(await page.locator('[data-c="dz-mix"]').count() === 0, 'nessun selettore manuale dei colori della cornice a due colori');
+  ok(await page.locator('[data-a="dz-bi"]').count() === 1 && /normale/i.test(await page.textContent('[data-a="dz-bi"]')), 'se la carta non ha due colori resta solo «torna alla cornice normale»');
+  await page.click('[data-a="dz-bi"][data-v="none"]'); ok(await page.evaluate(() => CPADesigner.state.cur.mix === '' && CPADesigner.state.cur.cmix === ''), 'e la cornice torna normale');
   /* scelta: nessuna / solo corona / cornice e corona */
   await page.evaluate(() => { const d = CPADesigner.state.cur; d.colors = 'UR'; d.cost = '{R}{U}'; d.mix = ''; d.cmix = ''; d.type = 'Legendary Creature \u2014 Wizard'; });
   await page.selectOption('[data-c="dz-f"][data-k="palette"]', 'auto');
@@ -512,6 +515,44 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   ok(await page.evaluate(() => { const d = CPADesigner.state.cur; return d.cmix === '' && d.mix === ''; }), 'nessuno dei due: cornice dorata');
   const hy = await page.evaluate(() => CPADesigner.wantFrame({ frame: '2015', layout: 'normal', type_line: 'Creature', set: 'x', border_color: 'black', mana_cost: '{W/U}{W/U}', colors: ['W', 'U'] }).mix);
   ok(hy === 'WU', 'una carta ibrida prende la cornice a due colori');
+  await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item');
+
+  /* dimensione e posizione del testo, per zona */
+  await page.click('[data-a="dz-new"][data-k="card"]'); await page.waitForSelector('#dz-cv');
+  await page.click('[data-a="dz-tab"][data-v="testo"]');
+  ok(await page.locator('.dz-tx').count() === 1 && await page.evaluate(() => !document.querySelector('.dz-tx').open), 'il pannello «Dimensione e posizione del testo» sta nella scheda Testo, chiuso finché non serve');
+  await page.click('.dz-tx > summary'); ok(await page.evaluate(() => document.querySelector('.dz-tx').open), 'si apre');
+  eq(await page.$$eval('[data-a="dz-txz"]', l => l.map(b => b.textContent)), ['Titolo', 'Tipo', 'Regole', 'Forza/Cost.'], 'quattro zone');
+  const tx0 = await rb();
+  const slide = (k, v) => page.evaluate(([k, v]) => { const r = document.querySelector('[data-c="dz-tx"][data-k="' + k + '"]'); r.value = v; r.dispatchEvent(new Event('input', { bubbles: true })); }, [k, v]);
+  await slide('s', 130); await page.waitForTimeout(80);
+  eq(await page.evaluate(() => CPADesigner.state.cur.tx), { rules: { s: 1.3 } }, 'la dimensione si salva solo per la zona scelta');
+  ok(/130%/.test(await page.textContent('.dz-txr output')), 'il valore si legge accanto al cursore');
+  const tx1 = await rb(); ok(tx1 !== tx0, 'il testo delle regole cambia sull\'anteprima');
+  await slide('x', 25); await slide('y', -10); await page.waitForTimeout(80);
+  eq(await page.evaluate(() => CPADesigner.state.cur.tx), { rules: { s: 1.3, x: 25, y: -10 } }, 'posizione orizzontale e verticale');
+  await page.click('[data-a="dz-txz"][data-v="title"]'); ok(await page.evaluate(() => document.querySelector('.dz-tx').open), 'cambiando zona il pannello resta aperto');
+  eq(await page.$$eval('[data-c="dz-tx"]', l => l.map(r => r.value)), ['100', '0', '0'], 'ogni zona ha i suoi valori');
+  await slide('s', 70); await page.waitForTimeout(80);
+  ok(await page.evaluate(() => CPADesigner.state.cur.tx.title.s === 0.7 && CPADesigner.state.cur.tx.rules.s === 1.3), 'titolo e regole indipendenti');
+  const tx2 = await rb(); ok(tx2 !== tx1, 'il titolo cambia');
+  await page.click('[data-a="dz-tx-reset"]'); eq(await page.evaluate(() => Object.keys(CPADesigner.state.cur.tx)), ['rules'], 'ripristina solo questa zona');
+  await page.click('[data-a="dz-tx-reset-all"]'); eq(await page.evaluate(() => CPADesigner.state.cur.tx), {}, 'ripristina tutto');
+  ok(await rb() === tx0, 'senza ritocchi la carta torna identica');
+  eq(await page.evaluate(() => { const d = CPADesigner.state.cur; d.tx = { rules: { s: 9, x: -999, y: 'a' }, nope: { s: 2 }, pt: { s: 1 } }; return CPADesigner.norm(d).tx; }), { rules: { s: 1.6, x: -120 } }, 'valori fuori misura ripuliti');
+  /* saghe: capitoli, promemoria, medaglioni */
+  eq(await page.evaluate(() => CPACard.parseSaga('(Promemoria.)\nI — Uno.\nII, III — Due e tre\nsu due righe.\nIV — Quattro.')), { intro: '(Promemoria.)', chapters: [{ num: 'I', nums: ['I'], text: 'Uno.' }, { num: 'II,III', nums: ['II', 'III'], text: 'Due e tre su due righe.' }, { num: 'IV', nums: ['IV'], text: 'Quattro.' }] }, 'capitoli: numerali multipli e righe continuate');
+  await page.click('[data-a="dz-tab"][data-v="aspetto"]'); await page.selectOption('[data-c="dz-f"][data-k="frame"]', 'saga'); await page.click('[data-a="dz-tab"][data-v="testo"]');
+  await page.fill('[data-c="dz-f"][data-k="rules"]', 'I — Pesca.\nII, III — Scarta.\nIV — Vinci.'); await page.dispatchEvent('[data-c="dz-f"][data-k="rules"]', 'change');
+  ok(await page.locator('[data-a="dz-saga-rem"]').count() === 1, 'la saga senza promemoria offre di aggiungere quello standard');
+  const sg0 = await rb(); await page.click('[data-a="dz-saga-rem"]');
+  eq(await page.evaluate(() => CPADesigner.state.cur.rules.split('\n')[0]), '(As this Saga enters and after your draw step, add a lore counter. Sacrifice after IV.)', 'promemoria con l\'ultimo capitolo');
+  ok(await page.locator('[data-a="dz-saga-rem"]').count() === 0, 'una volta aggiunto il pulsante sparisce');
+  ok(await rb() !== sg0, 'il promemoria compare sulla carta');
+  const sg1 = await rb(); await page.click('[data-a="dz-tab"][data-v="testo"]'); await page.click('.dz-tx > summary').catch(() => null);
+  await page.evaluate(() => { const d = CPADesigner.state.cur; d.tx = { rules: { s: 0.8, y: 12 } }; });
+  ok(await rb() !== sg1, 'anche le saghe seguono i ritocchi del testo');
+  await page.evaluate(() => { CPADesigner.state.cur.tx = {}; });
   await page.click('[data-a="dz-back"]'); await page.waitForSelector('.dz-item');
 
   /* corona propria della cornice (bifronte): ritaglia la cornice fuori dal suo profilo e importa rev/corone dal pacchetto */

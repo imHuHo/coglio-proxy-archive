@@ -70,7 +70,7 @@
     return dz.loading;
   }
   /* risorse incluse nell'app (risorse.json: cornici, simboli, font): si caricano una volta per versione, in silenzio */
-  var BUNDLE_VER = 'mse-10';
+  var BUNDLE_VER = 'mse-11';
   function bundleBlob() {
     if (typeof window.CPA_BUNDLE === 'string') return Promise.resolve(new Blob([window.CPA_BUNDLE], { type: 'application/json' }));
     if (window.cpaNet && window.cpaNet.resource) return window.cpaNet.resource('risorse.json').then(function (t) { return t ? new Blob([t], { type: 'application/json' }) : null; }).catch(function () { return null; });
@@ -119,6 +119,20 @@
     });
     return Promise.all(jobs).then(function () { R.setResources({ fonts: fonts, symbols: syms, watermarks: wms, overlays: ovs, walker: wk }); });
   }
+  /* ritocchi al testo per zona: { zona: { s: scala, x, y (px) } }, solo i valori diversi dal normale */
+  var TXZ = [['title', 'Titolo'], ['type', 'Tipo'], ['rules', 'Regole'], ['pt', 'Forza/Cost.']];
+  function cleanTx(t) {
+    var out = {}; if (!t || typeof t !== 'object') return out;
+    TXZ.forEach(function (z) {
+      var v = t[z[0]]; if (!v || typeof v !== 'object') return;
+      var s = +v.s, x = +v.x, y = +v.y, o = {};
+      if (isFinite(s) && s > 0 && Math.abs(s - 1) > 0.004) o.s = Math.round(Math.max(0.5, Math.min(1.6, s)) * 100) / 100;
+      if (isFinite(x) && Math.round(x)) o.x = Math.round(Math.max(-120, Math.min(120, x)));
+      if (isFinite(y) && Math.round(y)) o.y = Math.round(Math.max(-120, Math.min(120, y)));
+      if (Object.keys(o).length) out[z[0]] = o;
+    });
+    return out;
+  }
   function norm(d, isFace) {
     var b = R.defaults(d && d.kind === 'token' ? 'token' : 'card'), o = {};
     Object.keys(b).forEach(function (k) { o[k] = d && d[k] != null ? d[k] : b[k]; });
@@ -134,6 +148,7 @@
     o.frameImg = String(o.frameImg || ''); o.watermark = String(o.watermark || ''); o.setImg = String(o.setImg || ''); o.setTint = o.setTint === 'rarity' ? 'rarity' : '';
     ['crown', 'inner', 'holo', 'darkpt', 'pips', 'list'].forEach(function (k) { o[k] = String(o[k] || ''); });
     o.mix = R.mixOf(o.mix) || ''; o.cmix = R.mixOf(o.cmix) || '';
+    o.tx = cleanTx(o.tx);
     o.back = !isFace && d && d.back && typeof d.back === 'object' ? norm(d.back, true) : null;
     if (o.back) o.back.id = o.id;
     if (isFace) delete o.back;
@@ -768,19 +783,27 @@
   }
   function biHtml(d) {
     var pr = pairOf(d), mode = d.mix ? 'both' : d.cmix ? 'crown' : 'none', nm = { W: 'bianco', U: 'blu', B: 'nero', R: 'rosso', G: 'verde' };
-    var h = '';
-    if (pr) {
-      h += '<div class="lbl"><span class="lbl-t">Carta a due colori (' + nm[pr[0]] + ' e ' + nm[pr[1]] + ')</span><div class="chips" aria-label="Cornice a due colori">' +
-        chip('dz-bi', 'k', 'none', 'Normale (dorata)', mode === 'none') + chip('dz-bi', 'k', 'crown', 'Solo la corona a due colori', mode === 'crown') + chip('dz-bi', 'k', 'both', 'Cornice e corona a due colori', mode === 'both') + '</div>' +
-        '<p class="hint">La parte a due colori sfuma da sinistra a destra' + (R.hasOverlays() ? '; la corona si attiva in \u00abExtra della cornice\u00bb' : '') + '.</p></div>';
-    }
-    return h + '<details class="dz-adv"' + (!pr && (d.mix || d.cmix) ? ' open' : '') + '><summary>' + (pr ? 'Scegli i colori a mano' : 'Cornice a due colori a mano') + '</summary>' + mixRow('Cornice a due colori (sfumata)', 'mix', d.mix) + '</details>';
+    if (!pr && !(d.mix || d.cmix)) return '';
+    if (!pr) return '<div class="lbl"><div class="chips">' + chip('dz-bi', 'k', 'none', 'Torna alla cornice normale', false) + '</div>' +
+      '<p class="hint">La carta non ha più esattamente due colori: sceglili nella scheda Testo oppure torna alla cornice normale.</p></div>';
+    return '<div class="lbl"><span class="lbl-t">Colori: ' + nm[pr[0]] + ' e ' + nm[pr[1]] + '</span><div class="chips" aria-label="Cornice a due colori">' +
+      chip('dz-bi', 'k', 'none', 'Normale (dorata)', mode === 'none') + chip('dz-bi', 'k', 'crown', 'Solo la corona', mode === 'crown') + chip('dz-bi', 'k', 'both', 'Cornice e corona', mode === 'both') + '</div>' +
+      '<p class="hint">I colori sono quelli della carta, in ordine di costo. La cornice sfuma da sinistra a destra' + (R.hasOverlays() ? '; la corona compare sulle carte leggendarie.' : '.') + '</p></div>';
   }
-  var MIXC = [['', '\u2014'], ['W', 'Bianco'], ['U', 'Blu'], ['B', 'Nero'], ['R', 'Rosso'], ['G', 'Verde']];
-  function mixRow(title, k, v) {
-    var m = R.mixOf(v) || '', a = m[0] || '', b = m[1] || '';
-    function one(side, cur) { return '<select class="select" data-c="dz-mix" data-k="' + k + '" data-side="' + side + '" aria-label="' + esc(title) + (side ? ': destra' : ': sinistra') + '">' + MIXC.map(function (o) { return '<option value="' + o[0] + '"' + (cur === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>'; }
-    return '<div class="lbl"><span class="lbl-t">' + esc(title) + '</span><div class="dz-row">' + lbl('Sinistra', one(0, a)) + lbl('Destra', one(1, b)) + '</div>' + (m ? '' : '<p class="hint">Scegli due colori diversi: il secondo compare da destra con una sfumatura (come i bicolori e gli ibridi).</p>') + '</div>';
+  /* dimensione e posizione del testo, una zona alla volta */
+  function txHtml(d, L) {
+    var zs = TXZ.filter(function (z) { return z[0] !== 'pt' || usesPT(d); }).map(function (z) {
+      return [z[0], z[0] === 'rules' ? (L && L.walker ? 'Abilità' : L && L.saga ? 'Capitoli' : 'Regole') : z[0] === 'pt' && L && L.walker ? 'Lealtà' : z[1]];
+    });
+    var zk = zs.some(function (z) { return z[0] === dz.txz; }) ? dz.txz : 'rules', t = d.tx || {}, v = t[zk] || {}, any = Object.keys(t).length > 0; dz.txz = zk;
+    function row(k, name, min, max, val, out) {
+      return '<label class="lbl dz-txr"><span class="dz-txt"><span>' + name + '</span><output data-o="' + k + '">' + out + '</output></span><input class="dz-range" type="range" data-c="dz-tx" data-k="' + k + '" min="' + min + '" max="' + max + '" step="1" value="' + val + '"></label>';
+    }
+    var sv = Math.round((v.s || 1) * 100), xv = v.x || 0, yv = v.y || 0, sg = function (n) { return (n > 0 ? '+' : '') + n + ' px'; };
+    return '<details class="panel dz-tx"' + (any || dz.txOpen ? ' open' : '') + '><summary data-a="dz-tx-toggle"><span class="dz-h">Dimensione e posizione del testo</span>' + (any ? '<span class="pill info">modificato</span>' : '') + '</summary>' +
+      '<div class="chips" role="group" aria-label="Zona del testo">' + zs.map(function (z) { return chip('dz-txz', 'z', z[0], z[1] + (t[z[0]] ? ' •' : ''), z[0] === zk); }).join('') + '</div>' +
+      row('s', 'Dimensione', 50, 160, sv, sv + '%') + row('x', 'Sposta in orizzontale', -120, 120, xv, sg(xv)) + row('y', 'Sposta in verticale', -120, 120, yv, sg(yv)) +
+      '<div class="btns"><button class="btn small" data-a="dz-tx-reset"' + (t[zk] ? '' : ' disabled') + '>Ripristina questa zona</button>' + (any && Object.keys(t).length > (t[zk] ? 1 : 0) ? '<button class="btn small" data-a="dz-tx-reset-all">Ripristina tutto</button>' : '') + '</div></details>';
   }
   var TABS = [['testo', 'Testo'], ['aspetto', 'Aspetto'], ['arte', 'Arte'], ['altro', 'Mazzo']];
   function tabPanel(id, inner) { return '<div class="dz-tp" data-tab="' + id + '" role="tabpanel"' + (dz.tab === id ? '' : ' hidden') + '>' + inner + '</div>'; }
@@ -815,9 +838,12 @@
       lbl('Tipo', inp('type', d.type, 'Creature — Wizard')) +
       '<label class="lbl">' + (L && L.walker ? 'Abilità (una per riga: «+1: testo», «−2: testo»)' : L && L.saga ? 'Capitoli (una riga per capitolo: «I — testo»)' : 'Testo delle regole') + '<textarea class="textarea dz-ta" data-c="dz-f" data-k="rules" rows="5">' + esc(d.rules) + '</textarea></label>' +
       '<div class="dz-syms" aria-label="Inserisci simbolo">' + SYMS.map(function (x) { return '<button class="chip small" data-a="dz-sym" data-v="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>' +
+      (L && L.saga ? '<p class="hint">Una riga per capitolo; «II, III — testo» unisce più capitoli nella stessa riga. Le righe prima del primo capitolo sono il promemoria in alto.</p>' + (R.parseSaga(d.rules).intro ? '' : '<div class="btns"><button class="btn small" data-a="dz-saga-rem">Aggiungi il promemoria standard</button></div>') : '') +
+      (L && L.walker ? '<p class="hint">Una riga per abilità: «+1: testo», «0: testo», «−2: testo». Una riga senza costo è un’abilità statica. Al massimo quattro.</p>' : '') +
       (L && (L.walker || L.saga) ? '' : '<label class="lbl">Testo di flavour (corsivo)<textarea class="textarea dz-ta" data-c="dz-f" data-k="flavor" rows="2">' + esc(d.flavor) + '</textarea></label>') +
       '<div class="dz-row">' + (usesPT(d) ? lbl(L.walker ? 'Lealtà' : 'Forza/Costituzione', inp('pt', d.pt, L.walker ? '4' : '2/3')) : '') + lbl('Rarità', sel('rarity', d.rarity, [['common', 'Comune'], ['uncommon', 'Non comune'], ['rare', 'Rara'], ['mythic', 'Mitica']])) + '</div>' +
-      '<div><span class="lbl-t">Colori della carta</span><div class="chips">' + 'WUBRG'.split('').map(function (c) { return chip('dz-col', 'colors', c, {W: 'Bianco', U: 'Blu', B: 'Nero', R: 'Rosso', G: 'Verde'}[c], cs.indexOf(c) >= 0); }).join('') + '</div><p class="hint">Decidono il colore della cornice quando è su «Auto» (ora: ' + esc(R.PAL[cm].name) + ').</p></div></section>';
+      '<div><span class="lbl-t">Colori della carta</span><div class="chips">' + 'WUBRG'.split('').map(function (c) { return chip('dz-col', 'colors', c, {W: 'Bianco', U: 'Blu', B: 'Nero', R: 'Rosso', G: 'Verde'}[c], cs.indexOf(c) >= 0); }).join('') + '</div><p class="hint">La cornice li segue quando «Colore della cornice» è su Auto (ora: ' + esc(R.PAL[cm].name) + ').</p></div></section>';
+    tText += txHtml(d, L);
     tText += '<section class="panel"><h3 class="dz-h">Stampa e simbolo del set</h3>' +
       '<div class="dz-row">' + lbl('Collezione', inp('set', d.set, 'CST')) + lbl('Numero', inp('num', d.num, '001')) + lbl('Artista', inp('artist', d.artist, 'Nome')) + '</div>' +
       '<div class="dz-field"><span class="lbl-t">Simbolo del set (accanto al tipo)</span><div class="btns"><label class="btn small filebtn">' + (d.setImg ? 'Cambia simbolo' : 'Carica il tuo simbolo') + '<input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" data-c="dz-setsym" hidden></label>' +
@@ -828,23 +854,22 @@
 
     /* --- Aspetto --- */
     var tLook = '<section class="panel"><div class="dz-row two">' +
-      lbl('Stile', sel('frame', d.frame, R.FRAMES.map(function (f) { return [f.id, f.name]; }))) +
-      lbl('Colore', sel('palette', d.palette, [['auto', 'Auto (dai colori)']].concat(R.PAL_ORDER.map(function (k) { return [k, R.PAL[k].name]; })))) +
-      lbl('Bordo', sel('border', d.border, [['black', 'Nero'], ['white', 'Bianco'], ['silver', 'Argento'], ['gold', 'Oro']])) +
-      lbl('Angoli', sel('corners', d.corners, [['round', 'Arrotondati'], ['square', 'Quadrati']])) + '</div>' +
-      biHtml(d) + '</section>';
-    tLook += '<section class="panel"><h3 class="dz-h">Cornice a immagine</h3><div class="lbl"><span class="lbl-t">Segue i colori della carta</span>' + frameTiles(d) + '</div>' +
+      lbl('Impaginazione', sel('frame', d.frame, R.FRAMES.map(function (f) { return [f.id, f.name]; }))) +
+      lbl('Colore della cornice', sel('palette', d.palette, [['auto', 'Auto (segue i colori della carta)']].concat(R.PAL_ORDER.map(function (k) { return [k, R.PAL[k].name]; })))) +
+      lbl('Bordo della carta', sel('border', d.border, [['black', 'Nero'], ['white', 'Bianco'], ['silver', 'Argento'], ['gold', 'Oro']])) +
+      lbl('Angoli', sel('corners', d.corners, [['round', 'Arrotondati'], ['square', 'Quadrati']])) + '</div></section>';
+    tLook += '<section class="panel"><h3 class="dz-h">Cornice a immagine</h3><div class="lbl"><span class="lbl-t">Scegli una cornice: cambia da sola con i colori della carta</span>' + frameTiles(d) + '</div>' +
       (d.frameImg ? '<div class="dz-row">' + lbl('Colore del testo', sel('ink', d.ink, [['dark', 'Scuro'], ['light', 'Chiaro']])) + '</div>' : '') +
       '<div class="btns"><label class="btn small filebtn">Importa cornici…<input type="file" accept="image/png,image/webp,.json,application/json" data-c="dz-framefile" multiple hidden></label>' +
       '<button class="btn small shop" data-a="dz-catalog">' + '<svg class="shop-ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.5 5 4.5h14l1.5 5"/><path d="M3.5 9.5a2.6 2.6 0 0 0 5.2 0 2.6 2.6 0 0 0 5.2 0 2.6 2.6 0 0 0 5.2 0 2.6 2.6 0 0 0 1.4-.6"/><path d="M5 12.5V20h14v-7.5"/><path d="M10 20v-4.5h4V20"/></svg>' + '<span>Catalogo cornici</span></button>' +
       (d.frameImg ? '<button class="btn small danger" data-a="dz-frame-del">' + (/^auto:/.test(d.frameImg) ? 'Elimina il pacchetto' : 'Elimina questa cornice') + '</button>' : '') + '</div>' +
-      (dz.res.length ? '<p class="hint">Risorse caricate: simboli di mana, font, filigrane e grafiche. <button class="linkbtn" data-a="dz-res-del">Rimuovile</button></p>' : '') + '</section>';
+      (dz.res.length ? '<details class="dz-adv"><summary>Risorse dell’app (avanzate)</summary><p class="hint">Simboli di mana, font, filigrane e grafiche delle cornici. Se le togli tornano quelli disegnati; si ricaricano da sole al prossimo aggiornamento. <button class="linkbtn" data-a="dz-res-del">Togli le risorse</button></p></details>' : '') + '</section>';
+    var bi = biHtml(d); if (bi) tLook += '<section class="panel"><h3 class="dz-h">Carta a due colori</h3>' + bi + '</section>';
     if (R.hasOverlays() && d.frameImg) {
       var yn = [['', 'No'], ['1', 'Sì']];
       tLook += '<section class="panel"><h3 class="dz-h">Extra della cornice</h3>' +
         '<div class="dz-row">' + lbl('Corona leggendaria', sel('crown', d.crown, [['', 'Nessuna'], ['legend', 'Corona (si adatta alla cornice)'], ['floating', 'Corona fluttuante (sempre)']])) +
         lbl('Corona interna', sel('inner', d.inner, [['', 'Nessuna'], ['nyx', 'Nyx'], ['comp', 'Compagno']])) + '</div>' +
-        (d.crown ? mixRow('Corona a due colori (sfumata)', 'cmix', d.cmix) : '') +
         '<div class="dz-row">' + lbl('Stampo olografico', sel('holo', d.holo, [['', 'Nessuno'], ['color', 'A colori'], ['plain', 'Semplice'], ['gray', 'Grigio'], ['acorn', 'Ghianda'], ['alchemy', 'Alchemy']])) +
         lbl('«The List»', sel('list', d.list, [['', 'Nessuno'], ['regular', 'Post-M15'], ['old', 'Pre-M15']])) + '</div>' +
         '<div class="dz-row">' + lbl('Forza/Costituzione scura', sel('darkpt', d.darkpt, yn)) + lbl('Pips dell’identità di colore', sel('pips', d.pips, yn)) + '</div>' +
@@ -1178,6 +1203,15 @@
         break;
       case 'dz-prints-toggle': dz.printsOpen = !dz.printsOpen; H.render(); break;
       case 'dz-setsym-del': if (d) { dropSetImg(d); saveNow(); H.render(); } break;
+      case 'dz-tx-toggle': dz.txOpen = !(el.parentNode && el.parentNode.open); break;
+      case 'dz-txz': dz.txz = v; dz.txOpen = true; H.render(); break;
+      case 'dz-tx-reset': if (d && d.tx) { delete d.tx[dz.txz || 'rules']; saveSoon(); H.render(); } break;
+      case 'dz-tx-reset-all': if (d) { d.tx = {}; saveSoon(); H.render(); } break;
+      case 'dz-saga-rem':
+        if (d) {
+          var sg = R.parseSaga(d.rules), last = sg.chapters.length ? sg.chapters[sg.chapters.length - 1].nums.slice(-1)[0] : 'III';
+          d.rules = '(As this Saga enters and after your draw step, add a lore counter. Sacrifice after ' + last + '.)' + (d.rules ? '\n' + d.rules : ''); saveSoon(); H.render();
+        } break;
       case 'dz-bi':
         if (d) {
           var pr2 = pairOf(d); if (!pr2 && v !== 'none') break;
@@ -1225,6 +1259,15 @@
     var d = dz.cur;
     if (c === 'dz-f' && d) { d[el.getAttribute('data-k')] = el.value; schedulePreview(); saveSoon(); if (el.getAttribute('data-k') === 'cost') { var mm = document.getElementById('dz-mana'); if (mm) mm.innerHTML = manaInner(d); } if (el.getAttribute('data-k') === 'name') { var h1 = document.querySelector('.vh h1'); if (h1) h1.textContent = el.value || 'Senza nome'; } }
     else if (c === 'dz-art' && d) { d.art[el.getAttribute('data-k')] = parseFloat(el.value) || 0; schedulePreview(); saveSoon(); }
+    else if (c === 'dz-tx' && d) {
+      var zk = dz.txz || 'rules', kk = el.getAttribute('data-k'), val = parseFloat(el.value) || 0;
+      d.tx = d.tx || {}; var cur = d.tx[zk] = d.tx[zk] || {}; if (kk === 's') cur.s = val / 100; else cur[kk] = val;
+      d.tx = cleanTx(d.tx);
+      var out = el.parentNode && el.parentNode.querySelector('output'); if (out) out.textContent = kk === 's' ? Math.round(val) + '%' : (val > 0 ? '+' : '') + Math.round(val) + ' px';
+      var rb = document.querySelector('[data-a="dz-tx-reset"]'); if (rb) rb.disabled = !d.tx[zk];
+      var zc = document.querySelector('[data-a="dz-txz"][data-v="' + zk + '"]'); if (zc && d.tx[zk] && !/•/.test(zc.textContent)) zc.textContent += ' •';
+      schedulePreview(); saveSoon();
+    }
     else if (c === 'dz-q') dz.search.q = el.value;
     else if (c === 'dz-arturl') dz.artUrl = el.value;
     else if (c === 'dz-ftext') dz.fText = el.value;
@@ -1233,13 +1276,8 @@
   }
   function change(c, el) {
     var d = dz.cur;
-    if (c === 'dz-f' && d) { d[el.getAttribute('data-k')] = el.value; saveSoon(); if (el.tagName === 'SELECT') H.render(); else schedulePreview(); }
-    else if (c === 'dz-mix' && d) {
-      var kk = el.getAttribute('data-k'), side = parseInt(el.getAttribute('data-side'), 10), cur = R.mixOf(d[kk]) || '', ca = cur[0] || '', cb = cur[1] || '';
-      if (side) cb = el.value; else ca = el.value;
-      d[kk] = ca && cb && ca !== cb ? ca + cb : ''; saveSoon(); H.render();
-      if (!d[kk] && ca && cb && ca === cb) H.toast('Scegli due colori diversi.');
-    }
+    if (c === 'dz-tx' && d) { H.render(); return; }
+    if (c === 'dz-f' && d) { d[el.getAttribute('data-k')] = el.value; saveSoon(); if (el.tagName === 'SELECT' || (d.frame === 'saga' && el.getAttribute('data-k') === 'rules')) H.render(); else schedulePreview(); }
     else if (c === 'dz-setsym') { if (el.files && el.files[0]) setSymFile(el.files[0]); el.value = ''; }
     else if (c === 'dz-artfile') { if (el.files && el.files[0]) setArt(el.files[0]); }
     else if (c === 'dz-move') { var md = byId(el.getAttribute('data-id')); if (md) { md.folder = el.value; md.updatedAt = Date.now(); DB.put('designs', clone(md)); H.render(); } }
@@ -1284,6 +1322,6 @@
 
   window.CPADesigner = {
     open: open, html: html, after: after, click: click, input: input, change: change, escape: escape, renderBlob: renderBlob,
-    ready: load, get: byId, list: function () { return dz.designs.slice(); }, openPicker: openPicker, state: dz, assetsFor: assetsFor, wantFrame: wantFrame, applyFrameFor: applyFrameFor, flip: flip, hasBack: function (id) { var d = byId(id); return !!(d && d.back); }
+    ready: load, norm: norm, get: byId, list: function () { return dz.designs.slice(); }, openPicker: openPicker, state: dz, assetsFor: assetsFor, wantFrame: wantFrame, applyFrameFor: applyFrameFor, flip: flip, hasBack: function (id) { var d = byId(id); return !!(d && d.back); }
   };
 })();

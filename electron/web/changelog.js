@@ -1,6 +1,14 @@
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '6.2.0', date: '8 novembre 2026', title: 'Designer: saghe, planeswalker e testo a misura', items: [
+    { t: 'Saghe come su Card Conjurer', d: 'Le saghe ora hanno il promemoria in alto in corsivo, i medaglioni esagonali dei capitoli (anche doppi o tripli, tipo «II, III — …»), i separatori tra un capitolo e l\'altro e il testo che si adatta allo spazio. Se manca il promemoria, c\'è il pulsante «Aggiungi il promemoria standard».' },
+    { t: 'Planeswalker ricontrollati', d: 'Altezze delle abilità, costi di lealtà e strisce sono ora allineati al modo in cui li disegna Card Conjurer.' },
+    { t: 'Dimensione e posizione del testo', d: 'Nella scheda Testo, pannello «Dimensione e posizione del testo»: per Titolo, Tipo, Regole (o Capitoli/Abilità) e Forza/Costituzione puoi cambiare grandezza e spostare il testo in orizzontale e in verticale. «Ripristina» riporta tutto com\'era.' },
+    { t: 'Bicolore più semplice', d: 'Spariti i selettori manuali dei colori: scegli solo tra «solo la corona», «sia cornice che corona» o cornice normale, i colori li prende dalla carta.' },
+    { t: 'Designer più ordinato', d: 'Schede Testo e Aspetto riorganizzate, suggerimenti più chiari e le impostazioni avanzate (risorse dell\'app) nascoste in una sezione a parte.' },
+    { t: 'Aggiornamento risorse', d: 'Le cornici Saga vecchio stile e Classicshifted mostrano «Aggiorna»: premilo per averle nel nuovo formato.' },
+  ] },
   { v: '6.1.1', date: '3 novembre 2026', title: 'Tavoli condivisi: il salvataggio ora funziona', items: [
     { t: 'Salva e condividi con gli amici', d: 'Correzione: il salvataggio di un tavolo condiviso (e delle sue partite) veniva rifiutato dal server con «Il tavolo o la partita non sono validi». Ora i posti viaggiano nel formato giusto. Se non scrivi un nome per il tavolo, ne prende uno da solo.' },
     { t: 'Da fare una volta', d: 'Rilancia supabase/schema.sql nello SQL Editor di Supabase: così funzionano anche le app non ancora aggiornate.' },

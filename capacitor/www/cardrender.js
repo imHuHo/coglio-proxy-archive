@@ -66,7 +66,7 @@
       id: '', kind: kind || 'card', name: token ? 'Token' : 'Nuova carta', cost: token ? '' : '{1}{U}', type: token ? 'Token Creature — Spirit' : 'Creature — Wizard',
       rules: token ? 'Flying' : 'Flying\n{T}: Draw a card, then discard a card.', flavor: '', pt: token ? '1/1' : '2/3', rarity: 'common', set: 'CST', num: '001', artist: '',
       watermark: '', setImg: '', setTint: '', crown: '', cmix: '', mix: '', inner: '', holo: '', darkpt: '', pips: '', list: '', frame: DEFAULT_KINDS[kind] || 'classic', colors: token ? 'U' : 'U', palette: 'auto', border: 'black', corners: 'round', alterOf: '',
-      art: { id: '', x: 0, y: 0, s: 1 }, frameImg: '', ink: 'dark', createdAt: 0, updatedAt: 0
+      art: { id: '', x: 0, y: 0, s: 1 }, tx: {}, frameImg: '', ink: 'dark', createdAt: 0, updatedAt: 0
     };
   }
 
@@ -305,15 +305,21 @@
   }
   function lightInk(c) { return /^#(f|e|d)/i.test(c) || c === '#ffffff' || c === 'white'; }
   function shade(ctx, on) { if (on) { ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1.5; } else { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; } }
+  /* ritocchi dell'utente al testo, per zona (titolo, tipo, regole, forza/lealtà): d.tx[zona] = { s: scala, x, y } con x e y in pixel della carta */
+  var TX_ZONES = ['title', 'type', 'rules', 'pt'];
+  function tadj(d, z) {
+    var t = d && d.tx && d.tx[z] || {}, s = +t.s, x = +t.x, y = +t.y;
+    return { s: s > 0 ? Math.max(0.5, Math.min(1.6, s)) : 1, x: isFinite(x) ? Math.max(-120, Math.min(120, x)) : 0, y: isFinite(y) ? Math.max(-120, Math.min(120, y)) : 0 };
+  }
   function drawTitle(ctx, d, L, pal, over, user) {
     var r = L.title, ink = zoneInk(user, 'title', over || (user && user.ink === 'light') ? '#ffffff' : pal.ink);
     var costs = L.noCost ? [] : costTokens(d.cost), sd = user ? 37 : 34, sp = user ? 1 : 2, cw = costs.length * (sd + sp);
     var maxW = r[2] - 34 - (cw ? cw + 14 : 0);
-    var name = String(d.name || ''), size = fitLine(ctx, name, F_TITLE, 700, user ? 40 : 36, 17, maxW);
+    var ta = tadj(d, 'title'), name = String(d.name || ''), size = Math.max(8, Math.round(fitLine(ctx, name, F_TITLE, 700, user ? 40 : 36, 17, maxW) * ta.s));
     ctx.font = '700 ' + size + 'px ' + F_TITLE; ctx.fillStyle = ink; ctx.textBaseline = 'middle';
     ctx.save(); shade(ctx, !!user && lightInk(ink));
-    if (L.center || (user && user.center)) { ctx.textAlign = 'center'; ctx.fillText(name, r[0] + r[2] / 2, r[1] + r[3] / 2 + 2); }
-    else { ctx.textAlign = 'left'; ctx.fillText(name, r[0] + 20, r[1] + r[3] / 2 + 2); }
+    if (L.center || (user && user.center)) { ctx.textAlign = 'center'; ctx.fillText(name, r[0] + r[2] / 2 + ta.x, r[1] + r[3] / 2 + 2 + ta.y); }
+    else { ctx.textAlign = 'left'; ctx.fillText(name, r[0] + 20 + ta.x, r[1] + r[3] / 2 + 2 + ta.y); }
     ctx.restore();
     var x = r[0] + r[2] - (user ? 9 : 14) - cw + 1;
     costs.forEach(function (c, i) { drawSymbol(ctx, c, x + i * (sd + sp) + sd / 2, r[1] + r[3] / 2, sd); });
@@ -380,9 +386,9 @@
     if (!r || r[3] < 10) return;
     var gem = L.walker || L.saga || true;
     var sh = user && d.pips ? 38 : 0, maxW = r[2] - 40 - sh - (gem ? 52 : 0);
-    var size = fitLine(ctx, String(d.type || ''), F_TITLE, 700, user ? 34 : 30, 15, maxW);
+    var ta = tadj(d, 'type'), size = Math.max(8, Math.round(fitLine(ctx, String(d.type || ''), F_TITLE, 700, user ? 34 : 30, 15, maxW) * ta.s));
     ctx.font = '700 ' + size + 'px ' + F_TITLE; ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.save(); shade(ctx, !!user && lightInk(ink)); ctx.fillText(String(d.type || ''), r[0] + 20 + sh, r[1] + r[3] / 2 + 2); ctx.restore();
+    ctx.save(); shade(ctx, !!user && lightInk(ink)); ctx.fillText(String(d.type || ''), r[0] + 20 + sh + ta.x, r[1] + r[3] / 2 + 2 + ta.y); ctx.restore();
     if (gem && !(SYMIMG && drawCustomSym(ctx, SYMIMG, r[0] + r[2] - 34, r[1] + r[3] / 2, d))) setGem(ctx, r[0] + r[2] - 34, r[1] + r[3] / 2, d.rarity, !over);
   }
   function drawRulesBox(ctx, d, L, pal, over, user) {
@@ -406,39 +412,44 @@
       ctx.drawImage(wm, x + (w - ww) / 2, y + (h - wh) / 2, ww, wh); ctx.restore();
     }
     var padX = 22, padY = 16, iw = w - padX * 2, ih = h - padY * 2;
-    var f = fit(ctx, tokenize(d.rules), String(d.flavor || '').trim() ? tokenize(d.flavor) : null, iw, ih, L.center ? 34 : user ? 34.5 : 33, 15, F_BODY, user && !L.center ? 0.985 : 0);
-    var top = y + padY + Math.max(0, (ih - f.h) / 2);
+    var rp = tokenize(d.rules), fp = String(d.flavor || '').trim() ? tokenize(d.flavor) : null, lhk = user && !L.center ? 0.985 : 0;
+    var f = fit(ctx, rp, fp, iw, ih, L.center ? 34 : user ? 34.5 : 33, 15, F_BODY, lhk), ta = tadj(d, 'rules');
+    if (ta.s !== 1) { /* dimensione scelta dall'utente: parte da quella che entra e la scala, senza più rientrare nella casella */
+      var s2 = Math.max(8, Math.round(f.size * ta.s)), a2 = layout(ctx, rp, iw, s2, F_BODY, false, lhk), b2 = fp ? layout(ctx, fp, iw, s2, F_BODY, true, lhk) : null, sep2 = b2 ? Math.round(s2 * 0.7) : 0;
+      f = { a: a2, b: b2, size: s2, h: a2.h + (b2 ? b2.h + sep2 : 0), sep: sep2 };
+    }
+    var top = y + padY + Math.max(0, (ih - f.h) / 2) + ta.y, tx0 = x + padX + ta.x;
     ctx.save(); shade(ctx, !!user && lightInk(ink));
-    var align = L.center ? 'center' : 'left', yy = drawLayout(ctx, f.a, x + padX, top, ink, align, iw);
+    var align = L.center ? 'center' : 'left', yy = drawLayout(ctx, f.a, tx0, top, ink, align, iw);
     if (f.b) {
       yy += f.sep * 0.15;
       ctx.strokeStyle = over || lightInk(ink) ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(x + w * 0.3, yy + f.sep * 0.3); ctx.lineTo(x + w * 0.7, yy + f.sep * 0.3); ctx.stroke();
-      drawLayout(ctx, f.b, x + padX, yy + f.sep * 0.7, ink, align, iw);
+      ctx.beginPath(); ctx.moveTo(x + w * 0.3 + ta.x, yy + f.sep * 0.3); ctx.lineTo(x + w * 0.7 + ta.x, yy + f.sep * 0.3); ctx.stroke();
+      drawLayout(ctx, f.b, tx0, yy + f.sep * 0.7, ink, align, iw);
     }
     ctx.restore();
   }
   function drawPT(ctx, d, L, pal, over, user) {
     if (!L.pt || !String(d.pt || '').trim()) return;
-    var r = L.pt, txt = String(d.pt).trim();
+    var r = L.pt, txt = String(d.pt).trim(), ta = tadj(d, 'pt');
     ctx.save();
     if (L.walker && user && RES.walker) { /* casella di lealtà vera: nella cornice (Card Conjurer) o disegnata sopra (Magic Set Editor) */
       if (!(user.walker && user.walker.box)) ctx.drawImage(RES.walker.loyalty, r[0], r[1], r[2], r[3]);
-      var sl = fitLine(ctx, txt, F_TITLE, 700, user.walker && user.walker.box ? Math.round(0.0372 * H) : Math.round(r[3] * 0.48), 18, r[2] * 0.6); ctx.font = '700 ' + sl + 'px ' + F_TITLE; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(txt, r[0] + r[2] / 2, r[1] + r[3] / 2 + 2);
+      var sl = Math.round(fitLine(ctx, txt, F_TITLE, 700, user.walker && user.walker.box ? Math.round(0.0372 * H) : Math.round(r[3] * 0.48), 18, r[2] * 0.6) * ta.s); ctx.font = '700 ' + sl + 'px ' + F_TITLE; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(txt, r[0] + r[2] / 2 + ta.x, r[1] + r[3] / 2 + 2 + ta.y);
     } else if (L.walker) { /* scudo di lealtà */
       var cx = r[0] + r[2] / 2, cy = r[1] + r[3] / 2;
       ctx.beginPath(); ctx.moveTo(cx - 52, cy - 32); ctx.lineTo(cx + 52, cy - 32); ctx.lineTo(cx + 52, cy + 12); ctx.lineTo(cx, cy + 46); ctx.lineTo(cx - 52, cy + 12); ctx.closePath();
       ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3; ctx.fillStyle = '#1a1620'; ctx.fill(); ctx.shadowColor = 'transparent';
       ctx.lineWidth = 4; ctx.strokeStyle = pal.glow; ctx.stroke();
-      var s = fitLine(ctx, txt, F_TITLE, 700, 44, 22, 84); ctx.font = '700 ' + s + 'px ' + F_TITLE; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(txt, cx, cy - 4);
+      var s = Math.round(fitLine(ctx, txt, F_TITLE, 700, 44, 22, 84) * ta.s); ctx.font = '700 ' + s + 'px ' + F_TITLE; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(txt, cx + ta.x, cy - 4 + ta.y);
     } else {
       if (!(user && user.pt)) { rr(ctx, r[0], r[1], r[2], r[3], 14); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
       ctx.fillStyle = over ? 'rgba(14,12,18,0.85)' : vgrad(ctx, r[1], r[3], mix(pal.bar, '#ffffff', 0.35), mix(pal.bar, pal.a, 0.3)); ctx.fill(); ctx.shadowColor = 'transparent';
       ctx.lineWidth = 3.5; ctx.strokeStyle = over ? 'rgba(255,255,255,0.45)' : pal.edge; ctx.stroke(); }
-      var s2 = fitLine(ctx, txt, F_TITLE, 700, 38, 18, r[2] - 28); ctx.font = '700 ' + s2 + 'px ' + F_TITLE; ctx.fillStyle = d.darkpt && user ? '#ffffff' : zoneInk(user, 'pt', over || (user && user.pt && user.ink === 'light') ? '#fff' : (user && user.pt ? '#14110f' : pal.ink)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(txt, r[0] + r[2] / 2, r[1] + r[3] / 2 + 2);
+      var s2 = Math.max(8, Math.round(fitLine(ctx, txt, F_TITLE, 700, 38, 18, r[2] - 28) * ta.s)); ctx.font = '700 ' + s2 + 'px ' + F_TITLE; ctx.fillStyle = d.darkpt && user ? '#ffffff' : zoneInk(user, 'pt', over || (user && user.pt && user.ink === 'light') ? '#fff' : (user && user.pt ? '#14110f' : pal.ink)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(txt, r[0] + r[2] / 2 + ta.x, r[1] + r[3] / 2 + 2 + ta.y);
     }
     ctx.restore();
   }
@@ -503,8 +514,9 @@
     var area = ab.map(function (a, i) { var x = (a.cost ? gx : gx - 0.044) * W, w = (gw + (a.cost ? 0 : 0.044)) * W; return { x: x, w: w, y: b[i], h: b[i + 1] - b[i], toks: tokenize(a.text) }; });
     var size = 34;
     for (; size > 15; size--) { if (area.every(function (r) { return layout(ctx, r.toks, r.w, size, F_BODY, false).h <= r.h - 10; })) break; }
+    var ta = tadj(d, 'rules'); size = Math.max(8, Math.round(size * ta.s));
     ctx.save(); shade(ctx, lightInk(ink));
-    area.forEach(function (r) { var lay = layout(ctx, r.toks, r.w, size, F_BODY, false); drawLayout(ctx, lay, r.x, r.y + (r.h - lay.h) / 2, ink, 'left', r.w); });
+    area.forEach(function (r) { var lay = layout(ctx, r.toks, r.w, size, F_BODY, false); drawLayout(ctx, lay, r.x + ta.x, r.y + (r.h - lay.h) / 2 + ta.y, ink, 'left', r.w); });
     ctx.restore();
     /* icone di lealtà */
     ab.forEach(function (a, i) {
@@ -533,6 +545,7 @@
       for (var i = 0; i < ab.length; i++) { var l = layout(ctx, tokenize(ab[i].text), tw, size, F_BODY, false); if (l.h > rowH - 14) { ok = false; break; } }
       if (ok) break;
     }
+    var ta = tadj(d, 'rules'); size = Math.max(8, Math.round(size * ta.s));
     ab.forEach(function (a, i) {
       var ry = y + 6 + i * rowH;
       if (i) { ctx.strokeStyle = user && !lightInk(ink) ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x + 14, ry); ctx.lineTo(x + w - 14, ry); ctx.stroke(); }
@@ -546,44 +559,84 @@
         ctx.fillStyle = '#fff'; ctx.font = '700 28px ' + F_TITLE; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(a.cost, 0, pos ? 6 : neg ? -6 : 0); ctx.restore();
       }
       var lay = layout(ctx, tokenize(a.text), tw, size, F_BODY, false);
-      ctx.save(); shade(ctx, !!user && lightInk(ink)); drawLayout(ctx, lay, tx, ry + (rowH - lay.h) / 2, ink, 'left', tw); ctx.restore();
+      ctx.save(); shade(ctx, !!user && lightInk(ink)); drawLayout(ctx, lay, tx + ta.x, ry + (rowH - lay.h) / 2 + ta.y, ink, 'left', tw); ctx.restore();
     });
   }
+  /* capitoli della saga: «I — testo», «II, III — testo»; le righe prima del primo capitolo sono il promemoria */
   function parseSaga(text) {
     var lines = String(text || '').split('\n').filter(function (l) { return l.trim(); }), intro = [], chapters = [];
     lines.forEach(function (l) {
       var m = /^\s*((?:I{1,3}|IV|V|VI{0,3}|\d)(?:\s*[,–—-]\s*(?:I{1,3}|IV|V|VI{0,3}|\d))*)\s*[—–:-]\s*(.*)$/.exec(l);
-      if (m) chapters.push({ num: m[1].replace(/\s+/g, ''), text: m[2] }); else if (!chapters.length) intro.push(l); else chapters[chapters.length - 1].text += ' ' + l.trim();
+      if (m) { var nums = m[1].replace(/\s+/g, '').split(/[,–—-]/).filter(Boolean); chapters.push({ num: nums.join(','), nums: nums, text: m[2] }); }
+      else if (!chapters.length) intro.push(l); else chapters[chapters.length - 1].text += ' ' + l.trim();
     });
     return { intro: intro.join('\n'), chapters: chapters };
   }
-  function drawSagaBox(ctx, d, L, pal) {
-    var r = L.box, x = r[0], y = r[1], w = r[2], h = r[3], s = parseSaga(d.rules), n = Math.max(1, s.chapters.length);
-    ctx.save(); rr(ctx, x, y, w, h, 10); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3; ctx.fillStyle = vgrad(ctx, y, h, mix(pal.box, '#ffffff', 0.25), pal.box); ctx.fill();
-    ctx.shadowColor = 'transparent'; ctx.lineWidth = 3; ctx.strokeStyle = pal.edge; ctx.stroke(); ctx.restore();
-    var introH = 0, size = 31, rowsH;
-    for (; size >= 14; size--) {
-      var il = s.intro ? layout(ctx, tokenize(s.intro), w - 40, size, F_BODY, true) : null; introH = il ? il.h + 14 : 0;
-      rowsH = (h - 24 - introH) / n; var ok = true;
-      for (var i = 0; i < s.chapters.length; i++) { var l = layout(ctx, tokenize(s.chapters[i].text), w - 40 - 78, size, F_BODY, false); if (l.h > rowsH - 14) { ok = false; break; } }
-      if (ok) break;
+  /* misure di Card Conjurer per le saghe (frazioni della carta); una cornice può portarne di sue in geo.saga (saghe vecchio stile, classicshifted…) */
+  var SAGA_CC = { x: 0.1, w: 0.3947, tx: 0.1334, tw: 0.35, rem: [0.0867, 0.1129, 0.404, 0.1772], size: 0.0305, rsize: 0.03, top: 0.2896, bottom: 0.8254 };
+  function sagaGeo(user, L) {
+    var u = (user && user.saga) || {}, k = function (n) { return u[n] != null ? u[n] : SAGA_CC[n]; }, g;
+    var dim = { bw: 0.0787 * W, bh: 0.0629 * H, spread: 0.0358 * H, ntx: 0.0394 * W, nty: 0.0429 * H, nsize: Math.round(0.0324 * H), dh: Math.max(2, 0.0029 * H) };
+    if (user) {
+      g = { divX: k('x') * W, divW: k('w') * W, bx: (k('x') - 0.0614) * W, tx: k('tx') * W, tw: k('tw') * W, rem: k('rem').map(function (v, i) { return v * (i % 2 ? H : W); }),
+        size: Math.round(k('size') * H), rsize: Math.round(k('rsize') * H), top: k('top') * H, bottom: k('bottom') * H };
+    } else { /* cornice disegnata: stesso schema dentro il pannello */
+      var r = L.box, bx = r[0] + 10, tx = bx + dim.bw + 16;
+      g = { divX: r[0] + 10, divW: r[2] - 20, bx: bx, tx: tx, tw: r[0] + r[2] - 14 - tx, rem: [r[0] + 18, r[1] + 10, r[2] - 36, 150], size: 30, rsize: 29, top: r[1] + 170, bottom: r[1] + r[3] - 10 };
     }
-    var cy = y + 12;
-    if (s.intro) { var il2 = layout(ctx, tokenize(s.intro), w - 40, size, F_BODY, true); drawLayout(ctx, il2, x + 20, cy, pal.ink, 'left', w - 40); cy += il2.h + 14; }
-    s.chapters.forEach(function (c, i) {
-      var ry = cy + i * rowsH;
-      if (i || s.intro) { ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x + 14, ry - 3); ctx.lineTo(x + w - 14, ry - 3); ctx.stroke(); }
-      ctx.save(); ctx.translate(x + 44, ry + rowsH / 2 - 2); disc(ctx, 0, 0, 28, pal.b); ctx.lineWidth = 3; ctx.strokeStyle = pal.edge; ctx.beginPath(); ctx.arc(0, 0, 28, 0, 6.2832); ctx.stroke();
-      var fs = fitLine(ctx, c.num, F_TITLE, 700, 26, 12, 46); ctx.font = '700 ' + fs + 'px ' + F_TITLE; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(c.num, 0, 2); ctx.restore();
-      var lay = layout(ctx, tokenize(c.text), w - 40 - 78, size, F_BODY, false);
-      drawLayout(ctx, lay, x + 90, ry + (rowsH - lay.h) / 2 - 4, pal.ink, 'left', w - 40 - 78);
-    });
+    Object.keys(dim).forEach(function (n) { g[n] = dim[n]; });
+    return g;
+  }
+  function sagaBadge(ctx, g, K, x, y, label, ink) {
+    if (K && K.sagaChapter) ctx.drawImage(K.sagaChapter, x, y, g.bw, g.bh);
+    else {
+      ctx.save(); var cx = x + g.bw / 2, cy = y + g.bh / 2, rx = g.bw / 2 - 1, ry = g.bh / 2 - 1;
+      ctx.beginPath(); ctx.moveTo(cx, cy - ry); ctx.lineTo(cx + rx, cy - ry / 2); ctx.lineTo(cx + rx, cy + ry / 2); ctx.lineTo(cx, cy + ry); ctx.lineTo(cx - rx, cy + ry / 2); ctx.lineTo(cx - rx, cy - ry / 2); ctx.closePath();
+      ctx.fillStyle = vgrad(ctx, y, g.bh, '#efe3b4', '#d9c26d'); ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = '#a58d3c'; ctx.stroke(); ctx.restore();
+    }
+    ctx.save(); ctx.font = '600 ' + g.nsize + 'px ' + F_BODY; ctx.fillStyle = ink; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillText(label, x + g.ntx, y + g.nty); ctx.restore();
+  }
+  function drawSagaBox(ctx, d, L, pal, user) {
+    var g = sagaGeo(user, L), s = parseSaga(d.rules), ch = s.chapters, n = ch.length, ta = tadj(d, 'rules'), K = RES.walker || null;
+    var ink = user ? zoneInk(user, 'rules', '#14110f') : pal.ink, nink = '#14110f';
+    if (!user) {
+      var r = L.box, x = r[0], y = r[1], w = r[2], h = r[3];
+      ctx.save(); rr(ctx, x, y, w, h, 10); ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3; ctx.fillStyle = vgrad(ctx, y, h, mix(pal.box, '#ffffff', 0.25), pal.box); ctx.fill();
+      ctx.shadowColor = 'transparent'; ctx.lineWidth = 3; ctx.strokeStyle = pal.edge; ctx.stroke(); ctx.restore();
+    }
+    ctx.save(); shade(ctx, !!user && lightInk(ink));
+    /* promemoria in alto */
+    if (s.intro) {
+      var rp = tokenize(s.intro), rs = g.rsize, rl;
+      for (; rs >= 12; rs--) { rl = layout(ctx, rp, g.rem[2], rs, F_BODY, true); if (rl.h <= g.rem[3]) break; }
+      if (ta.s !== 1) { rs = Math.max(8, Math.round(rs * ta.s)); rl = layout(ctx, rp, g.rem[2], rs, F_BODY, true); }
+      drawLayout(ctx, rl, g.rem[0] + ta.x, g.rem[1] + (g.rem[3] - rl.h) / 2 + ta.y, ink, 'left', g.rem[2]);
+    }
+    if (n) {
+      /* una dimensione comune che entra; poi lo spazio che avanza si divide tra i capitoli */
+      var avail = g.bottom - g.top, pad = 12, size, lays, need, tot = 0;
+      var minRow = function (c) { return (Math.min(4, c.nums.length) - 1) * 2 * g.spread + g.bh + 8; };
+      var build = function (sz) { lays = ch.map(function (c) { return layout(ctx, tokenize(c.text), g.tw, sz, F_BODY, false); }); need = lays.map(function (l, i) { return Math.max(l.h + 2 * pad, minRow(ch[i])); }); tot = need.reduce(function (a, b) { return a + b; }, 0); };
+      for (size = g.size; size >= 13; size--) { build(size); if (tot <= avail) break; }
+      if (ta.s !== 1) { size = Math.max(8, Math.round(size * ta.s)); build(size); }
+      var extra = Math.max(0, (avail - tot) / n), yy = g.top;
+      ch.forEach(function (c, i) {
+        var rh = need[i] + extra;
+        if (K && K.sagaDivider) ctx.drawImage(K.sagaDivider, g.divX, yy - g.dh / 2, g.divW, g.dh);
+        else { ctx.save(); ctx.strokeStyle = user && lightInk(ink) ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(g.divX, yy); ctx.lineTo(g.divX + g.divW, yy); ctx.stroke(); ctx.restore(); }
+        var k = Math.min(4, c.nums.length), mid = yy + rh / 2;
+        c.nums.slice(0, 4).forEach(function (num, j) { sagaBadge(ctx, g, K, g.bx, mid - g.bh / 2 + (j - (k - 1) / 2) * 2 * g.spread, num, nink); });
+        drawLayout(ctx, lays[i], g.tx + ta.x, yy + (rh - lays[i].h) / 2 + ta.y, ink, 'left', g.tw);
+        yy += rh;
+      });
+    }
+    ctx.restore();
   }
 
   /* ---------- carta intera ---------- */
   function render(ctx, d, assets, opt) {
     assets = assets || {}; opt = opt || {}; SYMIMG = assets.setImg || null; SYMTXT = assets.frameImg ? 0.74 : 0;
-    var L = LAYOUT[d.frame] || LAYOUT.classic, pk = paletteKey(d), pal = PAL[pk], user = assets.frameImg ? { ink: d.ink === 'light' ? 'light' : 'dark', pt: !!assets.ptImg, colors: (assets.frameGeo && assets.frameGeo.colors) || null, center: !!(assets.frameGeo && assets.frameGeo.titleAlign === 'center'), walker: (assets.frameGeo && assets.frameGeo.walker) || null } : null;
+    var L = LAYOUT[d.frame] || LAYOUT.classic, pk = paletteKey(d), pal = PAL[pk], user = assets.frameImg ? { ink: d.ink === 'light' ? 'light' : 'dark', pt: !!assets.ptImg, colors: (assets.frameGeo && assets.frameGeo.colors) || null, center: !!(assets.frameGeo && assets.frameGeo.titleAlign === 'center'), walker: (assets.frameGeo && assets.frameGeo.walker) || null, saga: (assets.frameGeo && assets.frameGeo.saga) || null } : null;
     /* una cornice importata può portare la propria geometria (zona arte, barre, riquadri): sostituisce quella della cornice disegnata */
     if (user && assets.frameGeo) { var G = assets.frameGeo, L2 = {}; Object.keys(L).forEach(function (k) { L2[k] = L[k]; }); ['art', 'title', 'type', 'box', 'pt', 'info'].forEach(function (k) { if (G[k]) L2[k] = G[k]; }); L = L2; }
     var over = !!L.over && !user, square = opt.square || d.corners === 'square';
@@ -639,7 +692,7 @@
       if (!user) { bar(ctx, L.title, pal, barR, over); bar(ctx, L.type, pal, barR, over); }
       drawTitle(ctx, d, L, pal, over, user); drawType(ctx, d, L, pal, over, user);
       if (L.walker) drawWalkerBox(ctx, d, L, pal, user);
-      else if (L.saga) drawSagaBox(ctx, d, L, pal);
+      else if (L.saga) drawSagaBox(ctx, d, L, pal, user);
       else if (L.box && L.box[3] >= 10) drawRulesBox(ctx, d, L, pal, over, user);
       drawPT(ctx, d, L, pal, over, user);
       drawInfo(ctx, d, L, pal, over || !!user || pk === 'B' || pk === 'U' || pk === 'R' || pk === 'G' || pk === 'L');
