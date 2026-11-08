@@ -7,6 +7,7 @@ window.CPA_CHANGELOG = [
     { t: 'Dimensione e posizione del testo', d: 'Nella scheda Testo, pannello «Dimensione e posizione del testo»: per Titolo, Tipo, Regole (o Capitoli/Abilità) e Forza/Costituzione puoi cambiare grandezza e spostare il testo in orizzontale e in verticale. «Ripristina» riporta tutto com\'era.' },
     { t: 'Bicolore più semplice', d: 'Spariti i selettori manuali dei colori: scegli solo tra «solo la corona», «sia cornice che corona» o cornice normale, i colori li prende dalla carta.' },
     { t: 'Designer più ordinato', d: 'Schede Testo e Aspetto riorganizzate, suggerimenti più chiari e le impostazioni avanzate (risorse dell\'app) nascoste in una sezione a parte.' },
+    { t: 'Scarica tutte!', d: 'Nel catalogo cornici c\'è il pulsante «Scarica tutte!»: ti dice quanto pesa e scarica il pacchetto completo (o solo ciò che manca o è da aggiornare), con avanzamento e tasto per interrompere.' },
     { t: 'Aggiornamento risorse', d: 'Le cornici Saga vecchio stile e Classicshifted mostrano «Aggiorna»: premilo per averle nel nuovo formato.' },
   ] },
   { v: '6.1.1', date: '3 novembre 2026', title: 'Tavoli condivisi: il salvataggio ora funziona', items: [

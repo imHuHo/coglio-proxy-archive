@@ -537,7 +537,7 @@
 
   /* ---------- catalogo cornici: pacchetti estratti da Card Conjurer, scaricati da GitHub Pages solo quando servono ---------- */
   var PAGES = 'https://imhuho.github.io/coglio-proxy-archive/';
-  var cat = { list: null, base: '', busy: false, msg: '', c: '', q: '', inst: {} };
+  var cat = { list: null, base: '', busy: false, msg: '', c: '', q: '', inst: {}, all: null, ask: false };
   function wfetch(u) { return (window.CapacitorWebFetch || window.fetch).call(window, u); } /* su Android il fetch nativo non gestisce bene i file binari */
   function fetchFrom(path) {
     var bases = /^https?:$/.test(location.protocol) ? ['', PAGES] : [PAGES], i = 0;
@@ -558,10 +558,10 @@
   }
   function packRev(id) { var f = dz.frames.filter(function (x) { return x.group === 'cc-' + id; })[0]; return f ? f.rev || 1 : 0; }
   function installed(id) { return dz.frames.some(function (f) { return f.group === 'cc-' + id; }); }
-  function installPack(e) {
+  function installPack(e, quiet) {
     if (!e || cat.inst[e.id]) return Promise.resolve(false);
     var base = cat.base + 'packs/' + e.id + '/', pk = null, done = 0, total = 0;
-    cat.inst[e.id] = '\u2026'; H.render();
+    cat.inst[e.id] = '\u2026'; if (!quiet) H.render();
     return wfetch(base + 'pack.json').then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); }).then(function (j) {
       pk = j; var jobs = [];
       (pk.frames || []).forEach(function (f) { ['png', 'pt', 'crown'].forEach(function (k) { if (f[k] && typeof f[k] === 'string' && !/^data:/.test(f[k])) jobs.push([f, k]); }); });
@@ -578,8 +578,36 @@
       return chain;
     }).then(function () { return importData(pk, true, e.name); }).then(function (g) {
       delete cat.inst[e.id]; dz.frameImgs = {};
-      H.toast(g ? 'Aggiunto «' + e.name + '»: lo trovi nel menu «Cornice importata».' : 'Il pacchetto «' + e.name + '» non contiene cornici utilizzabili.'); H.render(); return !!g;
-    }).catch(function () { delete cat.inst[e.id]; H.toast('Non riesco a scaricare «' + e.name + '»: controlla la connessione e riprova.'); H.render(); return false; });
+      if (!quiet) { H.toast(g ? 'Aggiunto «' + e.name + '»: lo trovi nel menu «Cornice importata».' : 'Il pacchetto «' + e.name + '» non contiene cornici utilizzabili.'); H.render(); } return !!g;
+    }).catch(function () { delete cat.inst[e.id]; if (!quiet) { H.toast('Non riesco a scaricare «' + e.name + '»: controlla la connessione e riprova.'); H.render(); } return false; });
+  }
+  /* «Scarica tutte!»: tutto il catalogo (o solo ciò che manca o è vecchio), un pacchetto alla volta */
+  function allTodo() { return (cat.list || []).filter(function (e) { return !installed(e.id) || (e.rev || 1) > (packRev(e.id) || 1); }); }
+  function mbOf(l) { return l.reduce(function (a, e) { return a + (e.bytes || 0); }, 0) / 1048576; }
+  function downloadAll() {
+    var todo = allTodo(); if (!todo.length || cat.all) return Promise.resolve();
+    var st = cat.all = { n: todo.length, i: 0, ok: 0, fail: 0, name: '', stop: false }; cat.ask = false; H.render();
+    var chain = Promise.resolve();
+    todo.forEach(function (e) {
+      chain = chain.then(function () {
+        if (st.stop) return;
+        st.name = e.name;
+        var el = document.querySelector('[data-o="cat-all"]'); if (el) el.textContent = 'Scarico ' + (st.i + 1) + ' di ' + st.n + ': ' + e.name + '\u2026';
+        return installPack(e, true).then(function (g) { st.i++; if (g) st.ok++; else st.fail++; });
+      });
+    });
+    return chain.then(function () {
+      cat.all = null;
+      H.toast(st.fail || st.stop ? 'Scaricati ' + st.ok + ' pacchetti su ' + st.n + (st.stop ? ' (interrotto)' : ': ' + st.fail + ' non riusciti, riprova con «Scarica tutte!»') + '.' : 'Fatto! Hai tutte le ' + st.ok + ' cornici del catalogo.');
+      H.render();
+    });
+  }
+  function allPanel() {
+    var todo = allTodo(), st = cat.all;
+    if (st) return '<section class="panel dz-all"><p class="hint" role="status" data-o="cat-all">Scarico ' + (st.i + 1) + ' di ' + st.n + (st.name ? ': ' + esc(st.name) : '') + '\u2026</p><div class="btns"><button class="btn small" data-a="dz-cat-all-stop">Interrompi</button></div></section>';
+    if (!todo.length) return '<section class="panel dz-all"><p class="hint"><span class="pill ok">Completo</span> Hai gi\u00e0 tutto il catalogo.</p></section>';
+    if (cat.ask) return '<section class="panel dz-all"><p class="hint">Scarico ' + todo.length + (todo.length === 1 ? ' pacchetto' : ' pacchetti') + ' (circa ' + Math.max(0.1, mbOf(todo)).toFixed(0) + ' MB). Meglio con il Wi-Fi; puoi interrompere quando vuoi.</p><div class="btns"><button class="btn primary" data-a="dz-cat-all-go">S\u00ec, scarica tutte!</button><button class="btn" data-a="dz-cat-all-no">Annulla</button></div></section>';
+    return '<section class="panel dz-all"><div class="btns"><button class="btn primary" data-a="dz-cat-all">Scarica tutte!</button></div><p class="hint">Il pacchetto completo: ' + todo.length + (todo.length === 1 ? ' cornice ' : ' pacchetti ') + (todo.length === (cat.list || []).length ? '' : 'mancanti o da aggiornare, ') + 'circa ' + Math.max(0.1, mbOf(todo)).toFixed(0) + ' MB.</p></section>';
   }
   function dropGroup(g) {
     var gone = dz.frames.filter(function (f) { return f.group === g; }).map(function (f) { return f.id; });
@@ -593,6 +621,7 @@
     if (!H.available()) return h + '<div class="empty"><p>Il catalogo si scarica da internet: qui dentro non \u00e8 disponibile. Usa l\u2019app per Windows, l\u2019APK o la versione web.</p></div>';
     loadCatalog();
     if (!cat.list) return h + '<p class="hint" role="status">' + esc(cat.msg || 'Carico il catalogo\u2026') + '</p>' + (cat.msg ? '<div class="btns"><button class="btn" data-a="dz-cat-retry">Riprova</button></div>' : '');
+    h += allPanel();
     var cats = []; cat.list.forEach(function (e) { if (cats.indexOf(e.category) < 0) cats.push(e.category); });
     var nInst = cat.list.filter(function (e) { return installed(e.id); }).length;
     h += '<section class="panel"><div class="chips" aria-label="Categorie">' + chip('dz-cat-c', 'c', '', 'Tutte (' + cat.list.length + ')', !cat.c) +
@@ -1129,6 +1158,10 @@
       case 'dz-cat-back':
         if (dz.cur && dz.ret) { var ry = dz.ret.y; dz.ret = null; dz.view = 'edit'; H.render(); window.scrollTo(0, ry); } else { dz.ret = null; dz.view = 'list'; H.render(); }
         break;
+      case 'dz-cat-all': cat.ask = true; H.render(); break;
+      case 'dz-cat-all-no': cat.ask = false; H.render(); break;
+      case 'dz-cat-all-go': downloadAll(); break;
+      case 'dz-cat-all-stop': if (cat.all) { cat.all.stop = true; var sp = document.querySelector('[data-a="dz-cat-all-stop"]'); if (sp) { sp.disabled = true; sp.textContent = 'Mi fermo dopo questo\u2026'; } } break;
       case 'dz-cat-retry': cat.msg = ''; cat.list = null; H.render(); break;
       case 'dz-cat-c': cat.c = String(v == null ? '' : v); H.render(); break;
       case 'dz-cat-add': installPack((cat.list || []).filter(function (e) { return e.id === id; })[0]); break;

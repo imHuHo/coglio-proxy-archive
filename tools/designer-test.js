@@ -413,6 +413,18 @@ let bundleBody = null; /* risorse.json incluso nell'app: simulato per non dipend
   await page.click('[data-a="dz-frame-pick"][data-v="auto:cc-tst"]'); await page.waitForTimeout(200);
   ok(await page.evaluate(() => CPADesigner.state.cur.frame) === 'classic', 'tornando a una cornice normale la carta torna classica');
   await page.click('[data-a="dz-back"]'); await page.click('[data-a="dz-catalog"]'); await page.waitForSelector('[data-a="dz-cat-del"][data-id="tst"]');
+  /* «Scarica tutte!»: manca solo il pacchetto M15BoxTopper */
+  ok(await page.locator('[data-a="dz-cat-all"]').textContent() === 'Scarica tutte!', 'il catalogo ha il pulsante «Scarica tutte!»');
+  ok(/1 cornice/.test(await page.textContent('.dz-all .hint')), 'dice quanto manca');
+  await page.click('[data-a="dz-cat-all"]'); ok(/1 pacchetto/.test(await page.textContent('.dz-all .hint')) && await page.locator('[data-a="dz-cat-all-go"]').count() === 1, 'chiede conferma con la dimensione');
+  await page.click('[data-a="dz-cat-all-no"]'); ok(await page.locator('[data-a="dz-cat-all"]').count() === 1 && !await page.evaluate(() => CPADesigner.state.frames.some(f => f.group === 'cc-M15BoxTopper')), 'annullando non scarica nulla');
+  packFiles['/packs/M15BoxTopper/pack.json'] = JSON.stringify({ app: 'coglio-frames', version: 1, groups: [{ id: 'cc-M15BoxTopper', name: 'Extended Art di prova' }], frames: [{ key: 'C', name: 'Ext C', group: 'cc-M15BoxTopper', ink: 'dark', png: 'C.webp' }] });
+  packFiles['/packs/M15BoxTopper/C.webp'] = framePng;
+  await page.click('[data-a="dz-cat-all"]'); await page.click('[data-a="dz-cat-all-go"]');
+  await page.waitForFunction(() => CPADesigner.state.frames.some(f => f.group === 'cc-M15BoxTopper'));
+  await page.waitForSelector('.dz-all .pill.ok'); ok(/Hai già tutto/.test(await page.textContent('.dz-all')), 'dopo il download il catalogo risulta completo');
+  ok(await page.locator('[data-a="dz-cat-all"]').count() === 0, 'e il pulsante sparisce');
+  await page.click('[data-a="dz-cat-del"][data-id="M15BoxTopper"]'); ok(await page.locator('[data-a="dz-cat-all"]').count() === 1, 'rimuovendo un pacchetto il pulsante torna');
   await page.click('[data-a="dz-cat-del"][data-id="pw"]');
   await page.click('[data-a="dz-cat-del"][data-id="tst"]');
   await page.waitForFunction(() => CPADesigner.state.frames.every(f => f.group !== 'cc-tst'));
