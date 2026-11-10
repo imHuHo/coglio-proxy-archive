@@ -1534,6 +1534,7 @@ window.CPA_CHANGELOG = [
   { v: '6.3.0', date: '10 novembre 2026', title: 'Stampe: ricerca e set suggerito', items: [
     { t: 'Cerca tra le stampe', d: 'Quando cambi la stampa di una carta (nel mazzo e nel Builder per il PDF) c\'è una barra di ricerca: scrivi la sigla o il nome del set, il numero di collezione o l\'anno (anche più parole, tipo «horizons 302») e restano solo le stampe che corrispondono, con il conteggio.' },
     { t: 'Set suggerito del mazzo', d: 'Ogni mazzo può avere un «Set suggerito» (facoltativo): lo scegli alla creazione del mazzo o in «Gestisci». Quando apri le stampe di una carta, quelle di quel set vengono per prime, con il bordo evidenziato, e un pulsante «Solo MH3» mostra solo quelle. Vale anche nel Builder quando crei il PDF di quel mazzo.' },
+    { t: 'Applica il set suggerito', d: 'In «Gestisci» c\'è il pulsante «Applica il set suggerito alle carte del mazzo»: cerca le carte che hanno stampe in quel set, imposta da solo quelle con una stampa sola e, per quelle con più stampe, apre una finestra dove scegli guardando le carte («Lascia com\'è» per saltarne una, «Fine» per chiudere). Le carte con design o stampe MPC Fill non si toccano e un solo «Annulla» rimette tutto.' },
   ] },
   { v: '6.2.0', date: '8 novembre 2026', title: 'Designer: saghe, planeswalker e testo a misura', items: [
     { t: 'Saghe come su Card Conjurer', d: 'Le saghe ora hanno il promemoria in alto in corsivo, i medaglioni esagonali dei capitoli (anche doppi o tripli, tipo «II, III — …»), i separatori tra un capitolo e l\'altro e il testo che si adatta allo spazio. Se manca il promemoria, c\'è il pulsante «Aggiungi il promemoria standard».' },
@@ -6355,7 +6356,7 @@ window.CPA_COMMUNITY = {
     function hasBack(name, set, cn) { var h = get(key(name, set, cn)); return !!(h && h.b); }
 
     /* ----- anteprima grande ----- */
-    function closeLb() { if (lb) { lb.remove(); lb = null; } }
+    function closeLb() { if (lb) { var f = lb._onClose; lb.remove(); lb = null; if (f) f(); } }
     function showLb(el, side) {
       var h = get(el.getAttribute('data-thk')); if (!h || !h.u) return;
       closeLb();
@@ -6424,6 +6425,130 @@ window.CPA_COMMUNITY = {
         return '<button class="pr' + (isCur ? ' cur' : '') + (pv0 != null && pv0 === pv.min ? ' low' : '') + (mine ? ' sug' : '') + '" data-a="lb-pick" data-s="' + esc(c.set) + '" data-n="' + esc(c.collector_number) + '" title="' + esc(c.set_name || '') + '">' +
           '<img src="' + esc(url(f.u, 'normal')) + '" alt="' + esc(c.set_name || c.set) + '" loading="lazy"><span>' + esc(c.set.toUpperCase()) + ' ' + esc(c.collector_number) + ' \u00b7 ' + esc((c.released_at || '').slice(0, 4)) + '</span><span class="pp">' + (pv0 != null ? eurF(pv0) : 'senza prezzo') + (pv0 != null && pv0 === pv.min ? ' \u00b7 la più economica' : '') + '</span>' + (c.set_name ? '<span class="pn">' + esc(c.set_name) + '</span>' : '') + '</button>';
       }).join('');
+    }
+    /* ----- «Applica il set suggerito»: cerca nel mazzo le carte con stampe di quel set; una sola → la imposta, più d'una → fa scegliere guardando le carte ----- */
+    var psx = null;
+    function eligible(c) { return !c.design && !c.mpc; }
+    function scanSet(d, ps, progress) {
+      var groups = {}, order = [];
+      [d.cards || [], d.side || []].forEach(function (list) {
+        list.forEach(function (c) {
+          if (!eligible(c)) return;
+          var k = C.keyOf(c.name), g = groups[k] || (groups[k] = { key: k, name: c.name, rows: [], cands: [], inSet: false });
+          if (!g.rows.length) order.push(k);
+          g.rows.push(c); if (String(c.set || '').toLowerCase() === ps) g.inSet = true;
+        });
+      });
+      var todo = order.filter(function (k) { return !groups[k].inSet; }), found = [], chunks = [];
+      for (var i = 0; i < todo.length; i += 20) chunks.push(todo.slice(i, i + 20));
+      var done = 0, chain = Promise.resolve();
+      chunks.forEach(function (ch) {
+        chain = chain.then(function () {
+          var q = 'set:' + ps + ' (' + ch.map(function (k) { return '!"' + groups[k].name.replace(/"/g, '') + '"'; }).join(' or ') + ')';
+          var path = '/cards/search?q=' + encodeURIComponent(q) + '&unique=prints&order=set';
+          function page(pt, n) {
+            return getJson(pt).then(function (res) {
+              ((res && res.data) || []).forEach(function (c) { if (!c.digital) found.push(c); });
+              if (res && res.has_more && res.next_page && n < 6) return page(res.next_page.replace(API, ''), n + 1);
+            });
+          }
+          return page(path, 0).then(function () { done += ch.length; if (progress) progress(done, todo.length); });
+        });
+      });
+      return chain.then(function () {
+        found.forEach(function (c) {
+          todo.forEach(function (k) {
+            var g = groups[k]; if (!nameIs(c, g.name)) return;
+            var f = faces(c); if (!f) return;
+            cache[key(g.name, c.set, c.collector_number)] = { u: f.u, b: f.b, t: Date.now() };
+            if (!g.cands.some(function (x) { return x.set === c.set && x.collector_number === c.collector_number; })) g.cands.push(c);
+          });
+        });
+        persist();
+        var out = { auto: [], multi: [], none: 0, same: 0 };
+        order.forEach(function (k) {
+          var g = groups[k], qty = g.rows.reduce(function (a, r) { return a + (r.qty || 0); }, 0);
+          if (g.inSet) out.same += qty;
+          else if (!g.cands.length) out.none += qty;
+          else if (g.cands.length === 1) out.auto.push({ g: g, c: g.cands[0], qty: qty });
+          else out.multi.push({ g: g, qty: qty });
+        });
+        return out;
+      });
+    }
+    /* stessa carta in due righe con la stessa stampa → una riga sola */
+    function mergeRows(list) {
+      var seen = {}, out = [];
+      list.forEach(function (c) {
+        var k = C.keyOf(c.name) + '|' + String(c.set || '').toLowerCase() + '|' + String(c.cn || '').toLowerCase() + '|' + (c.mpc || '') + '|' + (c.design || '');
+        if (seen[k] && !c.design) seen[k].qty += c.qty; else { seen[k] = c; out.push(c); }
+      });
+      return out;
+    }
+    function commitSet(x) {
+      var picks = x.auto.concat(x.picks), n = picks.reduce(function (a, p) { return a + p.qty; }, 0);
+      if (!picks.length) return;
+      mutate(function () { return x.set.toUpperCase() + ' impostato su ' + n + (n === 1 ? ' carta' : ' carte') + ' (' + picks.length + ' diverse)' + (x.none ? ' · ' + x.none + ' senza stampe in ' + x.set.toUpperCase() : '') + (x.skipped ? ' · ' + x.skipped + ' lasciate com\u2019erano' : ''); }, function () {
+        var d = getDeck(x.id); if (!d) return;
+        picks.forEach(function (p) {
+          p.g.rows.forEach(function (r) { if (String(r.set || '').toLowerCase() !== x.set) { r.set = p.c.set.toUpperCase(); r.cn = String(p.c.collector_number); } });
+        });
+        d.cards = mergeRows(d.cards); if (d.side) d.side = mergeRows(d.side); d.updatedAt = Date.now();
+      });
+    }
+    function psTags(c) {
+      var t = [], fe = c.frame_effects || [];
+      if (c.border_color === 'borderless') t.push('senza bordo'); if (fe.indexOf('extendedart') >= 0) t.push('extended art'); if (fe.indexOf('showcase') >= 0) t.push('showcase');
+      if (c.promo) t.push('promo'); if (c.finishes && c.finishes.length && c.finishes.indexOf('nonfoil') < 0) t.push('solo foil');
+      return t.join(' \u00b7 ');
+    }
+    function psDialogPaint() {
+      if (!lb || !psx) return;
+      var it = psx.multi[psx.k], total = psx.multi.length, ps = psx.set.toUpperCase();
+      var unit = function (c) { var q = c.prices || {}, v = q.eur != null ? parseFloat(q.eur) : q.eur_foil != null ? parseFloat(q.eur_foil) : NaN; return isNaN(v) ? null : v; };
+      lb.innerHTML = '<div class="lb-box wide" data-a="lb-keep"><div class="lb-bar"><span class="lb-name">' + esc(ps) + ' \u00b7 carta ' + (psx.k + 1) + ' di ' + total + ': ' + esc(it.g.name) + (it.qty > 1 ? ' (' + it.qty + '\u00d7)' : '') + '</span>' +
+        '<button class="btn small" data-a="ps-skip">Lascia com\u2019\u00e8</button><button class="btn small" data-a="lb-close" id="lbx">Fine</button></div>' +
+        '<p class="hint pr-hint">Questa carta ha ' + it.g.cands.length + ' stampe in ' + esc(setLabel(psx.set) || ps) + ': scegli quella che hai. \u00abFine\u00bb chiude e applica quelle che hai scelto finora.</p>' +
+        '<div class="pr-grid" id="prgrid">' + it.g.cands.map(function (c, i) {
+          var f = faces(c), pv0 = unit(c), tg = psTags(c);
+          return '<button class="pr" data-a="ps-pick" data-i="' + i + '" title="' + esc(c.set_name || '') + '"><img src="' + esc(url(f.u, 'normal')) + '" alt="' + esc(c.name) + '" loading="lazy"><span>' + esc(c.set.toUpperCase()) + ' ' + esc(c.collector_number) + ' \u00b7 ' + esc((c.released_at || '').slice(0, 4)) + '</span><span class="pp">' + (pv0 != null ? eurF(pv0) : 'senza prezzo') + '</span>' + (tg ? '<span class="pn">' + esc(tg) + '</span>' : '') + '</button>';
+        }).join('') + '</div></div>';
+      var g = lb.querySelector('#prgrid'); if (g) g.scrollTop = 0;
+    }
+    function psNext() {
+      if (!psx) return;
+      psx.k++;
+      if (psx.k >= psx.multi.length) { closeLb(); return; }
+      psDialogPaint();
+    }
+    function psPick(i) { if (!psx) return; var it = psx.multi[psx.k], c = it && it.g.cands[parseInt(i, 10)]; if (!c) return; psx.picks.push({ g: it.g, c: c, qty: it.qty }); psNext(); }
+    function psSkip() { if (!psx) return; psx.skipped += psx.multi[psx.k].qty; psNext(); }
+    function psFinish() {
+      var x = psx; psx = null; if (!x) return;
+      for (var i = x.k; i < x.multi.length; i++) x.skipped += x.multi[i].qty;
+      commitSet(x); ui.psBusy = null; render();
+    }
+    function applySet(deckId) {
+      var d = getDeck(deckId), ps = d && C.setCode(d.pset); if (!d || !ps || ui.psBusy) return;
+      ui.psBusy = d.id; render();
+      var tot = (d.cards || []).concat(d.side || []).filter(eligible).length;
+      toast('Cerco le stampe di ' + ps.toUpperCase() + ' per ' + plural(tot, 'carta', 'carte') + '\u2026', null, true);
+      var fail = function () { ui.psBusy = null; toast('Non riesco a contattare Scryfall: riprova tra poco.'); render(); };
+      scanSet(d, ps).then(function (x) {
+        x.id = d.id; x.set = ps; x.picks = []; x.skipped = 0;
+        if (!x.auto.length && !x.multi.length) {
+          ui.psBusy = null; hideToast();
+          toast(x.same ? 'Le carte che hanno stampe in ' + ps.toUpperCase() + ' sono gi\u00e0 tutte in quel set (' + x.same + ').' : 'Nessuna carta del mazzo ha stampe in ' + ps.toUpperCase() + '.'); render(); return;
+        }
+        if (!x.multi.length) { ui.psBusy = null; commitSet(x); render(); return; }
+        hideToast(); psx = x; x.k = 0;
+        closeLb();
+        lb = document.createElement('div'); lb.id = 'lb'; lb.className = 'lb'; lb.setAttribute('data-a', 'lb-close');
+        lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', 'Scegli le stampe di ' + ps.toUpperCase());
+        lb._el = { getAttribute: function () { return null; } }; lb._side = 0; lb._onClose = psFinish;
+        document.body.appendChild(lb); psDialogPaint();
+        var bx = lb.querySelector('#lbx'); if (bx) bx.focus();
+      }, fail);
     }
     function prQuery(v) { pv.q = String(v || ''); paintPrints(); }
     function prOnly() { pv.only = !pv.only; var b = lb && lb.querySelector('[data-a="pr-only"]'); if (b) b.setAttribute('aria-pressed', pv.only ? 'true' : 'false'); paintPrints(); }
@@ -6606,7 +6731,7 @@ window.CPA_COMMUNITY = {
     }
 
     return { enabled: enabled, thumb: thumb, hydrate: hydrate, get: get, key: key, count: count, clear: clear,
-      open: function (el) { showLb(el, false); }, flip: flipLb, prints: printsLb, prQuery: prQuery, prOnly: prOnly, sets: loadSets, setsNow: setsNow, setLabel: setLabel, resolveSet: resolveSet, openPrints: openPrints, pic: pic, hasBack: hasBack, onFill: function (f) { fillFns.push(f); }, back: backLb, pick: pickLb, close: closeLb, hover: hover, tab: tabLb, mpcClick: mpcClick, mpcChange: mpcChange, isOpen: function () { return !!lb; } };
+      open: function (el) { showLb(el, false); }, flip: flipLb, prints: printsLb, prQuery: prQuery, prOnly: prOnly, sets: loadSets, setsNow: setsNow, setLabel: setLabel, resolveSet: resolveSet, openPrints: openPrints, applySet: applySet, psPick: psPick, psSkip: psSkip, pic: pic, hasBack: hasBack, onFill: function (f) { fillFns.push(f); }, back: backLb, pick: pickLb, close: closeLb, hover: hover, tab: tabLb, mpcClick: mpcClick, mpcChange: mpcChange, isOpen: function () { return !!lb; } };
   })();
 
   /* ---------- Struttura generale ---------- */
@@ -7129,6 +7254,11 @@ window.CPA_COMMUNITY = {
       '<datalist id="setlist">' + setOptions(l) + '</datalist>' +
       '<p class="hint">Quando cambi la stampa di una carta, quelle di questo set compaiono per prime. Lascia vuoto per l\u2019ordine normale.</p>';
   }
+  function psetApplyBtn(d) {
+    var on = !!C.setCode(d.pset), busy = ui.psBusy === d.id;
+    return '<div class="btns pset-apply"><button class="btn small" data-a="pset-apply" data-id="' + esc(d.id) + '"' + (on && !busy ? '' : ' disabled') + (on ? '' : ' title="Imposta prima un set suggerito"') + '>' + (busy ? 'Cerco le stampe\u2026' : 'Applica il set suggerito alle carte del mazzo') + '</button></div>' +
+      '<p class="hint">' + (on ? 'Cerca nel mazzo le carte con stampe di ' + esc(d.pset.toUpperCase()) + ': se ce n\u2019\u00e8 una sola la imposta da sola, se sono pi\u00f9 d\u2019una ti fa scegliere guardando le carte. Le carte con arte o stampe tue (design, MPC Fill) non si toccano. Puoi annullare.' : 'Con un set suggerito impostato, qui puoi applicarlo in un colpo solo a tutte le carte del mazzo.') + '</p>';
+  }
   function setPset(text, done) {
     IMG.resolveSet(text).then(function (r) {
       if (r === null) { toast('Non conosco il set \u00ab' + String(text).trim() + '\u00bb: scrivi la sigla (es. MH3) o scegli dall\u2019elenco.'); done(null); return; }
@@ -7392,7 +7522,7 @@ window.CPA_COMMUNITY = {
     var tools = '<div class="dk-tools">' + tabs + (cardsTab ? '<button class="btn small dk-addb" data-a="dadd-toggle" aria-expanded="' + !!ui.dAdd + '" aria-controls="dadd">+ Aggiungi carta</button><div class="search dk-q">' + IC.search + '<input class="input" data-c="deckq" type="search" placeholder="Cerca nelle carte del mazzo" autocomplete="off" aria-label="Cerca nel mazzo" value="' + esc(ui.deckQ) + '"></div>' +
       '<label class="dk-sort">Ordina<select class="select" data-c="dsort" aria-label="Ordina le carte">' + opt('name', 'Nome') + opt('cmc', 'Costo di mana') + opt('price', 'Prezzo') + '</select></label>' : '') + '</div>';
     var man = '<section class="panel dk-man" id="dman"' + (ui.dMan ? '' : ' hidden') + '><label class="lbl">Nome<input class="input" data-c="deck-name" value="' + esc(d.name) + '"></label>' +
-      (d.kind === 'deck' ? '<label class="lbl">Commander<select class="select" data-c="deck-cmd">' + cmdOpts + '</select></label><p class="hint">' + statusHint(d) + '</p>' + psetField('deck-pset', d.pset) : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
+      (d.kind === 'deck' ? '<label class="lbl">Commander<select class="select" data-c="deck-cmd">' + cmdOpts + '</select></label><p class="hint">' + statusHint(d) + '</p>' + psetField('deck-pset', d.pset) + psetApplyBtn(d) : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
       '<div class="btns"><button class="btn small" data-a="export-deck">Scarica lista .txt</button><button class="btn small" data-a="copy-deck">Copia lista</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina il mazzo') + '</button></div></section>';
     var body;
     if (ui.deckTab === 'prices' && CARDS.ready()) {
@@ -7943,6 +8073,9 @@ window.CPA_COMMUNITY = {
       case 'lb-flip': IMG.flip(); break;
       case 'lb-prints': IMG.prints(); break;
       case 'pr-only': IMG.prOnly(); break;
+      case 'ps-pick': IMG.psPick(el.dataset.i); break;
+      case 'ps-skip': IMG.psSkip(); break;
+      case 'pset-apply': IMG.applySet(el.dataset.id); break;
       case 'lb-back': IMG.back(); break;
       case 'lb-pick': { var sy = window.scrollY; IMG.pick(el.dataset.s, el.dataset.n); window.scrollTo(0, sy); } break;
       case 'lb-keep': break;

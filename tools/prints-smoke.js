@@ -28,7 +28,8 @@ const card = (name, set, cn) => {
   const page = await ctx.newPage();
   const errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|net::ERR|CORS/.test(m.text())) errors.push(m.text()); });
   const JPG = Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=', 'base64');
-  let setsCalls = 0;
+  let setsCalls = 0; const setQueries = [];
+  const BY_SET = { c21: [['Sol Ring', '263'], ['Command Tower', '350'], ['Command Tower', '351', { border_color: 'borderless' }], ['Mountain', '400'], ['Mountain', '401'], ['Mountain', '402']] };
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   await ctx.route('https://cards.scryfall.io/**', r => r.fulfill({ status: 200, contentType: 'image/jpeg', body: JPG, headers: { 'access-control-allow-origin': '*' } }));
   await ctx.route('https://api.scryfall.com/**', r => {
@@ -40,7 +41,16 @@ const card = (name, set, cn) => {
       const ids = JSON.parse(r.request().postData()).identifiers;
       return json({ data: ids.map(i => i.name ? card(i.name, i.set || 'tst', '1') : card('Sol Ring', i.set, i.collector_number)), not_found: [] });
     }
-    if (u.pathname === '/cards/search') return json({ data: PRINTS.map(p => card('Sol Ring', p[0], p[1])) });
+    if (u.pathname === '/cards/search') {
+      const q = u.searchParams.get('q') || '', m = q.match(/^set:(\w+) \((.*)\)$/);
+      if (m) {
+        setQueries.push(q);
+        const names = [...m[2].matchAll(/!"([^"]+)"/g)].map(x => x[1]), out = [];
+        (BY_SET[m[1]] || []).forEach(([nm, cn, extra]) => { if (names.includes(nm)) out.push(Object.assign(card(nm, m[1], cn), extra || {})); });
+        return out.length ? json({ data: out }) : json({ object: 'error', code: 'not_found' }, 404);
+      }
+      return json({ data: PRINTS.map(p => card('Sol Ring', p[0], p[1])) });
+    }
     return json({}, 404);
   });
   const nav = v => page.locator('[data-a="nav"][data-v="' + v + '"]:visible').first().click();
@@ -105,6 +115,67 @@ const card = (name, set, cn) => {
   await page.click('#lbx');
   await page.evaluate(() => { const p = document.getElementById('dman'); if (p) p.hidden = false; });
   await page.fill('[data-c="deck-pset"]', 'cmm'); await page.dispatchEvent('[data-c="deck-pset"]', 'change'); await page.waitForTimeout(250);
+
+  /* --- «Applica il set suggerito alle carte del mazzo» --- */
+  await page.evaluate(() => { const p = document.getElementById('dman'); if (p) p.hidden = false; });
+  ok(await page.locator('[data-a="pset-apply"]').count() === 1 && await page.isEnabled('[data-a="pset-apply"]'), 'il pulsante «Applica il set suggerito» c\u2019è ed è attivo con un set impostato');
+  await page.fill('[data-c="deck-pset"]', 'c21'); await page.dispatchEvent('[data-c="deck-pset"]', 'change');
+  await page.waitForFunction(() => document.querySelector('[data-c="deck-pset"]').value.indexOf('C21') === 0);
+  await page.evaluate(() => { const p = document.getElementById('dman'); if (p) p.hidden = false; });
+  const rowOf = nm => page.evaluate(nm => { const r = [...document.querySelectorAll('.dg:not([data-g="side"]) .dr')].find(x => x.dataset.n === nm); return r ? r.dataset.s + '/' + r.dataset.c : null; }, nm);
+  const before = [await rowOf('Sol Ring'), await rowOf('Command Tower'), await rowOf('Mountain')];
+  const doApply = async () => {
+    await page.evaluate(() => { const p = document.getElementById('dman'); if (p) p.hidden = false; });
+    await page.click('[data-a="pset-apply"]'); await page.waitForSelector('#lb .lb-name');
+    const seen = [];
+    for (let i = 0; i < 4 && await page.locator('#lb .lb-name').count(); i++) {
+      const nm = await page.textContent('#lb .lb-name'); seen.push(nm);
+      if (/Command Tower/.test(nm)) await page.click('#lb .pr[data-i="1"]'); else await page.click('[data-a="ps-skip"]');
+      await page.waitForTimeout(100);
+    }
+    return seen;
+  };
+  await shot('4-gestisci'); await page.click('[data-a="pset-apply"]');
+  await page.waitForSelector('#lb .lb-name'); await shot('5-scelta');
+  const seen = [];
+  for (let i = 0; i < 4 && await page.locator('#lb .lb-name').count(); i++) {
+    const nm = await page.textContent('#lb .lb-name'); seen.push(nm);
+    ok(/ di 2: /.test(nm), 'il dialogo dice a che carta siamo: ' + nm);
+    if (/Command Tower/.test(nm)) { eq(await page.locator('#lb .pr[data-a="ps-pick"]').count(), 2, 'Command Tower: due stampe da scegliere'); ok(/senza bordo/.test(await page.textContent('#lb')), 'le stampe speciali sono etichettate (senza bordo)'); await page.click('#lb .pr[data-i="1"]'); }
+    else { eq(await page.locator('#lb .pr[data-a="ps-pick"]').count(), 3, 'Mountain: tre stampe'); ok(/8×/.test(nm), 'la quantità è indicata'); await page.click('[data-a="ps-skip"]'); }
+    await page.waitForTimeout(100);
+  }
+  eq(seen.length, 2, 'la finestra chiede solo le due carte con più stampe (Sol Ring ha una sola stampa nel set e va da sola)');
+  await page.waitForFunction(() => /impostato su 2 carte/.test(document.body.innerText));
+  const t = await page.evaluate(() => document.body.innerText); ok(/2 diverse/.test(t) && /8 lasciate/.test(t), 'il riepilogo dice cosa è successo');
+  eq([await rowOf('Sol Ring'), await rowOf('Command Tower'), await rowOf('Mountain')], ['C21/263', 'C21/351', before[2]], 'Sol Ring automatica, Command Tower scelta, Mountain lasciata com\u2019era');
+  ok(setQueries.length >= 1 && setQueries.every(q => q.startsWith('set:c21 (')), 'si chiede a Scryfall solo il set suggerito, per nome');
+  /* annulla: un solo tocco rimette tutto */
+  await page.click('[data-a="undo"]'); await page.waitForTimeout(200);
+  eq([await rowOf('Sol Ring'), await rowOf('Command Tower'), await rowOf('Mountain')], before, 'Annulla rimette le stampe di prima');
+  eq((await doApply()).length, 2, 'applicandolo di nuovo si rifà lo stesso percorso');
+  await page.waitForFunction(() => /impostato su 2 carte/.test(document.body.innerText));
+  /* chiudere a metà con «Fine»: si applica quel che c'è (la stampa unica) e il resto resta com'era */
+  await page.click('[data-a="undo"]'); await page.waitForTimeout(200);
+  eq([await rowOf('Sol Ring'), await rowOf('Command Tower'), await rowOf('Mountain')], before, 'secondo annulla');
+  await page.evaluate(() => { const p = document.getElementById('dman'); if (p) p.hidden = false; });
+  await page.click('[data-a="pset-apply"]'); await page.waitForSelector('#lb .lb-name'); await page.click('#lbx');
+  await page.waitForFunction(() => /impostato su 1 carta /.test(document.body.innerText));
+  ok(/9 lasciate/.test(await page.evaluate(() => document.body.innerText)), 'le carte non decise risultano lasciate com\u2019erano');
+  eq([await rowOf('Sol Ring'), await rowOf('Command Tower'), await rowOf('Mountain')], ['C21/263', before[1], before[2]], 'solo la stampa unica è stata applicata');
+  await page.click('[data-a="undo"]'); await page.waitForTimeout(200);
+  eq(await rowOf('Sol Ring'), before[0], 'annulla anche in questo caso');
+  eq((await doApply()).length, 2, 'e si può rifare');
+  await page.waitForFunction(() => /impostato su 2 carte/.test(document.body.innerText));
+  /* ancora: restano da decidere solo le carte non ancora nel set */
+  await page.evaluate(() => { const p = document.getElementById('dman'); if (p) p.hidden = false; });
+  await page.click('[data-a="pset-apply"]'); await page.waitForSelector('#lb .lb-name');
+  ok(/ di 1: Mountain/.test(await page.textContent('#lb .lb-name')), 'rilanciandolo, le carte già nel set non vengono richieste');
+  await page.click('#lbx'); await page.waitForTimeout(150);
+  ok(!await page.locator('#lb').count() && await rowOf('Mountain') === before[2], 'chiudere con «Fine» senza scegliere non cambia nulla');
+  await page.evaluate(() => { const p = document.getElementById('dman'); if (p) p.hidden = false; });
+  await page.fill('[data-c="deck-pset"]', 'cmm'); await page.dispatchEvent('[data-c="deck-pset"]', 'change');
+  await page.waitForFunction(() => document.querySelector('[data-c="deck-pset"]').value.indexOf('CMM') === 0);
 
   /* --- Builder (Crea PDF del mazzo) --- */
   await page.click('[data-a="make-pdf"]'); await page.waitForSelector('[data-a="bd-prints"]');
