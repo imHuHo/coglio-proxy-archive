@@ -300,4 +300,24 @@ function sum(cards) { return cards.reduce((t, c) => t + c.qty, 0); }
   ok(C.exportFileName({ name: 'Kaalia — Upgrade è fatto!' }) === 'Kaalia-Upgrade-e-fatto.txt' && C.exportFileName({ name: '!!!' }) === 'mazzo.txt', 'nome del file');
 }
 
+
+// set suggerito del mazzo e ricerca nelle stampe
+{
+  const L = [{ set: 'mh3', name: 'Modern Horizons 3', cn: '302', year: '2024' }, { set: 'c21', name: 'Commander 2021', cn: '263', year: '2021' }, { set: 'mh3', name: 'Modern Horizons 3', cn: '1', year: '2024' }, { set: '2xm', name: 'Double Masters', cn: '354', year: '2020' }];
+  const g = x => x;
+  ok(C.setCode(' MH3 ') === 'mh3' && C.setCode('x') === '' && C.setCode('mh 3') === '' && C.setCode(null) === '' && C.setCode('abcdefg') === '', 'setCode: sigla pulita o vuota');
+  ok(C.orderPrints(L, 'C21', g).map(x => x.cn).join() === '263,302,1,354', 'orderPrints: set suggerito per primo, resto in ordine');
+  ok(C.orderPrints(L, 'mh3', g).map(x => x.cn).join() === '302,1,263,354', 'orderPrints: più stampe dello stesso set restano in ordine');
+  ok(C.orderPrints(L, '', g).map(x => x.cn).join() === '302,263,1,354' && C.orderPrints(L, 'zzz', g).length === 4, 'orderPrints: senza set o con set assente non cambia nulla');
+  ok(L.map(x => x.cn).join() === '302,263,1,354', 'orderPrints non modifica l\u2019originale');
+  ok(C.filterPrints(L, { q: 'commander' }, g).join() === '1', 'filterPrints: nome del set');
+  ok(C.filterPrints(L, { q: 'MH3 302' }, g).join() === '0' && C.filterPrints(L, { q: 'horizons 1' }, g).join() === '2' && C.filterPrints(L, { q: '2020' }, g).join() === '3', 'filterPrints: sigla, numero, anno, più parole');
+  ok(C.filterPrints(L, { q: 'zz' }, g).length === 0 && C.filterPrints(L, { q: 'MÓDERN' }, g).length === 2 && C.filterPrints(L, { q: '  ' }, g).length === 4, 'filterPrints: testo vuoto = tutte');
+  ok(C.filterPrints(L, { only: true, pset: 'mh3' }, g).join() === '0,2' && C.filterPrints(L, { only: true, pset: '' }, g).length === 4, 'filterPrints: solo il set suggerito');
+  ok(C.filterPrints(L, { only: true, pset: 'mh3', q: '302' }, g).join() === '0', 'filtro e ricerca insieme');
+  const sd = C.sanitizeDeck({ id: 'a', name: 'X', kind: 'deck', pset: ' MH3 ', cards: [] });
+  ok(sd.pset === 'mh3' && !('pset' in C.sanitizeDeck({ id: 'a', name: 'X', cards: [] })) && !('pset' in C.sanitizeDeck({ id: 'a', name: 'X', pset: 'bad set' })) && !('pset' in C.sanitizeDeck({ id: 'b', name: 'Y', kind: 'binder', pset: 'mh3' })), 'sanitizeDeck: pset salvato solo se valido e solo nei mazzi');
+  ok(C.sanitizeDeck(JSON.parse(JSON.stringify(sd))).pset === 'mh3', 'pset sopravvive a esportazione e ripristino');
+}
+
 console.log('OK, ' + n + ' controlli passati');

@@ -1501,3 +1501,17 @@ body.pe-focus .pe-grid { min-height: calc(100dvh - 64px); }
 .dz-txr { display: grid; gap: 4px; }
 .dz-txt { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; }
 .dz-txt output { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+
+/* Cambia stampa: ricerca, filtro per set e set suggerito del mazzo */
+.pr-tools, .bd-ptools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; width: 100%; }
+.pr-tools .input { flex: 1 1 220px; min-width: 0; }
+.pr-count { color: #fffc; font: 600 12.5px var(--mono); margin-left: auto; }
+.pr-hint { color: #fffd; margin: 6px 0 0; font-size: 13px; width: 100%; }
+.pr-hint b { color: #fff; }
+.pr.sug { border-style: dashed; border-color: var(--accent); }
+.pr.sug.cur { border-style: solid; }
+.bd-ptools { padding: 12px 16px 0; }
+.bd-ptools .input { flex: 1 1 220px; min-width: 0; }
+.bd-phint { margin: 6px 16px 0; font-size: 13px; }
+.bd-mp.sug { border-style: dashed; border-color: var(--accent); }
+.bd-mp.sug.on { border-style: solid; border-color: var(--free); }

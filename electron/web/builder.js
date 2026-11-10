@@ -166,12 +166,37 @@
   /* ---------- stampe alternative ---------- */
   function openPicker(e) {
     if (bd.picker === e.id) { bd.picker = null; bd.pickList = null; H.render(); return; }
-    bd.picker = e.id; bd.pickList = 'load'; H.render();
+    bd.picker = e.id; bd.pickList = 'load'; bd.pickQ = ''; bd.pickOnly = false; H.render();
     var my = e.id;
     getResolver().printings(e.card && e.card.name ? e.card.name.split(' // ')[0] : e.name).then(function (list) {
       if (bd.picker !== my) return;
-      bd.pickList = list; H.render();
+      bd.pickList = C.orderPrints(list, deckPset(), pgGet); H.render();
     }, function () { if (bd.picker === my) { bd.pickList = []; H.toast('Non riesco a caricare le stampe di questa carta.'); H.render(); } });
+  }
+  /* Set suggerito del mazzo (se la lista viene da un mazzo): le sue stampe vanno per prime. */
+  function deckPset() { var d = bd && bd.source === 'deck' && bd.deckId ? H.getDeck(bd.deckId) : null; return d && d.pset || ''; }
+  function pgGet(it) { return { set: it.set, name: it.setName, cn: it.cn, year: (it.released || '').slice(0, 4) }; }
+  function pickGridHtml(e, list) {
+    var ps = deckPset(), idx = C.filterPrints(list, { q: bd.pickQ, only: bd.pickOnly, pset: ps }, pgGet);
+    if (!idx.length) return '<p class="bd-mwait">Nessuna stampa corrisponde: prova con meno parole o togli il filtro.</p>';
+    return idx.map(function (i) {
+      var it = list[i], f = X.faces(it.card, 'normal')[0], cur = e.card && e.card.id === it.card.id, yr = (it.released || '').slice(0, 4), mine = ps && it.set === ps;
+      return '<button class="bd-mp' + (cur ? ' on' : '') + (mine ? ' sug' : '') + '" data-a="bd-pick" data-id="' + e.id + '" data-n="' + i + '" aria-label="' + esc(it.setName + ' ' + it.set.toUpperCase() + ' ' + it.cn) + '">' +
+        '<span class="bd-mimg"><img src="' + esc(f ? f.url : '') + '" alt="" loading="lazy">' + (cur ? '<i>In uso</i>' : '') + '</span>' +
+        '<b>' + esc(it.set.toUpperCase()) + ' · ' + esc(it.cn) + '</b><small>' + esc(it.setName) + (yr ? ' · ' + esc(yr) : '') + '</small></button>';
+    }).join('');
+  }
+  function pickCountText(list) {
+    var n = C.filterPrints(list, { q: bd.pickQ, only: bd.pickOnly, pset: deckPset() }, pgGet).length;
+    return (n === list.length ? list.length + (list.length === 1 ? ' stampa' : ' stampe') : n + ' di ' + list.length + ' stampe');
+  }
+  /* Mentre si scrive nella ricerca si ridisegna solo la griglia, così la tastiera non si perde. */
+  function paintPicker() {
+    var e = bd.picker != null ? entryById(bd.picker) : null, list = bd.pickList; if (!e || !Array.isArray(list)) return;
+    var g = document.querySelector('.bd-mgrid'), c = document.getElementById('bd-mcount'), p = document.querySelector('[data-a="bd-ponly"]');
+    if (g) g.innerHTML = pickGridHtml(e, list);
+    if (c) c.textContent = ' · ' + pickCountText(list);
+    if (p) p.setAttribute('aria-pressed', bd.pickOnly ? 'true' : 'false');
   }
   function closePicker() { if (bd && bd.picker != null) { bd.picker = null; bd.pickList = null; H.render(); } }
   function pickPrint(e, i) {
@@ -432,14 +457,15 @@
     var list = bd.pickList, body;
     if (list === 'load') body = '<p class="bd-mwait">Carico le stampe di ' + esc(e.name) + '…</p>';
     else if (!Array.isArray(list) || !list.length) body = '<p class="bd-mwait">Non ho trovato altre stampe di questa carta.</p>';
-    else body = '<div class="bd-mgrid">' + list.map(function (it, i) {
-      var f = X.faces(it.card, 'normal')[0], cur = e.card && e.card.id === it.card.id, yr = (it.released || '').slice(0, 4);
-      return '<button class="bd-mp' + (cur ? ' on' : '') + '" data-a="bd-pick" data-id="' + e.id + '" data-n="' + i + '" aria-label="' + esc(it.setName + ' ' + it.set.toUpperCase() + ' ' + it.cn) + '">' +
-        '<span class="bd-mimg"><img src="' + esc(f ? f.url : '') + '" alt="" loading="lazy">' + (cur ? '<i>In uso</i>' : '') + '</span>' +
-        '<b>' + esc(it.set.toUpperCase()) + ' · ' + esc(it.cn) + '</b><small>' + esc(it.setName) + (yr ? ' · ' + esc(yr) : '') + '</small></button>';
-    }).join('') + '</div>';
+    else {
+      var ps = deckPset();
+      body = '<div class="bd-ptools"><input class="input" data-c="bd-pq" type="search" placeholder="Cerca set, nome o numero" aria-label="Cerca tra le stampe" autocomplete="off" value="' + esc(bd.pickQ || '') + '">' +
+        (ps ? '<button class="chip" data-a="bd-ponly" aria-pressed="' + !!bd.pickOnly + '" title="Mostra solo le stampe del set suggerito del mazzo">Solo ' + esc(ps.toUpperCase()) + '</button>' : '') + '</div>' +
+        (ps ? '<p class="hint bd-phint">Set suggerito del mazzo: <b>' + esc(ps.toUpperCase()) + '</b>. Le sue stampe sono per prime e hanno il bordo evidenziato.</p>' : '') +
+        '<div class="bd-mgrid">' + pickGridHtml(e, list) + '</div>';
+    }
     return '<div class="bd-modal" data-a="bd-pclose" role="dialog" aria-modal="true" aria-label="Scegli la stampa"><div class="bd-mbox" data-a="bd-keep">' +
-      '<div class="bd-mhead"><div><h2>Scegli la stampa</h2><p>' + esc(e.name) + (Array.isArray(list) ? ' · ' + list.length + (list.length === 1 ? ' stampa' : ' stampe') : '') + '</p></div>' +
+      '<div class="bd-mhead"><div><h2>Scegli la stampa</h2><p>' + esc(e.name) + '<span id="bd-mcount">' + (Array.isArray(list) ? ' · ' + pickCountText(list) : '') + '</span></p></div>' +
       '<button class="btn" data-a="bd-pclose">Chiudi</button></div>' + body + '</div></div>';
   }
 
@@ -533,6 +559,7 @@
       case 'bd-prints': if (e) openPicker(e); break;
       case 'bd-pick': if (e) pickPrint(e, parseInt(el.dataset.n, 10)); break;
       case 'bd-pclose': closePicker(); break;
+      case 'bd-ponly': bd.pickOnly = !bd.pickOnly; paintPicker(); break;
       case 'bd-keep': break;
       case 'bd-psave':
         var nm = (bd.presetName || '').trim();
@@ -551,6 +578,7 @@
     init();
     if (c === 'bd-text') bd.text = el.value;
     else if (c === 'bd-pname') bd.presetName = el.value;
+    else if (c === 'bd-pq') { bd.pickQ = el.value; paintPicker(); }
     else if (c === 'bd-opt') { bd.opts[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value; schedulePreview(); }
     else if (c === 'bd-up') { bd.upBleed = el.value; schedulePreview(); }
   }

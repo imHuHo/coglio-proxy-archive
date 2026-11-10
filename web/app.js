@@ -1042,6 +1042,65 @@
       document.body.appendChild(lb);
       var x = lb.querySelector('#lbx'); if (x) x.focus();
     }
+    /* ----- elenco dei set (per il «set suggerito» del mazzo): si scarica una volta e resta una settimana ----- */
+    var setsList = null, setsP = null, SETS_LS = 'cpa:sets:v1';
+    function setsNow() { return setsList; }
+    function loadSets() {
+      if (setsList) return Promise.resolve(setsList);
+      try { var h = JSON.parse(localStorage.getItem(SETS_LS) || 'null'); if (h && Array.isArray(h.l) && h.l.length && Date.now() - h.t < 7 * 864e5) { setsList = h.l; return Promise.resolve(setsList); } } catch (e) { /* ignorato */ }
+      return setsP || (setsP = getJson('/sets').then(function (res) {
+        var l = ((res && res.data) || []).filter(function (x) { return !x.digital && ['token', 'memorabilia', 'minigame'].indexOf(x.set_type) < 0 && x.code; })
+          .map(function (x) { return { c: String(x.code).toLowerCase(), n: String(x.name || x.code), r: x.released_at || '' }; }).sort(function (a, b) { return a.r < b.r ? 1 : a.r > b.r ? -1 : 0; });
+        if (l.length) { setsList = l; try { localStorage.setItem(SETS_LS, JSON.stringify({ t: Date.now(), l: l })); } catch (e) { /* ignorato */ } }
+        setsP = null; return l;
+      }).catch(function () { setsP = null; return []; }));
+    }
+    function setLabel(code) {
+      code = C.setCode(code); if (!code) return '';
+      var f = (setsList || []).filter(function (x) { return x.c === code; })[0];
+      return code.toUpperCase() + (f ? ' \u00b7 ' + f.n : '');
+    }
+    /* Testo scritto dall'utente → {code, name}; '' se vuoto; null se non è un set che conosco. */
+    function resolveSet(text) {
+      var t = String(text == null ? '' : text).trim(); if (!t) return Promise.resolve('');
+      var head = t.split(/\s*\u00b7\s*/)[0];
+      return loadSets().then(function (list) {
+        var low = C.searchNorm(t), cd = C.setCode(head), f = null;
+        if (list.length) {
+          f = list.filter(function (x) { return x.c === cd; })[0] || list.filter(function (x) { return C.searchNorm(x.n) === low; })[0];
+          if (!f) { var part = list.filter(function (x) { return C.searchNorm(x.n).indexOf(low) >= 0; }); if (part.length === 1) f = part[0]; }
+          return f ? { code: f.c, name: f.n } : null;
+        }
+        return cd ? { code: cd, name: '' } : null;
+      });
+    }
+    /* ----- ricerca e filtro nell'elenco delle stampe ----- */
+    var pv = { list: [], min: null, q: '', only: false, deck: null };
+    function prGet(c) { return { set: c.set, name: c.set_name, cn: c.collector_number, year: (c.released_at || '').slice(0, 4) }; }
+    function psetNow() { var d = pv.deck ? getDeck(pv.deck) : null; return d && d.pset || ''; }
+    function paintPrints() {
+      var grid = lb && lb.querySelector('#prgrid'); if (!grid || !pv.list.length) return;
+      var ps = psetNow(), idx = C.filterPrints(pv.list, { q: pv.q, only: pv.only, pset: ps }, prGet), cur = lb._el, set0 = (cur.getAttribute('data-ths') || '').toLowerCase(), cn0 = (cur.getAttribute('data-thc') || '').toLowerCase();
+      var unitOf = function (c) { var q = c.prices || {}, v = q.eur != null ? parseFloat(q.eur) : q.eur_foil != null ? parseFloat(q.eur_foil) : NaN; return isNaN(v) ? null : v; };
+      var ct = lb.querySelector('#prcount'); if (ct) ct.textContent = idx.length === pv.list.length ? pv.list.length + (pv.list.length === 1 ? ' stampa' : ' stampe') : idx.length + ' di ' + pv.list.length + ' stampe';
+      if (!idx.length) { grid.innerHTML = '<p class="lb-wait">Nessuna stampa corrisponde: prova con meno parole o togli il filtro.</p>'; return; }
+      grid.innerHTML = idx.map(function (i) {
+        var c = pv.list[i], f = faces(c); if (!f) return '';
+        var pv0 = unitOf(c), isCur = c.set === set0 && String(c.collector_number).toLowerCase() === cn0, mine = ps && c.set === ps;
+        return '<button class="pr' + (isCur ? ' cur' : '') + (pv0 != null && pv0 === pv.min ? ' low' : '') + (mine ? ' sug' : '') + '" data-a="lb-pick" data-s="' + esc(c.set) + '" data-n="' + esc(c.collector_number) + '" title="' + esc(c.set_name || '') + '">' +
+          '<img src="' + esc(url(f.u, 'normal')) + '" alt="' + esc(c.set_name || c.set) + '" loading="lazy"><span>' + esc(c.set.toUpperCase()) + ' ' + esc(c.collector_number) + ' \u00b7 ' + esc((c.released_at || '').slice(0, 4)) + '</span><span class="pp">' + (pv0 != null ? eurF(pv0) : 'senza prezzo') + (pv0 != null && pv0 === pv.min ? ' \u00b7 la più economica' : '') + '</span>' + (c.set_name ? '<span class="pn">' + esc(c.set_name) + '</span>' : '') + '</button>';
+      }).join('');
+    }
+    function prQuery(v) { pv.q = String(v || ''); paintPrints(); }
+    function prOnly() { pv.only = !pv.only; var b = lb && lb.querySelector('[data-a="pr-only"]'); if (b) b.setAttribute('aria-pressed', pv.only ? 'true' : 'false'); paintPrints(); }
+    function prTools() {
+      pv = { list: [], min: null, q: '', only: false, deck: lb._el.getAttribute('data-thd') || null };
+      var ps = psetNow();
+      return '<div class="pr-tools"><input class="input" data-c="pr-q" type="search" placeholder="Cerca set, nome o numero" aria-label="Cerca tra le stampe" autocomplete="off">' +
+        (ps ? '<button class="chip" data-a="pr-only" aria-pressed="false" title="Mostra solo le stampe del set suggerito del mazzo">Solo ' + esc(ps.toUpperCase()) + '</button>' : '') +
+        '<span class="pr-count" id="prcount" role="status"></span></div>' +
+        (ps ? '<p class="hint pr-hint">Set suggerito di questo mazzo: <b>' + esc(setLabel(ps)) + '</b>. Le sue stampe sono per prime e hanno il bordo evidenziato.</p>' : '');
+    }
     function printsLb() {
       if (!lb || !lb._el) return;
       var el = lb._el, name = el.getAttribute('data-thn'), set0 = (el.getAttribute('data-ths') || '').toLowerCase(), cn0 = (el.getAttribute('data-thc') || '').toLowerCase();
@@ -1050,6 +1109,7 @@
       lb.innerHTML = '<div class="lb-box wide" data-a="lb-keep"><div class="lb-bar"><span class="lb-name">Scegli la stampa che hai: ' + esc(name) + '</span>' +
         '<button class="btn small" data-a="lb-back">Indietro</button><button class="btn small" data-a="lb-close" id="lbx">Chiudi</button></div>' +
         (hasDeck ? '<div class="lb-tabs" role="tablist"><button class="btn small on" role="tab" data-a="lb-tab" data-t="sf" aria-selected="true">Scryfall · stampe ufficiali</button><button class="btn small" role="tab" data-a="lb-tab" data-t="mpc" aria-selected="false">MPC Fill · comunità, fino a 1200 dpi</button></div>' : '') +
+        prTools() +
         '<div class="pr-grid" id="prgrid"><p class="lb-wait">Cerco le stampe su Scryfall…</p></div><div class="mpcbox" id="mpcbox" hidden></div></div>';
       var q = '!"' + String(name).replace(/"/g, '') + '"';
       var mine = lb;
@@ -1060,14 +1120,9 @@
         if (!list.length) { grid.innerHTML = '<p class="lb-wait">Nessuna stampa trovata.</p>'; return; }
         var unitOf = function (c) { var q = c.prices || {}, v = q.eur != null ? parseFloat(q.eur) : q.eur_foil != null ? parseFloat(q.eur_foil) : NaN; return isNaN(v) ? null : v; };
         var min = null; list.forEach(function (c) { var v = unitOf(c); if (v != null && (min == null || v < min)) min = v; });
-        grid.innerHTML = list.map(function (c) {
-          var f = faces(c); if (!f) return '';
-          var pv = unitOf(c);
-          cache[key(name, c.set, c.collector_number)] = { u: f.u, b: f.b, t: Date.now() };
-          var cur = c.set === set0 && String(c.collector_number).toLowerCase() === cn0;
-          return '<button class="pr' + (cur ? ' cur' : '') + (pv != null && pv === min ? ' low' : '') + '" data-a="lb-pick" data-s="' + esc(c.set) + '" data-n="' + esc(c.collector_number) + '" title="' + esc(c.set_name || '') + '">' +
-            '<img src="' + esc(url(f.u, 'normal')) + '" alt="' + esc(c.set_name || c.set) + '" loading="lazy"><span>' + esc(c.set.toUpperCase()) + ' ' + esc(c.collector_number) + ' · ' + esc((c.released_at || '').slice(0, 4)) + '</span><span class="pp">' + (pv != null ? eurF(pv) : 'senza prezzo') + (pv != null && pv === min ? ' · la più economica' : '') + '</span>' + (c.set_name ? '<span class="pn">' + esc(c.set_name) + '</span>' : '') + '</button>';
-        }).join('');
+        list.forEach(function (c) { var f = faces(c); if (f) cache[key(name, c.set, c.collector_number)] = { u: f.u, b: f.b, t: Date.now() }; });
+        pv.list = C.orderPrints(list, psetNow(), prGet); pv.min = min;
+        paintPrints();
         persist();
       }).catch(function () {
         if (lb !== mine) return;
@@ -1217,7 +1272,7 @@
     }
 
     return { enabled: enabled, thumb: thumb, hydrate: hydrate, get: get, key: key, count: count, clear: clear,
-      open: function (el) { showLb(el, false); }, flip: flipLb, prints: printsLb, openPrints: openPrints, pic: pic, hasBack: hasBack, onFill: function (f) { fillFns.push(f); }, back: backLb, pick: pickLb, close: closeLb, hover: hover, tab: tabLb, mpcClick: mpcClick, mpcChange: mpcChange, isOpen: function () { return !!lb; } };
+      open: function (el) { showLb(el, false); }, flip: flipLb, prints: printsLb, prQuery: prQuery, prOnly: prOnly, sets: loadSets, setsNow: setsNow, setLabel: setLabel, resolveSet: resolveSet, openPrints: openPrints, pic: pic, hasBack: hasBack, onFill: function (f) { fillFns.push(f); }, back: backLb, pick: pickLb, close: closeLb, hover: hover, tab: tabLb, mpcClick: mpcClick, mpcChange: mpcChange, isOpen: function () { return !!lb; } };
   })();
 
   /* ---------- Struttura generale ---------- */
@@ -1727,6 +1782,25 @@
   }
 
   /* ---------- Mazzi ---------- */
+  /* Set suggerito del mazzo: le sue stampe vengono per prime quando si cambia stampa a una carta. */
+  function setOptions(l) { return l.map(function (x) { return '<option value="' + esc(x.c.toUpperCase() + ' \u00b7 ' + x.n) + '"></option>'; }).join(''); }
+  function fillSetList(l) {
+    var dl = $('#setlist'); if (dl && !dl.firstChild) dl.innerHTML = setOptions(l);
+    var inp = document.querySelector('[data-c="deck-pset"],[data-c="draft-pset"]');
+    if (inp && document.activeElement !== inp && /^[A-Za-z0-9]{2,6}$/.test(inp.value)) inp.value = IMG.setLabel(inp.value) || inp.value;
+  }
+  function psetField(cls, code) {
+    var l = IMG.setsNow() || []; if (!l.length) IMG.sets().then(fillSetList);
+    return '<label class="lbl">Set suggerito (facoltativo)<input class="input" data-c="' + cls + '" list="setlist" placeholder="es. MH3 o Modern Horizons 3" autocomplete="off" spellcheck="false" value="' + esc(IMG.setLabel(code)) + '"></label>' +
+      '<datalist id="setlist">' + setOptions(l) + '</datalist>' +
+      '<p class="hint">Quando cambi la stampa di una carta, quelle di questo set compaiono per prime. Lascia vuoto per l\u2019ordine normale.</p>';
+  }
+  function setPset(text, done) {
+    IMG.resolveSet(text).then(function (r) {
+      if (r === null) { toast('Non conosco il set \u00ab' + String(text).trim() + '\u00bb: scrivi la sigla (es. MH3) o scegli dall\u2019elenco.'); done(null); return; }
+      done(r ? r.code : '', r && r.name);
+    });
+  }
   var STATUS = [['active', 'Attivo'], ['unprinted', 'Da stampare'], ['printed', 'Stampato ma non pronto'], ['inactive', 'Smontato']];
   var STATUS_NAME = { active: 'Attivo', unprinted: 'Da stampare', printed: 'Stampato ma non pronto', inactive: 'Smontato' };
   function statusSelect(d, id, cls) {
@@ -1984,7 +2058,7 @@
     var tools = '<div class="dk-tools">' + tabs + (cardsTab ? '<button class="btn small dk-addb" data-a="dadd-toggle" aria-expanded="' + !!ui.dAdd + '" aria-controls="dadd">+ Aggiungi carta</button><div class="search dk-q">' + IC.search + '<input class="input" data-c="deckq" type="search" placeholder="Cerca nelle carte del mazzo" autocomplete="off" aria-label="Cerca nel mazzo" value="' + esc(ui.deckQ) + '"></div>' +
       '<label class="dk-sort">Ordina<select class="select" data-c="dsort" aria-label="Ordina le carte">' + opt('name', 'Nome') + opt('cmc', 'Costo di mana') + opt('price', 'Prezzo') + '</select></label>' : '') + '</div>';
     var man = '<section class="panel dk-man" id="dman"' + (ui.dMan ? '' : ' hidden') + '><label class="lbl">Nome<input class="input" data-c="deck-name" value="' + esc(d.name) + '"></label>' +
-      (d.kind === 'deck' ? '<label class="lbl">Commander<select class="select" data-c="deck-cmd">' + cmdOpts + '</select></label><p class="hint">' + statusHint(d) + '</p>' : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
+      (d.kind === 'deck' ? '<label class="lbl">Commander<select class="select" data-c="deck-cmd">' + cmdOpts + '</select></label><p class="hint">' + statusHint(d) + '</p>' + psetField('deck-pset', d.pset) : '<p class="hint">Carte sciolte: sempre disponibili per i tuoi prossimi mazzi.</p>') +
       '<div class="btns"><button class="btn small" data-a="export-deck">Scarica lista .txt</button><button class="btn small" data-a="copy-deck">Copia lista</button><button class="btn small danger' + (armedDel ? ' armed' : '') + '" data-a="del-deck" data-cf="1" data-id="' + esc(d.id) + '">' + (armedDel ? 'Conferma eliminazione' : 'Elimina il mazzo') + '</button></div></section>';
     var body;
     if (ui.deckTab === 'prices' && CARDS.ready()) {
@@ -2319,6 +2393,7 @@
       '<div class="pick" id="cmdlist" role="radiogroup" aria-label="Commander">' + cmdListHtml(d) + '</div>' +
       '<label class="lbl">Stato del mazzo' + statusSelect({ kind: 'deck', status: d.status, active: d.status === 'active' }, 'draft-status') + '</label>' +
       '<p class="hint" style="margin-top:-4px">' + esc(statusHint({ kind: 'deck', status: d.status, active: d.status === 'active' })) + '</p>' +
+      psetField('draft-pset', d.pset) +
       '<div class="btns"><button class="btn primary" data-a="draft-create">Crea mazzo</button></div></section>';
   }
   function draftNext() {
@@ -2343,6 +2418,7 @@
       status: kind === 'deck' ? d.status : 'inactive', active: kind === 'deck' && d.status === 'active', commander: kind === 'deck' ? (d.commander || null) : null,
       cards: C.clone(p.cards), side: kind === 'deck' ? C.clone(p.side || []) : [], upgrades: [], createdAt: now, updatedAt: now
     };
+    if (kind === 'deck' && C.setCode(d.pset)) nd.pset = C.setCode(d.pset);
     var taken = kind === 'deck' ? C.applyReuse(state.decks, nd, d.reuse, state.settings) : [];
     taken.forEach(function (x) { touch(x.deckId); });
     state.decks.push(nd); touch(nd.id);
@@ -2532,6 +2608,7 @@
       case 'lb-close': IMG.close(); break;
       case 'lb-flip': IMG.flip(); break;
       case 'lb-prints': IMG.prints(); break;
+      case 'pr-only': IMG.prOnly(); break;
       case 'lb-back': IMG.back(); break;
       case 'lb-pick': { var sy = window.scrollY; IMG.pick(el.dataset.s, el.dataset.n); window.scrollTo(0, sy); } break;
       case 'lb-keep': break;
@@ -2600,6 +2677,7 @@
     else if (c === 'draft-text') ui.draft.text = e.target.value;
     else if (c === 'draft-name') ui.draft.name = e.target.value;
     else if (c === 'restore-text') ui.restoreText = e.target.value;
+    else if (c === 'pr-q') IMG.prQuery(e.target.value);
     else if (c === 'cmd-q') { ui.draft.cq = e.target.value; $('#cmdlist').innerHTML = cmdListHtml(ui.draft); }
   });
 
@@ -2631,6 +2709,17 @@
       case 'dadd-to': ui.dAddSide = t.value === 'side'; break;
       case 'mpc-min': case 'mpc-sort': case 'mpc-hide': case 'mpc-one': IMG.mpcChange(c, t); break;
       case 'deck-name': d = getDeck(); if (d && t.value.trim()) { d.name = t.value.trim(); d.updatedAt = Date.now(); touch(d.id); render(); } break;
+      case 'deck-pset':
+        d = getDeck(); if (!d) break;
+        var did = d.id; setPset(t.value, function (code, nm) {
+          var dd = getDeck(did); if (!dd) return;
+          if (code === null) { render(); return; }
+          if (code) dd.pset = code; else delete dd.pset;
+          dd.updatedAt = Date.now(); touch(dd.id);
+          toast(code ? 'Set suggerito: ' + code.toUpperCase() + (nm ? ' \u00b7 ' + nm : '') + '. Le sue stampe saranno per prime.' : 'Set suggerito tolto.'); render();
+        }); break;
+      case 'draft-pset':
+        setPset(t.value, function (code, nm) { if (!ui.draft) return; if (code !== null) { ui.draft.pset = code; if (code) toast('Set suggerito: ' + code.toUpperCase() + (nm ? ' \u00b7 ' + nm : '') + '.'); } render(); }); break;
       case 'deck-cmd': d = getDeck(); if (d) { d.commander = t.value || null; d.updatedAt = Date.now(); touch(d.id); render(); } break;
       case 'up-name':
         d = getDeck();

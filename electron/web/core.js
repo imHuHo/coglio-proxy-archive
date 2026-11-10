@@ -664,7 +664,30 @@
       return o;
     }).filter(function (c) { return c.name; });
   }
+  /* ---------- set suggerito e ricerca nelle stampe ---------- */
+  function setCode(v) { v = String(v == null ? '' : v).trim().toLowerCase(); return /^[a-z0-9]{2,6}$/.test(v) ? v : ''; }
+  /* Mette per prime le stampe del set suggerito (ordine di partenza invariato dentro i due gruppi). get(item) → {set, name, cn, year}. */
+  function orderPrints(items, pset, get) {
+    var ps = setCode(pset); if (!ps) return items.slice();
+    var a = [], b = [];
+    items.forEach(function (it) { (String(get(it).set || '').toLowerCase() === ps ? a : b).push(it); });
+    return a.concat(b);
+  }
+  /* Filtra per testo (ogni parola deve comparire in sigla, nome del set, numero o anno) e, se only, solo il set suggerito. Restituisce gli indici. */
+  function filterPrints(items, o, get) {
+    o = o || {}; var ps = setCode(o.pset), toks = searchNorm(o.q || '').split(' ').filter(Boolean), out = [];
+    items.forEach(function (it, i) {
+      var g = get(it), st = String(g.set || '').toLowerCase();
+      if (o.only && ps && st !== ps) return;
+      if (toks.length) { var hay = searchNorm(st + ' ' + (g.name || '') + ' ' + (g.cn || '') + ' ' + (g.year || '')); for (var k = 0; k < toks.length; k++) if (hay.indexOf(toks[k]) < 0) return; }
+      out.push(i);
+    });
+    return out;
+  }
   function sanitizeDeck(d) {
+    var ps = d.kind === 'binder' ? '' : setCode(d.pset), o = sanitizeDeck0(d); if (ps) o.pset = ps; return o;
+  }
+  function sanitizeDeck0(d) {
     return {
       id: String(d.id || uid('d')), name: String(d.name || 'Mazzo'),
       kind: d.kind === 'binder' ? 'binder' : 'deck',
@@ -693,6 +716,6 @@
     keyOf: keyOf, searchNorm: searchNorm, isBasic: isBasic, uid: uid,
     parseList: parseList, buildArchive: buildArchive, diffUpgrade: diffUpgrade,
     applyUpgrade: applyUpgrade, applyUpgradeMoves: applyUpgradeMoves, findReusable: findReusable, applyReuse: applyReuse, statusOf: statusOf, isPrinted: isPrinted, samePrint: samePrint, clone: cloneJ, exportText: exportText, exportDeck: exportDeck, exportFileName: exportFileName, allCards: allCards, addCard: addCard, removeCard: removeCard, moveCard: moveCard, setMpc: setMpc, mpcOf: mpcOf, countOf: countOf, bracketText: bracketText, bracketPayload: bracketPayload, bracketSummary: bracketSummary, bracketNumber: bracketNumber, deckSig: deckSig, diffText: diffText,
-    sanitizeDeck: sanitizeDeck, sanitizeSettings: sanitizeSettings, inUse: inUse
+    sanitizeDeck: sanitizeDeck, setCode: setCode, orderPrints: orderPrints, filterPrints: filterPrints, sanitizeSettings: sanitizeSettings, inUse: inUse
   };
 });
