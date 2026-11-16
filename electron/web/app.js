@@ -1237,9 +1237,14 @@
         '<div class="pr-grid" id="prgrid"><p class="lb-wait">Cerco le stampe su Scryfall…</p></div><div class="mpcbox" id="mpcbox" hidden></div></div>';
       var q = '!"' + String(name).replace(/"/g, '') + '"';
       var mine = lb;
+      var find = function (res) { return ((res && res.data) || []).filter(function (c) { return !c.digital && nameIs(c, name); }); };
       getJson('/cards/search?q=' + encodeURIComponent(q) + '&unique=prints&order=released&dir=desc').then(function (res) {
+        var l = find(res);
+        /* token ed emblemi per Scryfall sono «extra»: se non c'è altro, si riprova includendoli (come fa il suo sito) */
+        return l.length ? res : getJson('/cards/search?q=' + encodeURIComponent(q) + '&unique=prints&order=released&dir=desc&include_extras=true');
+      }).then(function (res) {
         if (lb !== mine) return;
-        var list = ((res && res.data) || []).filter(function (c) { return !c.digital && nameIs(c, name); });
+        var list = find(res);
         var grid = lb.querySelector('#prgrid');
         if (!list.length) { grid.innerHTML = '<p class="lb-wait">Nessuna stampa trovata.</p>'; return; }
         var unitOf = function (c) { var q = c.prices || {}, v = q.eur != null ? parseFloat(q.eur) : q.eur_foil != null ? parseFloat(q.eur_foil) : NaN; return isNaN(v) ? null : v; };

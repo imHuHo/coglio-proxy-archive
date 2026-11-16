@@ -162,9 +162,20 @@
     };
 
     /* Stampe disponibili di una carta (per scegliere un'altra illustrazione). */
-    self.printings = function (name) {
-      return getJson('/cards/search?q=' + encodeURIComponent('!"' + String(name).replace(/"/g, '') + '"') + '&unique=prints&order=released&dir=desc').then(function (res) {
-        return ((res && res.data) || []).filter(function (c) { return faces(c).length; }).map(function (c) {
+    /* Scryfall nasconde di default token ed emblemi (include_extras=false): per i token si chiedono apposta, si scorrono più pagine
+       (ce ne sono centinaia con lo stesso nome) e si tengono solo quelli che opt.keep(card) riconosce come lo stesso token. */
+    self.printings = function (name, opt) {
+      opt = opt || {};
+      var q = '!"' + String(name).replace(/"/g, '') + '"' + (opt.token ? ' (t:token or layout:token or layout:double_faced_token)' : '');
+      var all = [];
+      function page(path, n) {
+        return getJson(path).then(function (res) {
+          all = all.concat((res && res.data) || []);
+          if (opt.token && res && res.has_more && res.next_page && n < 5) return page(res.next_page, n + 1);
+        });
+      }
+      return page('/cards/search?q=' + encodeURIComponent(q) + '&unique=prints&order=released&dir=desc' + (opt.token ? '&include_extras=true' : ''), 0).then(function () {
+        return all.filter(function (c) { return faces(c).length && (!opt.keep || opt.keep(c)); }).map(function (c) {
           return { set: c.set, setName: c.set_name, cn: c.collector_number, released: c.released_at, card: c };
         });
       });

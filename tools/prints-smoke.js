@@ -28,7 +28,7 @@ const card = (name, set, cn) => {
   const page = await ctx.newPage();
   const errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|net::ERR|CORS/.test(m.text())) errors.push(m.text()); });
   const JPG = Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=', 'base64');
-  let setsCalls = 0; const setQueries = [];
+  let setsCalls = 0; const setQueries = [], extraQs = [];
   const BY_SET = { c21: [['Sol Ring', '263'], ['Command Tower', '350'], ['Command Tower', '351', { border_color: 'borderless' }], ['Mountain', '400'], ['Mountain', '401'], ['Mountain', '402']] };
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   await ctx.route('https://cards.scryfall.io/**', r => r.fulfill({ status: 200, contentType: 'image/jpeg', body: JPG, headers: { 'access-control-allow-origin': '*' } }));
@@ -49,6 +49,11 @@ const card = (name, set, cn) => {
         (BY_SET[m[1]] || []).forEach(([nm, cn, extra]) => { if (names.includes(nm)) out.push(Object.assign(card(nm, m[1], cn), extra || {})); });
         return out.length ? json({ data: out }) : json({ object: 'error', code: 'not_found' }, 404);
       }
+      if (/^!"Cat"/.test(q)) {
+        /* come Scryfall: i token sono «extra» e si vedono solo con include_extras=true */
+        extraQs.push(u.searchParams.get('include_extras') === 'true');
+        return u.searchParams.get('include_extras') === 'true' ? json({ data: [['tc21', '12'], ['tmh3', '5']].map(p => Object.assign(card('Cat', p[0], p[1]), { layout: 'token', type_line: 'Token Creature — Cat' })) }) : json({ object: 'error', code: 'not_found' }, 404);
+      }
       return json({ data: PRINTS.map(p => card('Sol Ring', p[0], p[1])) });
     }
     return json({}, 404);
@@ -63,7 +68,7 @@ const card = (name, set, cn) => {
   await page.goto(base); await page.waitForSelector('.shell');
   /* --- creazione del mazzo: «Set suggerito» nel passo 2 --- */
   await nav('import');
-  await page.fill('[data-c="draft-text"]', fs.readFileSync(FX + 'kaalia_old.txt', 'utf8'));
+  await page.fill('[data-c="draft-text"]', fs.readFileSync(FX + 'kaalia_old.txt', 'utf8') + '\n1 Cat\n');
   await page.fill('[data-c="draft-name"]', 'Kaalia set');
   await page.click('[data-a="draft-next"]'); await page.waitForSelector('[data-c="draft-pset"]'); await page.locator('[data-c="draft-pset"]').scrollIntoViewIfNeeded(); await shot('1-crea');
   ok(await page.locator('[data-c="draft-pset"]').count() === 1, 'la creazione del mazzo ha il campo «Set suggerito»');
@@ -96,6 +101,12 @@ const card = (name, set, cn) => {
   await page.click('#prgrid .pr[data-s="mh3"]'); await page.waitForTimeout(150);
   ok(!await page.locator('#prgrid').count(), 'scegliere una stampa chiude la finestra');
   ok(await page.locator('.dr[data-n="Sol Ring"][data-s="MH3"][data-c="302"]').count() === 1, 'la stampa scelta dal filtro viene applicata alla carta');
+
+  /* --- token (o emblemi) nel mazzo: Scryfall li nasconde di default, si riprova con gli extra --- */
+  await page.locator('.dg:not([data-g="side"]) .dr', { hasText: 'Cat' }).first().locator('.pb').click(); await page.waitForSelector('#prgrid .pr');
+  eq(await prSets(), ['tc21', 'tmh3'], 'le stampe di un token compaiono (prima: «Nessuna stampa trovata»)');
+  eq(extraQs, [false, true], 'prima la ricerca normale, poi con include_extras');
+  await page.click('#lbx'); await page.waitForTimeout(100);
 
   /* --- modifica dal mazzo --- */
   await page.click('[data-a="dman-toggle"], [data-a="deck-man"], [data-a="man-toggle"]').catch(() => null);

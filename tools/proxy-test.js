@@ -17,6 +17,9 @@ const DB = [
   L('Missing Art', 'xxx', '2', { image_status: 'missing' })
 ];
 const TOK = L('Cat', 'tcmm', '7', { id: 'tok1' });
+const CAT = { layout: 'token', type_line: 'Token Creature \u2014 Cat', colors: ['G'], power: '1', toughness: '1' };
+const TOKS = [Object.assign(L('Cat', 'tc21', '12', { id: 'tcat1' }), CAT), Object.assign(L('Cat', 'tmh3', '5', { id: 'tcat2' }), CAT, { type_line: 'Creature \u2014 Cat' }),
+  Object.assign(L('Cat', 'tneo', '3', { id: 'tcat3' }), CAT), Object.assign(L('Cat', 'tfoo', '1', { id: 'tcat4' }), CAT, { colors: ['W'], power: '2', toughness: '2' })];
 const calls = [];
 const resp = (j, status) => ({ ok: !status || status < 300, status: status || 200, json: async () => j, arrayBuffer: async () => TINY.buffer.slice(TINY.byteOffset, TINY.byteOffset + TINY.length) });
 const nk = s => C.keyOf(s);
@@ -39,7 +42,15 @@ const fetchMock = async (u, init) => {
     const nm = url.searchParams.get('exact') || url.searchParams.get('fuzzy'), c = DB.find(c => hasName(c, nm));
     return c ? resp(c) : resp({}, 404);
   }
-  if (url.pathname === '/cards/search') return resp({ data: DB.filter(c => c.name === 'Sol Ring') });
+  if (url.pathname === '/cards/search') {
+    const q = url.searchParams.get('q'), ext = url.searchParams.get('include_extras') === 'true', nm = q.match(/^!"([^"]+)"/)[1];
+    const pool = DB.concat(TOKS).filter(c => hasName(c, nm) && (ext || c.layout !== 'token'));
+    if (/layout:token/.test(q) && !pool.every(c => c.layout === 'token')) return resp({}, 404);
+    if (!pool.length) return resp({}, 404);
+    /* a pagine da 3, come lo fa Scryfall con le pagine lunghe */
+    const pg = +(url.searchParams.get('page') || 1), data = pool.slice((pg - 1) * 3, pg * 3);
+    return resp(pool.length > pg * 3 ? { data, has_more: true, next_page: 'https://api.scryfall.com' + url.pathname + url.search.replace(/&page=\d+/, '') + '&page=' + (pg + 1) } : { data });
+  }
   return resp({}, 404);
 };
 const mk = () => X.create({ fetch: fetchMock, keyOf: C.keyOf, wait: async () => {}, gap: 0 });
@@ -103,6 +114,14 @@ const parse = b => P.parseJpeg(b);
   // stampe disponibili
   const pr = await mk().printings('Sol Ring');
   ok(pr.length === 3 && pr[0].set === 'c21', 'elenco stampe');
+  // token: Scryfall li nasconde di default, quindi senza include_extras l'elenco è vuoto (il difetto che c'era)
+  ok((await mk().printings('Cat')).length === 0, 'senza include_extras i token non compaiono');
+  calls.length = 0;
+  const same = c => c.type_line.replace(/^Token /, '') === 'Creature \u2014 Cat' && c.colors.join('') === 'G' && c.power === '1';
+  const pt = await mk().printings('Cat', { token: true, keep: same });
+  ok(pt.length === 3 && pt.map(p => p.set).join() === 'tc21,tmh3,tneo', 'token: stampe del solo Cat verde 1/1, anche dalla seconda pagina');
+  ok(calls.some(u => /include_extras=true/.test(u)) && calls.some(u => /layout%3Atoken/.test(u)) && calls.some(u => /page=2/.test(u)), 'token: chiede gli extra, solo token, e segue le pagine');
+  ok((await mk().printings('Cat', { token: true })).length === 4, 'token senza filtro: tutti e quattro');
 
   // errore del server: si propaga con lo status
   const r5 = X.create({ fetch: async () => resp({}, 500), keyOf: C.keyOf, wait: async () => {}, gap: 0 });

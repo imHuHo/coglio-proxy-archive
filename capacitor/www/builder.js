@@ -118,6 +118,11 @@
     var f = c.card_faces && !c.oracle_text ? c.card_faces[0] : c;
     return C.keyOf(c.name) + '|' + String(c.type_line || f.type_line || '').toLowerCase() + '|' + (c.colors || f.colors || []).join('') + '|' + (f.power == null ? '' : f.power) + '/' + (f.toughness == null ? '' : f.toughness) + '|' + String(f.oracle_text || '').replace(/\s+/g, ' ').trim().toLowerCase();
   }
+  /* Stesso token in stampe diverse: nome, tipo, colori e forza/costituzione (il testo cambia spesso di formulazione tra una stampa e l'altra). */
+  function tloose(c) {
+    var f = c.card_faces && !c.oracle_text ? c.card_faces[0] : c;
+    return C.keyOf(c.name) + '|' + String(c.type_line || f.type_line || '').toLowerCase().replace(/^token\s+/, '') + '|' + (c.colors || f.colors || []).join('') + '|' + (f.power == null ? '' : f.power) + '/' + (f.toughness == null ? '' : f.toughness);
+  }
   function syncTokens() {
     if (!bd || !bd.tokens || !available()) return;
     if (bd.tokBusy) { bd.tokDirty = true; return; }
@@ -168,7 +173,8 @@
     if (bd.picker === e.id) { bd.picker = null; bd.pickList = null; H.render(); return; }
     bd.picker = e.id; bd.pickList = 'load'; bd.pickQ = ''; bd.pickOnly = false; H.render();
     var my = e.id;
-    getResolver().printings(e.card && e.card.name ? e.card.name.split(' // ')[0] : e.name).then(function (list) {
+    var tk = e.token && e.card ? tloose(e.card) : '';
+    getResolver().printings(e.card && e.card.name ? e.card.name.split(' // ')[0] : e.name, e.token ? { token: true, keep: tk ? function (c) { return tloose(c) === tk; } : null } : null).then(function (list) {
       if (bd.picker !== my) return;
       bd.pickList = C.orderPrints(list, deckPset(), pgGet); H.render();
     }, function () { if (bd.picker === my) { bd.pickList = []; H.toast('Non riesco a caricare le stampe di questa carta.'); H.render(); } });

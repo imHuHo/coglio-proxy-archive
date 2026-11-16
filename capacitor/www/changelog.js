@@ -1,6 +1,9 @@
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '6.3.1', date: '16 novembre 2026', title: 'Fix: stampe dei token', items: [
+    { t: 'Token: «Stampa…» ora funziona', d: 'Nel Builder, cambiando la stampa di un token (Treasure, Soldier, Cat…) l\'elenco risultava sempre vuoto: Scryfall nasconde di default i token dalle ricerche. Ora vengono chiesti apposta e vedi solo le stampe dello stesso token (stesso nome, tipo, colori e forza/costituzione). Anche nel dialogo «Cambia stampa» dei mazzi, se una carta non ha altro che versioni «extra» (token, emblemi), si riprova includendole.' },
+  ] },
   { v: '6.3.0', date: '10 novembre 2026', title: 'Stampe: ricerca e set suggerito', items: [
     { t: 'Cerca tra le stampe', d: 'Quando cambi la stampa di una carta (nel mazzo e nel Builder per il PDF) c\'è una barra di ricerca: scrivi la sigla o il nome del set, il numero di collezione o l\'anno (anche più parole, tipo «horizons 302») e restano solo le stampe che corrispondono, con il conteggio.' },
     { t: 'Set suggerito del mazzo', d: 'Ogni mazzo può avere un «Set suggerito» (facoltativo): lo scegli alla creazione del mazzo o in «Gestisci». Quando apri le stampe di una carta, quelle di quel set vengono per prime, con il bordo evidenziato, e un pulsante «Solo MH3» mostra solo quelle. Vale anche nel Builder quando crei il PDF di quel mazzo.' },

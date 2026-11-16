@@ -1524,13 +1524,16 @@ body.pe-focus .pe-grid { min-height: calc(100dvh - 64px); }
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <script>
-window.CPA_VERSION = '6.3.0';
+window.CPA_VERSION = '6.3.1';
 
 </script>
 <script>
 /* Novità per versione, dalla più recente. Si aggiorna a ogni update: la sezione «Codighel! che novità!» in Dati e l'avviso
    alla prima apertura dopo un aggiornamento leggono da qui. Ogni voce: { t: titolo breve, d: spiegazione }. */
 window.CPA_CHANGELOG = [
+  { v: '6.3.1', date: '16 novembre 2026', title: 'Fix: stampe dei token', items: [
+    { t: 'Token: «Stampa…» ora funziona', d: 'Nel Builder, cambiando la stampa di un token (Treasure, Soldier, Cat…) l\'elenco risultava sempre vuoto: Scryfall nasconde di default i token dalle ricerche. Ora vengono chiesti apposta e vedi solo le stampe dello stesso token (stesso nome, tipo, colori e forza/costituzione). Anche nel dialogo «Cambia stampa» dei mazzi, se una carta non ha altro che versioni «extra» (token, emblemi), si riprova includendole.' },
+  ] },
   { v: '6.3.0', date: '10 novembre 2026', title: 'Stampe: ricerca e set suggerito', items: [
     { t: 'Cerca tra le stampe', d: 'Quando cambi la stampa di una carta (nel mazzo e nel Builder per il PDF) c\'è una barra di ricerca: scrivi la sigla o il nome del set, il numero di collezione o l\'anno (anche più parole, tipo «horizons 302») e restano solo le stampe che corrispondono, con il conteggio.' },
     { t: 'Set suggerito del mazzo', d: 'Ogni mazzo può avere un «Set suggerito» (facoltativo): lo scegli alla creazione del mazzo o in «Gestisci». Quando apri le stampe di una carta, quelle di quel set vengono per prime, con il bordo evidenziato, e un pulsante «Solo MH3» mostra solo quelle. Vale anche nel Builder quando crei il PDF di quel mazzo.' },
@@ -3290,9 +3293,20 @@ window.CPA_CHANGELOG = [
     };
 
     /* Stampe disponibili di una carta (per scegliere un'altra illustrazione). */
-    self.printings = function (name) {
-      return getJson('/cards/search?q=' + encodeURIComponent('!"' + String(name).replace(/"/g, '') + '"') + '&unique=prints&order=released&dir=desc').then(function (res) {
-        return ((res && res.data) || []).filter(function (c) { return faces(c).length; }).map(function (c) {
+    /* Scryfall nasconde di default token ed emblemi (include_extras=false): per i token si chiedono apposta, si scorrono più pagine
+       (ce ne sono centinaia con lo stesso nome) e si tengono solo quelli che opt.keep(card) riconosce come lo stesso token. */
+    self.printings = function (name, opt) {
+      opt = opt || {};
+      var q = '!"' + String(name).replace(/"/g, '') + '"' + (opt.token ? ' (t:token or layout:token or layout:double_faced_token)' : '');
+      var all = [];
+      function page(path, n) {
+        return getJson(path).then(function (res) {
+          all = all.concat((res && res.data) || []);
+          if (opt.token && res && res.has_more && res.next_page && n < 5) return page(res.next_page, n + 1);
+        });
+      }
+      return page('/cards/search?q=' + encodeURIComponent(q) + '&unique=prints&order=released&dir=desc' + (opt.token ? '&include_extras=true' : ''), 0).then(function () {
+        return all.filter(function (c) { return faces(c).length && (!opt.keep || opt.keep(c)); }).map(function (c) {
           return { set: c.set, setName: c.set_name, cn: c.collector_number, released: c.released_at, card: c };
         });
       });
@@ -6572,9 +6586,14 @@ window.CPA_COMMUNITY = {
         '<div class="pr-grid" id="prgrid"><p class="lb-wait">Cerco le stampe su Scryfall…</p></div><div class="mpcbox" id="mpcbox" hidden></div></div>';
       var q = '!"' + String(name).replace(/"/g, '') + '"';
       var mine = lb;
+      var find = function (res) { return ((res && res.data) || []).filter(function (c) { return !c.digital && nameIs(c, name); }); };
       getJson('/cards/search?q=' + encodeURIComponent(q) + '&unique=prints&order=released&dir=desc').then(function (res) {
+        var l = find(res);
+        /* token ed emblemi per Scryfall sono «extra»: se non c'è altro, si riprova includendoli (come fa il suo sito) */
+        return l.length ? res : getJson('/cards/search?q=' + encodeURIComponent(q) + '&unique=prints&order=released&dir=desc&include_extras=true');
+      }).then(function (res) {
         if (lb !== mine) return;
-        var list = ((res && res.data) || []).filter(function (c) { return !c.digital && nameIs(c, name); });
+        var list = find(res);
         var grid = lb.querySelector('#prgrid');
         if (!list.length) { grid.innerHTML = '<p class="lb-wait">Nessuna stampa trovata.</p>'; return; }
         var unitOf = function (c) { var q = c.prices || {}, v = q.eur != null ? parseFloat(q.eur) : q.eur_foil != null ? parseFloat(q.eur_foil) : NaN; return isNaN(v) ? null : v; };
@@ -8365,6 +8384,11 @@ window.CPA_COMMUNITY = {
     var f = c.card_faces && !c.oracle_text ? c.card_faces[0] : c;
     return C.keyOf(c.name) + '|' + String(c.type_line || f.type_line || '').toLowerCase() + '|' + (c.colors || f.colors || []).join('') + '|' + (f.power == null ? '' : f.power) + '/' + (f.toughness == null ? '' : f.toughness) + '|' + String(f.oracle_text || '').replace(/\s+/g, ' ').trim().toLowerCase();
   }
+  /* Stesso token in stampe diverse: nome, tipo, colori e forza/costituzione (il testo cambia spesso di formulazione tra una stampa e l'altra). */
+  function tloose(c) {
+    var f = c.card_faces && !c.oracle_text ? c.card_faces[0] : c;
+    return C.keyOf(c.name) + '|' + String(c.type_line || f.type_line || '').toLowerCase().replace(/^token\s+/, '') + '|' + (c.colors || f.colors || []).join('') + '|' + (f.power == null ? '' : f.power) + '/' + (f.toughness == null ? '' : f.toughness);
+  }
   function syncTokens() {
     if (!bd || !bd.tokens || !available()) return;
     if (bd.tokBusy) { bd.tokDirty = true; return; }
@@ -8415,7 +8439,8 @@ window.CPA_COMMUNITY = {
     if (bd.picker === e.id) { bd.picker = null; bd.pickList = null; H.render(); return; }
     bd.picker = e.id; bd.pickList = 'load'; bd.pickQ = ''; bd.pickOnly = false; H.render();
     var my = e.id;
-    getResolver().printings(e.card && e.card.name ? e.card.name.split(' // ')[0] : e.name).then(function (list) {
+    var tk = e.token && e.card ? tloose(e.card) : '';
+    getResolver().printings(e.card && e.card.name ? e.card.name.split(' // ')[0] : e.name, e.token ? { token: true, keep: tk ? function (c) { return tloose(c) === tk; } : null } : null).then(function (list) {
       if (bd.picker !== my) return;
       bd.pickList = C.orderPrints(list, deckPset(), pgGet); H.render();
     }, function () { if (bd.picker === my) { bd.pickList = []; H.toast('Non riesco a caricare le stampe di questa carta.'); H.render(); } });

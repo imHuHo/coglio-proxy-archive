@@ -34,11 +34,17 @@ w.fetch = async (u, init) => {
   if (url.pathname === '/cards/collection') {
     const ids = JSON.parse(init.body).identifiers, data = ids.map(find).filter(Boolean); return resp({ data });
   }
-  if (url.pathname === '/cards/search') return resp({ data: DB.filter(c => c.name === 'Sol Ring') });
+  if (url.pathname === '/cards/search') {
+    /* come Scryfall: i token sono «extra» e compaiono solo con include_extras=true */
+    const q = url.searchParams.get('q') || '', m = q.match(/^!"([^"]+)"/), nm = m ? m[1] : 'Sol Ring', ext = url.searchParams.get('include_extras') === 'true';
+    const d = DB.filter(c => has(c, nm) && (ext || !/^token/i.test(c.type_line || '')) && (!/layout:token/.test(q) || /^token/i.test(c.type_line || '')));
+    searchQs.push(q + (ext ? ' +extras' : ''));
+    return d.length ? resp({ data: d }) : resp({}, 404);
+  }
   if (url.pathname === '/cards/named') { const c = find({ name: url.searchParams.get('exact') || url.searchParams.get('fuzzy') }); return c ? resp(c) : resp({}, 404); }
   return resp({}, 404);
 };
-const cvCalls = [];
+const cvCalls = [], searchQs = [];
 const ctxStub = new Proxy({}, { get: (t, k) => (k in t ? t[k] : (...a) => { cvCalls.push(k); }), set: (t, k, v) => { t[k] = v; return true; } });
 w.HTMLCanvasElement.prototype.getContext = function () { return ctxStub; };
 for (const f of ['core.js', 'pdf.js', 'proxy.js', 'app.js', 'builder.js']) w.eval(read(W + '/' + f));
@@ -147,6 +153,16 @@ const blobBytes = b => new Promise(r => { const fr = new w.FileReader(); fr.onlo
   ok(/token di Cat Maker, Treasure Cat Maker/.test($('#bd-tok').textContent), 'ogni token dice da quali carte arriva');
   ok(/Treasure/.test($('#bd-tok').textContent) && $$('#bd-tok .bd-row .bd-q').length === 2, 'quantit\u00e0 modificabile per ogni token');
   ok(text().includes('5 carte (di cui 2 token)'), 'le carte del mazzo e i token sono nell\u2019anteprima: ' + (text().match(/(\d+) cart[ae] ·/) || [])[0]);
+  /* «Stampa…» su un token: Scryfall nasconde i token di default, quindi la ricerca deve chiederli apposta */
+  const tokRow = $$('#bd-tok .bd-row').find(r => /Cat/.test(r.textContent));
+  ok(tokRow && tokRow.querySelector('[data-a="bd-prints"]'), 'il token ha il pulsante «Stampa…»');
+  tokRow.querySelector('[data-a="bd-prints"]').click();
+  ok(await waitFor(() => $$('.bd-mp').length === 2), 'le stampe del token compaiono (prima: «nessuna stampa»): ' + $$('.bd-mp').length);
+  ok(searchQs.some(q => /include:?|extras/.test(q) && /layout:token/.test(q)), 'cerca solo token, includendo gli extra: ' + searchQs[searchQs.length - 1]);
+  ok(/TW1|TW2/.test($('.bd-mgrid').textContent) && $$('.bd-mp.on').length === 1, 'sono le due stampe del Cat bianco 1/1, una «in uso»');
+  const other = $$('.bd-mp').find(b => !b.classList.contains('on')); other.click();
+  ok(await waitFor(() => !$('.bd-modal')), 'scegliere una stampa del token chiude la finestra');
+  ok($$('#bd-tok .bd-row').length === 2 && /Cat/.test($('#bd-tok').textContent), 'il token resta in elenco');
   const tq = $$('#bd-tok .bd-q')[1]; tq.value = '0'; tq.dispatchEvent(new w.Event('change', { bubbles: true }));
   ok(text().includes('4 carte (di cui 1 token)') && $$('#bd-tok .bd-row.off').length === 1, 'quantit\u00e0 0: il token non si stampa');
   blobs.length = 0; clickA('bd-go');
