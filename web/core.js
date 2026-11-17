@@ -258,8 +258,26 @@
     };
   }
 
+  /* Le righe dell'upgrade senza collezione tengono la stampa che la carta ha già nel mazzo (copia per copia, righe divise se serve). */
+  function inheritPrints(oldCards, newCards) {
+    var pool = {};
+    (oldCards || []).forEach(function (c) { if (c.set) (pool[keyOf(c.name)] = pool[keyOf(c.name)] || []).push({ set: c.set, cn: c.cn || '', left: c.qty }); });
+    var out = [];
+    newCards.forEach(function (c) {
+      var p = !c.set && pool[keyOf(c.name)], need = c.qty;
+      if (!p) { out.push(c); return; }
+      for (var i = 0; i < p.length && need > 0; i++) {
+        if (p[i].left <= 0) continue;
+        var t = Math.min(need, p[i].left), r = cloneJ(c);
+        r.qty = t; r.set = p[i].set; r.cn = p[i].cn; p[i].left -= t; need -= t; out.push(r);
+      }
+      if (need > 0) { var rest = cloneJ(c); rest.qty = need; out.push(rest); }
+    });
+    return out;
+  }
+
   function applyUpgrade(deck, upgrade) {
-    deck.cards = JSON.parse(JSON.stringify(upgrade.cards));
+    deck.cards = inheritPrints(deck.cards, JSON.parse(JSON.stringify(upgrade.cards)));
     if (upgrade.commander) deck.commander = upgrade.commander;
     deck.upgrades = deck.upgrades.filter(function (u) { return u.id !== upgrade.id; });
     deck.updatedAt = Date.now();
@@ -563,7 +581,7 @@
     var kept = {};
     var keptM = {};
     deck.cards.forEach(function (c) { if (c.design) kept[keyOf(c.name)] = c.design; else if (c.mpc && !keptM[keyOf(c.name)]) keptM[keyOf(c.name)] = mpcOf(c); });
-    deck.cards = cloneJ(up.cards);
+    deck.cards = inheritPrints(deck.cards, cloneJ(up.cards));
     deck.cards.forEach(function (c) { var k = keyOf(c.name); if (kept[k]) { c.design = kept[k]; delete kept[k]; } else if (keptM[k]) { Object.assign(c, keptM[k]); delete keptM[k]; } });
     if (up.commander) deck.commander = up.commander;
     deck.upgrades = deck.upgrades.filter(function (u) { return u.id !== upgradeId; });

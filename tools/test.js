@@ -320,4 +320,19 @@ function sum(cards) { return cards.reduce((t, c) => t + c.qty, 0); }
   ok(C.sanitizeDeck(JSON.parse(JSON.stringify(sd))).pset === 'mh3', 'pset sopravvive a esportazione e ripristino');
 }
 
+// 16. upgrade senza collezione: le stampe già scelte nel mazzo restano
+{
+  const c = (name, qty, set, cn) => ({ name, qty, set: set || '', cn: cn || '' });
+  const mkd = () => mk('ip', 'Mazzo', 'deck', false, [c('Sol Ring', 1, 'CMM', '400'), c('Arcane Signet', 3, 'ELD', '331'), c('Arcane Signet', 1, 'C21', '10'), c('Terminate', 1, 'RTR', '1')]);
+  const up = { id: 'iu', name: 'U', commander: null, createdAt: 0, cards: [c('Sol Ring', 1), c('Arcane Signet', 5), c('Terminate', 1, 'MM3', '5'), c('Cultivate', 1)] };
+  const d1 = mkd(); d1.upgrades = [JSON.parse(JSON.stringify(up))]; const r1 = C.applyUpgradeMoves([d1], 'ip', 'iu', {});
+  const q = (d, name, set, cn) => d.cards.filter(x => x.name === name && x.set === set && x.cn === cn).reduce((t, x) => t + x.qty, 0);
+  ok(q(d1, 'Sol Ring', 'CMM', '400') === 1, 'upgrade: la stampa scelta resta se la riga non ha collezione');
+  ok(q(d1, 'Arcane Signet', 'ELD', '331') === 3 && q(d1, 'Arcane Signet', 'C21', '10') === 1 && q(d1, 'Arcane Signet', '', '') === 1, 'upgrade: più stampe della stessa carta ripartite copia per copia, il resto resta senza stampa');
+  ok(q(d1, 'Terminate', 'MM3', '5') === 1 && q(d1, 'Terminate', 'RTR', '1') === 0, 'upgrade: se la riga indica una stampa vince quella dell\'upgrade');
+  ok(q(d1, 'Cultivate', '', '') === 1 && d1.cards.reduce((t, x) => t + x.qty, 0) === 8, 'upgrade: carte nuove senza stampa e totale giusto');
+  const d2 = mkd(); C.applyUpgrade(d2, JSON.parse(JSON.stringify(up)));
+  ok(q(d2, 'Sol Ring', 'CMM', '400') === 1 && q(d2, 'Arcane Signet', 'ELD', '331') === 3, 'applyUpgrade semplice: stesse stampe tenute');
+}
+
 console.log('OK, ' + n + ' controlli passati');
